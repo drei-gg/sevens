@@ -18,6 +18,6 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 
 ## License
 
-Code: GPL-3.0, see [LICENSE](LICENSE). The GPL covers the code, not the $7&D name, wordmark or icons.
+Code: GPL-3.0, see [LICENSE](LICENSE). The GPL covers the code, not the $7&D name, wordmark or icons; see [TRADEMARKS.md](TRADEMARKS.md). Builds from this repo are unbranded; official builds add the brand from a private repo.
 
 Copyright © 2026 Drei Guintu.
