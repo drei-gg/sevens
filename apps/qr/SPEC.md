@@ -1,6 +1,14 @@
-# QR: spec
+# 7&D QR Code Kit: spec
 
-Draft 0.1 · 9 November 2026 · working name "QR" (final name to be decided)
+Draft 0.1 · 9 November 2026
+
+| Where | Name |
+|---|---|
+| App Store name | 7&D QR Code Kit |
+| App Store subtitle | Scanner, maker & scam check |
+| Under the icon | 7&D QR Kit |
+
+The store name uses `7&D` without the `$`: Apple doesn't allow prices in app names (guideline 2.3.7). The full `$7&D` mark stays on the splash screen and the site. About and the store listing carry the line "QR Code is a registered trademark of DENSO WAVE INCORPORATED."
 
 A QR reader and maker that tells you where a code really goes before you go there. Paid for once.
 
@@ -217,5 +225,4 @@ These fixtures double as the Android port's acceptance tests.
 7. Accessibility pass, polish, testing on the iPhone
 
 ## Open questions
-1. Final app name.
-2. Which payment networks mark person versus business accounts. To be filled into `payment-networks.json` from each network's published spec.
+1. Which payment networks mark person versus business accounts. To be filled into `payment-networks.json` from each network's published spec.
