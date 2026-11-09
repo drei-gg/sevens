@@ -180,7 +180,16 @@ App Store privacy label: **Data Not Collected.**
 ## 13. Trial and unlock
 Uses SevenKit's standard mechanism: a $0 "7-day trial" purchase and a $7 one-time unlock, with Family Sharing on.
 
-**After the trial (to decide):** I recommend scanning and the offline scam checks **stay free forever**. Putting scam warnings behind a paywall would undercut the whole brand. Peek, Make, the share extensions and History would need the unlock, and history stays readable and exportable either way.
+**After the trial (decided 9 November 2026):** anything that warns you is free forever. Anything that does work for you is the $7.
+
+| Free forever | Needs the unlock |
+|---|---|
+| Scanning: live, from photos, from the clipboard | **Peek:** redirects, login-form detection, domain age |
+| The verdict and every offline scam check (§4.2) | **Make**, and all export (§8) |
+| Payment-code decoding (§5) | **Share extensions** (§9) |
+| Opening links (§7) | **History:** saving, search, notes, export (§10) |
+
+Anything saved to History during the trial stays readable and exportable after it ends.
 
 ## 14. Accessibility and language
 - Full Dynamic Type, VoiceOver labels on every control, and verdicts read aloud as a sentence. Reduce Motion is respected.
@@ -209,5 +218,4 @@ These fixtures double as the Android port's acceptance tests.
 
 ## Open questions
 1. Final app name.
-2. What stays free after the trial (§13 has my recommendation).
-3. Which payment networks mark person versus business accounts. To be filled into `payment-networks.json` from each network's published spec.
+2. Which payment networks mark person versus business accounts. To be filled into `payment-networks.json` from each network's published spec.
