@@ -15,8 +15,6 @@ root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 cmd=${1:-}; [ $# -gt 0 ] && shift
 base=$(basename "$root"); [ "$base" = sevens ] && base=main
 slot=${VM_SLOT:-$base}
-sim=${VM_SIM_UDID:-5E282A53-AFAA-4742-9F93-12AC2D4EBA79}   # iPhone 17, iOS 26.5, mediaanalysisd disabled
-dest="platform=iOS Simulator,id=$sim"
 remote="src/sevens-$slot"
 dd="\$HOME/src/dd-$slot"
 logdir="$HOME/.cache/sevens/logs"; mkdir -p "$logdir"
@@ -26,6 +24,19 @@ exec 9>"$HOME/.cache/sevens/vm.lock"
 if ! flock -n 9; then echo "vm: waiting for the lock (another build is running)…" >&2; flock 9; fi
 
 ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe true || { echo "vm: tahoe is not reachable" >&2; exit 3; }
+
+# Standing rule (Drei, 10 Nov 2026): the shared simulator stays booted. A guest LaunchAgent
+# (gg.drei.sim-keepbooted → ~/bin/sim-ensure) keeps it up with the mediaanalysisd fix seeded.
+# Scripts never boot, shut down, erase or delete it, and tests never clone it
+# (-parallel-testing-enabled NO). Need a clean app state? Uninstall the app instead.
+case "$cmd" in
+  build|test|test-kit|ui)
+    sim=${VM_SIM_UDID:-$(ssh tahoe '~/bin/sim-ensure --print')}
+    [ -n "$sim" ] || { echo "vm: sim-ensure gave no simulator UDID" >&2; exit 3; }
+    case "$cmd" in test|test-kit|ui) ssh tahoe '~/bin/sim-ensure --wait' >/dev/null || { echo "vm: simulator not booted (sim-ensure --wait failed)" >&2; exit 3; };; esac
+    dest="platform=iOS Simulator,id=$sim";;
+esac
+noclone="-parallel-testing-enabled NO"
 
 sync_tree() {
   ssh tahoe "mkdir -p $remote"
@@ -38,13 +49,13 @@ xb="xcodebuild -project apps/qr/QR.xcodeproj -scheme QR -derivedDataPath $dd $st
 case "$cmd" in
   version) remote_cmd="xcodebuild -version";;
   build)   remote_cmd="$xb -configuration Debug -destination '$dest' build";;
-  test)    remote_cmd="$xb -configuration Debug -destination '$dest' -skip-testing:QRSmokeUITests test";;
-  test-kit) remote_cmd="set -o pipefail; (cd SevenKit && xcodebuild -scheme SevenKit-Package -derivedDataPath $dd-sevenkit $strictw -destination '$dest' test) && (cd apps/qr/Kit && xcodebuild -scheme QRKit-Package -derivedDataPath $dd-qrkit $strictw -destination '$dest' test)";;
+  test)    remote_cmd="$xb -configuration Debug -destination '$dest' -skip-testing:QRSmokeUITests $noclone test";;
+  test-kit) remote_cmd="set -o pipefail; (cd SevenKit && xcodebuild -scheme SevenKit-Package -derivedDataPath $dd-sevenkit $strictw -destination '$dest' $noclone test) && (cd apps/qr/Kit && xcodebuild -scheme QRKit-Package -derivedDataPath $dd-qrkit $strictw -destination '$dest' $noclone test)";;
   ui)
     if [ "${1:-}" = --device ]; then
-      remote_cmd="$xb -configuration Debug -destination 'platform=iOS,id=\$(cat ~/.sevens-device-udid)' -allowProvisioningUpdates -only-testing:QRSmokeUITests test"
+      remote_cmd="$xb -configuration Debug -destination 'platform=iOS,id=\$(cat ~/.sevens-device-udid)' -allowProvisioningUpdates -only-testing:QRSmokeUITests $noclone test"
     else
-      remote_cmd="$xb -configuration Debug -destination '$dest' -only-testing:QRSmokeUITests test"
+      remote_cmd="$xb -configuration Debug -destination '$dest' -only-testing:QRSmokeUITests $noclone test"
     fi;;
   device)
     # Signing needs the GUI session's keychain (runbook: signing over SSH fails),
