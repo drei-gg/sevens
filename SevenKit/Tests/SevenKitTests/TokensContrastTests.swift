@@ -26,4 +26,10 @@ import Testing
             }
         }
     }
+
+    /// Bar buttons sit on an opaque bar (`SevenBars`): that pair must pass in both themes.
+    @Test func barButtonsMeetAAOnTheBarBackground() {
+        #expect(ratio(SevenBars.buttons.light, SevenBars.background.light) >= 4.5)
+        #expect(ratio(SevenBars.buttons.dark, SevenBars.background.dark) >= 4.5)
+    }
 }

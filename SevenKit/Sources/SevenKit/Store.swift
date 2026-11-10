@@ -73,6 +73,11 @@ public final class Store {
         return false
     }
     public var shouldPresentBeforeYouBuy: Bool { !SevenFlags.beforeYouBuyShown(defaults) }
+    /// The one sheet that may open at launch: Before you buy first, the trial-ended sheet only
+    /// when Before you buy isn't due (SPEC §13).
+    public var launchSheet: LaunchSheetPlan {
+        LaunchSheetPlan.next(beforeYouBuyDue: shouldPresentBeforeYouBuy, trialEndedDue: shouldPresentTrialEnded)
+    }
 
     private var effectiveFacts: EntitlementFacts {
         var f = facts
