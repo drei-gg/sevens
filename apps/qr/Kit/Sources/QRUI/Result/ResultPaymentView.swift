@@ -101,7 +101,7 @@ struct ResultPaymentView: View {
                     Text(checksumText).foregroundStyle(Tokens.ink)
                 } icon: {
                     Image(systemName: info.checksum == .invalid ? "xmark.octagon" : "checkmark.circle")
-                        .foregroundStyle(info.checksum == .invalid ? Color.red : Tokens.muted)
+                        .foregroundStyle(info.checksum == .invalid ? Tokens.danger : Tokens.muted)
                 }
                 .font(.subheadline)
             }

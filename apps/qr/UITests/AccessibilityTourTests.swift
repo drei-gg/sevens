@@ -170,11 +170,28 @@ final class AccessibilityTourTests: XCTestCase {
         shot.name = name
         shot.lifetime = .keepAlways
         add(shot)
+        let lines = AuditLines()
+        defer {
+            // Every issue, accepted or not, so the report can name the exact elements.
+            if !lines.items.isEmpty {
+                let list = XCTAttachment(string: lines.items.joined(separator: "\n"))
+                list.name = "\(name)-audit-issues"
+                list.lifetime = .keepAlways
+                add(list)
+            }
+        }
         try app.performAccessibilityAudit { issue in
-            let el = issue.element
-            let desc = "[\(name)] \(issue.auditType.rawValue) \(issue.compactDescription) — \(issue.detailedDescription) element: \(el?.debugDescription ?? "nil")"
-            print("A11YAUDIT \(desc)")
-            return MainActor.assumeIsolated { Self.isKnownFalsePositive(issue) }
+            MainActor.assumeIsolated {
+                let accepted = Self.isKnownFalsePositive(issue)
+                let el = issue.element
+                let line = "A11YAUDIT [\(name)] type=\(issue.auditType.rawValue) "
+                    + "\(accepted ? "accepted" : "FAILED") | \(issue.compactDescription) | \(issue.detailedDescription) | "
+                    + "id='\(el?.identifier ?? "-")' label='\(el?.label ?? "-")' "
+                    + "elementType=\(el.map { String($0.elementType.rawValue) } ?? "-") frame=\(el.map { "\($0.frame)" } ?? "-")"
+                print(line)
+                lines.items.append(line)
+                return accepted
+            }
         }
     }
 
@@ -206,4 +223,9 @@ final class AccessibilityTourTests: XCTestCase {
             return false
         }
     }
+}
+
+/// Collects one screen's audit lines; the audit handler runs on the main actor (assumeIsolated).
+private final class AuditLines: @unchecked Sendable {
+    var items: [String] = []
 }

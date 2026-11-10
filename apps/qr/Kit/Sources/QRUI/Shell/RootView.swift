@@ -9,9 +9,7 @@ public struct RootView: View {
     @Environment(AppModel.self) private var model
     @State private var showFirstLaunch = false
 
-    public init() {
-        SevenBars.install()
-    }
+    public init() {}
 
     public var body: some View {
         NavigationStack {
