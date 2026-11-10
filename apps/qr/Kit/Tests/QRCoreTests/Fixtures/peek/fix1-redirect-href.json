@@ -1,0 +1,27 @@
+{
+  "id": "peek-fix1-redirect-href",
+  "original": "https://fix1-hop.example/a",
+  "hops": [
+    {
+      "url": "https://fix1-hop.example/a",
+      "status": 200
+    }
+  ],
+  "stoppedBecause": "finished",
+  "contentType": "text/html; charset=utf-8",
+  "contentDisposition": null,
+  "ageDays": 2000,
+  "expect": {
+    "title": "Please wait",
+    "signals": [
+      "scriptRedirect"
+    ],
+    "sniff": {
+      "formActions": [],
+      "scriptRedirect": true,
+      "metaRefreshURL": null,
+      "inputTypes": [],
+      "scriptCount": 1
+    }
+  }
+}
