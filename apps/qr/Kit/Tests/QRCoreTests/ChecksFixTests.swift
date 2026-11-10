@@ -112,6 +112,10 @@ import Testing
         #expect(fires("https://example.com/login/https://other.example/"))
         #expect(fires("https://example.com/login/http%3A%2F%2Fother.example"))
         #expect(fires("https://example.com/login/x?y=1&u=http://z.example/") == false)
+        #expect(!fires("https://example.com/login?x=" + String(repeating: "a", count: 200)))
+        #expect(!fires("https://example.com/login?x=%41%42%43%44%45%46%47%48%49%4A%4B"))
+        #expect(fires("https://example.com/login/" + String(repeating: "a", count: 200)))
+        #expect(fires("https://example.com/login/%41%42%43%44%45%46%47%48%49%4A%4B"))
     }
 
     @Test func checksFixHostIsFoldedBeforeAnyCheck() throws {

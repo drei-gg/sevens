@@ -1077,7 +1077,7 @@
  {
   "id": "link-obf-escapes",
   "spec": "4.2",
-  "input": "https://www.example.org/account?x=%41%42%43%44%45%46%47%48%49%4A",
+  "input": "https://www.example.org/account/%41%42%43%44%45%46%47%48%49%4A",
   "symbology": "qr",
   "expect": {
    "type": "link",

@@ -647,9 +647,9 @@
  {
   "id": "fx1-adv-48",
   "spec": "4.2",
-  "input": "https://example.com/login?x=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "input": "https://example.com/login/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "symbology": "qr",
-  "note": "F5: a very long query is still caught by the length rule",
+  "note": "F5: a very long path is still caught by the length rule",
   "expect": {
    "type": "link",
    "level": 1,
@@ -776,6 +776,32 @@
    "level": 2,
    "signals": [
     "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-56",
+  "spec": "4.2",
+  "input": "https://example.com/login?x=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&y=%41%42%43%44%45%46%47%48%49%4A%4B",
+  "symbology": "qr",
+  "note": "F5: a long or encoded query alone does not count",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-57",
+  "spec": "4.2",
+  "input": "https://example.com/account/%41%42%43%44%45%46%47%48%49%4A%4B?next=/home",
+  "symbology": "qr",
+  "note": "F5: ten encoded characters in the path still count",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "obfuscatedPath"
    ]
   }
  }
