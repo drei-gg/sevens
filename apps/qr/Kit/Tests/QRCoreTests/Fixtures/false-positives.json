@@ -1475,13 +1475,11 @@
   "spec": "4.2",
   "input": "https://paypal.me/someone",
   "symbology": "qr",
-  "note": "F1: PayPal's payment-link domain; level 0 once brands.json lists paypal.me",
+  "note": "F1: PayPal's payment-link domain; level 0 once brands.json lists paypal.me. Listed in brands.json since fix 1 (R2 verified), so Looks normal.",
   "expect": {
    "type": "link",
-   "level": 1,
-   "signals": [
-    "brandOtherEnding"
-   ]
+   "level": 0,
+   "signals": []
   }
  },
  {
@@ -1489,13 +1487,11 @@
   "spec": "4.2",
   "input": "https://whatsapp.net/",
   "symbology": "qr",
-  "note": "F1: level 0 once brands.json lists whatsapp.net",
+  "note": "F1: level 0 once brands.json lists whatsapp.net. Listed in brands.json since fix 1 (R2 verified), so Looks normal.",
   "expect": {
    "type": "link",
-   "level": 1,
-   "signals": [
-    "brandOtherEnding"
-   ]
+   "level": 0,
+   "signals": []
   }
  },
  {
@@ -1503,13 +1499,11 @@
   "spec": "4.2",
   "input": "https://www.microsoft.de/",
   "symbology": "qr",
-  "note": "F1: regional site; level 0 once brands.json lists microsoft.de",
+  "note": "F1: regional site; level 0 once brands.json lists microsoft.de. Listed in brands.json since fix 1 (R2 verified), so Looks normal.",
   "expect": {
    "type": "link",
-   "level": 1,
-   "signals": [
-    "brandOtherEnding"
-   ]
+   "level": 0,
+   "signals": []
   }
  },
  {
@@ -1517,13 +1511,11 @@
   "spec": "4.2",
   "input": "https://netflix.co/",
   "symbology": "qr",
-  "note": "F1: level 0 once brands.json lists netflix.co",
+  "note": "F1: level 0 once brands.json lists netflix.co. Listed in brands.json since fix 1 (R2 verified), so Looks normal.",
   "expect": {
    "type": "link",
-   "level": 1,
-   "signals": [
-    "brandOtherEnding"
-   ]
+   "level": 0,
+   "signals": []
   }
  },
  {

@@ -4,13 +4,11 @@
   "spec": "4.2",
   "input": "https://login.microsoft.de/",
   "symbology": "qr",
-  "note": "F1: a subdomain of <brand>.<ending> does not change the verdict",
+  "note": "F1: a subdomain of <brand>.<ending> does not change the verdict. Listed in brands.json since fix 1 (R2 verified), so Looks normal.",
   "expect": {
    "type": "link",
-   "level": 1,
-   "signals": [
-    "brandOtherEnding"
-   ]
+   "level": 0,
+   "signals": []
   }
  },
  {
@@ -46,13 +44,11 @@
   "spec": "4.2",
   "input": "https://netflix.net/",
   "symbology": "qr",
-  "note": "F1: net counts",
+  "note": "F1: net counts. Listed in brands.json since fix 1 (R2 verified), so Looks normal.",
   "expect": {
    "type": "link",
-   "level": 1,
-   "signals": [
-    "brandOtherEnding"
-   ]
+   "level": 0,
+   "signals": []
   }
  },
  {
@@ -60,13 +56,11 @@
   "spec": "4.2",
   "input": "https://netflix.co.uk/",
   "symbology": "qr",
-  "note": "F1: co.uk counts",
+  "note": "F1: co.uk counts. Listed in brands.json since fix 1 (R2 verified), so Looks normal.",
   "expect": {
    "type": "link",
-   "level": 1,
-   "signals": [
-    "brandOtherEnding"
-   ]
+   "level": 0,
+   "signals": []
   }
  },
  {
