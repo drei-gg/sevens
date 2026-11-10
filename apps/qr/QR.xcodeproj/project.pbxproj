@@ -453,7 +453,7 @@
 				INFOPLIST_FILE = "Config/QR-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "$(SEVENS_DISPLAY_NAME)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSCameraUsageDescription = "The camera reads QR codes and barcodes. Nothing it sees leaves your iPhone.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "The camera reads QR codes and barcodes. Camera images stay on your iPhone.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -476,7 +476,7 @@
 				INFOPLIST_FILE = "Config/QR-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "$(SEVENS_DISPLAY_NAME)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSCameraUsageDescription = "The camera reads QR codes and barcodes. Nothing it sees leaves your iPhone.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "The camera reads QR codes and barcodes. Camera images stay on your iPhone.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

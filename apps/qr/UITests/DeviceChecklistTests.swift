@@ -6,8 +6,9 @@ final class DeviceChecklistTests: XCTestCase {
     override func setUpWithError() throws {
         #if targetEnvironment(simulator)
         throw XCTSkip("device-only (G9)")
-        #endif
+        #else
         continueAfterFailure = false
+        #endif
     }
 
     @MainActor

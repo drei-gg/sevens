@@ -74,6 +74,13 @@ public struct PeekClient: Sendable {
             group.cancelAll()
             await group.waitForAll()
         }
+        // URLSession delivers task metrics (the negotiated TLS version) asynchronously after the
+        // task completes; give that callback a short, bounded moment before tearing down.
+        if !outcome.snapshot().timedOut {
+            for _ in 0..<10 where tracker.tlsVersion == nil {
+                try? await Task.sleep(nanoseconds: 50_000_000)
+            }
+        }
         session.invalidateAndCancel()
 
         let snapshot = outcome.snapshot()
