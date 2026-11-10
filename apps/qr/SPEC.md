@@ -1,6 +1,6 @@
 # 7&D QR Code Kit: spec
 
-Draft 0.1 · 9 November 2026
+Draft 0.2 · 10 November 2026 (amended to match [PLAN.md](PLAN.md) §2, decisions D1–D16)
 
 | Where | Name |
 |---|---|
@@ -41,6 +41,8 @@ iOS 17+, iPhone, SwiftUI, Swift 6, with no dependencies beyond Apple's framework
    > **Your iPhone already scans QR codes.** Point the Camera at one, or use Code Scanner in Control Center. If that's all you need, delete this app and keep your seven dollars.
    >
    > **What this adds:** it checks where a code really goes before you open it, shows who a payment code pays, makes codes from anything you share, and remembers what you scanned. Free for 7 days, no card. Then $7 once, if you want to keep it.
+
+   Two buttons of equal weight: **Start my free 7 days** and **Just scan for free** (D1). The trial starts only when the person taps Start (a $0 "7-day Trial" purchase); without it the app keeps working in its free-forever mode. In the app the price is always the App Store's own price for the person's storefront, never a hard-coded "$7", and "keep your seven dollars" reads "keep your money".
 3. **Camera permission**, asked when the scanner first opens, not before.
 
 ## 2. Scan (home screen)
@@ -96,15 +98,18 @@ Every signal shows as one plain sentence under the verdict. No scores, no percen
 | Unusually deep subdomains, or very long or encoded paths on a login-like URL | warning |
 | Open (no-password) Wi-Fi network | warning |
 | Payment code fails its checksum | strong |
+| A link written without `https://` (`www.example.com`, `example.com/x`), when its ending is a real domain ending and there are no spaces: treated as a link with `https` assumed, and we say so (D9) | info |
 
-### 4.3 Bundled data (`apps/qr/Data/`)
+Peek adds its own signals (§6): the page asks for a password, PIN, one-time code or card number (warning; **strong** only when the page or its domain claims a brand the domain doesn't belong to, D10), a form that sends to another domain (warning), a redirect by script or meta refresh (warning), a download such as an app or profile (warning), redirects to plain `http` or out of the web, too many redirects (warning), a certificate problem (strong), a domain under 30 days old (strong) or under 6 months (warning). Shown but never changing the verdict: the domain is on shared hosting, the page needs JavaScript, age unknown, Peek couldn't finish.
+
+### 4.3 Bundled data (`apps/qr/Kit/Sources/QRCore/Data/`)
 
 These files are updated with app releases. Pull requests are welcome.
 
 - `brands.json`: the most-impersonated brands worldwide and their official domains (payments, banks, couriers, tech, governments). One global list, grouped by region only so it's easier to maintain.
 - `shorteners.json`: known link shorteners.
 - `risky-tlds.json`: heavily abused domain endings, based on public abuse reports.
-- `payment-networks.json`: payment network identifiers mapped to display names (§5).
+- `payment-networks.json`: payment network identifiers mapped to display names (§5). Only networks whose published spec states the identifier are listed, each with its source (D11).
 - `public_suffix_list.dat`: Mozilla's Public Suffix List (MPL-2.0), used to find the registrable domain.
 - `rdap-dns.json`: IANA's directory of public registry (RDAP) services (§6.2).
 
@@ -120,7 +125,7 @@ We decode the payment code formats used around the world and show **who you're a
 | Swiss QR-bill | First line `SPC` | Creditor, IBAN, amount, reference |
 | Crypto payment links | `bitcoin:`, `ethereum:`, `lightning:` and others | Address, amount, label |
 
-**Person or business:** we label it only when the network's identifier clearly says so, as listed in `payment-networks.json`. Otherwise we show the name in large type and let the person judge: "Check this matches where you are."
+**Person or business:** we label it only when the network's identifier clearly says so, as listed in `payment-networks.json` with a link to that network's published spec (D11). Otherwise we show the name in large type and let the person judge: "Check this matches where you are."
 
 ## 6. Peek (one tap, online)
 
@@ -132,7 +137,7 @@ It's a tap and never automatic, because fetching a link tells whoever made the c
 - Reads up to 512 KB of the final page **without running any of its code**, and shows:
   - the page title
   - whether the connection is secure
-  - **a password, PIN, one-time code or card-number field** (strong signal if the domain isn't the brand it claims to be)
+  - **a password, PIN, one-time code or card-number field** (a warning on its own, since ordinary login pages exist; strong when the page or domain claims a brand the domain doesn't belong to, D10)
   - redirects done by script or meta refresh (warning).
 - Uses a standard Safari user agent, so we see what a real browser would see.
 - Gives up after 8 seconds. Plain `http` links aren't fetched (iOS blocks them by default); they show a warning instead and can still be opened.
@@ -194,10 +199,12 @@ Uses SevenKit's standard mechanism: a $0 "7-day trial" purchase and a $7 one-tim
 |---|---|
 | Scanning: live, from photos, from the clipboard | **Peek:** redirects, login-form detection, domain age |
 | The verdict and every offline scam check (§4.2) | **Make**, and all export (§8) |
-| Payment-code decoding (§5) | **Share extensions** (§9) |
-| Opening links (§7) | **History:** saving, search, notes, export (§10) |
+| Payment-code decoding (§5) | **"Make QR code" share extension** (§9) |
+| Opening links (§7) | **History:** saving new scans and made codes (§10) |
+| **"Check this code" share extension** (§9): it only warns (D2) | |
+| Reading, searching, annotating, exporting and deleting History you already have | |
 
-Anything saved to History during the trial stays readable and exportable after it ends.
+Anything saved to History during the trial stays readable, searchable and exportable after it ends; only saving new items needs the unlock.
 
 ## 14. Accessibility and language
 - Full Dynamic Type, VoiceOver labels on every control, and verdicts read aloud as a sentence. Reduce Motion is respected.
@@ -208,7 +215,7 @@ Anything saved to History during the trial stays readable and exportable after i
 Product barcode lookup, link "reputation" from third-party services, iPad layout, sync, widgets, Apple Watch, logos inside generated codes, and batch generation.
 
 ## 16. Test fixtures
-`apps/qr/Fixtures/` holds a payload and its expected result for each signal in §4 and each format in §5:
+`apps/qr/Kit/Tests/QRCoreTests/Fixtures/` holds a payload and its expected result for each signal in §4 and each format in §5:
 - valid and corrupted EMVCo payloads (CRC pass and fail)
 - UPI, EPC and Swiss samples
 - punycode lookalikes, `user@host`, shorteners and IP hosts.
@@ -224,5 +231,5 @@ These fixtures double as the Android port's acceptance tests.
 6. History, trial and unlock, Before you buy, About
 7. Accessibility pass, polish, testing on the iPhone
 
-## Open questions
-1. Which payment networks mark person versus business accounts. To be filled into `payment-networks.json` from each network's published spec.
+## Decided questions
+1. Which payment networks mark person versus business accounts: only those whose published spec says so, cited in `payment-networks.json`; every other network shows the name and "Check this matches where you are." (D11, PLAN §2).

@@ -12,6 +12,7 @@
 		FC853CAFE5DA5B8B39B1F49C /* QRUI in Frameworks */ = {isa = PBXBuildFile; productRef = 86BBEE97F40D622F53B3DDEB /* QRUI */; };
 		68C8E6CC35C9944DE8B89264 /* MakeExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 323ACA28B74C658FFA85BA17 /* MakeExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		03C6476647D7D0C8CD28B029 /* CheckExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 900FF71948F569E4A3E020D4 /* CheckExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		60DFD8F25875C573547ACF7C /* CHANGELOG.md in Resources */ = {isa = PBXBuildFile; fileRef = 847D9AA32B0AC9597FA8F13F /* CHANGELOG.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,6 +67,7 @@
 		95B582F1D48F2D1ECE09C2A8 /* QR.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "QR.entitlements"; sourceTree = "<group>"; };
 		5D1CDD5C1707261617564951 /* QR-NoHotspot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "QR-NoHotspot.entitlements"; sourceTree = "<group>"; };
 		F678C352892AE24C85F504A6 /* QR.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = QR.storekit; sourceTree = "<group>"; };
+		847D9AA32B0AC9597FA8F13F /* CHANGELOG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
 		C6B42E4D8A0E33524D9A827A /* Kit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Kit; sourceTree = "<group>"; };
 		EEC2E4063DA2F5DFD1BC1963 /* SevenKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = SevenKit; path = ../../SevenKit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -167,6 +169,7 @@
 				476EC7A07A6F73D7828692D9 /* UITests */,
 				C6B42E4D8A0E33524D9A827A /* Kit */,
 				EEC2E4063DA2F5DFD1BC1963 /* SevenKit */,
+				847D9AA32B0AC9597FA8F13F /* CHANGELOG.md */,
 				1F2CB1A78502780335EAC2EF /* Config */,
 				F678C352892AE24C85F504A6 /* QR.storekit */,
 				68EC0353C057F58199C5FCEE /* Products */,
@@ -349,6 +352,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				60DFD8F25875C573547ACF7C /* CHANGELOG.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
