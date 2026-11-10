@@ -25,7 +25,7 @@ public struct TrialEndedView: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.l) {
-                Text(content.title ?? seven("seven.trialEnded.title", "Your free 7 days are over"))
+                Text(content.title ?? seven("seven.trialEnded.title", "Your free 7 days have ended"))
                     .font(.title2.weight(.semibold)).foregroundStyle(Tokens.ink)
                     .accessibilityAddTraits(.isHeader)
                 section(seven("seven.trialEnded.free", "What stays free"), content.stillFree)

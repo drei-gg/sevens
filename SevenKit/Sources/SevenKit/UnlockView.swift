@@ -61,7 +61,7 @@ public struct UnlockView: View {
             EmptyView()
         }
         if store.unlockDisplayPrice == nil && !store.isUsingLocalSource {
-            note(seven("seven.unlock.priceUnavailable", "Price unavailable right now"))
+            note(seven("seven.unlock.priceUnavailable", "The price can't be loaded right now. Check your connection and try again."))
         }
         if let error = store.lastError { note(error) }
     }
