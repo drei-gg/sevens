@@ -1,6 +1,6 @@
 # 7&D QR Code Kit: spec
 
-Draft 0.2 · 10 November 2026 (amended to match [PLAN.md](PLAN.md) §2, decisions D1–D16)
+Draft 0.2 · 10 November 2026 (amended to match the build plan §2, decisions D1–D16)
 
 | Where | Name |
 |---|---|
