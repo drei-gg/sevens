@@ -72,7 +72,11 @@ enum HistoryTestSupport {
         let store = HistoryStore(directory: dir, debounce: .milliseconds(100), writer: counter.writer)
         for i in 0..<25 { await store.add(S.item("item \(i)", at: Double(i))) }
         #expect(counter.count == 0)                       // still waiting on the timer
-        try await Task.sleep(for: .milliseconds(500))
+        // Wait for the debounced write; poll rather than sleep a fixed time, so a busy test
+        // machine doesn't fail this. Then wait a little longer to prove no second write follows.
+        let deadline = ContinuousClock.now + .seconds(10)
+        while counter.count == 0, ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(50)) }
+        try await Task.sleep(for: .milliseconds(300))
         #expect(counter.count == 1)
         #expect(await store.writeCount == 1)
         #expect(await HistoryStore(directory: dir).items.count == 25)

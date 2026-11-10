@@ -10,13 +10,18 @@ import Vision
 enum MakeTestSupport {
     static func decode(_ png: Data) throws -> [String] {
         let request = VNDetectBarcodesRequest()
+        #if targetEnvironment(simulator)
+        // The default (ML) revision has no inference backend in the VM's simulator; revision 1
+        // (non-ML) works there, as WP 2.2's ImageScanner found. Raw value: the constant is deprecated.
+        request.revision = 1
+        #endif
         let handler = VNImageRequestHandler(data: png, options: [:])
         try handler.perform([request])
         return (request.results ?? []).compactMap { $0.payloadStringValue }
     }
 
-    /// Vision's barcode detector returns nothing on the iOS simulator (no inference backend there;
-    /// verified: the same PNGs decode on macOS). A canary QR tells the Vision tests whether to run.
+    /// Vision's default barcode revision returns nothing in the VM's simulator, so `decode` uses
+    /// revision 1 there. A canary QR still tells the Vision tests whether to run.
     static let visionAvailable: Bool = {
         guard let m = try? CodeGenerator.generate(text: "canary", symbology: .qr, correction: .M) else { return false }
         let png = PNGRenderer.png(matrix: m, pixelSize: 512, foreground: .black, background: .white)
@@ -71,7 +76,8 @@ enum MakeTestSupport {
 
     @Test(.enabled(if: MakeTestSupport.visionAvailable)) func code128RoundTrip() throws {
         let text = "SKU-12345-ABC"
-        #expect(try MakeTestSupport.roundTrip(text, .code128, .auto) == [text])
+        // Vision revision 1 (simulator) reports a 1D code once per scan line: compare distinct payloads.
+        #expect(Set(try MakeTestSupport.roundTrip(text, .code128, .auto)) == [text])
     }
 
     @Test(.enabled(if: MakeTestSupport.visionAvailable)) func qrUnicodeRoundTrip() throws {
