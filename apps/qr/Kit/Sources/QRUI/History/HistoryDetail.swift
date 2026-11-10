@@ -46,7 +46,7 @@ public struct HistoryDetail: View {
             }
             .listRowBackground(Tokens.card)
             Section {
-                LabeledContent(String(localized: "history.detail.kind", defaultValue: "How", bundle: .module)) {
+                LabeledContent(String(localized: "history.detail.kind", defaultValue: "Scanned or made", bundle: .module)) {
                     Text(HistoryLabels.kind(shown.kind))
                 }
                 LabeledContent(String(localized: "history.detail.symbology", defaultValue: "Code type", bundle: .module)) {
@@ -99,7 +99,7 @@ public struct HistoryDetail: View {
             }
             Button(String(localized: "history.cancel", defaultValue: "Cancel", bundle: .module), role: .cancel) {}
         }
-        .alert(String(localized: "history.detail.note.failed", defaultValue: "The note wasn't saved.", bundle: .module),
+        .alert(String(localized: "history.detail.note.failed", defaultValue: "The note wasn't saved. Try again.", bundle: .module),
                isPresented: $noteSaveFailed) {
             Button(String(localized: "history.ok", defaultValue: "OK", bundle: .module), role: .cancel) {}
         }

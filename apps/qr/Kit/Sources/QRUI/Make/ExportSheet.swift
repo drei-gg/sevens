@@ -153,7 +153,7 @@ struct ExportSheet: View {
                 .accessibilityIdentifier("make.export.share")
             } else if failed {
                 MakeInlineMessage(text: String(localized: "make.export.failed",
-                                               defaultValue: "The file could not be created. Try a smaller size.", bundle: .module))
+                                               defaultValue: "The file couldn't be created. Try a smaller size.", bundle: .module))
             } else {
                 ProgressView().accessibilityLabel(Text(verbatim: String(localized: "make.export.preparing", defaultValue: "Preparing the file", bundle: .module)))
             }

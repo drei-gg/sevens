@@ -87,7 +87,7 @@ struct ResultPaymentView: View {
             if let partyText {
                 Text(partyText).font(.headline).foregroundStyle(Tokens.ink)
             } else {
-                Text(String(localized: "result.payment.checkMatch", defaultValue: "Check this matches where you are.", bundle: .module))
+                Text(String(localized: "result.payment.checkMatch", defaultValue: "Check that this is who you meant to pay.", bundle: .module))
                     .font(.headline).foregroundStyle(Tokens.ink)
                     .fixedSize(horizontal: false, vertical: true)
             }
