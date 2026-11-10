@@ -25,16 +25,21 @@ if ! flock -n 9; then echo "vm: waiting for the lock (another build is running)â
 
 ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe true || { echo "vm: tahoe is not reachable" >&2; exit 3; }
 
-# Standing rule (Drei, 10 Nov 2026): the shared simulator stays booted. A guest LaunchAgent
-# (gg.drei.sim-keepbooted â†’ ~/bin/sim-ensure) keeps it up with the mediaanalysisd fix seeded.
-# Scripts never boot, shut down, erase or delete it, and tests never clone it
-# (-parallel-testing-enabled NO). Need a clean app state? Uninstall the app instead.
+# Standing rule (Drei, 10 Nov 2026, corrected): one shared simulator. Boot it only when work
+# needs it, keep it up while work continues; a guest timer shuts it down after 15 idle minutes.
+# Commands that run an app or tests on it first call the guest's ~/bin/sim-ensure --wait and
+# take its UDID from sim-ensure --print (VM_SIM_UDID overrides). Plain `build` targets the
+# generic simulator platform and never touches the device. Scripts never shut down, erase or
+# delete it, and tests never clone it (-parallel-testing-enabled NO). Need a clean app state?
+# Uninstall the app instead.
 case "$cmd" in
-  build|test|test-kit|ui)
-    sim=${VM_SIM_UDID:-$(ssh tahoe '~/bin/sim-ensure --print')}
-    [ -n "$sim" ] || { echo "vm: sim-ensure gave no simulator UDID" >&2; exit 3; }
-    case "$cmd" in test|test-kit|ui) ssh tahoe '~/bin/sim-ensure --wait' >/dev/null || { echo "vm: simulator not booted (sim-ensure --wait failed)" >&2; exit 3; };; esac
-    dest="platform=iOS Simulator,id=$sim";;
+  test|test-kit|ui)
+    if [ "$cmd" = ui ] && [ "${1:-}" = --device ]; then :; else
+      ssh tahoe '~/bin/sim-ensure --wait' >/dev/null || { echo "vm: simulator not ready (sim-ensure --wait failed)" >&2; exit 3; }
+      sim=${VM_SIM_UDID:-$(ssh tahoe '~/bin/sim-ensure --print')}
+      [ -n "$sim" ] || { echo "vm: sim-ensure gave no simulator UDID" >&2; exit 3; }
+      dest="platform=iOS Simulator,id=$sim"
+    fi;;
 esac
 noclone="-parallel-testing-enabled NO"
 
@@ -48,7 +53,7 @@ strictw="SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES"
 xb="xcodebuild -project apps/qr/QR.xcodeproj -scheme QR -derivedDataPath $dd $strictw"
 case "$cmd" in
   version) remote_cmd="xcodebuild -version";;
-  build)   remote_cmd="$xb -configuration Debug -destination '$dest' build";;
+  build)   remote_cmd="$xb -configuration Debug -destination 'generic/platform=iOS Simulator' build";;
   test)    remote_cmd="$xb -configuration Debug -destination '$dest' -skip-testing:QRSmokeUITests $noclone test";;
   test-kit) remote_cmd="set -o pipefail; (cd SevenKit && xcodebuild -scheme SevenKit-Package -derivedDataPath $dd-sevenkit $strictw -destination '$dest' $noclone test) && (cd apps/qr/Kit && xcodebuild -scheme QRKit-Package -derivedDataPath $dd-qrkit $strictw -destination '$dest' $noclone test)";;
   ui)
