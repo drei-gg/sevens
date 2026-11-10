@@ -1,5 +1,6 @@
 import SwiftUI
 import SevenKitCore
+import UIKit
 
 /// Settings rows that come from SevenKit (SPEC §11): the trial status line, Unlock, Restore,
 /// and an optional "Before you buy" row. Drop it into a `Form` or `List`:
@@ -20,6 +21,7 @@ public struct AboutSection: View {
 
     public var body: some View {
         Section {
+            AboutWordmark()
             Text(AboutStatus.line(for: store.state, day: store.trialDay, totalDays: store.trialDaysTotal))
                 .foregroundStyle(Tokens.ink)
             if store.state != .unlocked {
@@ -41,6 +43,29 @@ public struct AboutSection: View {
                 .foregroundStyle(Tokens.muted)
         }
         .unlockSheet(isPresented: $showUnlock)
+    }
+}
+
+/// The wordmark slot, the one branded spot in the app (SPEC "Look"): the `SevenStamp` image from
+/// the main bundle when the app ships one, otherwise the app's name as plain text.
+struct AboutWordmark: View {
+    @Environment(\.sevenUnlockContent) private var content
+
+    var body: some View {
+        if SevenStamp.isAvailable {
+            Image(SevenStamp.name).resizable().scaledToFit().frame(height: 44)
+                .accessibilityLabel(content.appName)
+        } else if !content.appName.isEmpty {
+            Text(content.appName).font(.headline).foregroundStyle(Tokens.ink)
+        }
+    }
+}
+
+/// The `$7&D` brand stamp: `Image("SevenStamp")` from the main bundle when the app ships one.
+enum SevenStamp {
+    static let name = "SevenStamp"
+    static var isAvailable: Bool {
+        UIImage(named: name) != nil
     }
 }
 

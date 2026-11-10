@@ -5,7 +5,9 @@
 #   build          app, Debug, simulator
 #   test           all unit tests on the simulator (no UI smoke test)
 #   test-kit       QRKit and SevenKit package tests only (simulator)
-#   ui [--device]  the UI smoke test (simulator, or the iPhone)
+#   ui [--device]  the UI tests (simulator, or the iPhone), without the screenshot tour
+#   screens        the screenshot tour (ScreensTourTests: every screen, light and dark); the result
+#                  bundle path is in the log, see scripts/export-screens
 #   device         build, sign and install on the iPhone (runs in the guest's GUI session)
 #   lock-device    lock the iPhone (run last; nothing can unlock it remotely)
 #   sh CMD...      run a command in the synced checkout
@@ -34,7 +36,7 @@ ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe true || { echo "vm: tahoe is not
 # delete it, and tests never clone it (-parallel-testing-enabled NO). Need a clean app state?
 # Uninstall the app instead.
 case "$cmd" in
-  test|test-kit|ui)
+  test|test-kit|ui|screens)
     if [ "$cmd" = ui ] && [ "${1:-}" = --device ]; then :; else
       ssh tahoe '~/bin/sim-ensure --wait' >/dev/null || { echo "vm: simulator not ready (sim-ensure --wait failed)" >&2; exit 3; }
       sim=${VM_SIM_UDID:-$(ssh tahoe '~/bin/sim-ensure --print')}
@@ -59,10 +61,12 @@ case "$cmd" in
   test-kit) remote_cmd="set -o pipefail; (cd SevenKit && xcodebuild -scheme SevenKit-Package -derivedDataPath $dd-sevenkit $strictw -destination '$dest' $noclone test) && (cd apps/qr/Kit && xcodebuild -scheme QRKit-Package -derivedDataPath $dd-qrkit $strictw -destination '$dest' $noclone test)";;
   ui)
     if [ "${1:-}" = --device ]; then
-      remote_cmd="bash scripts/guest-device.sh '$dd' test -only-testing:QRSmokeUITests -skip-testing:QRSmokeUITests/LockDeviceTests"
+      remote_cmd="bash scripts/guest-device.sh '$dd' test -only-testing:QRSmokeUITests -skip-testing:QRSmokeUITests/LockDeviceTests -skip-testing:QRSmokeUITests/ScreensTourTests"
     else
-      remote_cmd="$xb -configuration Debug -destination '$dest' -only-testing:QRSmokeUITests -skip-testing:QRSmokeUITests/LockDeviceTests $noclone test"
+      remote_cmd="$xb -configuration Debug -destination '$dest' -only-testing:QRSmokeUITests -skip-testing:QRSmokeUITests/LockDeviceTests -skip-testing:QRSmokeUITests/ScreensTourTests $noclone test"
     fi;;
+  screens)
+    remote_cmd="rm -rf \$HOME/src/screens-$slot.xcresult; $xb -configuration Debug -destination '$dest' -only-testing:QRSmokeUITests/ScreensTourTests -resultBundlePath \$HOME/src/screens-$slot.xcresult $noclone test";;
   lock-device)
     # The very last device step: lock the iPhone (UI-test target only; see LockDeviceTests).
     remote_cmd="bash scripts/guest-device.sh '$dd' test -only-testing:QRSmokeUITests/LockDeviceTests";;

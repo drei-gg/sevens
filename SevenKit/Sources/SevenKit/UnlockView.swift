@@ -1,6 +1,5 @@
 import SwiftUI
 import SevenKitCore
-import UIKit
 
 /// The paid-feature sheet: what the unlock adds, the price from StoreKit, Start trial (only if
 /// it hasn't started), Unlock, Restore, and a plain "Not now". No countdown, no pre-selected
@@ -20,13 +19,12 @@ public struct UnlockView: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.l) {
-                stamp
                 Text(content.title ?? seven("seven.unlock.title", "What the unlock adds"))
-                    .font(.title2.weight(.semibold)).foregroundStyle(Tokens.ink)
+                    .font(.title2.weight(.semibold)).foregroundStyle(.primary)
                     .accessibilityAddTraits(.isHeader)
                 if let feature {
                     Text(seven("seven.unlock.feature", "%@ is part of the unlock.", feature))
-                        .font(.body).foregroundStyle(Tokens.muted)
+                        .font(.body).foregroundStyle(.secondary)
                 }
                 SevenListLines(lines: content.features)
                 statusNote
@@ -35,18 +33,8 @@ public struct UnlockView: View {
             .padding(Tokens.Space.m)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(Tokens.paper.ignoresSafeArea())
         .onChange(of: store.paidFeaturesAvailable) { _, available in
             if available { dismiss() }
-        }
-    }
-
-    @ViewBuilder private var stamp: some View {
-        if SevenStamp.isAvailable {
-            Image(SevenStamp.name).resizable().scaledToFit().frame(height: 44)
-                .accessibilityLabel(content.appName)
-        } else if !content.appName.isEmpty {
-            Text(content.appName).font(.headline).foregroundStyle(Tokens.ink)
         }
     }
 
@@ -67,18 +55,18 @@ public struct UnlockView: View {
     }
 
     private func note(_ text: String) -> some View {
-        Text(text).font(.callout).foregroundStyle(Tokens.muted)
+        Text(text).font(.callout).foregroundStyle(.secondary)
             .accessibilityElement(children: .combine)
     }
 
     private var actions: some View {
         VStack(spacing: Tokens.Space.s) {
             if store.state == .notStarted && store.trialPolicy == .onPurchase {
-                SevenButton(title: seven("seven.trial.start", "Start my free 7 days"), disabled: store.isBusy) {
+                SevenButton(title: seven("seven.trial.start", "Start my free 7 days"), prominent: true, disabled: store.isBusy) {
                     Task { await store.startTrial() }
                 }
             }
-            SevenButton(title: store.unlockButtonTitle, disabled: !store.canPurchase) {
+            SevenButton(title: store.unlockButtonTitle, prominent: true, disabled: !store.canPurchase) {
                 Task { await store.unlock() }
             }
             if store.isBusy { ProgressView().padding(.vertical, Tokens.Space.xs)
@@ -86,16 +74,8 @@ public struct UnlockView: View {
             SevenPlainButton(title: seven("seven.restore", "Restore purchases"), disabled: store.isBusy) {
                 Task { await store.restore() }
             }
-            SevenButton(title: seven("seven.notNow", "Not now")) { dismiss() }  // as prominent as the buy button (SPEC §13)
+            SevenButton(title: seven("seven.notNow", "Not now")) { dismiss() }  // same size and shape as the buy button, which alone is filled (SPEC §13)
         }
-    }
-}
-
-/// The `$7&D` brand stamp: `Image("SevenStamp")` from the main bundle when the app ships one.
-enum SevenStamp {
-    static let name = "SevenStamp"
-    static var isAvailable: Bool {
-        UIImage(named: name) != nil
     }
 }
 

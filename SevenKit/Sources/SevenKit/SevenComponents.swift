@@ -10,8 +10,8 @@ struct SevenListLines: View {
         VStack(alignment: .leading, spacing: Tokens.Space.s) {
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.s) {
-                    Image(systemName: symbol).foregroundStyle(Tokens.muted).accessibilityHidden(true)
-                    Text(line).font(.body).foregroundStyle(Tokens.ink)
+                    Image(systemName: symbol).foregroundStyle(.secondary).accessibilityHidden(true)
+                    Text(line).font(.body).foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -20,9 +20,11 @@ struct SevenListLines: View {
     }
 }
 
-/// A full-width button; equal weight for every use (no pre-selected option).
+/// A full-width button. `prominent` is the filled system style; the default is the bordered one,
+/// the same size and shape. Both use the system accent color. Equal weight where two sit together (SPEC §13).
 struct SevenButton: View {
     let title: String
+    var prominent = false
     var disabled = false
     /// Accessibility identifier for UI tests; empty means none.
     var identifier = ""
@@ -33,12 +35,18 @@ struct SevenButton: View {
             Text(title).font(.headline).multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, minHeight: 28)
         }
-        .buttonStyle(.bordered)
+        .modifier(SevenButtonStyle(prominent: prominent))
         .controlSize(.large)
-        .tint(Tokens.ink)
         .accessibilityIdentifier(identifier)
         .disabled(disabled)
         .accessibilityLabel(title)
+    }
+}
+
+private struct SevenButtonStyle: ViewModifier {
+    let prominent: Bool
+    func body(content: Content) -> some View {
+        if prominent { content.buttonStyle(.borderedProminent) } else { content.buttonStyle(.bordered) }
     }
 }
 
@@ -53,7 +61,7 @@ struct SevenPlainButton: View {
             Text(title).font(.body).frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(Tokens.muted)
+        .foregroundStyle(.secondary)
         .disabled(disabled)
         .accessibilityLabel(title)
     }

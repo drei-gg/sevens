@@ -3,7 +3,7 @@ import SwiftUI
 /// What the unlock sheet says. The app passes its own words; SevenKit hard-codes nothing about
 /// any one app.
 public struct UnlockContent: Sendable, Equatable {
-    /// Shown as plain text when the app has no `SevenStamp` image (unbranded builds).
+    /// The wordmark slot in the About section: plain text here, replaced by the brand image in branded builds.
     public var appName: String
     /// The "what the unlock adds" lines.
     public var features: [String]

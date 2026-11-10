@@ -71,42 +71,41 @@ public struct BeforeYouBuyView: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.m) {
-                Text(content.title).font(.title.weight(.semibold)).foregroundStyle(Tokens.ink)
+                Text(content.title).font(.title.weight(.semibold)).foregroundStyle(.primary)
                     .accessibilityAddTraits(.isHeader)
                 ForEach(Array(content.resolvedParagraphs(price: store.unlockDisplayPrice).enumerated()), id: \.offset) { _, text in
-                    Text(text).font(.body).foregroundStyle(Tokens.ink)
+                    Text(text).font(.body).foregroundStyle(.primary)
                 }
                 if let error = store.lastError {
-                    Text(error).font(.callout).foregroundStyle(Tokens.muted)
+                    Text(error).font(.callout).foregroundStyle(.secondary)
                 }
             }
             .padding(Tokens.Space.m)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .safeAreaInset(edge: .bottom) { buttons.padding(Tokens.Space.m).background(Tokens.paper) }
-        .background(Tokens.paper.ignoresSafeArea())
+        .safeAreaInset(edge: .bottom) { buttons.padding(Tokens.Space.m).background(.bar) }
     }
 
     private var buttons: some View {
         VStack(spacing: Tokens.Space.s) {
             if store.trialPolicy == .onFirstLaunch {
-                SevenButton(title: content.continueLabel ?? seven("seven.beforeYouBuy.continue", "Continue")) {
+                SevenButton(title: content.continueLabel ?? seven("seven.beforeYouBuy.continue", "Continue"), prominent: true) {
                     finish(.continued)
                 }
             } else if store.state == .notStarted {
                 SevenButton(title: content.startTrialLabel ?? seven("seven.trial.start", "Start my free 7 days"),
-                            disabled: store.isBusy, identifier: "seven.beforeYouBuy.startTrial") {
+                            prominent: true, disabled: store.isBusy, identifier: "seven.beforeYouBuy.startTrial") {
                     Task {
                         await store.startTrial()
                         if store.state != .notStarted { finish(.startedTrial) }
                     }
                 }
                 SevenButton(title: content.justScanLabel ?? seven("seven.beforeYouBuy.justScan", "Just scan for free"),
-                            disabled: store.isBusy, identifier: "seven.beforeYouBuy.justScan") {
+                            prominent: true, disabled: store.isBusy, identifier: "seven.beforeYouBuy.justScan") {
                     finish(.justScan)
                 }
             } else {
-                SevenButton(title: seven("seven.done", "Done")) { finish(.done) }
+                SevenButton(title: seven("seven.done", "Done"), prominent: true) { finish(.done) }
             }
         }
     }

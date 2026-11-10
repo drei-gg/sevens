@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Copy the screenshot tour's pictures from the VM to a folder on this machine.
+# usage: scripts/export-screens <destination dir>   (run `scripts/vm screens` first)
+set -euo pipefail
+dest=${1:?destination directory}
+root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+base=$(basename "$root"); [ "$base" = sevens ] && base=main
+slot=${VM_SLOT:-$base}
+out="src/screens-$slot-export"
+ssh tahoe "rm -rf $out && mkdir -p $out && xcrun xcresulttool export attachments --path \$HOME/src/screens-$slot.xcresult --output-path $out" >&2
+mkdir -p "$dest"
+tmp=$(mktemp -d)
+scp -rq "tahoe:$out/." "$tmp/"
+python3 - "$tmp" "$dest" <<'PY'
+import json, os, shutil, sys
+src, dest = sys.argv[1:3]
+manifest = json.load(open(os.path.join(src, "manifest.json")))
+n = 0
+for test in manifest:
+    for att in test.get("attachments", []):
+        name = att.get("suggestedHumanReadableName", "")
+        stem = name.rsplit("_", 2)[0] if name.count("_") >= 2 else name
+        ext = os.path.splitext(att["exportedFileName"])[1]
+        if ext not in (".png", ".txt"): continue
+        shutil.copy(os.path.join(src, att["exportedFileName"]), os.path.join(dest, stem + ext)); n += 1
+print(f"exported {n} files to {dest}")
+PY
+rm -rf "$tmp"
