@@ -12,7 +12,8 @@ final class ScreensTourTests: XCTestCase {
     private let openWiFi = "WIFI:T:nopass;S:Corner Cafe Guest;;"
     private let contact = "BEGIN:VCARD\nVERSION:3.0\nFN:Ana Reyes\nORG:Reyes Bakery\nTITLE:Owner\nTEL:+639171234567\nEMAIL:ana@example.com\nEND:VCARD"
     private let plainText = "Meet at the north gate at six. Bring the blue folder."
-    private let madeLink = "https://example.com/Menu?utm_source=flyer&utm_medium=print"
+    private let madeLink = "https://example.com/menu/spring-specials/lunch-set-for-two-people"
+    private let trackingSuffix = "?utm_source=flyer&utm_medium=print"
 
     private var mode = "light"
     private var counter = 0
@@ -116,15 +117,18 @@ final class ScreensTourTests: XCTestCase {
         field.typeText(madeLink)
         sleep(1)
         shoot(app, "make-link-options")
-        if scrollTo(app, "make.code") { shoot(app, "make-link-code") } else { notes.append("make: no code shown") }
-        let smaller = id(app, "make.link.smaller")
         if scrollTo(app, "make.link.smaller") {
-            smaller.tap()
-            sleep(1)
             shoot(app, "make-same-link-smaller-code")
+            id(app, "make.link.smaller").tap()
+            sleep(1)
+            shoot(app, "make-same-link-smaller-code-off")
         } else { notes.append("make: the 'Same link, smaller code' switch did not appear") }
+        field.tap()
+        field.typeText(trackingSuffix)
+        sleep(1)
         if scrollTo(app, "make.link.tracking.remove") { shoot(app, "make-tracking-tags-offer") }
         else { notes.append("make: the tracking-tags offer did not appear") }
+        if scrollTo(app, "make.code") { shoot(app, "make-link-code") } else { notes.append("make: no code shown") }
         if scrollTo(app, "make.export") {
             id(app, "make.export").tap()
             if app.buttons["make.export.close"].firstMatch.waitForExistence(timeout: 10) { shoot(app, "make-export-sheet") }
@@ -170,13 +174,16 @@ final class ScreensTourTests: XCTestCase {
     }
 
     @MainActor private func unlockScreens() {
-        var app = launch(entitlement: "expired")
+        // The debug preset persists but is applied after the store starts, so the first launch
+        // only sets the state; the sheet appears at the next launch.
+        launch(entitlement: "expired").terminate()
+        var app = launch(entitlement: nil)
         // The trial-ended sheet appears once at launch when the trial has ended.
-        if app.staticTexts["Your free 7 days have ended"].firstMatch.waitForExistence(timeout: 15) {
+        if app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "7 days are over")).firstMatch.waitForExistence(timeout: 15) {
             shoot(app, "trial-ended")
             let notNow = app.buttons["Not now"].firstMatch
             if notNow.exists { notNow.tap() }
-        } else { notes.append("trial ended: the sheet did not appear at launch with the expired preset") }
+        } else { notes.append("trial ended: the sheet did not appear at the second launch with the expired state") }
         sleep(1)
         let make = id(app, "scan.make")
         if make.waitForExistence(timeout: 10) {
@@ -196,11 +203,12 @@ final class ScreensTourTests: XCTestCase {
 
     // MARK: Helpers
 
-    @MainActor
-    private func launch(entitlement: String = "unlocked", inject: String? = nil, skipFirstLaunch: Bool = true,
+    @MainActor @discardableResult
+    private func launch(entitlement: String? = "unlocked", inject: String? = nil, skipFirstLaunch: Bool = true,
                         largestText: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
-        var args = ["-qr.entitlement", entitlement, "-qr.resetHistory"]
+        var args = ["-qr.resetHistory", "-qr.resetKnown", "-qr.resetFlags"]
+        if let entitlement { args += ["-qr.entitlement", entitlement] }
         if skipFirstLaunch { args.append("-qr.skipFirstLaunch") }
         if largestText { args += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         if let inject { args += ["-qr.inject", Data(inject.utf8).base64EncodedString()] }
