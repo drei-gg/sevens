@@ -1,0 +1,85 @@
+{
+ "emv": [
+  {
+   "id": "br.gov.bcb.pix",
+   "name": "Pix",
+   "country": "BR",
+   "party": "unknown",
+   "source": "https://www.bcb.gov.br/content/estabilidadefinanceira/spb_docs/ManualBRCode.pdf"
+  },
+  {
+   "id": "A000000677010111",
+   "name": "PromptPay (credit transfer)",
+   "country": "TH",
+   "party": "unknown",
+   "source": "https://www.bot.or.th/content/dam/bot/fipcs/documents/FPG/2562/EngPDF/25620084.pdf"
+  },
+  {
+   "id": "A000000677010112",
+   "name": "PromptPay (bill payment, domestic merchant)",
+   "country": "TH",
+   "party": "business",
+   "source": "https://www.bot.or.th/content/dam/bot/fipcs/documents/FPG/2562/EngPDF/25620084.pdf"
+  },
+  {
+   "id": "A000000677012006",
+   "name": "PromptPay (bill payment, cross-border merchant)",
+   "country": "TH",
+   "party": "business",
+   "source": "https://www.bot.or.th/content/dam/bot/fipcs/documents/FPG/2562/EngPDF/25620084.pdf"
+  },
+  {
+   "id": "A0000006150001",
+   "name": "DuitNow QR",
+   "country": "MY",
+   "party": "unknown",
+   "source": "https://docs.developer.paynet.my/docs/duitNow-QR/integration/QR-generation-specification/merchant-presented-mode/qr-data-object"
+  }
+ ],
+ "cryptoSchemes": [
+  {
+   "scheme": "bitcoin",
+   "name": "Bitcoin"
+  },
+  {
+   "scheme": "ethereum",
+   "name": "Ethereum"
+  },
+  {
+   "scheme": "litecoin",
+   "name": "Litecoin"
+  },
+  {
+   "scheme": "bitcoincash",
+   "name": "Bitcoin Cash"
+  },
+  {
+   "scheme": "dogecoin",
+   "name": "Dogecoin"
+  },
+  {
+   "scheme": "monero",
+   "name": "Monero"
+  },
+  {
+   "scheme": "lightning",
+   "name": "Lightning"
+  },
+  {
+   "scheme": "dash",
+   "name": "Dash"
+  },
+  {
+   "scheme": "zcash",
+   "name": "Zcash"
+  },
+  {
+   "scheme": "nano",
+   "name": "Nano"
+  },
+  {
+   "scheme": "solana",
+   "name": "Solana"
+  }
+ ]
+}
