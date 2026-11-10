@@ -112,7 +112,7 @@ import Testing
     @Test func phone() {
         for n in ["+639171234567", "+63 (917) 123-4567", "*123#", "0917;ext=5", "1,2", "٣٤٥", "a%b", "x?y"] {
             let text = PayloadEncoder.encode(.phone(n))
-            #expect(text.hasPrefix("tel:"))
+            #expect(text.hasPrefix("TEL:"))
             #expect(PhoneParser.parse(text) == PhoneInfo(number: n), "\(text)")
         }
     }

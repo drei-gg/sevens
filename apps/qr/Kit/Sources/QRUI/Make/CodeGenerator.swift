@@ -23,10 +23,17 @@ public enum CodeGenerator {
         }
         guard data.count <= maxInputBytes else { throw MakeError.tooLong }
 
-        guard let image = makeImage(data: data, symbology: symbology, correction: correction) else {
-            throw MakeError.tooLong
+        var matrix: BitMatrix
+        if symbology == .qr, correction == .auto {
+            guard let best = autoQR(data: data) else { throw MakeError.tooLong }
+            matrix = best.matrix
+        } else {
+            guard let image = makeImage(data: data, symbology: symbology, correction: correction) else {
+                throw MakeError.tooLong
+            }
+            guard let raw = bitmap(of: image), let trimmedMatrix = trimmed(raw) else { throw MakeError.generatorFailed }
+            matrix = trimmedMatrix
         }
-        guard let raw = bitmap(of: image), var matrix = trimmed(raw) else { throw MakeError.generatorFailed }
         switch symbology {
         case .code128: matrix = firstRow(of: matrix)
         case .pdf417: matrix = collapsedRows(matrix, rowHeight: pdf417RowHeight)
@@ -34,6 +41,33 @@ public enum CodeGenerator {
         }
         let quiet = QuietZone.modules(for: symbology.symbology)
         return QuietZone.add(to: matrix, horizontal: quiet.horizontal, vertical: quiet.vertical)
+    }
+
+    /// SPEC §8: Auto finds the smallest version at level M, then the highest level (Q, then H) that
+    /// still fits that same version, so the code never grows because of it. The matrix has no
+    /// quiet zone. nil when the generator gives nothing.
+    static func autoQR(data: Data) -> (level: Correction, matrix: BitMatrix)? {
+        func qr(_ level: Correction) -> BitMatrix? {
+            makeImage(data: data, symbology: .qr, correction: level).flatMap(bitmap(of:)).flatMap(trimmed)
+        }
+        guard let base = qr(.M) else { return nil }
+        for level in [Correction.H, .Q] {
+            if let m = qr(level), m.width == base.width { return (level, m) }
+        }
+        return (.M, base)
+    }
+
+    /// The correction level Auto settles on for this text (`.M`, `.Q` or `.H`); nil if it can't be made.
+    static func autoLevel(for text: String) -> Correction? {
+        autoQR(data: Data(text.utf8))?.level
+    }
+
+    /// QR version (1...40) of a generated matrix, which includes our quiet zone; nil if the size
+    /// isn't a QR size.
+    static func qrVersion(of matrix: BitMatrix) -> Int? {
+        let modules = matrix.width - 2 * QuietZone.modules(for: .qr).horizontal
+        guard matrix.width == matrix.height, modules >= 21, (modules - 17) % 4 == 0 else { return nil }
+        return (modules - 17) / 4
     }
 
     private static func makeImage(data: Data, symbology: MakeSymbology, correction: Correction) -> CIImage? {
