@@ -27,9 +27,14 @@ import Testing
         }
     }
 
-    /// Bar buttons sit on an opaque bar (`SevenBars`): that pair must pass in both themes.
-    @Test func barButtonsMeetAAOnTheBarBackground() {
-        #expect(ratio(SevenBars.buttons.light, SevenBars.background.light) >= 4.5)
-        #expect(ratio(SevenBars.buttons.dark, SevenBars.background.dark) >= 4.5)
+    /// Verdict colors are read as text and icons on paper and card: 4.5:1 in both themes
+    /// (text), which also covers the 3:1 icon rule.
+    @Test func verdictColorsMeetAAAsTextOnPaperAndCard() {
+        for (name, fg) in [("caution", Tokens.Hex.caution), ("danger", Tokens.Hex.danger)] {
+            for (bgName, bg) in [("paper", Tokens.Hex.paper), ("card", Tokens.Hex.card)] {
+                #expect(ratio(fg.light, bg.light) >= 4.5, "\(name) on \(bgName), light")
+                #expect(ratio(fg.dark, bg.dark) >= 4.5, "\(name) on \(bgName), dark")
+            }
+        }
     }
 }

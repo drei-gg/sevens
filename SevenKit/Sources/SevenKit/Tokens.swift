@@ -11,6 +11,10 @@ public enum Tokens {
         public static let ink = (light: 0x161513, dark: 0xEEE9DF)
         public static let muted = (light: 0x55504A, dark: 0xA8A196)
         public static let red = (light: 0xD11F16, dark: 0xFF5D50)
+        /// Verdict colors ("Be careful", "Likely scam"). At least 4.5:1 as text on paper and card
+        /// in both themes (TokensContrastTests); system orange and red are not.
+        public static let caution = (light: 0x8A4A00, dark: 0xF2A33A)
+        public static let danger = (light: 0xB0201A, dark: 0xFF7468)
     }
 
     public static let paper = Color(light: Hex.paper.light, dark: Hex.paper.dark)
@@ -19,6 +23,10 @@ public enum Tokens {
     public static let muted = Color(light: Hex.muted.light, dark: Hex.muted.dark)
     /// Brand red. Never used for verdicts.
     public static let red = Color(light: Hex.red.light, dark: Hex.red.dark)
+    /// "Be careful": dark amber in light mode, light amber in dark mode.
+    public static let caution = Color(light: Hex.caution.light, dark: Hex.caution.dark)
+    /// "Likely scam" and failed checks: deep red in light mode, light red in dark mode.
+    public static let danger = Color(light: Hex.danger.light, dark: Hex.danger.dark)
 
     /// Layout constants.
     public enum Space {
@@ -33,16 +41,16 @@ public enum Tokens {
         public static let button: CGFloat = 12
     }
 
-    /// How a verdict looks. Normal = ink + `checkmark.circle`; careful = system orange +
-    /// `exclamationmark.triangle`; likely scam = system red + `xmark.octagon`.
+    /// How a verdict looks. Normal = ink + `checkmark.circle`; careful = `caution` +
+    /// `exclamationmark.triangle`; likely scam = `danger` + `xmark.octagon`. Never color alone.
     public enum VerdictStyle: Sendable, CaseIterable {
         case normal, careful, likelyScam
 
         public var color: Color {
             switch self {
             case .normal: return Tokens.ink
-            case .careful: return .orange
-            case .likelyScam: return .red
+            case .careful: return Tokens.caution
+            case .likelyScam: return Tokens.danger
             }
         }
 
