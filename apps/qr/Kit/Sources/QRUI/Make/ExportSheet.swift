@@ -98,6 +98,7 @@ struct ExportSheet: View {
             Text(verbatim: String(localized: "make.export.pngFooter",
                                   defaultValue: "The image is a whole number of pixels per square, so it can be a little smaller than the size you pick.",
                                   bundle: .module))
+                .foregroundStyle(Tokens.muted)
         }
     }
 
@@ -167,6 +168,7 @@ struct ExportSheet: View {
             .accessibilityIdentifier("make.export.copy")
         } footer: {
             Text(verbatim: fileName)
+                .foregroundStyle(Tokens.muted)
         }
     }
 

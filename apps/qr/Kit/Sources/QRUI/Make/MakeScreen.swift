@@ -9,6 +9,7 @@ public struct MakeScreen: View {
 
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var model: MakeScreenModel
     @State private var showExport = false
 
@@ -29,6 +30,7 @@ public struct MakeScreen: View {
                 }
             } header: {
                 Text(verbatim: model.kind.title)
+                    .foregroundStyle(Tokens.muted)
             }
             previewSection
             codeTypeSection
@@ -63,7 +65,7 @@ public struct MakeScreen: View {
                             foreground: model.foregroundRGB, background: model.backgroundRGB) {
                     await model.recordUse(in: app)
                 }
-                .presentationDetents([.medium, .large])
+                .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.medium, .large])
             }
         }
     }
@@ -120,6 +122,7 @@ public struct MakeScreen: View {
             .frame(maxWidth: .infinity)
         } header: {
             Text(verbatim: String(localized: "make.preview.header", defaultValue: "Your code", bundle: .module))
+                .foregroundStyle(Tokens.muted)
         }
     }
 
@@ -146,11 +149,13 @@ public struct MakeScreen: View {
             }
         } header: {
             Text(verbatim: String(localized: "make.codeType.header", defaultValue: "Code options", bundle: .module))
+                .foregroundStyle(Tokens.muted)
         } footer: {
             if model.symbology.supportsCorrection {
                 Text(verbatim: String(localized: "make.correction.footer",
                                       defaultValue: "Auto uses medium. Higher levels survive more damage but make a denser code.",
                                       bundle: .module))
+                    .foregroundStyle(Tokens.muted)
             }
         }
     }
