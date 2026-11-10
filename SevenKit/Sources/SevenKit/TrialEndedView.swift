@@ -64,7 +64,7 @@ private struct TrialEndedPresenter: ViewModifier {
         view
             .task(id: store.hasStarted) {
                 // Only at launch: once the store has loaded, not when a trial lapses mid-use.
-                if store.hasStarted && store.shouldPresentTrialEnded { show = true }
+                if store.hasStarted && store.launchSheet == .trialEnded { show = true }
             }
             .sheet(isPresented: $show) {
                 NavigationStack { TrialEndedView(content: content) }
