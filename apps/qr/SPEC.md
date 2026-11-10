@@ -30,7 +30,7 @@ The iPhone's camera already scans QR codes, and the app says so on its first scr
 
 ## Platform
 
-iOS 17+, iPhone, SwiftUI, Swift 6, with no dependencies beyond Apple's frameworks. It uses the shared `SevenKit` package for the trial, unlock, About screen and design tokens. Android comes later, from this spec.
+iOS 17+, iPhone, SwiftUI, Swift 6. It uses no third-party code libraries today; it may use open-source libraries that are pinned to an exact version, read before they ship and credited in `THIRD-PARTY.md` and the app's notices, and never one that collects data. It uses the shared `SevenKit` package for the trial, unlock, About screen and design tokens. Android comes later, from this spec.
 
 ---
 
