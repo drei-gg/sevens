@@ -25,6 +25,9 @@ import SevenKitCore
 //   canSaveHistory     keepHistory AND paid features available (trial or unlocked)
 //   historyIsLocked    paid features NOT available: nothing new is saved, everything else works
 //   record(_:kind:) / record(code:kind:)   save a scan or a made code; no-op unless canSaveHistory
+//   knownAddresses     the addresses the person said they know (SPEC §4.4): `knownStore` file beside
+//              History, mirrored here; `knowAddress(_:)`, `forgetAddress(_:)`, `forgetAllAddresses()`.
+//              The default analysis uses them; History's JSON export carries them.
 //   searchHistory(_:), setNote(_:for:), deleteHistory(ids:), clearHistory(),
 //   exportHistoryJSON(), exportHistoryCSV()    never gated (SPEC §10, §13)
 //
@@ -46,6 +49,10 @@ public final class AppModel {
     public let settings: AppSettings
     @ObservationIgnored public let history: HistoryStore
     @ObservationIgnored public let analyze: Analyze
+    @ObservationIgnored public let knownStore: KnownAddressStore
+    /// The addresses the person said they know; a mirror of `knownStore`.
+    public private(set) var knownAddresses = KnownAddresses()
+    @ObservationIgnored private let analyzeKnown: @Sendable (ScannedCode, KnownAddresses) -> Analysis
 
     /// A code injected at launch (`-qr.inject`); consumed by `takePendingCode()`.
     public var pendingCode: ScannedCode?
@@ -63,12 +70,19 @@ public final class AppModel {
         history: HistoryStore,
         settings: AppSettings = AppSettings(),
         analyze: Analyze? = nil,
+        known: KnownAddressStore = KnownAddressStore(directory: nil),
         clock: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.store = store
         self.history = history
         self.settings = settings
         self.analyze = analyze ?? AppModel.defaultAnalyze
+        self.knownStore = known
+        if let analyze {
+            analyzeKnown = { code, _ in analyze(code) }
+        } else {
+            analyzeKnown = { code, known in Analyzer(data: BundledData.shared, known: known).analyze(code) }
+        }
         self.clock = clock
     }
 
@@ -77,7 +91,8 @@ public final class AppModel {
     public convenience init(bundle: Bundle = .main) {
         let config = SevenConfig(bundle: bundle)
             ?? SevenConfig(trialProductID: "qr.trial7", unlockProductID: "qr.unlock")
-        self.init(store: Store(config: config), history: HistoryStore(directory: HistoryStore.defaultDirectory()))
+        self.init(store: Store(config: config), history: HistoryStore(directory: HistoryStore.defaultDirectory()),
+                  known: KnownAddressStore(directory: KnownAddressStore.defaultDirectory()))
     }
 
     public static let defaultAnalyze: Analyze = { code in
@@ -92,6 +107,7 @@ public final class AppModel {
         guard !started else { return }
         started = true
         Task.detached(priority: .utility) { _ = BundledData.shared }
+        knownAddresses = await knownStore.addresses()
         await observeHistory()
         await store.start()
     }
@@ -105,10 +121,40 @@ public final class AppModel {
     // MARK: Analysis
 
     /// Runs `analyze` off the main actor.
+    /// With the default analyzer this applies the addresses the person knows (SPEC §4.4).
     public func analysis(of code: ScannedCode) async -> Analysis {
-        let analyze = analyze
-        return await Task.detached(priority: .userInitiated) { analyze(code) }.value
+        let analyze = analyzeKnown
+        let known = knownAddresses
+        return await Task.detached(priority: .userInitiated) { analyze(code, known) }.value
     }
+
+    // MARK: Addresses you know (never gated: free forever)
+
+    /// "I know this address": stores the registrable domain. False when nothing was stored.
+    @discardableResult
+    public func knowAddress(_ registrableDomain: String) async -> Bool {
+        guard let next = await knownStore.add(registrableDomain, at: clock()) else { return false }
+        knownAddresses = next
+        return true
+    }
+
+    @discardableResult
+    public func forgetAddress(_ registrableDomain: String) async -> Bool {
+        guard let next = await knownStore.remove(registrableDomain) else { return false }
+        knownAddresses = next
+        return true
+    }
+
+    /// The caller shows the confirmation.
+    @discardableResult
+    public func forgetAllAddresses() async -> Bool {
+        guard let next = await knownStore.removeAll() else { return false }
+        knownAddresses = next
+        return true
+    }
+
+    /// Sets the mirror without waiting for the actor (previews).
+    func seedKnownMirror(_ known: KnownAddresses) { knownAddresses = known }
 
     public func takePendingCode() -> ScannedCode? {
         defer { pendingCode = nil }
@@ -160,7 +206,7 @@ public final class AppModel {
     /// The caller shows the confirmation. Does nothing while the saved file is unreadable.
     public func clearHistory() async { await history.clear() }
 
-    public func exportHistoryJSON() async throws -> Data { try await history.exportJSON() }
+    public func exportHistoryJSON() async throws -> Data { try await history.exportJSON(known: await knownStore.addresses()) }
     public func exportHistoryCSV() async -> String { await history.exportCSV() }
 
     /// Sets the mirror without waiting for the actor (previews).

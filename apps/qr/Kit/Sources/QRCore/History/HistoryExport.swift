@@ -1,8 +1,26 @@
 import Foundation
 
 public enum HistoryExport {
-    /// The file's own shape.
-    public static func json(_ items: [HistoryItem]) throws -> Data { try HistoryFile.encode(items) }
+    /// The file's own shape. With `known`, the same envelope plus a top-level `knownAddresses`
+    /// array (SPEC §10); readers that only know `schema` and `items` ignore it, so older exports
+    /// and importers stay compatible. CSV doesn't carry the known addresses.
+    public static func json(_ items: [HistoryItem], known: KnownAddresses? = nil) throws -> Data {
+        guard let known else { return try HistoryFile.encode(items) }
+        struct Envelope: Encodable {
+            var schema: Int
+            var items: [HistoryItem]
+            var knownAddresses: [KnownAddresses.Entry]
+        }
+        return try KnownAddressesFile.encoder().encode(
+            Envelope(schema: HistoryFile.schema, items: items, knownAddresses: known.entries))
+    }
+
+    /// The addresses an export carries; empty for an export without them.
+    public static func knownAddresses(in data: Data) -> KnownAddresses {
+        struct Body: Decodable { var knownAddresses: [KnownAddressesFile.LossyEntry]? }
+        guard let body = try? KnownAddressesFile.decoder().decode(Body.self, from: data) else { return KnownAddresses() }
+        return KnownAddressesFile.from(entries: (body.knownAddresses ?? []).compactMap(\.entry))
+    }
 
     /// RFC 4180 (CRLF); a cell starting with `= + - @` gets a leading `'`.
     public static func csv(_ items: [HistoryItem]) -> String {
