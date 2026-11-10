@@ -1,0 +1,66 @@
+[
+ {
+  "id": "known-001",
+  "spec": "4.4",
+  "note": "Needs brandOtherEnding from the brand-ending check (paypal.me is a listed secondary domain once the data lands, so this uses an ending that stays brandOtherEnding).",
+  "input": "https://paypal.ph/pay",
+  "known": ["paypal.ph"],
+  "expect": { "type": "link", "level": 0, "signals": [], "info": ["knownByYou"] }
+ },
+ {
+  "id": "known-002",
+  "spec": "4.4",
+  "note": "A shortener the person knows.",
+  "input": "https://bit.ly/3abcXYZ",
+  "known": ["bit.ly"],
+  "expect": { "type": "link", "level": 0, "signals": [], "info": ["knownByYou"] }
+ },
+ {
+  "id": "known-003",
+  "spec": "4.4",
+  "note": "An abused ending the person knows.",
+  "input": "https://my-club-night.win/tickets",
+  "known": ["my-club-night.win"],
+  "expect": { "type": "link", "level": 0, "signals": [], "info": ["knownByYou"] }
+ },
+ {
+  "id": "known-004",
+  "spec": "4.4",
+  "note": "A brand's name on another ending (strong brandInDomain) the person knows.",
+  "input": "https://gcash.help/",
+  "known": ["gcash.help"],
+  "expect": { "type": "link", "level": 0, "signals": [], "info": ["knownByYou"] }
+ },
+ {
+  "id": "known-005",
+  "spec": "4.4",
+  "note": "user@host is not list-based: a known domain stays Likely scam.",
+  "input": "https://paypal.com@bit.ly/x",
+  "known": ["bit.ly"],
+  "expect": { "type": "link", "level": 2, "signals": ["userinfoTrick"], "info": ["knownByYou"] }
+ },
+ {
+  "id": "known-006",
+  "spec": "4.4",
+  "note": "A known domain over plain http is still Be careful; knownByYou is shown.",
+  "input": "http://my-club-night.win/tickets",
+  "known": ["my-club-night.win"],
+  "expect": { "type": "link", "level": 1, "signals": ["plainHTTP"], "info": ["knownByYou"] }
+ },
+ {
+  "id": "known-007",
+  "spec": "4.4",
+  "note": "An unrelated domain is unaffected by what the person knows.",
+  "input": "https://my-club-night.win/tickets",
+  "known": ["bit.ly"],
+  "expect": { "type": "link", "level": 1, "signals": ["riskyTLD"], "info": [] }
+ },
+ {
+  "id": "known-008",
+  "spec": "4.4",
+  "note": "Only the registrable domain counts; a subdomain of a known domain is covered.",
+  "input": "https://tickets.my-club-night.win/a",
+  "known": ["my-club-night.win"],
+  "expect": { "type": "link", "level": 0, "signals": [], "info": ["knownByYou"] }
+ }
+]

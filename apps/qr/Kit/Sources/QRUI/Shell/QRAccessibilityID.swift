@@ -14,6 +14,13 @@ public enum QRAccessibilityID {
     // Result sheet (WP 3.2): the verdict header element; its label starts with the verdict word.
     public static let resultVerdict = "result.verdict"
     public static let resultDone = "result.done"
+    // Addresses you know (SPEC §4.4)
+    public static let knownOffer = "result.known.offer"
+    public static let knownKeep = "result.known.keep"
+    public static let knownKnow = "result.known.know"
+    public static let knownRow = "settings.known.row"
+    public static let knownList = "settings.known.list"
+    public static let knownForgetAll = "settings.known.forgetAll"
     public static let resultPeek = "result.peek"
     public static let resultOpen = "result.open"
     public static let peekVerdict = "peek.verdict"

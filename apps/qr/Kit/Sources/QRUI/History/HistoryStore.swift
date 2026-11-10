@@ -122,9 +122,10 @@ public actor HistoryStore {
         }
     }
 
-    public func exportJSON() throws -> Data {
+    /// With `known`, the export also carries the addresses the person knows (SPEC §10).
+    public func exportJSON(known: KnownAddresses? = nil) throws -> Data {
         loadIfNeeded()
-        return try HistoryExport.json(list)
+        return try HistoryExport.json(list, known: known)
     }
 
     public func exportCSV() -> String {
