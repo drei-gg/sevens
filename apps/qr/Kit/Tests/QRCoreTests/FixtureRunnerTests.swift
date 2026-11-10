@@ -41,15 +41,16 @@ import Testing
     }
 
     /// Gate G4: every SignalID appears in at least three fixtures (top-level cases' `signals`
-    /// and `info`, plus Peek pairs' `expect.signals` and `expect.info`).
+    /// and `info`, plus pairs in `peek/` and `peekreport/`: `expect.signals` and `expect.info`).
     @Test(.enabled(if: Analyzer.fixturesEnabled, "enabled by WP 2.1"))
     func everySignalHasThreeFixtures() throws {
         var counts: [String: Int] = [:]
         for c in try Fixtures.all() {
             for s in Set(c.expect.signals + (c.expect.info ?? [])) { counts[s, default: 0] += 1 }
         }
-        if let dir = Fixtures.directory?.appendingPathComponent("peek"),
-           let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path) {
+        for sub in ["peek", "peekreport"] {
+           guard let dir = Fixtures.directory?.appendingPathComponent(sub),
+                 let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else { continue }
             struct Pair: Decodable { struct E: Decodable { var signals: [String]?; var info: [String]? }; var expect: E }
             for n in names where n.hasSuffix(".json") {
                 guard let p = try? JSONDecoder().decode(Pair.self, from: Data(contentsOf: dir.appendingPathComponent(n))) else { continue }
