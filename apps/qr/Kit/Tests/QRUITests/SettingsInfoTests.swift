@@ -12,13 +12,15 @@ import Testing
         #expect(text.contains("QR Code is a registered trademark of DENSO WAVE INCORPORATED."))
     }
 
-    @Test func networkContactListsTheFourRowsFromTheSpec() {
+    @Test func networkContactListsTheFiveRowsFromTheSpec() {
         let entries = NetworkContactContent.entries()
-        #expect(entries.count == 4)
-        #expect(entries.map(\.when) == ["You tap Peek", "You tap Peek", "You tap Open", "You buy or restore"])
+        #expect(entries.count == 5)
+        #expect(entries.map(\.when) == ["You tap Peek", "You tap Peek", "You tap Open", "You buy or restore", "You tap Check for newer lists"])
         #expect(entries[0].sent == "A normal page request with no cookies")
         #expect(entries[1].sent == "The domain name")
         #expect(entries[3].who == "Apple, through StoreKit")
+        #expect(entries[4].who == "GitHub, where our public code lives")
+        #expect(entries[4].sent == "A request for one file. Nothing about you or what you scanned.")
         #expect(NetworkContactContent.closing == "Anything not listed here doesn't happen.")
         #expect(NetworkContactContent.privacyLabel == "App Store privacy label: Data Not Collected.")
     }

@@ -16,6 +16,15 @@ enum SettingsInfo {
         return url
     }
 
+    /// The repository and public keys that newer lists come from and are checked against
+    /// (`SevensRepositoryURL`, `SevensListsKeyCurrent`, `SevensListsKeyNext`). Nil when the build has
+    /// no usable key, which hides the Check for newer lists button.
+    static func listsConfiguration(bundle: Bundle = .main) -> ListsConfiguration? {
+        ListsConfiguration(repositoryURL: value("SevensRepositoryURL", bundle: bundle),
+                           keys: [value("SevensListsKeyCurrent", bundle: bundle),
+                                  value("SevensListsKeyNext", bundle: bundle)])
+    }
+
     /// The text of the bundled `CHANGELOG.md`; nil when it isn't bundled (the row hides).
     static func changelog(bundle: Bundle = .main) -> String? {
         guard let url = bundle.url(forResource: "CHANGELOG", withExtension: "md"),

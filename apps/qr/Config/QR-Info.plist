@@ -22,6 +22,10 @@
 	<key>SevensWiFiJoinAvailable</key>
 	<string>$(WIFI_JOIN_AVAILABLE)</string>
 	<key>SevensRepositoryURL</key>
-	<string>https://github.com/drei-gg/sevens</string>
+	<string>$(SEVENS_REPOSITORY_URL)</string>
+	<key>SevensListsKeyCurrent</key>
+	<string>$(SEVENS_LISTS_KEY_CURRENT)</string>
+	<key>SevensListsKeyNext</key>
+	<string>$(SEVENS_LISTS_KEY_NEXT)</string>
 </dict>
 </plist>
