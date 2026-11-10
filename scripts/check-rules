@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Gates G6 (network, imports, dependencies) and G7 ("safe", hard-coded prices).
+# usage: scripts/check-rules        exits non-zero on any violation
+set -uo pipefail
+root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+cd "$root"
+fail=0
+bad() { echo "FAIL $1"; shift; printf '  %s\n' "$@"; fail=1; }
+
+swift_files() { git ls-files --cached --others --exclude-standard -- '*.swift' | grep -v '/\.build/' ; }
+
+# G6a: network APIs only in PeekClient (and its tests) and SevenKit's StoreKit layer.
+hits=$(swift_files | grep -vE '^apps/qr/Kit/Sources/QRUI/Peek/PeekClient\.swift$|^apps/qr/Kit/Tests/QRUITests/Peek[^/]*\.swift$|^SevenKit/Sources/SevenKit/' \
+  | xargs -r grep -nE '\b(URLSession|NWConnection|URLRequest|FoundationNetworking|CFNetwork|NSURLConnection)\b' || true)
+[ -z "$hits" ] || bad "G6 network API outside PeekClient/SevenKit:" "$hits"
+# SevenKit may use StoreKit, but not raw networking either.
+hits=$(swift_files | grep -E '^SevenKit/Sources/' | xargs -r grep -nE '\b(URLSession|NWConnection|URLRequest)\b' || true)
+[ -z "$hits" ] || bad "G6 raw network API in SevenKit:" "$hits"
+
+# G6b: imports are Apple frameworks or our own modules only.
+allowed='Foundation|SwiftUI|UIKit|Combine|Observation|os|Dispatch|Darwin|Glibc|Musl|Synchronization|VisionKit|Vision|CoreImage|CoreImage\.CIFilterBuiltins|CoreGraphics|CoreText|ImageIO|UniformTypeIdentifiers|AVFoundation|AVKit|PhotosUI|Photos|SafariServices|NetworkExtension|Contacts|ContactsUI|EventKit|EventKitUI|MessageUI|StoreKit|StoreKitTest|Security|PDFKit|QuickLook|QuickLookThumbnailing|LinkPresentation|CoreTransferable|Social|MobileCoreServices|Testing|XCTest|QRCore|QRUI|SevenKit|SevenKitCore'
+hits=$(swift_files | xargs -r grep -nE '^\s*(@testable\s+|@preconcurrency\s+|@_spi\([A-Za-z]+\)\s+)*import\s+(class |struct |enum |func |protocol )?[A-Za-z_.]+' \
+  | grep -vE "import\s+(class |struct |enum |func |protocol )?($allowed)(\.[A-Za-z_]+)?\s*(//.*)?$" || true)
+[ -z "$hits" ] || bad "G6 non-Apple import:" "$hits"
+# Pure targets import Foundation (and their own siblings) only.
+hits=$(swift_files | grep -E '^(apps/qr/Kit/Sources/QRCore|SevenKit/Sources/SevenKitCore)/' \
+  | xargs -r grep -nE '^\s*(@[a-zA-Z]+\s+)*import\s' | grep -vE 'import\s+(Foundation|QRCore|SevenKitCore)\s*$' || true)
+[ -z "$hits" ] || bad "G6 pure target imports something other than Foundation:" "$hits"
+
+# G6c: no package dependencies other than local paths.
+hits=$(git ls-files --cached --others --exclude-standard -- '*Package.swift' | xargs -r grep -nE '\.package\(\s*(name:[^,]*,\s*)?url:' || true)
+[ -z "$hits" ] || bad "G6 remote package dependency:" "$hits"
+hits=$(git ls-files --cached --others --exclude-standard -- '*.pbxproj' | xargs -r grep -nE 'XCRemoteSwiftPackageReference' || true)
+[ -z "$hits" ] || bad "G6 remote package in the Xcode project:" "$hits"
+
+# G7: user-facing text. String catalogs, plists and string literals in UI code.
+ui_swift=$(swift_files | grep -E '^(apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
+ui_text=$(git ls-files --cached --others --exclude-standard -- '*.xcstrings' '*.strings' 'apps/qr/*Info.plist' 'apps/qr/**/Info.plist' 'apps/qr/Config/*.plist' || true)
+hits=$( { [ -z "$ui_swift" ] || echo "$ui_swift" | xargs grep -nP '"(?:[^"\\]|\\.)*\bsafe(ly|ty|r|st)?\b(?:[^"\\]|\\.)*"' -i; \
+          [ -z "$ui_text" ] || echo "$ui_text" | xargs grep -nPi '\bsafe(ly|ty|r|st)?\b'; } 2>/dev/null || true)
+[ -z "$hits" ] || bad "G7 the word \"safe\" in user-facing text:" "$hits"
+# Hard-coded prices: $7, $7.00, "seven dollars", 7 USD… The $7&D mark is a name, not a price.
+hits=$( { [ -z "$ui_swift" ] || echo "$ui_swift" | xargs grep -nP '"(?:[^"\\]|\\.)*(\$\s?\d+(?!&)|\d+[.,]\d\d\s?(USD|EUR|€)|seven dollars)(?:[^"\\]|\\.)*"' -i; \
+          [ -z "$ui_text" ] || echo "$ui_text" | xargs grep -nPi '\$\s?\d+(?!&)|seven dollars'; } 2>/dev/null || true)
+[ -z "$hits" ] || bad "G7 hard-coded price in user-facing text:" "$hits"
+
+[ $fail = 0 ] && echo "check-rules: G6 and G7 pass"
+exit $fail

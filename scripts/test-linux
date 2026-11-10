@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Run a Swift package's tests on Linux in the official Swift container.
+# usage: scripts/test-linux [SevenKit|apps/qr/Kit] [--filter X] [extra swift test args]
+set -euo pipefail
+root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+pkg=${1:-apps/qr/Kit}
+[ $# -gt 0 ] && shift
+tag=$(cat "$root/scripts/swift-version")
+[ -f "$root/$pkg/Package.swift" ] || { echo "no Package.swift in $pkg" >&2; exit 2; }
+# :z (shared label) so several containers may mount the same checkout safely.
+# Each worktree has its own .build, so parallel agents never share build state.
+exec podman run --rm --userns=keep-id \
+  -v "$root":/w:z -w "/w/$pkg" \
+  "docker.io/library/swift:$tag" \
+  swift test --scratch-path .build/linux "$@"

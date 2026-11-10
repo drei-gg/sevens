@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Run an Apple build in the macOS VM (ssh tahoe), one at a time.
+# usage: scripts/vm <version|build|test|test-kit|ui|device|sh> [args...]
+#   version        xcodebuild -version (lock check)
+#   build          app, Debug, simulator
+#   test           all unit tests on the simulator (no UI smoke test)
+#   test-kit       QRKit and SevenKit package tests only (simulator)
+#   ui [--device]  the UI smoke test (simulator, or the iPhone)
+#   device         build, sign and install on the iPhone (runs in the guest's GUI session)
+#   sh CMD...      run a command in the synced checkout
+# env: VM_SLOT (default: worktree folder name, "main" for the main checkout)
+#      VM_VERBOSE=1 streams the whole log; otherwise errors, warnings and the tail.
+set -euo pipefail
+root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+cmd=${1:-}; [ $# -gt 0 ] && shift
+base=$(basename "$root"); [ "$base" = sevens ] && base=main
+slot=${VM_SLOT:-$base}
+sim=${VM_SIM_UDID:-5E282A53-AFAA-4742-9F93-12AC2D4EBA79}   # iPhone 17, iOS 26.5, mediaanalysisd disabled
+dest="platform=iOS Simulator,id=$sim"
+remote="src/sevens-$slot"
+dd="\$HOME/src/dd-$slot"
+logdir="$HOME/.cache/sevens/logs"; mkdir -p "$logdir"
+log="$logdir/$slot-$cmd.log"
+
+exec 9>"$HOME/.cache/sevens/vm.lock"
+if ! flock -n 9; then echo "vm: waiting for the lock (another build is running)…" >&2; flock 9; fi
+
+ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe true || { echo "vm: tahoe is not reachable" >&2; exit 3; }
+
+sync_tree() {
+  ssh tahoe "mkdir -p $remote"
+  rsync -a --delete --exclude .git --exclude .build --exclude DerivedData \
+    --exclude 'xcuserdata/' "$root/" "tahoe:$remote/"
+}
+
+strictw="SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES"
+xb="xcodebuild -project apps/qr/QR.xcodeproj -scheme QR -derivedDataPath $dd $strictw"
+case "$cmd" in
+  version) remote_cmd="xcodebuild -version";;
+  build)   remote_cmd="$xb -configuration Debug -destination '$dest' build";;
+  test)    remote_cmd="$xb -configuration Debug -destination '$dest' -skip-testing:QRSmokeUITests test";;
+  test-kit) remote_cmd="set -o pipefail; (cd SevenKit && xcodebuild -scheme SevenKit-Package -derivedDataPath $dd-sevenkit $strictw -destination '$dest' test) && (cd apps/qr/Kit && xcodebuild -scheme QRKit-Package -derivedDataPath $dd-qrkit $strictw -destination '$dest' test)";;
+  ui)
+    if [ "${1:-}" = --device ]; then
+      remote_cmd="$xb -configuration Debug -destination 'platform=iOS,id=\$(cat ~/.sevens-device-udid)' -allowProvisioningUpdates -only-testing:QRSmokeUITests test"
+    else
+      remote_cmd="$xb -configuration Debug -destination '$dest' -only-testing:QRSmokeUITests test"
+    fi;;
+  device)
+    # Signing needs the GUI session's keychain (runbook: signing over SSH fails),
+    # so the build runs in Terminal.app and we follow its log.
+    remote_cmd="bash scripts/guest-device.sh '$dd'";;
+  sh) remote_cmd="$*";;
+  *) sed -n '2,13p' "$0"; exit 2;;
+esac
+
+if [ "$cmd" = version ]; then remote="."; else sync_tree; fi
+echo "vm[$slot] $cmd → $log" >&2
+set +e
+ssh tahoe "cd $remote && $remote_cmd" >"$log" 2>&1 &
+pid=$!
+if [ "${VM_VERBOSE:-0}" = 1 ]; then tail -n +1 -f --pid=$pid "$log"; fi
+wait $pid; status=$?
+set -e
+if [ "${VM_VERBOSE:-0}" != 1 ]; then
+  grep -E '(error|warning): |\*\* [A-Z -]+ (SUCCEEDED|FAILED) \*\*|^Test (Suite|Case).*(failed|passed)|✘|Testing failed|Executed [0-9]+ test|Test run with [0-9]+ tests' "$log" \
+    | grep -vE 'appintentsmetadataprocessor' | sort -u | head -n 150 || true
+  echo "----- tail -----"; tail -n 25 "$log"
+fi
+w=$( (grep -E '(^|: )warning: ' "$log" || true) | (grep -vE 'appintentsmetadataprocessor' || true) | sort -u | wc -l)
+echo "vm[$slot] $cmd: exit $status, warnings $w (full log: $log)"
+exit $status
