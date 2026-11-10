@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-brand-ambiguous-with-bait",
+ "original": "https://members.example.com/",
+ "hops": [
+  {
+   "url": "https://members.example.com/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Apple ID login",
+  "signals": [
+   "secretFormBrandMismatch"
+  ],
+  "info": [],
+  "level": 2,
+  "finalHost": "members.example.com",
+  "hopLevels": [
+   0
+  ]
+ }
+}

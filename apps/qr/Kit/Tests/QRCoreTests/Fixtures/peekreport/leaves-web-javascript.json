@@ -1,0 +1,32 @@
+{
+ "id": "peekreport-leaves-web-javascript",
+ "original": "https://example.com/jump",
+ "hops": [
+  {
+   "url": "https://example.com/jump",
+   "status": 302
+  },
+  {
+   "url": "javascript:alert(1)",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "nonWebTarget",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "redirectLeavesWeb"
+  ],
+  "info": [],
+  "level": 2,
+  "finalHost": "example.com",
+  "hopLevels": [
+   0,
+   2
+  ]
+ },
+ "note": "a dangerous hop raises the level on its own"
+}

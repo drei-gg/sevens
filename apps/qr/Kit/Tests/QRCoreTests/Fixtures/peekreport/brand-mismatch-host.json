@@ -1,0 +1,27 @@
+{
+ "id": "peekreport-brand-mismatch-host",
+ "original": "https://microsoft-verify.example.org/",
+ "hops": [
+  {
+   "url": "https://microsoft-verify.example.org/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 12,
+ "expect": {
+  "title": "Sign in",
+  "signals": [
+   "secretFormBrandMismatch",
+   "domainVeryNew"
+  ],
+  "info": [],
+  "level": 2,
+  "finalHost": "microsoft-verify.example.org",
+  "hopLevels": [
+   2
+  ]
+ }
+}

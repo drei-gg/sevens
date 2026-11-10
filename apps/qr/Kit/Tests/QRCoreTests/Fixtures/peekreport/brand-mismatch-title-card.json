@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-brand-mismatch-title-card",
+ "original": "https://billing-help.example.net/",
+ "hops": [
+  {
+   "url": "https://billing-help.example.net/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Netflix - Update payment",
+  "signals": [
+   "secretFormBrandMismatch"
+  ],
+  "info": [],
+  "level": 2,
+  "finalHost": "billing-help.example.net",
+  "hopLevels": [
+   0
+  ]
+ }
+}

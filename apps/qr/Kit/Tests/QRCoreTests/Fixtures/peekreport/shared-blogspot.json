@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-shared-blogspot",
+ "original": "https://myblog.blogspot.com/2026/03/post.html",
+ "hops": [
+  {
+   "url": "https://myblog.blogspot.com/2026/03/post.html",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Harbour news",
+  "signals": [],
+  "info": [
+   "sharedHostingDomain"
+  ],
+  "level": 0,
+  "finalHost": "myblog.blogspot.com",
+  "hopLevels": [
+   0
+  ]
+ }
+}

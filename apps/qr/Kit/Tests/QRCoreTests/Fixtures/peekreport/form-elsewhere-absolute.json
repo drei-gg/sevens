@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-form-elsewhere-absolute",
+ "original": "https://prize.example.com/win",
+ "hops": [
+  {
+   "url": "https://prize.example.com/win",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Prize claim",
+  "signals": [
+   "formPostsElsewhere"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "prize.example.com",
+  "hopLevels": [
+   0
+  ]
+ }
+}

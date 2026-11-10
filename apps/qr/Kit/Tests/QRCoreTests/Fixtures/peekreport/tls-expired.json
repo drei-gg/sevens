@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-tls-expired",
+ "original": "https://expired.example.org/",
+ "hops": [
+  {
+   "url": "https://expired.example.org/",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "tlsFailure",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": null,
+ "expect": {
+  "title": null,
+  "signals": [
+   "tlsProblem"
+  ],
+  "info": [],
+  "level": 2,
+  "finalHost": null,
+  "hopLevels": [
+   0
+  ]
+ }
+}

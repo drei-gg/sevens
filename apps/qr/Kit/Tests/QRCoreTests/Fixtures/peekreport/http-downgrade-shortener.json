@@ -1,0 +1,31 @@
+{
+ "id": "peekreport-http-downgrade-shortener",
+ "original": "https://tinyurl.com/abc",
+ "hops": [
+  {
+   "url": "https://tinyurl.com/abc",
+   "status": 301
+  },
+  {
+   "url": "http://plain.example.org/x",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "httpTarget",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "redirectsToHTTP"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "tinyurl.com",
+  "hopLevels": [
+   1,
+   1
+  ]
+ }
+}

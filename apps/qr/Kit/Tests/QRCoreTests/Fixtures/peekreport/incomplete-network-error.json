@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-incomplete-network-error",
+ "original": "https://down.example.com/",
+ "hops": [
+  {
+   "url": "https://down.example.com/",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "networkError",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": null,
+ "expect": {
+  "title": null,
+  "signals": [],
+  "info": [
+   "peekIncomplete"
+  ],
+  "level": 0,
+  "finalHost": null,
+  "hopLevels": [
+   0
+  ]
+ }
+}

@@ -1,0 +1,76 @@
+{
+ "id": "peekreport-too-many-hosts",
+ "original": "https://hop0.example.org/",
+ "hops": [
+  {
+   "url": "https://hop0.example.org/",
+   "status": 302
+  },
+  {
+   "url": "https://hop1.example.net/",
+   "status": 302
+  },
+  {
+   "url": "https://hop2.example.org/",
+   "status": 302
+  },
+  {
+   "url": "https://hop3.example.net/",
+   "status": 302
+  },
+  {
+   "url": "https://hop4.example.org/",
+   "status": 302
+  },
+  {
+   "url": "https://hop5.example.net/",
+   "status": 302
+  },
+  {
+   "url": "https://hop6.example.org/",
+   "status": 302
+  },
+  {
+   "url": "https://hop7.example.net/",
+   "status": 302
+  },
+  {
+   "url": "https://hop8.example.org/",
+   "status": 302
+  },
+  {
+   "url": "https://hop9.example.net/",
+   "status": 302
+  },
+  {
+   "url": "https://hop10.example.org/",
+   "status": 302
+  }
+ ],
+ "stoppedBecause": "tooManyRedirects",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "tooManyRedirects"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "hop10.example.org",
+  "hopLevels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ }
+}

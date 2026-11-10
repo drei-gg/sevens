@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-download-apk-extension",
+ "original": "https://files.example.org/app.apk",
+ "hops": [
+  {
+   "url": "https://files.example.org/app.apk",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "application/vnd.android.package-archive",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "downloadsFile"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "files.example.org",
+  "hopLevels": [
+   0
+  ]
+ }
+}

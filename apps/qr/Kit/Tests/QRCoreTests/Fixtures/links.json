@@ -1,0 +1,1398 @@
+[
+ {
+  "id": "link-dangerous-js",
+  "spec": "4.2",
+  "input": "javascript:alert(document.cookie)",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "dangerousScheme"
+   ],
+   "fields": {
+    "scheme": "javascript",
+    "pathAndQuery": "alert(document.cookie)"
+   }
+  }
+ },
+ {
+  "id": "link-dangerous-data",
+  "spec": "4.2",
+  "input": "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "dangerousScheme"
+   ],
+   "fields": {
+    "scheme": "data"
+   }
+  }
+ },
+ {
+  "id": "link-dangerous-mixedcase",
+  "spec": "4.2",
+  "input": "JaVaScRiPt:alert(1)",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "dangerousScheme"
+   ],
+   "fields": {
+    "scheme": "javascript"
+   }
+  }
+ },
+ {
+  "id": "link-dangerous-itms",
+  "spec": "4.2",
+  "input": "itms-services://?action=download-manifest&url=https://cdn.example.org/app.plist",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "dangerousScheme"
+   ]
+  }
+ },
+ {
+  "id": "link-dangerous-file",
+  "spec": "4.2",
+  "input": "file:///etc/passwd",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "dangerousScheme"
+   ],
+   "fields": {
+    "scheme": "file",
+    "pathAndQuery": "///etc/passwd"
+   }
+  }
+ },
+ {
+  "id": "link-dangerous-vbscript-space",
+  "spec": "4.2",
+  "input": "  vbscript:msgbox(1)  ",
+  "symbology": "qr",
+  "note": "surrounding whitespace is trimmed",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "dangerousScheme"
+   ]
+  }
+ },
+ {
+  "id": "link-near-javascript-host",
+  "spec": "4.2",
+  "input": "https://javascript.com/learn",
+  "symbology": "qr",
+  "note": "near miss: javascript only as a host label",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-javascript-query",
+  "spec": "4.2",
+  "input": "https://example.com/redirect?to=javascript:alert(1)",
+  "symbology": "qr",
+  "note": "look-alike: scheme text inside a query is not a scheme",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-data-gov",
+  "spec": "4.2",
+  "input": "https://data.gov.uk/dataset",
+  "symbology": "qr",
+  "note": "look-alike: data as a subdomain",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-userinfo-bank",
+  "spec": "4.2",
+  "input": "https://bank.com@evil.site/login",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "userinfoTrick"
+   ],
+   "fields": {
+    "registrableDomain": "evil.site",
+    "userinfo": "bank.com"
+   }
+  }
+ },
+ {
+  "id": "link-userinfo-ip",
+  "spec": "4.2",
+  "input": "http://paypal.com:secure@198.51.100.7/",
+  "symbology": "qr",
+  "note": "userinfo trick on an IP: all three fire",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "userinfoTrick",
+    "ipHost",
+    "plainHTTP"
+   ],
+   "fields": {
+    "isIPAddress": "true"
+   }
+  }
+ },
+ {
+  "id": "link-userinfo-google",
+  "spec": "4.2",
+  "input": "https://www.google.com@example.org/account",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "userinfoTrick"
+   ]
+  }
+ },
+ {
+  "id": "link-userinfo-password",
+  "spec": "4.2",
+  "input": "https://user:pass@files.example.org/report.pdf",
+  "symbology": "qr",
+  "note": "credentials in the link are still the trick",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "userinfoTrick"
+   ]
+  }
+ },
+ {
+  "id": "link-near-at-in-path",
+  "spec": "4.2",
+  "input": "https://example.com/profile/@alice",
+  "symbology": "qr",
+  "note": "near miss: @ in the path",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-at-in-query",
+  "spec": "4.2",
+  "input": "https://example.com/?email=me@example.org",
+  "symbology": "qr",
+  "note": "look-alike: @ in the query",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-mixed-cyrillic-a",
+  "spec": "4.2",
+  "input": "https://exаmple.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "mixedScript"
+   ],
+   "fields": {
+    "hostASCII": "xn--exmple-4nf.com"
+   }
+  }
+ },
+ {
+  "id": "link-mixed-greek-omicron",
+  "spec": "4.2",
+  "input": "https://gοοd-news.org/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "mixedScript"
+   ]
+  }
+ },
+ {
+  "id": "link-mixed-arabic-latin",
+  "spec": "4.2",
+  "input": "https://shopمتجر.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "mixedScript"
+   ]
+  }
+ },
+ {
+  "id": "link-mixed-apple-cyrillic-a",
+  "spec": "4.2",
+  "input": "https://аpple.com/",
+  "symbology": "qr",
+  "note": "Cyrillic a + Latin pple: mixed and a skeleton match",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "mixedScript",
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "link-near-latin-umlaut",
+  "spec": "4.2",
+  "input": "https://bücher.de/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-japanese-allowed",
+  "spec": "4.2",
+  "input": "https://shop例え.jp/",
+  "symbology": "qr",
+  "note": "Latin + Han + Hiragana is an allowed set",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-korean-allowed",
+  "spec": "4.2",
+  "input": "https://삼성.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-cyrillic-whole",
+  "spec": "4.2",
+  "input": "https://пример.рф/",
+  "symbology": "qr",
+  "note": "look-alike: one script (Cyrillic) is not mixed",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-digits-hyphen",
+  "spec": "4.2",
+  "input": "https://my-site-2026.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-lookalike-paypa1",
+  "spec": "4.2",
+  "input": "https://paypa1.com/signin",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "link-lookalike-rnicrosoft",
+  "spec": "4.2",
+  "input": "https://rnicrosoft.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "link-lookalike-g00gle",
+  "spec": "4.2",
+  "input": "https://g00gle.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "link-lookalike-cyrillic-apple",
+  "spec": "4.2",
+  "input": "https://аррӏе.com/",
+  "symbology": "qr",
+  "note": "whole-Cyrillic apple: one script, still a skeleton match",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "link-lookalike-hyphen",
+  "spec": "4.2",
+  "input": "https://pay-pal.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "link-near-own-paypal",
+  "spec": "4.2",
+  "input": "https://www.paypal.com/signin",
+  "symbology": "qr",
+  "note": "the brand's own domain",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-modern",
+  "spec": "4.2",
+  "input": "https://modern.com/",
+  "symbology": "qr",
+  "note": "look-alike: rn collapses to m but no brand matches",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-bill",
+  "spec": "4.2",
+  "input": "https://bill.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-brandindomain-subdomain",
+  "spec": "4.2",
+  "input": "https://paypal.com.example.org/login",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "link-brandindomain-hyphens",
+  "spec": "4.2",
+  "input": "https://secure-paypal-login.net/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "link-brandindomain-netflix-top",
+  "spec": "4.2",
+  "input": "https://netflix-help.top/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain",
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "link-brandindomain-ambiguous-bait",
+  "spec": "4.2",
+  "input": "https://apple-support.example.org/",
+  "symbology": "qr",
+  "note": "Apple is ambiguous: needs a bait word next to it",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "link-near-apple-orchard",
+  "spec": "4.2",
+  "input": "https://apple-orchard.com/",
+  "symbology": "qr",
+  "note": "ambiguous brand without a bait word",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-pineapple",
+  "spec": "4.2",
+  "input": "https://pineapple.com/",
+  "symbology": "qr",
+  "note": "look-alike: apple inside another word is not a token",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-mypaypalshop",
+  "spec": "4.2",
+  "input": "https://mypaypalshop.com/",
+  "symbology": "qr",
+  "note": "one token that merely contains the keyword",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-dhl-short",
+  "spec": "4.2",
+  "input": "https://dhl-fans.com/",
+  "symbology": "qr",
+  "note": "keywords under four characters never match",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-own-amazon-uk",
+  "spec": "4.2",
+  "input": "https://www.amazon.co.uk/gp/help/customer/display.html",
+  "symbology": "qr",
+  "note": "own domain with a multi-label suffix",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-brand-paypa",
+  "spec": "4.2",
+  "input": "https://paypa.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "nearBrand"
+   ]
+  }
+ },
+ {
+  "id": "link-near-brand-microsft",
+  "spec": "4.2",
+  "input": "https://microsft.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "nearBrand"
+   ]
+  }
+ },
+ {
+  "id": "link-near-brand-gogole",
+  "spec": "4.2",
+  "input": "https://gogole.com/",
+  "symbology": "qr",
+  "note": "transposition",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "nearBrand"
+   ]
+  }
+ },
+ {
+  "id": "link-near-brand-amazonn",
+  "spec": "4.2",
+  "input": "https://amazonn.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "nearBrand"
+   ]
+  }
+ },
+ {
+  "id": "link-near-two-edits",
+  "spec": "4.2",
+  "input": "https://paypalxx.com/",
+  "symbology": "qr",
+  "note": "two edits away",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-short-brand",
+  "spec": "4.2",
+  "input": "https://ebax.com/",
+  "symbology": "qr",
+  "note": "brand label under six characters",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-ip-private-http",
+  "spec": "4.2",
+  "input": "http://192.168.1.10/admin",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "ipHost",
+    "plainHTTP"
+   ],
+   "fields": {
+    "isIPAddress": "true"
+   }
+  }
+ },
+ {
+  "id": "link-ip-https",
+  "spec": "4.2",
+  "input": "https://203.0.113.9/pay",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "ipHost"
+   ]
+  }
+ },
+ {
+  "id": "link-ip-decimal",
+  "spec": "4.2",
+  "input": "http://3232235777/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "ipHost",
+    "plainHTTP"
+   ],
+   "fields": {
+    "hostASCII": "192.168.1.1"
+   }
+  }
+ },
+ {
+  "id": "link-ip-v6",
+  "spec": "4.2",
+  "input": "https://[2001:db8::1]/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "ipHost"
+   ]
+  }
+ },
+ {
+  "id": "link-ip-hex",
+  "spec": "4.2",
+  "input": "http://0x7f.1/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "ipHost",
+    "plainHTTP"
+   ]
+  }
+ },
+ {
+  "id": "link-near-ip-in-path",
+  "spec": "4.2",
+  "input": "https://example.com/192.168.1.1",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-ip-label",
+  "spec": "4.2",
+  "input": "https://203.example.org/",
+  "symbology": "qr",
+  "note": "look-alike: digits in a host label",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-short-bitly",
+  "spec": "4.2",
+  "input": "https://bit.ly/3xYzAbC",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "shortener"
+   ]
+  }
+ },
+ {
+  "id": "link-short-tco",
+  "spec": "4.2",
+  "input": "https://t.co/abc123",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "shortener"
+   ]
+  }
+ },
+ {
+  "id": "link-short-tinyurl-www",
+  "spec": "4.2",
+  "input": "https://www.tinyurl.com/yc8x",
+  "symbology": "qr",
+  "note": "registrable domain match",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "shortener"
+   ]
+  }
+ },
+ {
+  "id": "link-short-lead",
+  "spec": "4.2",
+  "input": "https://l.ead.me/abc",
+  "symbology": "qr",
+  "note": "host match on a multi-label entry",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "shortener"
+   ]
+  }
+ },
+ {
+  "id": "link-near-bitly-subdomain",
+  "spec": "4.2",
+  "input": "https://bit.ly.example.org/",
+  "symbology": "qr",
+  "note": "look-alike: shortener name as a subdomain of another site",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-bitly-org",
+  "spec": "4.2",
+  "input": "https://bitly.org/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-tco-path",
+  "spec": "4.2",
+  "input": "https://example.com/t.co/abc",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-http-example",
+  "spec": "4.2",
+  "input": "http://example.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "plainHTTP"
+   ]
+  }
+ },
+ {
+  "id": "link-http-wikipedia",
+  "spec": "4.2",
+  "input": "http://www.wikipedia.org/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "plainHTTP"
+   ]
+  }
+ },
+ {
+  "id": "link-http-news",
+  "spec": "4.2",
+  "input": "http://news.example.org/story?id=4",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "plainHTTP"
+   ]
+  }
+ },
+ {
+  "id": "link-near-https-with-http-path",
+  "spec": "4.2",
+  "input": "https://example.com/http",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-uppercase-https",
+  "spec": "4.2",
+  "input": "HTTPS://EXAMPLE.COM/",
+  "symbology": "qr",
+  "note": "case-insensitive scheme",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-schemeless-not-http",
+  "spec": "4.2",
+  "input": "www.example.com/",
+  "symbology": "qr",
+  "note": "assumed https is not plain http",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": [],
+   "info": [
+    "assumedHTTPS"
+   ]
+  }
+ },
+ {
+  "id": "link-tld-top",
+  "spec": "4.2",
+  "input": "https://free-gifts.top/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "riskyTLD"
+   ],
+   "fields": {
+    "publicSuffix": "top"
+   }
+  }
+ },
+ {
+  "id": "link-tld-vip",
+  "spec": "4.2",
+  "input": "https://shop.vip/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "link-tld-cyou",
+  "spec": "4.2",
+  "input": "https://news.cyou/x",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "link-tld-bond",
+  "spec": "4.2",
+  "input": "https://example.bond/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "link-near-tld-subdomain",
+  "spec": "4.2",
+  "input": "https://top.example.org/",
+  "symbology": "qr",
+  "note": "risky word as a subdomain, not the ending",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-tld-support-sub",
+  "spec": "4.2",
+  "input": "https://support.example.com/",
+  "symbology": "qr",
+  "note": "look-alike: support is a risky ending but here only a subdomain",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-tld-to",
+  "spec": "4.2",
+  "input": "https://example.to/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-deep-four",
+  "spec": "4.2",
+  "input": "https://a.b.c.d.example.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "deepSubdomains"
+   ]
+  }
+ },
+ {
+  "id": "link-deep-five",
+  "spec": "4.2",
+  "input": "https://one.two.three.four.five.example.net/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "deepSubdomains"
+   ]
+  }
+ },
+ {
+  "id": "link-deep-couk",
+  "spec": "4.2",
+  "input": "https://a.b.c.d.example.co.uk/",
+  "symbology": "qr",
+  "note": "multi-label suffix: four labels left of example.co.uk",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "deepSubdomains"
+   ]
+  }
+ },
+ {
+  "id": "link-near-deep-three",
+  "spec": "4.2",
+  "input": "https://a.b.c.example.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-deep-couk-www",
+  "spec": "4.2",
+  "input": "https://www.example.co.uk/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-deep-private-suffix",
+  "spec": "4.2",
+  "input": "https://a.b.c.d.github.io/",
+  "symbology": "qr",
+  "note": "look-alike: github.io is a private suffix, so only three labels sit left of d.github.io",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-obf-nested-url",
+  "spec": "4.2",
+  "input": "https://example.com/login?next=https%3A%2F%2Fevil.example%2Fa",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "obfuscatedPath"
+   ]
+  }
+ },
+ {
+  "id": "link-obf-long-path",
+  "spec": "4.2",
+  "input": "https://example.com/verify/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "obfuscatedPath"
+   ]
+  }
+ },
+ {
+  "id": "link-obf-escapes",
+  "spec": "4.2",
+  "input": "https://www.example.org/account?x=%41%42%43%44%45%46%47%48%49%4A",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "obfuscatedPath"
+   ]
+  }
+ },
+ {
+  "id": "link-obf-plain-nested",
+  "spec": "4.2",
+  "input": "https://example.com/signin?redirect=http://other.example/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "obfuscatedPath"
+   ]
+  }
+ },
+ {
+  "id": "link-near-obf-no-bait-long",
+  "spec": "4.2",
+  "input": "https://example.com/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "symbology": "qr",
+  "note": "long path but no bait word",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-obf-short-bait",
+  "spec": "4.2",
+  "input": "https://example.com/login",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-obf-one-escape",
+  "spec": "4.2",
+  "input": "https://example.com/login?x=%41",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-app-whatsapp",
+  "spec": "4.2",
+  "input": "whatsapp://send?text=hello",
+  "symbology": "qr",
+  "expect": {
+   "type": "appLink",
+   "level": 1,
+   "signals": [
+    "unknownScheme"
+   ],
+   "fields": {
+    "scheme": "whatsapp"
+   }
+  }
+ },
+ {
+  "id": "link-app-custom",
+  "spec": "4.2",
+  "input": "myapp://open/item/5",
+  "symbology": "qr",
+  "expect": {
+   "type": "appLink",
+   "level": 1,
+   "signals": [
+    "unknownScheme"
+   ]
+  }
+ },
+ {
+  "id": "link-app-zoom",
+  "spec": "4.2",
+  "input": "zoommtg://zoom.us/join?confno=123456789",
+  "symbology": "qr",
+  "expect": {
+   "type": "appLink",
+   "level": 1,
+   "signals": [
+    "unknownScheme"
+   ]
+  }
+ },
+ {
+  "id": "link-app-spotify",
+  "spec": "4.2",
+  "input": "spotify:track:4uLU6hMCjMI75M1A2tKUQC",
+  "symbology": "qr",
+  "expect": {
+   "type": "appLink",
+   "level": 1,
+   "signals": [
+    "unknownScheme"
+   ]
+  }
+ },
+ {
+  "id": "link-near-text-colon",
+  "spec": "4.2",
+  "input": "Hello: world",
+  "symbology": "qr",
+  "note": "colon followed by a space is text, not a scheme",
+  "expect": {
+   "type": "text",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-text-note",
+  "spec": "4.2",
+  "input": "Note: remember the milk",
+  "symbology": "qr",
+  "expect": {
+   "type": "text",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-windows-path",
+  "spec": "4.2",
+  "input": "C:\\Users\\drei\\file.txt",
+  "symbology": "qr",
+  "note": "one-letter scheme is a drive",
+  "expect": {
+   "type": "text",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-near-handled-scheme",
+  "spec": "4.2",
+  "input": "tel:+639171234567",
+  "symbology": "qr",
+  "note": "look-alike: a scheme we decode is not an unknown app",
+  "expect": {
+   "type": "phone",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "link-assumed-www",
+  "spec": "4.2",
+  "input": "www.example.com",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": [],
+   "info": [
+    "assumedHTTPS"
+   ],
+   "fields": {
+    "scheme": "https",
+    "registrableDomain": "example.com"
+   }
+  }
+ },
+ {
+  "id": "link-assumed-path",
+  "spec": "4.2",
+  "input": "example.org/path?x=1",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": [],
+   "info": [
+    "assumedHTTPS"
+   ]
+  }
+ },
+ {
+  "id": "link-assumed-couk",
+  "spec": "4.2",
+  "input": "shop.example.co.uk/menu",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": [],
+   "info": [
+    "assumedHTTPS"
+   ]
+  }
+ },
+ {
+  "id": "link-assumed-idn",
+  "spec": "4.2",
+  "input": "bücher.de",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": [],
+   "info": [
+    "assumedHTTPS"
+   ]
+  }
+ },
+ {
+  "id": "link-near-explicit-https",
+  "spec": "4.2",
+  "input": "https://www.example.com",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": [],
+   "info": []
+  }
+ },
+ {
+  "id": "link-near-bare-word",
+  "spec": "4.2",
+  "input": "example",
+  "symbology": "qr",
+  "expect": {
+   "type": "text",
+   "level": 0,
+   "signals": [],
+   "info": []
+  }
+ },
+ {
+  "id": "link-near-unknown-suffix",
+  "spec": "4.2",
+  "input": "report.zzzz",
+  "symbology": "qr",
+  "note": "no explicit PSL rule: not a link",
+  "expect": {
+   "type": "text",
+   "level": 0,
+   "signals": [],
+   "info": []
+  }
+ },
+ {
+  "id": "link-near-space",
+  "spec": "4.2",
+  "input": "my notes.com today",
+  "symbology": "qr",
+  "expect": {
+   "type": "text",
+   "level": 0,
+   "signals": [],
+   "info": []
+  }
+ },
+ {
+  "id": "link-wifi-open",
+  "spec": "4.3",
+  "input": "WIFI:T:nopass;S:CafeGuest;;",
+  "symbology": "qr",
+  "expect": {
+   "type": "wifi",
+   "level": 1,
+   "signals": [
+    "openWiFi"
+   ]
+  }
+ },
+ {
+  "id": "link-wifi-no-type",
+  "spec": "4.3",
+  "input": "WIFI:S:Guest;;",
+  "symbology": "qr",
+  "expect": {
+   "type": "wifi",
+   "level": 1,
+   "signals": [
+    "openWiFi"
+   ]
+  }
+ },
+ {
+  "id": "link-wifi-empty-type",
+  "spec": "4.3",
+  "input": "WIFI:T:;S:Lobby;;",
+  "symbology": "qr",
+  "expect": {
+   "type": "wifi",
+   "level": 1,
+   "signals": [
+    "openWiFi"
+   ]
+  }
+ },
+ {
+  "id": "link-wifi-wpa",
+  "spec": "4.3",
+  "input": "WIFI:T:WPA;S:Home;P:correct horse;;",
+  "symbology": "qr",
+  "note": "near miss: has a password",
+  "expect": {
+   "type": "wifi",
+   "level": 0,
+   "signals": []
+  }
+ }
+]
