@@ -58,12 +58,11 @@ struct GateModifier: ViewModifier {
                 VStack(spacing: Tokens.Space.m) {
                     Text(feature.map { seven("seven.gate.needsUnlock", "%@ is part of the unlock.", $0) }
                          ?? seven("seven.gate.needsUnlockPlain", "This is part of the unlock."))
-                        .font(.headline).foregroundStyle(Tokens.ink).multilineTextAlignment(.center)
-                    SevenButton(title: seven("seven.gate.see", "See what the unlock adds")) { showUnlock = true }
+                        .font(.headline).foregroundStyle(.primary).multilineTextAlignment(.center)
+                    SevenButton(title: seven("seven.gate.see", "See what the unlock adds"), prominent: true) { showUnlock = true }
                 }
                 .padding(Tokens.Space.l)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Tokens.paper.ignoresSafeArea())
                 .onAppear {
                     if !offered { offered = true; showUnlock = true }
                 }

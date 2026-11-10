@@ -65,5 +65,10 @@ hits=$(git ls-files | grep -E '(^|/)(PLAN(-.*)?|BUILD-REPORT.*|REVIEW.*)\.md$' |
 hits=$(git grep -nwE 'PLAN|BUILD-REPORT|REVIEW' -- ':!.gitignore' ':!scripts/check-rules' ':!apps/qr/Kit/Sources/QRCore/Data/public_suffix_list.dat' || true)
 [ -z "$hits" ] || bad "tracked file refers to an internal process document:" "$hits"
 
+# Look (SPEC "Look"): the app is native in color. Brand colors and the wordmark are for About only.
+hits=$(swift_files | grep -vE '^SevenKit/Sources/SevenKit/(AboutSection|Tokens)\.swift$|^SevenKit/Tests/' \
+  | xargs -r grep -nE 'Tokens\.(paper|card|ink|muted|red)\b|SevenStamp|Image\("(SevenStamp|SevenWordmark)"\)' || true)
+[ -z "$hits" ] || bad "brand color or wordmark outside AboutSection.swift:" "$hits"
+
 [ $fail = 0 ] && echo "check-rules: G6 and G7 pass"
 exit $fail

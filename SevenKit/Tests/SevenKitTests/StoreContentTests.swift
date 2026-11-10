@@ -87,19 +87,17 @@ import Testing
             return (Int((r * 255).rounded()) << 16) | (Int((g * 255).rounded()) << 8) | Int((b * 255).rounded())
         }
         #expect(rgb(Tokens.paper, .light) == 0xF3EFE6 && rgb(Tokens.paper, .dark) == 0x121110)
-        #expect(rgb(Tokens.card, .light) == 0xFFFDF8 && rgb(Tokens.card, .dark) == 0x1C1A18)
         #expect(rgb(Tokens.ink, .light) == 0x161513 && rgb(Tokens.ink, .dark) == 0xEEE9DF)
         #expect(rgb(Tokens.muted, .light) == 0x55504A && rgb(Tokens.muted, .dark) == 0xA8A196)
-        #expect(rgb(Tokens.red, .light) == 0xD11F16 && rgb(Tokens.red, .dark) == 0xFF5D50)
     }
     #endif
 
-    @Test func verdictStylesUseTheDocumentedSymbolsNotBrandRed() {
+    @Test func verdictStylesUseTheDocumentedSymbolsAndSystemColors() {
         #expect(Tokens.VerdictStyle.normal.symbolName == "checkmark.circle")
         #expect(Tokens.VerdictStyle.careful.symbolName == "exclamationmark.triangle")
         #expect(Tokens.VerdictStyle.likelyScam.symbolName == "xmark.octagon")
+        #expect(Tokens.VerdictStyle.normal.color == .secondary)
         #expect(Tokens.VerdictStyle.careful.color == .orange)
         #expect(Tokens.VerdictStyle.likelyScam.color == .red)
-        #expect(Tokens.VerdictStyle.likelyScam.color != Tokens.red)
     }
 }
