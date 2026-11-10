@@ -48,5 +48,9 @@ hits=$( { [ -z "$ui_swift" ] || echo "$ui_swift" | xargs grep -nP '"(?:[^"\\]|\\
 hits=$(git ls-files | grep -E '(^|/)(PLAN(-.*)?|BUILD-REPORT.*|REVIEW.*)\.md$' || true)
 [ -z "$hits" ] || bad "internal process document tracked (move it to the private brand repo):" "$hits"
 
+# ...and nothing tracked points at them by name (upstream data files are exempt).
+hits=$(git grep -nwE 'PLAN|BUILD-REPORT|REVIEW' -- ':!.gitignore' ':!scripts/check-rules' ':!apps/qr/Kit/Sources/QRCore/Data/public_suffix_list.dat' || true)
+[ -z "$hits" ] || bad "tracked file refers to an internal process document:" "$hits"
+
 [ $fail = 0 ] && echo "check-rules: G6 and G7 pass"
 exit $fail

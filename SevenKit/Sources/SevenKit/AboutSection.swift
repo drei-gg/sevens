@@ -1,7 +1,7 @@
 import SwiftUI
 import SevenKitCore
 
-/// Settings rows that come from SevenKit (PLAN §6.12): the trial status line, Unlock, Restore,
+/// Settings rows that come from SevenKit (SPEC §11): the trial status line, Unlock, Restore,
 /// and an optional "Before you buy" row. Drop it into a `Form` or `List`:
 ///
 ///     Form { AboutSection(onShowBeforeYouBuy: { showBYB = true }); … }

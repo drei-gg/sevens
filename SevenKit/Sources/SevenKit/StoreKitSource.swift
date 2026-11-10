@@ -2,7 +2,7 @@ import Foundation
 import StoreKit
 import SevenKitCore
 
-/// PLAN §6.10. `Product.products(for:)`, `Transaction.currentEntitlements`, a
+/// SPEC §13. `Product.products(for:)`, `Transaction.currentEntitlements`, a
 /// `Transaction.updates` listener, `AppStore.sync()` for Restore. The rules live in
 /// `entitlementFacts(from:products:pendingProductIDs:)`.
 ///

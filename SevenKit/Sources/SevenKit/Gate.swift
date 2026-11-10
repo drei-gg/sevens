@@ -1,7 +1,7 @@
 import SwiftUI
 import SevenKitCore
 
-// Gate: how paid entry points stay behind the unlock (PLAN §6.10).
+// Gate: how paid entry points stay behind the unlock (SPEC §13).
 //
 // Setup, once, near the root:
 //

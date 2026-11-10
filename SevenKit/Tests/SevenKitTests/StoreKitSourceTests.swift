@@ -13,7 +13,7 @@ import StoreKitTest
 import Testing
 @testable import SevenKit
 
-/// Runs against `apps/qr/QR.storekit` with `SKTestSession` (PLAN §8, WP 1.9). One suite,
+/// Runs against `apps/qr/QR.storekit` with `SKTestSession`. One suite,
 /// serialized: StoreKit test state is process-wide.
 @MainActor
 @Suite(.serialized) struct StoreKitSourceTests {

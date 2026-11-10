@@ -1,6 +1,6 @@
 import Foundation
 
-// Contract (PLAN §5.4), frozen at qr-contract-1. Bodies: WP 1.9.
+// Contract, frozen at qr-contract-1. Bodies: WP 1.9.
 
 public enum EntitlementState: Sendable, Equatable {
     case notStarted

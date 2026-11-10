@@ -34,7 +34,7 @@ public struct TrialEndedView: View {
                     SevenButton(title: store.unlockButtonTitle, disabled: !store.canPurchase) {
                         Task { await store.unlock() }
                     }
-                    SevenButton(title: seven("seven.notNow", "Not now")) { dismiss() }  // as prominent as the buy button (PLAN §6.10)
+                    SevenButton(title: seven("seven.notNow", "Not now")) { dismiss() }  // as prominent as the buy button (SPEC §13)
                 }
             }
             .padding(Tokens.Space.m)

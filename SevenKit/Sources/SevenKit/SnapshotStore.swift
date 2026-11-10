@@ -1,7 +1,7 @@
 import Foundation
 import SevenKitCore
 
-/// The app group's `UserDefaults` copy of the entitlement (PLAN §6.10). The app writes after
+/// The app group's `UserDefaults` copy of the entitlement (SPEC §13). The app writes after
 /// every state change; the Make extension reads.
 public struct EntitlementSnapshotStore: Sendable {
     public static let key = "seven.entitlement.snapshot"

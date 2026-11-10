@@ -1,6 +1,6 @@
 import Foundation
 
-/// When the free trial begins (PLAN D1, C12).
+/// When the free trial begins.
 public enum TrialPolicy: Sendable, Equatable {
     /// The person taps "Start my free 7 days" (a $0 purchase). The default.
     case onPurchase

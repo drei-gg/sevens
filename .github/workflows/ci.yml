@@ -1,4 +1,4 @@
-# Not run until Drei pushes (PLAN D16). No third-party actions beyond GitHub's own checkout.
+# Not run until Drei pushes. No third-party actions beyond GitHub's own checkout.
 name: ci
 on:
   push:

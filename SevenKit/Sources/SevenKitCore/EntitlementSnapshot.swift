@@ -1,7 +1,7 @@
 import Foundation
 
 /// What the app writes to the app group's `UserDefaults` after every state change so a share
-/// extension can read it (PLAN §6.10): `{state, trialEndsAt, writtenAt}`.
+/// extension can read it (SPEC §13): `{state, trialEndsAt, writtenAt}`.
 public struct EntitlementSnapshot: Codable, Sendable, Equatable {
     public enum Kind: String, Codable, Sendable {
         case notStarted, trial, expired, unlocked, pending

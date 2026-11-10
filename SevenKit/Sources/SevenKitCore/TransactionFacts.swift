@@ -24,7 +24,7 @@ public struct TransactionRecord: Sendable, Equatable {
     }
 }
 
-/// PLAN §6.10: trial start = the trial transaction's `purchaseDate`; a transaction with a
+/// SPEC §13: trial start = the trial transaction's `purchaseDate`; a transaction with a
 /// `revocationDate` doesn't count; family-shared transactions arrive here like any other and
 /// count. A pending purchase (Ask to Buy) sets `purchasePending` unless the unlock is owned.
 public func entitlementFacts(

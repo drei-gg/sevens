@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import SevenKit
 
-/// PLAN §4 rule 6 / WP 4.2: text tokens meet WCAG AA (4.5:1) on the paper and card tokens, both themes.
+/// WCAG AA: text tokens meet WCAG AA (4.5:1) on the paper and card tokens, both themes.
 @Suite struct TokensContrastTests {
     private func luminance(_ hex: Int) -> Double {
         func channel(_ shift: Int) -> Double {

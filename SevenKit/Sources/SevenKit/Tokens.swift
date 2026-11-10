@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Design tokens (PLAN §6.13), matching the site. Light and dark values resolve with the
+/// Design tokens, matching the site. Light and dark values resolve with the
 /// trait collection, so they follow the system appearance.
 public enum Tokens {
     // Hex values as documented; kept public so tests (and the site) can compare.
