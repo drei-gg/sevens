@@ -1,11 +1,19 @@
-// Contract. WP 2.1 owns this file: Classifier + checks + verdict rule → Analysis.
+// Contract (init(data:known:) added at qr-contract-2). WP 2.1 owns this file: Classifier + checks + verdict rule → Analysis.
 
 public struct Analyzer: Sendable {
     public let data: BundledData
+    /// Addresses the person told us they know (SPEC §4.4), applied as the final step.
+    public let known: KnownAddresses
     let context: CheckContext
 
     public init(data: BundledData) {
+        self.init(data: data, known: KnownAddresses())
+    }
+
+    /// qr-contract-2.
+    public init(data: BundledData, known: KnownAddresses) {
         self.data = data
+        self.known = known
         self.context = CheckContext(data: data)
     }
 
@@ -18,7 +26,8 @@ public struct Analyzer: Sendable {
     /// never produces further embedded analyses.
     func analyze(_ code: ScannedCode, embedding: Bool) -> Analysis {
         let result = Classifier(ctx: context).classify(code)
-        let signals = result.signals.inStableOrder()
+        let own = known.isEmpty ? result.signals : known.apply(to: result.signals, payload: result.payload)
+        let signals = own.inStableOrder()
         let embedded: [Analysis] = embedding
             ? Self.embeddedLinks(of: result.payload).map { analyze(ScannedCode(text: $0, symbology: code.symbology), embedding: false) }
             : []

@@ -22,8 +22,8 @@ import Testing
 @Test func everySignalHasASeverity() {
     let counts = Dictionary(grouping: SignalID.allCases, by: \.severity).mapValues(\.count)
     #expect(counts[.strong] == 9)
-    #expect(counts[.warning] == 17)
-    #expect(counts[.info] == 5)
+    #expect(counts[.warning] == 18)
+    #expect(counts[.info] == 7)
 }
 
 @Test func payloadFieldsAreFlat() {

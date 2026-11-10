@@ -1,6 +1,6 @@
 # 7&D QR Code Kit: spec
 
-Draft 0.2 · 10 November 2026 (amended to match the build plan §2, decisions D1–D16)
+Draft 0.3 · 11 November 2026 (0.2 settled decisions D1–D16; 0.3 adds the fixes from review 1: scam-check gaps, smaller codes in Make, lists that age)
 
 | Where | Name |
 |---|---|
@@ -71,6 +71,8 @@ The top always shows the **verdict** and the **payload type**. Below that:
 
 We never act automatically. Every action is a tap.
 
+**"I know this address" (decided 11 November 2026).** When every non-info signal on a link comes from a bundled list (§4.4), the result sheet asks one question in plain words, for example "This address uses PayPal's name, but it isn't one we know.", with two buttons: **Keep warning me** (marked "Recommended") and **I know this address**. It is never offered when a signal that doesn't depend on a list is present (`user@host`, a dangerous scheme, mixed scripts, a failed checksum, anything from Peek).
+
 ## 4. Scam checks
 
 ### 4.1 Verdict
@@ -90,15 +92,26 @@ Every signal shows as one plain sentence under the verdict. No scores, no percen
 | `javascript:`, `data:`, or `file:` scheme | strong |
 | `user@host` trick (`https://bank.com@evil.site`) | strong |
 | Lookalike domain: mixed scripts, or punycode that resembles a domain on the brand list | strong |
-| A brand's name in a domain that isn't that brand's (`paypal-verify.help`) | strong |
+| A brand's name in a domain that isn't that brand's (`paypal-verify.help`, `gcash.top`, `paypal.help`), including a brand in a subdomain or mixed with other words | strong |
+| A brand's exact name on a common ending we don't list for that brand (`paypal.de`, `netflix.co`): the registrable domain is `<brand>.<ending>` with nothing else in the label, the ending is a two-letter country code or `com`, `net`, `org` (also second-level forms such as `co.uk`, `com.ph`), and the ending isn't on the heavily abused list. Shown as "This isn't an address we know for PayPal." | warning |
+| A look-alike spelling of a brand joined to other words (`secure-paypa1.com`, `faceb00k-login.com`): each word of the address is compared, not only whole labels | strong |
+| Brands with three-letter names (DHL, BPI, BDO, UPS): matched only as a whole word, and only next to a bait word such as `tracking` or `online` in the same address (`dhl-tracking.help`) | strong |
 | Raw IP address as the host | warning |
 | Known link shortener: we can't see the destination until you Peek | warning |
 | Plain `http` | warning |
 | Domain ending that scam reports show is heavily abused (bundled list) | warning |
-| Unusually deep subdomains, or very long or encoded paths on a login-like URL | warning |
+| Unusually deep subdomains, or very long or encoded paths on a login-like URL, or a second `http` link inside the path (a return address in the query, as sign-in links carry, doesn't count) | warning |
 | Open (no-password) Wi-Fi network | warning |
 | Payment code fails its checksum | strong |
+| A domain ending that isn't in the bundled suffix list: the last label is taken as the ending, so every brand check still runs, and we say "We don't recognize this domain ending" | info |
+| An address you told us you know (§3, §4.4) | info |
 | A link written without `https://` (`www.example.com`, `example.com/x`), when its ending is a real domain ending and there are no spaces: treated as a link with `https` assumed, and we say so (D9) | info |
+
+Before any check, the host is put in Unicode compatibility form (NFKC), as browsers do: full-width `ｐａｙｐａｌ.com` is checked as `paypal.com`.
+
+Only the first 8 KB of a code's text is searched for links. A link longer than 8 KB is shown as text, with the verdict of the links found in its first 8 KB.
+
+**Unknown fails soft.** When a list simply doesn't know something (a brand's other domain, a new ending), the sentence says what we don't know instead of accusing the site. "Likely scam" is kept for things that are true whatever the lists say, and for a brand's name on an ending no brand should use.
 
 Peek adds its own signals (§6): the page asks for a password, PIN, one-time code or card number (warning; **strong** only when the page or its domain claims a brand the domain doesn't belong to, D10), a form that sends to another domain (warning), a redirect by script or meta refresh (warning), a download such as an app or profile (warning), redirects to plain `http` or out of the web, too many redirects (warning), a certificate problem (strong), a domain under 30 days old (strong) or under 6 months (warning). Shown but never changing the verdict: the domain is on shared hosting, the page needs JavaScript, age unknown, Peek couldn't finish.
 
@@ -112,6 +125,16 @@ These files are updated with app releases. Pull requests are welcome.
 - `payment-networks.json`: payment network identifiers mapped to display names (§5). Only networks whose published spec states the identifier are listed, each with its source (D11).
 - `public_suffix_list.dat`: Mozilla's Public Suffix List (MPL-2.0), used to find the registrable domain.
 - `rdap-dns.json`: IANA's directory of public registry (RDAP) services (§6.2).
+- `tracking-params.json`: tracking tags that Make offers to remove from a link (§8), each with its source.
+- `lists-version.json`: when the lists were built. About shows it as "Scam lists from 10 November 2026".
+
+`scripts/refresh-lists` re-downloads the upstream lists, validates the curated ones, runs every fixture and bumps the date, so a lists-only release is one command and a store submission. The aim is a lists release at least every two months.
+
+**Check for newer lists (decided 11 November 2026).** Settings › About has one button, **Check for newer lists**. Nothing is fetched without that tap: no check at launch, no background refresh, no badge. A tap fetches one signed file, `lists.json`, and its signature from our public repository on GitHub, through the same kind of private connection as Peek; the request carries nothing about the person or their scans. The app accepts it only if the signature verifies against a key built into the app, the format is one it understands, it is newer than what's installed, every list passes the same shape checks as the bundled ones, and it is under 2 MB; otherwise it keeps its lists and says why. "Use the lists that came with the app" undoes it, and an app update with newer lists wins over an older download. When the lists are more than six months old, the About row says so. A build without a configured key hides the button. Free forever: it's part of warning.
+
+### 4.4 Addresses you know
+
+Choosing **I know this address** (§3) stores the link's registrable domain on the phone. Later scans of that domain drop the list-based signals (a brand's name, a look-alike, an abused ending, a shortener) and show "You told us you know this address"; every other check still runs. Settings lists these addresses, with swipe to remove and **Forget all**. They're kept in their own file beside History, exported with it, untouched by list updates, and free forever.
 
 ## 5. Payment codes (offline)
 
@@ -138,7 +161,7 @@ It's a tap and never automatic, because fetching a link tells whoever made the c
   - the page title
   - whether the connection is secure
   - **a password, PIN, one-time code or card-number field** (a warning on its own, since ordinary login pages exist; strong when the page or domain claims a brand the domain doesn't belong to, D10)
-  - redirects done by script or meta refresh (warning).
+  - redirects done by script (a page that sets `location` or calls `location.replace` or `location.assign`; merely reading `location.href` doesn't count) or meta refresh (warning).
 - Uses a standard Safari user agent, so we see what a real browser would see.
 - Gives up after 8 seconds. Plain `http` links aren't fetched (iOS blocks them by default); they show a warning instead and can still be opened.
 
@@ -153,7 +176,10 @@ Opens in the in-app browser (`SFSafariViewController`) or in Safari, which adds 
 ## 8. Make
 
 - **Types:** link, text, Wi-Fi, contact, event, email, SMS, phone, location.
-- **Error correction:** chosen automatically, or set by hand.
+- **Error correction:** chosen automatically, or set by hand. Automatic finds the smallest code size at level M, then uses the highest level (Q, then H) that still fits that same size, so the code never grows because of it.
+- **Smaller codes:** a link's scheme and host are written in capitals (`HTTPS://EXAMPLE.COM/path`), which lets the code use QR's denser character set. Only the scheme and the host (in its `xn--` form) change; the rest of the link is kept exactly. It's used only when the code really comes out smaller, and Make shows "Same link, smaller code" with a switch, on by default. A default port (`:443`, `:80`) and a lone trailing `/` are dropped; nothing else (never `www.`, never `http` to `https`). History keeps the text actually encoded.
+- **Tracking tags:** when a link carries tags such as `utm_source` or `fbclid` (`tracking-params.json`), Make asks "This link carries tracking tags. Remove them?" and shows the shorter link. Never automatic.
+- **Phone numbers** are written as `TEL:+…`.
 - **Export:** PNG (any size), SVG (built from the module grid), and a PDF ready to print (one code, or a sheet of labels).
 - **Style:** black on white by default, plus foreground and background colors with a contrast check. No logos in the middle for v1.
 - **Barcodes:** Aztec, PDF417 and Code 128 through Core Image, in the same flow.
@@ -170,11 +196,14 @@ Opens in the in-app browser (`SFSafariViewController`) or in Safari, which adds 
 - Swipe to delete, or clear everything. History can be turned off.
 - Export as JSON or CSV.
 - Stored as files on the phone, with complete file protection. No sync in v1.
+- The export includes the addresses you told us you know (§4.4).
 
 ## 11. About & settings
 - Trial status, Unlock, Restore purchases (from SevenKit).
 - **Before you buy** (the screen from §1).
 - **Network contact:** the list from §12, in plain words.
+- **Addresses you know** (§4.4).
+- "Scam lists from …" and **Check for newer lists** (§4.3).
 - Version, changelog, support email, license (GPL-3.0) and open-source notices (Public Suffix List).
 
 ## 12. Network contact
@@ -187,6 +216,7 @@ The complete list. Anything not listed here doesn't happen.
 | You tap Peek | The public registry for that domain ending | The domain name |
 | You tap Open | Safari opens the link | Whatever Safari sends |
 | You buy or restore | Apple, through StoreKit | Handled by iOS |
+| You tap Check for newer lists | GitHub, where our public code lives | A request for one file. Nothing about you or what you scanned. |
 
 App Store privacy label: **Data Not Collected.**
 
@@ -198,11 +228,13 @@ Uses SevenKit's standard mechanism: a $0 "7-day trial" purchase and a $7 one-tim
 | Free forever | Needs the unlock |
 |---|---|
 | Scanning: live, from photos, from the clipboard | **Peek:** redirects, login-form detection, domain age |
-| The verdict and every offline scam check (§4.2) | **Make**, and all export (§8) |
+| The verdict and every offline scam check (§4.2), addresses you know (§4.4), Check for newer lists (§4.3) | **Make**, and all export (§8) |
 | Payment-code decoding (§5) | **"Make QR code" share extension** (§9) |
 | Opening links (§7) | **History:** saving new scans and made codes (§10) |
 | **"Check this code" share extension** (§9): it only warns (D2) | |
 | Reading, searching, annotating, exporting and deleting History you already have | |
+
+When Before you buy and the trial-ended sheet are both due on one launch, Before you buy comes first and the trial-ended sheet waits for the next launch.
 
 Anything saved to History during the trial stays readable, searchable and exportable after it ends; only saving new items needs the unlock.
 

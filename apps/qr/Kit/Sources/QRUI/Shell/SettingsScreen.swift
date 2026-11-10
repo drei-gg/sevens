@@ -21,6 +21,7 @@ public struct SettingsScreen: View {
                 }
             }
             historySection(keepHistory: $settings.keepHistory)
+            KnownAddressesSection()
             aboutSection
             #if DEBUG
             SevenDebugPanel()
@@ -80,6 +81,7 @@ public struct SettingsScreen: View {
     private var aboutSection: some View {
         Section {
             AboutVersionRow()
+            ListsAboutRow()
             if let changelog = SettingsInfo.changelog() { AboutWhatsNewRow(text: changelog) }
             if let address = SettingsInfo.supportEmail() {
                 AboutSupportRow(address: address,

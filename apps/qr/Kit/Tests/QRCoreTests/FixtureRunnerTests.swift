@@ -35,6 +35,7 @@ import Testing
     func everyFixturePasses() throws {
         let analyzer = Analyzer(data: BundledData.shared)
         for c in try Fixtures.all() {
+            let analyzer = c.known == nil ? analyzer : Analyzer(data: BundledData.shared, known: c.knownAddresses)
             let problems = Fixtures.mismatches(c, analyzer.analyze(c.scannedCode))
             #expect(problems.isEmpty, "\(c.id): \(problems.joined(separator: "; "))")
         }

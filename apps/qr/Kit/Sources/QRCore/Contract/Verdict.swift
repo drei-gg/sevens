@@ -1,4 +1,4 @@
-// Contract, frozen at qr-contract-1.
+// Contract, frozen at qr-contract-1; additions at qr-contract-2 (brandOtherEnding, unknownEnding, knownByYou).
 
 public enum Level: Int, Codable, Sendable, Comparable {
     case normal = 0, careful = 1, likelyScam = 2
@@ -13,7 +13,8 @@ public enum SignalID: String, Codable, Sendable, CaseIterable {
     // offline, links (SPEC 4.2)
     case dangerousScheme, userinfoTrick, mixedScript, lookalikeBrand, brandInDomain   // strong
     case nearBrand, ipHost, shortener, plainHTTP, riskyTLD, deepSubdomains,
-         obfuscatedPath, unknownScheme                                                 // warning
+         obfuscatedPath, unknownScheme,                                                // warning
+         brandOtherEnding  // a brand's exact name on a common ending we don't list for it (SPEC §4.2)
     // offline, other payloads
     case openWiFi                                                                      // warning
     case paymentChecksumFail                                                           // strong
@@ -23,6 +24,8 @@ public enum SignalID: String, Codable, Sendable, CaseIterable {
          asksForSecret, formPostsElsewhere, downloadsFile, domainNew                   // warning
     // info: shown, never change the verdict
     case assumedHTTPS, sharedHostingDomain, needsJavaScript, ageUnknown, peekIncomplete
+    case unknownEnding  // the ending isn't in the suffix list; the last label was used (SPEC §4.2)
+    case knownByYou     // the person said they know this registrable domain (SPEC §4.4)
 
     /// Fixed per ID, exactly as grouped above.
     public var severity: Severity {
@@ -33,9 +36,10 @@ public enum SignalID: String, Codable, Sendable, CaseIterable {
         case .nearBrand, .ipHost, .shortener, .plainHTTP, .riskyTLD, .deepSubdomains,
              .obfuscatedPath, .unknownScheme, .openWiFi, .redirectsToHTTP, .redirectLeavesWeb,
              .tooManyRedirects, .scriptRedirect, .asksForSecret, .formPostsElsewhere,
-             .downloadsFile, .domainNew:
+             .downloadsFile, .domainNew, .brandOtherEnding:
             return .warning
-        case .assumedHTTPS, .sharedHostingDomain, .needsJavaScript, .ageUnknown, .peekIncomplete:
+        case .assumedHTTPS, .sharedHostingDomain, .needsJavaScript, .ageUnknown, .peekIncomplete,
+             .unknownEnding, .knownByYou:
             return .info
         }
     }

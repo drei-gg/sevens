@@ -16,11 +16,16 @@ public struct BundledData: Sendable {
     /// ISO 4217 numeric → alpha.
     public var currencies: [String: String]
     public var rdap: RDAPBootstrap
+    /// Tracking tags Make offers to remove (qr-contract-2, SPEC §8).
+    public var trackingParams: [TrackingParam]
+    /// When these lists were built (qr-contract-2, SPEC §4.3).
+    public var lists: ListsVersion
 
     public init(publicSuffixes: PublicSuffixList, brands: [Brand] = [], shorteners: Set<String> = [],
                 riskyTLDs: [RiskyTLD] = [], confusables: [String: String] = [:], baitWords: [String] = [],
                 paymentNetworks: PaymentNetworks = PaymentNetworks(), currencies: [String: String] = [:],
-                rdap: RDAPBootstrap = RDAPBootstrap(json: Data())) {
+                rdap: RDAPBootstrap = RDAPBootstrap(json: Data()), trackingParams: [TrackingParam] = [],
+                lists: ListsVersion = ListsVersion(schema: ListsBundle.currentSchema, version: 0, built: "")) {
         self.publicSuffixes = publicSuffixes
         self.brands = brands
         self.shorteners = shorteners
@@ -30,6 +35,8 @@ public struct BundledData: Sendable {
         self.paymentNetworks = paymentNetworks
         self.currencies = currencies
         self.rdap = rdap
+        self.trackingParams = trackingParams
+        self.lists = lists
     }
 
     /// Loaded on first use, thread-safely. The app touches it on a background task at launch
@@ -61,7 +68,10 @@ public struct BundledData: Sendable {
             baitWords: json("bait-words.json", as: [String].self) ?? [],
             paymentNetworks: json("payment-networks.json", as: PaymentNetworks.self) ?? PaymentNetworks(),
             currencies: json("currencies.json", as: [String: String].self) ?? [:],
-            rdap: RDAPBootstrap(json: data("rdap-dns.json") ?? Data())
+            rdap: RDAPBootstrap(json: data("rdap-dns.json") ?? Data()),
+            trackingParams: json("tracking-params.json", as: [TrackingParam].self) ?? [],
+            lists: json("lists-version.json", as: ListsVersion.self)
+                ?? ListsVersion(schema: ListsBundle.currentSchema, version: 0, built: "")
         )
     }
 }

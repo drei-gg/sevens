@@ -9,7 +9,9 @@ public struct LinkInfo: Sendable, Hashable {
     public var hostASCII: String
     /// Decoded form, for display.
     public var hostUnicode: String
-    /// Unicode form; nil for IPs and unknown suffixes.
+    /// Unicode form; nil only for IP hosts. When the ending isn't in the bundled suffix list, the
+    /// last label is taken as the suffix (so `paypal.evil-site.newtldxyz` → `evil-site.newtldxyz`)
+    /// and the checks add the info signal `unknownEnding` (SPEC §4.2, qr-contract-2).
     public var registrableDomain: String?
     public var publicSuffix: String?
     /// e.g. github.io

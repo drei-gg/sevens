@@ -165,6 +165,20 @@ public enum SignalText {
         case .peekIncomplete:
             return String(localized: "signal.peekIncomplete",
                           defaultValue: "Peek didn't finish, so what it shows may be incomplete.", bundle: .module)
+        case .brandOtherEnding:
+            if let brand = arg(args, "brand") {
+                return String(localized: "signal.brandOtherEnding.brand",
+                              defaultValue: "This isn't an address we know for \(brand).", bundle: .module)
+            }
+            return String(localized: "signal.brandOtherEnding",
+                          defaultValue: "This uses a well-known brand's name, but it isn't an address we know for them.",
+                          bundle: .module)
+        case .unknownEnding:
+            return String(localized: "signal.unknownEnding",
+                          defaultValue: "We don't recognize this domain ending.", bundle: .module)
+        case .knownByYou:
+            return String(localized: "signal.knownByYou",
+                          defaultValue: "You told us you know this address.", bundle: .module)
         }
     }
 

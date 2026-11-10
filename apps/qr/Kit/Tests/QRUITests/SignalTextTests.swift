@@ -21,8 +21,8 @@ import SevenKit
         text.range(of: "\\bsafe", options: [.regularExpression, .caseInsensitive]) != nil
     }
 
-    @Test func thereAreThirtyOneSignalIDs() {
-        #expect(SignalID.allCases.count == 31)
+    @Test func thereAreThirtyFourSignalIDs() {
+        #expect(SignalID.allCases.count == 34)
     }
 
     @Test func everySignalIDHasAShortPlainSentenceWithAndWithoutArgs() {

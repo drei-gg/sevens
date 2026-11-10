@@ -20,9 +20,18 @@ struct FixtureCase: Decodable, Sendable, CustomTestStringConvertible {
     var inputBase64: String?
     var symbology: String?
     var note: String?
+    /// Optional (qr-contract-2): registrable domains the person told us they know (SPEC §4.4).
+    /// The runner analyzes this case with `Analyzer(data:known:)`.
+    var known: [String]?
     var expect: Expect
 
     var testDescription: String { id }
+
+    var knownAddresses: KnownAddresses {
+        var k = KnownAddresses()
+        for (i, d) in (known ?? []).enumerated() { k.add(d, at: Date(timeIntervalSince1970: Double(i))) }
+        return k
+    }
 
     var scannedCode: ScannedCode {
         let sym = symbology.flatMap(Symbology.init(rawValue:)) ?? .qr
