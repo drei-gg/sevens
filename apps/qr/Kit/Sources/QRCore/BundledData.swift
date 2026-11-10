@@ -1,7 +1,7 @@
 import Foundation
 
-// WP 2.1 owns this file. Phase 0 draft: loads every file in Data/, missing files give empty
-// values. Public members are the seam; keep them.
+// Loads every file in Data/, missing files give empty values. `shared` is what the analyzer and
+// Make read; accepted downloaded lists swap it in place (SPEC §4.3, Lists/BundledDataLists.swift).
 
 /// Everything in `Data/`, parsed once. Immutable after load.
 public struct BundledData: Sendable {
@@ -39,21 +39,41 @@ public struct BundledData: Sendable {
         self.lists = lists
     }
 
+    /// The lists in use: the bundled ones, or a saved download when it is newer (SPEC §4.3).
     /// Loaded on first use, thread-safely. The app touches it on a background task at launch
-    /// so the first `analyze` rarely waits (SPEC §4.3).
-    public static let shared: BundledData = load()
+    /// so the first `analyze` rarely waits. `reload(downloaded:)` replaces it.
+    public static var shared: BundledData {
+        sharedBox.get { load(downloaded: ListsStore().read()) }
+    }
+
+    /// Swaps in the bundled lists or a newer download, whichever has the higher version. QRUI
+    /// calls this after accepting a download (with its bytes) or after a reset (with nil).
+    public static func reload(downloaded: Data?) {
+        sharedBox.set(load(downloaded: downloaded))
+    }
 
     /// Starts loading `shared` on a background task. Cheap; call once at launch.
     public static func preload() {
         _ = Task.detached(priority: .utility) { _ = BundledData.shared }
     }
 
-    /// Loads from the package's own resource bundle (`Data/` copied as a folder).
+    private static let sharedBox = SharedBox()
+
+    /// One file of `Data/`, from the package's own resource bundle (copied as a folder).
+    static func resource(_ name: String) -> Data? {
+        guard let dir = Bundle.module.url(forResource: "Data", withExtension: nil) else { return nil }
+        return try? Data(contentsOf: dir.appendingPathComponent(name))
+    }
+
+    /// The version of the lists that shipped with the app, whatever is saved.
+    public static func bundledListsVersion() -> ListsVersion {
+        resource("lists-version.json").flatMap { try? JSONDecoder().decode(ListsVersion.self, from: $0) }
+            ?? ListsVersion(schema: ListsBundle.currentSchema, version: 0, built: "")
+    }
+
+    /// Loads only what shipped with the app (`Data/` copied as a folder).
     public static func load() -> BundledData {
-        func data(_ name: String) -> Data? {
-            guard let dir = Bundle.module.url(forResource: "Data", withExtension: nil) else { return nil }
-            return try? Data(contentsOf: dir.appendingPathComponent(name))
-        }
+        func data(_ name: String) -> Data? { resource(name) }
         func json<T: Decodable>(_ name: String, as: T.Type) -> T? {
             guard let d = data(name) else { return nil }
             return try? JSONDecoder().decode(T.self, from: d)
@@ -73,5 +93,26 @@ public struct BundledData: Sendable {
             lists: json("lists-version.json", as: ListsVersion.self)
                 ?? ListsVersion(schema: ListsBundle.currentSchema, version: 0, built: "")
         )
+    }
+}
+
+/// The one shared instance, behind a lock so it can be replaced.
+private final class SharedBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: BundledData?
+
+    func get(_ make: () -> BundledData) -> BundledData {
+        lock.lock()
+        defer { lock.unlock() }
+        if let value { return value }
+        let made = make()
+        value = made
+        return made
+    }
+
+    func set(_ new: BundledData) {
+        lock.lock()
+        value = new
+        lock.unlock()
     }
 }

@@ -1,0 +1,77 @@
+# Publishes the scam lists the QR app can fetch when someone taps "Check for newer lists"
+# (SPEC §4.3). Not run until Drei pushes, enables it and creates the LISTS_SIGNING_KEY secret.
+# No third-party actions beyond GitHub's own checkout.
+#
+# One-time setup, on a private machine (never in this repository or on a shared one):
+#   openssl genpkey -algorithm ed25519 -out lists-key.pem
+#   openssl pkey -in lists-key.pem -pubout -outform DER | tail -c 32 | xxd -p -c 64   # public key, 64 hex
+# Put the whole PEM in the repository secret LISTS_SIGNING_KEY, the hex in the brand's
+# Brand.xcconfig as SEVENS_LISTS_KEY_CURRENT (and later a replacement as SEVENS_LISTS_KEY_NEXT).
+name: lists
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "apps/qr/Kit/Sources/QRCore/Data/**"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: lists
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build, sign and publish lists.json
+    runs-on: ubuntu-24.04
+    container: swift:6.3   # keep in step with scripts/swift-version
+    env:
+      LISTS_SIGNING_KEY: ${{ secrets.LISTS_SIGNING_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Tools
+        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates curl git openssl python3
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: The key exists
+        run: |
+          [ -n "$LISTS_SIGNING_KEY" ] || { echo "LISTS_SIGNING_KEY is not set; nothing published" >&2; exit 1; }
+      - name: Open the lists branch
+        run: |
+          git fetch origin lists:refs/remotes/origin/lists || true
+          if git rev-parse --verify -q refs/remotes/origin/lists >/dev/null; then
+            git worktree add -B lists "$RUNNER_TEMP/published" refs/remotes/origin/lists
+          else
+            git worktree add --orphan -b lists "$RUNNER_TEMP/published"
+          fi
+      - name: Build lists.json
+        run: |
+          previous=()
+          [ -f "$RUNNER_TEMP/published/lists.json" ] && previous=(--previous "$RUNNER_TEMP/published/lists.json")
+          scripts/refresh-lists "${previous[@]}" "$RUNNER_TEMP/out"
+      - name: Sign the exact bytes
+        run: |
+          [ -f "$RUNNER_TEMP/out/lists.json" ] || { echo "lists unchanged"; exit 0; }
+          umask 077
+          key="$RUNNER_TEMP/key.pem"
+          printf '%s\n' "$LISTS_SIGNING_KEY" > "$key"
+          openssl pkey -in "$key" -pubout -out "$RUNNER_TEMP/pub.pem"
+          openssl pkeyutl -sign -rawin -inkey "$key" -in "$RUNNER_TEMP/out/lists.json" -out "$RUNNER_TEMP/out/lists.json.sig"
+          openssl pkeyutl -verify -rawin -pubin -inkey "$RUNNER_TEMP/pub.pem" \
+            -in "$RUNNER_TEMP/out/lists.json" -sigfile "$RUNNER_TEMP/out/lists.json.sig"
+          echo "signed with public key: $(openssl pkey -in "$key" -pubout -outform DER | tail -c 32 | od -An -tx1 | tr -d ' \n')"
+          rm -f "$key"
+      - name: Publish to the lists branch
+        run: |
+          [ -f "$RUNNER_TEMP/out/lists.json.sig" ] || exit 0
+          cd "$RUNNER_TEMP/published"
+          cp "$RUNNER_TEMP/out/lists.json" "$RUNNER_TEMP/out/lists.json.sig" .
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lists.json lists.json.sig
+          git commit -m "Lists: $(python3 -c 'import json;d=json.load(open("lists.json"));print(d["version"], d["built"])')"
+          git push origin lists
