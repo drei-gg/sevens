@@ -38,6 +38,7 @@ public struct AboutSection: View {
             }
         } header: {
             Text(seven("seven.about.header", "Trial and unlock"))
+                .foregroundStyle(Tokens.muted)
         }
         .unlockSheet(isPresented: $showUnlock)
     }
