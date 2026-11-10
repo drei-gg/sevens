@@ -1,6 +1,6 @@
 import Foundation
 
-/// PLAN §6.3: decides which parser handles a scan. First match wins; a parser that returns nil
+/// SPEC §3: decides which parser handles a scan. First match wins; a parser that returns nil
 /// falls through to the next rule. Also runs the checks that belong to the payload itself.
 struct Classifier: Sendable {
     let ctx: CheckContext

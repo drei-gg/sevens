@@ -3,7 +3,7 @@ import CoreImage.CIFilterBuiltins
 import Foundation
 import QRCore
 
-/// Text to `BitMatrix` through CoreImage (PLAN §6.8).
+/// Text to `BitMatrix` through CoreImage (SPEC §8).
 public enum CodeGenerator {
     /// Longest input we hand to CoreImage, bytes. Bigger inputs are `tooLong` (no QR holds more than 2953).
     static let maxInputBytes = 8192

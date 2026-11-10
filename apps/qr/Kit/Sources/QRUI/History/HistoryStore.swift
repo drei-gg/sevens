@@ -1,7 +1,7 @@
 import Foundation
 import QRCore
 
-// PLAN §6.9 / D13. History is one JSON file in the app's own container:
+// SPEC §10 / D13. History is one JSON file in the app's own container:
 // `Application Support/History/history.v1.json`. Extensions never write it.
 //
 // Public API (everything is `await`ed from outside the actor):

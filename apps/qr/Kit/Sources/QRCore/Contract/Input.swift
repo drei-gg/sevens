@@ -1,4 +1,4 @@
-// Contract (PLAN §5.4), frozen at qr-contract-1. Change only through Opus, with a recorded reason.
+// Contract, frozen at qr-contract-1. Change only through Opus, with a recorded reason.
 
 public enum Symbology: String, Codable, Sendable, CaseIterable {
     case qr, microQR, aztec, pdf417, microPDF417, dataMatrix, code128, code39, code93,

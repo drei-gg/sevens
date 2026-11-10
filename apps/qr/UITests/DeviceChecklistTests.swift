@@ -1,6 +1,6 @@
 import XCTest
 
-/// G9 items a UI test can drive on the iPhone (PLAN §10). Skipped in the Simulator; run by
+/// G9 items a UI test can drive on the iPhone. Skipped in the Simulator; run by
 /// `scripts/vm ui --device`. Peek uses the network: it fetches a public YouTube short link.
 final class DeviceChecklistTests: XCTestCase {
     override func setUpWithError() throws {

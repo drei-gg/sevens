@@ -3,7 +3,7 @@ import Foundation
 /// Text helpers shared by the structured-payload parsers and the encoder. Everything here works on
 /// Unicode scalars (a `;` followed by a combining mark is one `Character`, but still a separator).
 enum StructuredText {
-    /// Analysis input cap (PLAN §4): scanned codes are attacker-controlled.
+    /// Analysis input cap: scanned codes are attacker-controlled.
     static let maxBytes = 8192
 
     static func capped(_ s: String) -> String {

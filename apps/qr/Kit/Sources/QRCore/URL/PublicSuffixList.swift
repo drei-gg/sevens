@@ -11,7 +11,7 @@ public struct PublicSuffixList: Sendable {
         public var isPrivate: Bool
         /// false when only PSL's default rule ("*") applied (D9 uses this).
         public var matchedExplicitRule: Bool
-        /// The registrable domain computed with the ICANN section only (for RDAP, PLAN §6.5).
+        /// The registrable domain computed with the ICANN section only (for RDAP, SPEC §6).
         public var icannRegistrableDomain: String?
 
         public init(publicSuffix: String, registrableDomain: String?, isPrivate: Bool,

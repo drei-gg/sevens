@@ -1,4 +1,4 @@
-// Contract (PLAN §5.4), frozen at qr-contract-1.
+// Contract, frozen at qr-contract-1.
 
 public struct LinkInfo: Sendable, Hashable {
     /// Exactly what was scanned.
@@ -109,7 +109,7 @@ public struct CryptoInfo: Sendable, Hashable {
         self.isLightningInvoice = isLightningInvoice
     }
 
-    /// The address in groups of four (PLAN §6.4), for display.
+    /// The address in groups of four (SPEC §5), for display.
     public var addressGroups: [String] {
         var groups: [String] = []
         var current = ""
@@ -134,10 +134,10 @@ public struct AppLinkInfo: Sendable, Hashable {
 }
 
 public struct TextInfo: Sendable, Hashable {
-    /// The text, cut at 8 KB (PLAN §4 rule 9) when `isTruncated`.
+    /// The text, cut at 8 KB when `isTruncated`.
     public var text: String
     public var isTruncated: Bool
-    /// Links found inside (PLAN §6.2 "Embedded links"), at most 10.
+    /// Links found inside (SPEC §4.2 embedded links), at most 10.
     public var links: [String]
 
     public init(text: String, isTruncated: Bool = false, links: [String] = []) {

@@ -1,6 +1,6 @@
 import Foundation
 
-/// PLAN §6.5 `asksForSecret`: `args["kind"]` is `password`, `code` or `card`.
+/// SPEC §6 `asksForSecret`: `args["kind"]` is `password`, `code` or `card`.
 enum AsksForSecretCheck {
     private static let passwordAutocomplete: Set<String> = ["current-password", "new-password"]
     private static let codeAutocomplete: Set<String> = ["one-time-code"]

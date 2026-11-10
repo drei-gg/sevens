@@ -1,10 +1,10 @@
-// Contract (PLAN §5.4 and §7), frozen at qr-contract-1.
+// Contract, frozen at qr-contract-1. Data shapes: SPEC §4.3.
 // The shapes of the bundled data files in `Data/`. WP 1.2 writes the files; WP 2.1's
 // `BundledData` loads them; checks read them through these types.
 
 public struct Brand: Codable, Sendable, Hashable {
     public var name: String
-    /// Lowercase tokens matched against domain labels and page titles (PLAN §6.2 `brandInDomain`).
+    /// Lowercase tokens matched against domain labels and page titles (SPEC §4.2 `brandInDomain`).
     public var keywords: [String]
     /// The brand's own registrable domains, lowercase, Unicode form.
     public var domains: [String]

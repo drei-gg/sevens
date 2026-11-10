@@ -1,6 +1,6 @@
 import XCTest
 
-/// PLAN §8 WP 4.2: accessibility tour. Every screen at the largest accessibility text size, with a
+/// Accessibility tour. Every screen at the largest accessibility text size, with a
 /// screenshot attached and `performAccessibilityAudit()` (clipped text, labels, contrast, Dynamic Type,
 /// hit regions). Identifiers are QRUI's `QRAccessibilityID` values repeated as literals.
 final class AccessibilityTourTests: XCTestCase {

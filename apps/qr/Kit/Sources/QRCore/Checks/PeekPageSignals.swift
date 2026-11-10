@@ -1,5 +1,5 @@
 extension PeekAnalyzer {
-    /// Signals from the sniffed page (PLAN §6.5).
+    /// Signals from the sniffed page (SPEC §6).
     func pageSignals(_ sniff: HTMLSniff, finalLink: LinkInfo) -> [Signal] {
         var out: [Signal] = []
         if let kind = AsksForSecretCheck.kind(of: sniff.inputs) {

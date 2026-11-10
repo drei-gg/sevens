@@ -2,7 +2,7 @@ import SwiftUI
 import QRCore
 import SevenKit
 
-/// Before you buy, shown once at first launch (PLAN §6.10, D1): SevenKit's screen with two
+/// Before you buy, shown once at first launch (SPEC §13, D1): SevenKit's screen with two
 /// buttons of equal weight, "Start my free 7 days" and "Just scan for free". Either one marks
 /// the screen as shown (SevenKit does that) and calls `onFinish`.
 ///

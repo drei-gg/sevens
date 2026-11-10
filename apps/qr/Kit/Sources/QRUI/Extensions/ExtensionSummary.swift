@@ -1,7 +1,7 @@
 import Foundation
 import QRCore
 
-/// The one "main field" line an extension shows under a verdict (PLAN §6.11): the domain for
+/// The one "main field" line an extension shows under a verdict (SPEC §9): the domain for
 /// links, the payee for payments, the network for Wi-Fi, and so on.
 struct ExtensionSummary: Equatable, Sendable {
     var label: String

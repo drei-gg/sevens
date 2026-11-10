@@ -2,7 +2,7 @@ import Foundation
 import os
 import QRCore
 
-/// The only custom network code in the app (PLAN §4 rule 3, §6.5). One fresh ephemeral session
+/// The only custom network code in the app (SPEC §6, §12). One fresh ephemeral session
 /// per Peek, no cookies, no cache, no credentials, system trust only.
 public struct PeekClient: Sendable {
     /// iPhone Safari on iOS 26 (the OS version in a Safari UA string stays frozen at 18_6).

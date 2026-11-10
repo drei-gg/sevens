@@ -1,6 +1,6 @@
 import Foundation
 
-// Contract (PLAN §5.4), frozen at qr-contract-1.
+// Contract, frozen at qr-contract-1.
 
 public struct WiFiInfo: Sendable, Hashable {
     public var ssid: String
@@ -24,7 +24,7 @@ public struct WiFiInfo: Sendable, Hashable {
     }
 
     public var isEnterprise: Bool { eapMethod != nil || (security?.contains("EAP") ?? false) }
-    /// PLAN §6.2 `openWiFi`: `T` missing, empty or `nopass`.
+    /// SPEC §4.2 `openWiFi`: `T` missing, empty or `nopass`.
     public var isOpen: Bool {
         guard let s = security?.trimmingCharacters(in: .whitespaces), !s.isEmpty else { return true }
         return s.lowercased() == "nopass"
@@ -44,7 +44,7 @@ public struct ContactInfo: Sendable, Hashable {
     public var note: String?
     /// As written (vCard `BDAY`).
     public var birthday: String?
-    /// Every link to check: `urls` plus links found in `note` (PLAN §6.2), at most 10.
+    /// Every link to check: `urls` plus links found in `note` (SPEC §4.2), at most 10.
     public var links: [String]
 
     public init(name: String? = nil, givenName: String? = nil, familyName: String? = nil,

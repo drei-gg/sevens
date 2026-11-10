@@ -1,6 +1,6 @@
 import Foundation
 
-/// Which body the History screen shows (PLAN §6.9). Decided by the number of saved items, not by
+/// Which body the History screen shows (SPEC §10). Decided by the number of saved items, not by
 /// the current search: a search with no match is a different message.
 enum HistoryEmptyState: Equatable {
     case list        // there are items to show

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Host handling for `WebAddress` (PLAN §6.1 steps 3-5). Pure functions; no Foundation.URL.
+/// Host handling for `WebAddress`. Pure functions; no Foundation.URL.
 enum URLHost {
     struct Parsed {
         var ascii: String

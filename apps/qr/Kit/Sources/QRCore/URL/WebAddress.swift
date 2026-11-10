@@ -2,13 +2,13 @@ import Foundation
 
 // WP 1.1 owns this file. Signatures below are the seam other packages call; keep them.
 
-/// A browser-like address parser (D6, PLAN §6.1). Never uses Foundation.URL to find the host.
+/// A browser-like address parser (D6). Never uses Foundation.URL to find the host.
 public struct WebAddress: Sendable, Hashable {
     public enum HostKind: Sendable, Hashable { case domain, ipv4, ipv6 }
 
     public var link: LinkInfo
     public var hostKind: HostKind
-    /// A label failed punycode conversion (PLAN §6.1 step 5): the checks add `mixedScript`.
+    /// A label failed punycode conversion: the checks add `mixedScript`.
     public var hasMalformedLabel: Bool
     /// The public suffix came from an explicit PSL rule.
     public var suffixIsKnown: Bool
@@ -23,7 +23,7 @@ public struct WebAddress: Sendable, Hashable {
         self.assumedHTTPS = assumedHTTPS
     }
 
-    /// The scheme per PLAN §6.1 step 2 (letters, digits, `+ - .` before the first `:`,
+    /// The scheme per the WHATWG URL rules (letters, digits, `+ - .` before the first `:`,
     /// starting with a letter), lowercased; nil when the text has none. Input is trimmed first.
     public static func scheme(of text: String) -> String? {
         splitScheme(URLText.clean(text))?.scheme

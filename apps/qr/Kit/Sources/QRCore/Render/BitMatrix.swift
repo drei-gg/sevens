@@ -1,4 +1,4 @@
-// Contract (PLAN §5.4). WP 1.7 owns this folder and may add to this type; don't change what's here.
+// Contract. WP 1.7 owns this folder and may add to this type; don't change what's here.
 
 /// A grid of modules, row-major, `true` = dark.
 public struct BitMatrix: Sendable, Hashable {

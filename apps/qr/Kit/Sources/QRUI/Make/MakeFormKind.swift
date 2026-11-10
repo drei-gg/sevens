@@ -1,6 +1,6 @@
 import QRCore
 
-/// The nine kinds of code the Make screen builds (PLAN §6.8).
+/// The nine kinds of code the Make screen builds (SPEC §8).
 enum MakeFormKind: String, CaseIterable, Identifiable, Hashable, Sendable {
     case link, text, wifi, contact, event, email, sms, phone, location
 

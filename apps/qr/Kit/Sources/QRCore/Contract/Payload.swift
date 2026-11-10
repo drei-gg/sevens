@@ -1,7 +1,7 @@
-// Contract (PLAN §5.4), frozen at qr-contract-1.
+// Contract, frozen at qr-contract-1.
 
 public enum Payload: Sendable, Hashable {
-    /// http/https, including D9 schemeless links. Also the dangerous schemes of PLAN §6.2
+    /// http/https, including D9 schemeless links. Also the dangerous schemes of SPEC §4.2
     /// (`javascript:`, `data:`, …), which carry `dangerousScheme`; their LinkInfo has an
     /// empty host and everything after the colon in `pathAndQuery`.
     case link(LinkInfo)

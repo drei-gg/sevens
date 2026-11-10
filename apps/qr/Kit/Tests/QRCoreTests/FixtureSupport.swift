@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import QRCore
 
-// Phase 0 owns this file. Shared by every package's fixture tests (PLAN §5.5).
+// Phase 0 owns this file. Shared by every package's fixture tests (SPEC §16).
 
 struct FixtureCase: Decodable, Sendable, CustomTestStringConvertible {
     struct Expect: Decodable, Sendable {
@@ -10,7 +10,7 @@ struct FixtureCase: Decodable, Sendable, CustomTestStringConvertible {
         var level: Int
         var signals: [String]
         /// Optional: info signal IDs expected across the analysis and its embedded analyses.
-        /// Compared only when present (PLAN §5.5 compares non-info signals; this extends it).
+        /// Compared only when present (the runner compares non-info signals; this extends it).
         var info: [String]?
         var fields: [String: String]?
     }

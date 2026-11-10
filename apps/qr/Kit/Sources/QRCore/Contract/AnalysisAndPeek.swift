@@ -1,10 +1,10 @@
-// Contract (PLAN §5.4), frozen at qr-contract-1.
+// Contract, frozen at qr-contract-1.
 // `Analyzer` lives in Analyzer.swift and `PeekAnalyzer` in Peek/PeekAnalyzer.swift (WP 2.1).
 
 public struct Analysis: Sendable, Hashable {
     public var code: ScannedCode
     public var payload: Payload
-    /// This payload's own, in a stable order (PLAN §6.2).
+    /// This payload's own, in a stable order (SPEC §4.2).
     public var signals: [Signal]
     /// Links found inside text, contacts, events, SMS and email bodies.
     public var embedded: [Analysis]

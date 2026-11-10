@@ -3,7 +3,7 @@ import Testing
 @testable import QRCore
 
 /// WP 1.2: every bundled data file (other than the PSL and RDAP bootstrap) decodes into its
-/// type and obeys the rules in PLAN §7. The count of brands is 120–200.
+/// type and obeys the rules in SPEC §4.3. The count of brands is 120–200.
 @Suite struct DataShapeTests {
     static let data = BundledData.load()
 

@@ -2,13 +2,13 @@ import SwiftUI
 import QRCore
 import SevenKit
 
-/// Settings and About (PLAN §6.12): one screen.
+/// Settings and About (SPEC §11): one screen.
 public struct SettingsScreen: View {
     @Environment(AppModel.self) private var model
     @State private var showBeforeYouBuy = false
     @State private var confirmClear = false
 
-    /// Settings and About (PLAN §6.12). Pushed inside a NavigationStack.
+    /// Settings and About (SPEC §11). Pushed inside a NavigationStack.
     public init() {}
 
     public var body: some View {

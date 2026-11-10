@@ -1,6 +1,6 @@
 // WP 1.6 owns this file. Signatures below are the seam PeekAnalyzer (WP 2.1) calls; keep them.
 
-/// What a forgiving tag scan finds in a page (PLAN §6.5). Not a DOM.
+/// What a forgiving tag scan finds in a page (SPEC §6). Not a DOM.
 public struct HTMLSniff: Sendable, Hashable {
     public struct Input: Sendable, Hashable {
         public var type: String?, name: String?, id: String?, autocomplete: String?, placeholder: String?

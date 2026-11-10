@@ -2,7 +2,7 @@ import SwiftUI
 import QRCore
 import SevenKit
 
-/// The History list (PLAN §6.9). Free to read: search, notes, export and delete work in every
+/// The History list (SPEC §10). Free to read: search, notes, export and delete work in every
 /// state; only saving new scans needs the trial or the unlock.
 public struct HistoryScreen: View {
     @Environment(AppModel.self) private var model
@@ -16,7 +16,7 @@ public struct HistoryScreen: View {
     @State private var confirmDeleteSelection = false
     @State private var showUnlock = false
 
-    /// The History list (free to read, PLAN §6.9). Pushed inside a NavigationStack.
+    /// The History list (free to read, SPEC §10). Pushed inside a NavigationStack.
     public init() {}
 
     private var emptyState: HistoryEmptyState {

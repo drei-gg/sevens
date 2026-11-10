@@ -1,7 +1,7 @@
 import Foundation
 import QRCore
 
-/// Every action a result can offer (PLAN §6.7, SPEC §3).
+/// Every action a result can offer (SPEC §3).
 enum ResultAction: Hashable, Sendable {
     case open, peek
     case joinWiFi, copyPassword
@@ -97,7 +97,7 @@ enum ResultActionPlan {
 
     static func hasPassword(_ info: WiFiInfo) -> Bool { !(info.password ?? "").isEmpty }
 
-    /// D8 and PLAN §6.7: a `likelyScam` result asks first, naming the registrable domain.
+    /// D8 and SPEC §3: a `likelyScam` result asks first, naming the registrable domain.
     static func needsOpenConfirmation(level: Level) -> Bool { level == .likelyScam }
 
     /// Only http(s) links with a host can be opened or Peeked (SFSafariViewController refuses anything else).

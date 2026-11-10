@@ -1,4 +1,4 @@
-// ScannerView: the live camera scanner (PLAN §6.6) for WP 3.1's scan screen.
+// ScannerView: the live camera scanner (SPEC §2) for WP 3.1's scan screen.
 //
 // Public API
 //   ScannerView(isActive: Bool,

@@ -1,4 +1,4 @@
-/// C16 (PLAN §9): in-code loosening where `brands.json` is missing an official domain or a brand
+/// C16: in-code loosening where `brands.json` is missing an official domain or a brand
 /// word misfires on ordinary sites. Brand names are spelled as in `brands.json`.
 /// These belong in the data file; WP 1.2 owns it, so they live here until Opus moves them.
 enum BrandOverrides {

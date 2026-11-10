@@ -1,6 +1,6 @@
 import Foundation
 
-// Contract (PLAN §5.4): the signature is frozen. The text produced round-trips through the parsers
+// Contract: the signature is frozen. The text produced round-trips through the parsers
 // in this folder (for the fields each encoding carries).
 
 public enum PayloadEncoder {

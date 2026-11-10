@@ -26,7 +26,7 @@ import SevenKitCore
 //   historyIsLocked    paid features NOT available: nothing new is saved, everything else works
 //   record(_:kind:) / record(code:kind:)   save a scan or a made code; no-op unless canSaveHistory
 //   searchHistory(_:), setNote(_:for:), deleteHistory(ids:), clearHistory(),
-//   exportHistoryJSON(), exportHistoryCSV()    never gated (PLAN §6.9/§6.10, SPEC §13)
+//   exportHistoryJSON(), exportHistoryCSV()    never gated (SPEC §10, §13)
 //
 // Lifecycle: start(), sceneDidBecomeActive(), sceneDidEnterBackground() (flushes History).
 //

@@ -1,4 +1,4 @@
-// Contract (PLAN §5.4), frozen at qr-contract-1.
+// Contract, frozen at qr-contract-1.
 
 public enum Level: Int, Codable, Sendable, Comparable {
     case normal = 0, careful = 1, likelyScam = 2
@@ -55,7 +55,7 @@ public struct Signal: Codable, Sendable, Hashable {
 }
 
 extension Array where Element == Signal {
-    /// PLAN §6.2: strong first, then warning, then info, each in the enum's declaration order.
+    /// SPEC §4.2: strong first, then warning, then info, each in the enum's declaration order.
     /// Stable: signals with the same ID keep their relative order.
     public func inStableOrder() -> [Signal] {
         let rank: (Signal) -> Int = { s in

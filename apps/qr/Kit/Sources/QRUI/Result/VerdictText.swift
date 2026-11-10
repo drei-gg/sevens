@@ -13,7 +13,7 @@ public enum VerdictText {
         }
     }
 
-    /// Color and SF Symbol come from SevenKit (PLAN §6.13).
+    /// Color and SF Symbol come from SevenKit.
     public static func style(for level: Level) -> Tokens.VerdictStyle {
         switch level {
         case .normal: return .normal

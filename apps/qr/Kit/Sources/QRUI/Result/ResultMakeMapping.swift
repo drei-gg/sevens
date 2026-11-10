@@ -1,7 +1,7 @@
 import Foundation
 import QRCore
 
-/// Payload → what Make should be pre-filled with (PLAN §6.7 "Make code").
+/// Payload → what Make should be pre-filled with (SPEC §3 "Make code").
 enum ResultMakeMapping {
     /// Link, text, Wi-Fi, contact, event, email, SMS, phone and location map to their own Make
     /// type; payments, crypto and app links become text of the original. Binary has no text: nil.

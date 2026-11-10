@@ -1,6 +1,6 @@
 import XCTest
 
-/// PLAN §8 WP 4.1: the one UI smoke test.
+/// The one UI smoke test.
 /// Inject a userinfo-trick link → "Likely scam" is visible → dismiss → Make a link code → History shows it.
 /// Debug-only launch arguments (QRUI `QRLaunchArgument`) set up a known state; identifiers are
 /// QRUI's `QRAccessibilityID` values, repeated here as literals because UI tests can't import QRUI.

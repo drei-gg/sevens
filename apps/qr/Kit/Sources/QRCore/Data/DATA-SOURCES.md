@@ -6,7 +6,7 @@ below: **2026-11-10** unless a line says otherwise. The curated lists (`brands.j
 `confusables.json`) are this repository's own work and carry its licence, GPL-3.0. They are factual
 lists compiled from the public sources named here.
 
-Rule used throughout (PLAN C13): an entry that could not be verified is left out. A short honest
+Rule used throughout : an entry that could not be verified is left out. A short honest
 list beats a long guessed one.
 
 ## `public_suffix_list.dat` (WP 1.1)
@@ -20,7 +20,7 @@ Downloaded by WP 1.6 from https://data.iana.org/rdap/dns.json (IANA RDAP bootstr
 
 ## `brands.json`
 
-200 brands (the PLAN's 120–200 range), 292 official domains. Each brand has at least one verified
+200 brands, 292 official domains. Each brand has at least one verified
 official domain.
 
 **Selection.** Brands that phishing-trend reports and national advisories name as commonly
@@ -103,9 +103,9 @@ Curated subset of Unicode's `confusables.txt` (UTS #39, version 18.0.0, dated 20
 https://www.unicode.org/Public/security/latest/confusables.txt, accessed 2026-11-10. Selection:
 lowercase Greek and Cyrillic letters in the Basic Multilingual Plane, and the fullwidth lowercase
 letters and digits, whose Unicode skeleton is a single ASCII letter or digit. Values are lowercase
-ASCII. Because the app also maps `i` to `l`, `1` to `l` and `0` to `o` (PLAN §6.2), targets of `i`,
+ASCII. Because the app also maps `i` to `l`, `1` to `l` and `0` to `o` (SPEC §4.2), targets of `i`,
 `1` and `0` are written as `l`, `l` and `o` so that one pass gives the same skeleton as an all-ASCII
-spelling. The five ASCII pairs from PLAN §6.2 are added by hand: `0→o`, `1→l`, `i→l`, `rn→m`,
+spelling. The five ASCII pairs from SPEC §4.2 are added by hand: `0→o`, `1→l`, `i→l`, `rn→m`,
 `vv→w`. Licence: Unicode License v3 (https://www.unicode.org/license.txt); the data comes from the
 Unicode Consortium and is reduced here.
 

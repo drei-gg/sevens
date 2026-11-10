@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// The app's own settings (PLAN §6.12), kept in `UserDefaults`.
+/// The app's own settings (SPEC §11), kept in `UserDefaults`.
 ///
 /// `keepHistory` is the "Keep history" toggle, on by default. Turning it off stops *new* saving;
 /// it does not delete what is already there ("Clear history" does that, with a confirmation).

@@ -3,7 +3,7 @@
 public enum EMVParser {
     static let maxBytes = 8 * 1024
 
-    /// An EMVCo merchant-presented payload (PLAN §6.4), or nil if it isn't one.
+    /// An EMVCo merchant-presented payload (SPEC §5), or nil if it isn't one.
     /// `checksum` is `.invalid` on a CRC mismatch; the Analyzer turns that into `paymentChecksumFail`.
     public static func parse(_ text: String, networks: [EMVNetwork], currencies: [String: String]) -> PaymentInfo? {
         let bytes = Array(text.utf8)

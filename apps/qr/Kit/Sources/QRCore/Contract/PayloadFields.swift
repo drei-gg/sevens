@@ -1,6 +1,6 @@
 import Foundation
 
-// Contract (PLAN §5.4), frozen at qr-contract-1.
+// Contract, frozen at qr-contract-1.
 // The flat `fields` view of every payload. These keys are what fixtures' "fields" match
 // against and what the CSV export writes. nil values are omitted; booleans are "true"/"false";
 // lists are joined with "\n"; dates are ISO 8601 (see `EventInfo`).

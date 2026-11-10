@@ -4,7 +4,7 @@ import SevenKitCore
 import SwiftUI
 import UIKit
 
-/// The Make QR code share extension (PLAN §6.11). Gated: a trial or unlock is needed (D2).
+/// The Make QR code share extension (SPEC §9). Gated: a trial or unlock is needed (D2).
 /// Builds the payload from the shared items, shows the code full width with brightness raised,
 /// and offers Save image, Copy and Done. Writes no History (D13); no purchase happens here.
 public struct MakeExtensionRoot: View {

@@ -1,6 +1,6 @@
 import Foundation
 
-// PLAN §6.9. One saved scan or made code.
+// SPEC §10. One saved scan or made code.
 
 public struct HistoryItem: Codable, Sendable, Hashable, Identifiable {
     public enum Kind: String, Codable, Sendable { case scanned, made }

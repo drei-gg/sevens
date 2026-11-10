@@ -1,6 +1,6 @@
 import Foundation
 
-/// Export file naming and the temporary file the share sheet hands out (PLAN §6.9).
+/// Export file naming and the temporary file the share sheet hands out (SPEC §10).
 enum HistoryExportFiles {
     enum Format: Sendable, Equatable {
         case json, csv

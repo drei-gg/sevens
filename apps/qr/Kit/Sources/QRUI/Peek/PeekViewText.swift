@@ -1,7 +1,7 @@
 import Foundation
 import QRCore
 
-/// The wording of a Peek result, as pure functions (PLAN §6.5).
+/// The wording of a Peek result, as pure functions (SPEC §6).
 enum PeekViewText {
     /// "Registered 12 days ago" / "Age unknown".
     static func age(days: Int?) -> String {

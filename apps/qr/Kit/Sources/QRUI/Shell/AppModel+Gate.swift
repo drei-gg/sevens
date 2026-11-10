@@ -1,7 +1,7 @@
 import SwiftUI
 import SevenKit
 
-/// Gate wiring (PLAN §6.10): what the unlock sheet, Before-you-buy and trial-ended screens say
+/// Gate wiring (SPEC §13): what the unlock sheet, Before-you-buy and trial-ended screens say
 /// for this app. All words are QR-specific and live here; SevenKit hard-codes none. No price
 /// is written anywhere: Before-you-buy uses the `{price}` placeholder, filled from StoreKit
 /// at runtime, with a price-free fallback (G7).

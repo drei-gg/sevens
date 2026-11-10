@@ -2,7 +2,7 @@ import QRCore
 import SevenKit
 import SwiftUI
 
-/// Make a code from one of nine kinds of content, see it live, style it, export it (PLAN §6.8).
+/// Make a code from one of nine kinds of content, see it live, style it, export it (SPEC §8).
 /// The caller gates this screen (Make and export are paid); it doesn't gate again.
 public struct MakeScreen: View {
     let prefill: MakeRequest?

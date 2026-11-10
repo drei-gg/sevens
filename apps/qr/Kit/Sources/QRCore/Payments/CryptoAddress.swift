@@ -1,5 +1,5 @@
 public enum CryptoAddress {
-    /// A bare address (PLAN §6.4: bech32/bech32m with valid checksum and known prefix,
+    /// A bare address (SPEC §5: bech32/bech32m with valid checksum and known prefix,
     /// `0x` + 40 hex, base58 26–35 chars starting 1 or 3), or nil.
     public static func detect(_ text: String) -> CryptoInfo? {
         guard text.utf8.count <= 512 else { return nil }

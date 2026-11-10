@@ -1,6 +1,6 @@
 import Foundation
 
-/// Script table for `mixedScript` (PLAN §6.2). Small and in code on purpose.
+/// Script table for `mixedScript` (SPEC §4.2). Small and in code on purpose.
 enum ScriptMix {
     enum Script: String, Sendable, Hashable, CaseIterable {
         case latin = "Latin", greek = "Greek", cyrillic = "Cyrillic", armenian = "Armenian", hebrew = "Hebrew",

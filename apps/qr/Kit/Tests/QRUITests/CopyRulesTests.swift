@@ -5,7 +5,7 @@ import SevenKit
 @testable import QRUI
 
 /// WP 4.3 copy rules: plain verdict wording, no reassurance word, and no pressure or hard-coded
-/// price in the unlock flow (PLAN §4 rule 5, §6.10, G7).
+/// price in the unlock flow (SPEC §13, G7).
 @Suite struct CopyRulesTests {
     static let argSets: [[String: String]] = [
         [:],

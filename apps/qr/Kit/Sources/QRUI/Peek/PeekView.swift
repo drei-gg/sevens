@@ -6,7 +6,7 @@ public struct PeekView: View {
     let model: PeekModel
     @Environment(\.dismiss) private var dismiss
 
-    /// The Peek sheet (PLAN §6.5). The button that presents it is the explicit action, so the
+    /// The Peek sheet (SPEC §6). The button that presents it is the explicit action, so the
     /// fetch starts when it appears, only if the model is idle.
     public init(model: PeekModel) {
         self.model = model

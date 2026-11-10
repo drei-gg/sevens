@@ -1,6 +1,6 @@
 import Foundation
 
-/// PLAN §6.5: a page that asks for a secret, whose title or host names a brand that doesn't own
+/// SPEC §6: a page that asks for a secret, whose title or host names a brand that doesn't own
 /// the final domain.
 enum SecretFormBrandMismatchCheck {
     static func brand(title: String?, final: LinkInfo, _ brands: BrandMatcher) -> String? {

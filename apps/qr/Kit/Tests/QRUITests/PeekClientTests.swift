@@ -118,7 +118,7 @@ import QRCore
         #expect(capture.stoppedBecause == .timeout)
         #expect(capture.hops == [PeekHop(url: "https://slow.example.com/", status: nil)])
         // The budget here is 0.5 s; under a CPU-heavy parallel test run the scheduler can delay the
-        // timer by seconds, so assert only that it stops inside the real 8 s budget (PLAN §6.5).
+        // timer by seconds, so assert only that it stops inside the real 8 s budget (SPEC §6).
         #expect(Date().timeIntervalSince(started) < 8)
     }
 

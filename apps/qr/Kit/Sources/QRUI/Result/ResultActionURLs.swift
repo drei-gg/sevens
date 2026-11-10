@@ -1,7 +1,7 @@
 import Foundation
 import QRCore
 
-/// The URLs the actions hand to `openURL` (PLAN §6.7). All built with `URLComponents`, so scanned
+/// The URLs the actions hand to `openURL` (SPEC §3). All built with `URLComponents`, so scanned
 /// text is percent-encoded and never concatenated into a URL string.
 enum ResultActionURLs {
     /// What Open uses: the normalized link, for http(s) only.

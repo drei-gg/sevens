@@ -1,7 +1,7 @@
 import Foundation
 import QRCore
 
-/// What the Make extension found in the shared items (PLAN §6.11), before any decision.
+/// What the Make extension found in the shared items (SPEC §9), before any decision.
 enum ExtensionMakeSource: Equatable, Sendable {
     /// A web URL attachment (a Maps URL arrives like this and stays a link).
     case webURL(String)

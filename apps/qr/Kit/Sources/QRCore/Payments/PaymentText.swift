@@ -2,7 +2,7 @@ import Foundation
 
 /// Small text helpers shared by the non-EMV payment parsers (WP 1.4).
 enum PaymentText {
-    /// Payment payloads longer than this are not analysed (PLAN §4 rule 9).
+    /// Payment payloads longer than this are not analysed (8 KB cap).
     static let maxBytes = 8192
 
     static func withinCap(_ text: String) -> Bool { text.utf8.count <= maxBytes }

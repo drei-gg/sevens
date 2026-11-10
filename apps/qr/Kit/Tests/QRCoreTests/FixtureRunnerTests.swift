@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import QRCore
 
-// Phase 0 owns this file. The one generic runner (PLAN §5.5).
+// Phase 0 owns this file. The one generic runner (SPEC §16).
 
 @Suite struct FixtureRunner {
     static let knownTypes: Set<String> = ["link", "appLink", "payment", "crypto", "wifi", "contact", "event",

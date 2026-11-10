@@ -3,7 +3,7 @@ import SevenKit
 import SwiftUI
 import UIKit
 
-/// The Check this code share extension (PLAN §6.11). Free forever (D2): no gate here.
+/// The Check this code share extension (SPEC §9). Free forever (D2): no gate here.
 /// Shows, per code in up to 5 shared images, the verdict, the reasons, the main field and Copy.
 /// No Peek, no Open: nothing leaves the phone and nothing is opened.
 public struct CheckExtensionRoot: View {

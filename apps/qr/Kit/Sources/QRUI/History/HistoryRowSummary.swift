@@ -1,7 +1,7 @@
 import Foundation
 import QRCore
 
-/// Pure text for a History row (PLAN §6.9): a short payload (the host for links, a cut first
+/// Pure text for a History row (SPEC §10): a short payload (the host for links, a cut first
 /// line for anything else) and a note preview. Payloads come from scanned codes, so control
 /// characters are dropped and everything is length-capped.
 enum HistoryRowSummary {

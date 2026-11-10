@@ -2,7 +2,7 @@ import SwiftUI
 import QRCore
 import SevenKit
 
-/// The app's root (PLAN §6.6, §6.10): the scan screen, with Make, History and Settings pushed
+/// The app's root (SPEC §2, §13): the scan screen, with Make, History and Settings pushed
 /// from it. At launch only two things may appear, each once: Before you buy on the very first
 /// launch, and the trial-ended sheet on the first launch after the trial expired.
 public struct RootView: View {

@@ -3,7 +3,7 @@ import SevenKit
 import SwiftUI
 import UIKit
 
-/// Foreground and background of the generated code (PLAN §6.8), and the conversions around them.
+/// Foreground and background of the generated code (SPEC §8), and the conversions around them.
 enum MakeStyle {
     /// A SwiftUI color as sRGB components 0…1 (extended-range and other spaces are converted
     /// and clamped). Opacity is ignored: codes are always opaque.

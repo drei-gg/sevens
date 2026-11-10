@@ -1,6 +1,6 @@
 import Foundation
 
-/// PLAN §6.2 "Embedded links": `http://`, `https://` and `www.` runs up to whitespace or
+/// SPEC §4.2 embedded links: `http://`, `https://` and `www.` runs up to whitespace or
 /// `< > "`, trailing `. , ) ]` dropped, at most 10.
 enum EmbeddedLinks {
     static let maxLinks = 10

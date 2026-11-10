@@ -232,4 +232,4 @@ These fixtures double as the Android port's acceptance tests.
 7. Accessibility pass, polish, testing on the iPhone
 
 ## Decided questions
-1. Which payment networks mark person versus business accounts: only those whose published spec says so, cited in `payment-networks.json`; every other network shows the name and "Check this matches where you are." (D11, PLAN §2).
+1. Which payment networks mark person versus business accounts: only those whose published spec says so, cited in `payment-networks.json`; every other network shows the name and "Check this matches where you are." (D11).

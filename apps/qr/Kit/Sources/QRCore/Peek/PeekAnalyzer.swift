@@ -1,6 +1,6 @@
 import Foundation
 
-// Contract (PLAN §5.4). WP 2.1 owns this file: hops + page → signals (PLAN §6.5).
+// Contract. WP 2.1 owns this file: hops + page → signals (SPEC §6).
 
 public struct PeekAnalyzer: Sendable {
     public let data: BundledData

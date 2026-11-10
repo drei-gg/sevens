@@ -1,6 +1,6 @@
 import Foundation
 
-/// Confusable skeleton (PLAN §6.2 `lookalikeBrand`): lowercase, map through `confusables.json`
+/// Confusable skeleton (SPEC §4.2 `lookalikeBrand`): lowercase, map through `confusables.json`
 /// (longest key first), then strip hyphens.
 struct Skeleton: Sendable {
     /// Maps grouped by key length in scalars, longest first.

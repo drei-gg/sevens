@@ -1,6 +1,6 @@
 import Foundation
 
-/// The open-source and trademark notices (PLAN §6.12), one paragraph each.
+/// The open-source and trademark notices (SPEC §11), one paragraph each.
 enum SettingsNotices {
     static func paragraphs() -> [String] {
         [

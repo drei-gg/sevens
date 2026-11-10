@@ -3,7 +3,7 @@ import QRCore
 import SevenKit
 import SwiftUI
 
-/// The home screen (PLAN §6.6): the live scanner, a torch, photo and paste, and the way to
+/// The home screen (SPEC §2): the live scanner, a torch, photo and paste, and the way to
 /// Make, History and Settings. Showing a result is not acting (D7): a scan only opens the
 /// result sheet; nothing is opened, joined or paid without a tap there.
 public struct ScanScreen: View {

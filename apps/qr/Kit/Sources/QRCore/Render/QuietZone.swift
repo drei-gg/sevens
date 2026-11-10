@@ -1,7 +1,7 @@
 import Foundation
 
 public enum QuietZone {
-    /// Quiet zone in modules, (left and right, top and bottom). PLAN §6.8: QR 4 all round (Micro QR 2),
+    /// Quiet zone in modules, (left and right, top and bottom). SPEC §8: QR 4 all round (Micro QR 2),
     /// Aztec 1, PDF417 and MicroPDF417 2, Data Matrix 1, Code 128 and the other 1D codes 10 left and
     /// right (0 top and bottom). Anything else 4.
     public static func modules(for symbology: Symbology) -> (horizontal: Int, vertical: Int) {

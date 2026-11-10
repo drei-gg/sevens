@@ -3,13 +3,13 @@ import Foundation
 // WP 2.1 owns this file. Phase 0 draft: loads every file in Data/, missing files give empty
 // values. Public members are the seam; keep them.
 
-/// Everything in `Data/`, parsed once. Immutable after load (PLAN §4 rule 8).
+/// Everything in `Data/`, parsed once. Immutable after load.
 public struct BundledData: Sendable {
     public var publicSuffixes: PublicSuffixList
     public var brands: [Brand]
     public var shorteners: Set<String>
     public var riskyTLDs: [RiskyTLD]
-    /// Single characters or short sequences → their Latin look-alike (PLAN §6.2 `lookalikeBrand`).
+    /// Single characters or short sequences → their Latin look-alike (SPEC §4.2 `lookalikeBrand`).
     public var confusables: [String: String]
     public var baitWords: [String]
     public var paymentNetworks: PaymentNetworks
@@ -33,7 +33,7 @@ public struct BundledData: Sendable {
     }
 
     /// Loaded on first use, thread-safely. The app touches it on a background task at launch
-    /// so the first `analyze` rarely waits (PLAN §7).
+    /// so the first `analyze` rarely waits (SPEC §4.3).
     public static let shared: BundledData = load()
 
     /// Starts loading `shared` on a background task. Cheap; call once at launch.

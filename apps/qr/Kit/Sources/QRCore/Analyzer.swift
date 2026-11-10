@@ -1,4 +1,4 @@
-// Contract (PLAN §5.4). WP 2.1 owns this file: Classifier + checks + verdict rule → Analysis.
+// Contract. WP 2.1 owns this file: Classifier + checks + verdict rule → Analysis.
 
 public struct Analyzer: Sendable {
     public let data: BundledData

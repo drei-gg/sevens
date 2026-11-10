@@ -1,6 +1,6 @@
 import Foundation
 
-/// Text helpers shared by `WebAddress` (PLAN §6.1 step 1, bounds, paths).
+/// Text helpers shared by `WebAddress` (bounds, paths).
 enum URLText {
     static let maxBytes = 8192
 
