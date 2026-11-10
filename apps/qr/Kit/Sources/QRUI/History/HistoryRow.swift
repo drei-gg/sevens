@@ -15,21 +15,21 @@ struct HistoryRow: View {
             Label {
                 Text(VerdictText.title(for: item.level))
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Tokens.ink)
+                    .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
             } icon: {
                 Image(systemName: style.symbolName).foregroundStyle(style.color)
             }
             Text(payload)
                 .font(.body)
-                .foregroundStyle(Tokens.ink)
+                .foregroundStyle(.primary)
                 .lineLimit(2)
             if let note {
-                Text(note).font(.callout).foregroundStyle(Tokens.muted).lineLimit(2)
+                Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(2)
             }
             Text(verbatim: "\(typeName) · \(HistoryLabels.kind(item.kind)) · \(item.date.formatted(date: .abbreviated, time: .shortened))")
                 .font(.footnote)
-                .foregroundStyle(Tokens.muted)
+                .foregroundStyle(.secondary)
         }
         .padding(.vertical, Tokens.Space.xs)
         .accessibilityElement(children: .ignore)

@@ -38,7 +38,7 @@ struct ResultLinkView: View {
         ResultCard {
             Text(ResultLinkDisplay.headline(link))
                 .font(.largeTitle.weight(.bold))
-                .foregroundStyle(Tokens.ink)
+                .foregroundStyle(.primary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
@@ -56,10 +56,10 @@ struct ResultLinkView: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(String(localized: "result.link.full", defaultValue: "The whole link", bundle: .module))
-                    .font(.caption).foregroundStyle(Tokens.muted)
+                    .font(.caption).foregroundStyle(.secondary)
                 Text(link.original)
                     .font(.footnote)
-                    .foregroundStyle(Tokens.muted)
+                    .foregroundStyle(.secondary)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
             }

@@ -29,7 +29,6 @@ public struct ScanScreen: View {
 
     public var body: some View {
         content
-            .background(Tokens.paper.ignoresSafeArea())
             .navigationTitle(String(localized: "scan.title", defaultValue: "Scan", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
@@ -110,10 +109,10 @@ public struct ScanScreen: View {
             if multipleInView {
                 Text(Self.tapACodeText)
                     .font(.headline)
-                    .foregroundStyle(Tokens.ink)
+                    .foregroundStyle(.primary)
                     .padding(.horizontal, Tokens.Space.m)
                     .padding(.vertical, Tokens.Space.s)
-                    .background(Tokens.card, in: Capsule())
+                    .background(Color(.secondarySystemBackground), in: Capsule())
                     .padding(Tokens.Space.m)
                     .transition(reduceMotion ? .identity : .opacity)
             }
@@ -128,9 +127,9 @@ public struct ScanScreen: View {
         Button { torch.toggle() } label: {
             Image(systemName: torch.isOn ? "flashlight.on.fill" : "flashlight.off.fill")
                 .font(.title2)
-                .foregroundStyle(Tokens.ink)
+                .foregroundStyle(.primary)
                 .frame(minWidth: 44, minHeight: 44)
-                .background(Tokens.card, in: Circle())
+                .background(Color(.secondarySystemBackground), in: Circle())
         }
         .accessibilityLabel(String(localized: "scan.torch", defaultValue: "Torch", bundle: .module))
         .accessibilityValue(torch.isOn
@@ -142,11 +141,11 @@ public struct ScanScreen: View {
         VStack(spacing: Tokens.Space.s) {
             Image(systemName: availability == .unsupported ? "photo.on.rectangle" : "camera.fill")
                 .font(.largeTitle)
-                .foregroundStyle(Tokens.muted)
+                .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             Text(fallbackText)
                 .font(.body)
-                .foregroundStyle(Tokens.ink)
+                .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
             if availability == .denied {
                 Button(String(localized: "scan.denied.settings", defaultValue: "Open Settings", bundle: .module)) {
@@ -154,7 +153,6 @@ public struct ScanScreen: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
-                .tint(Tokens.ink)
             }
         }
         .frame(maxWidth: .infinity)
@@ -183,7 +181,7 @@ public struct ScanScreen: View {
         if let message {
             Text(message)
                 .font(.callout)
-                .foregroundStyle(Tokens.ink)
+                .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
         } else if working {
@@ -196,17 +194,17 @@ public struct ScanScreen: View {
             HStack(spacing: Tokens.Space.m) { photoButton; pasteButton }
             VStack(spacing: Tokens.Space.m) { photoButton; pasteButton }
         }
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var photoButton: some View {
         PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
             Label(String(localized: "scan.photo", defaultValue: "Photo", bundle: .module), systemImage: "photo")
-                .font(.headline)
-                .frame(maxWidth: .infinity, minHeight: 28)
         }
         .buttonStyle(.bordered)
-        .controlSize(.large)
-        .tint(Tokens.ink)
+        .buttonBorderShape(.capsule)
+        .labelStyle(.titleAndIcon)
+        .controlSize(.regular)
         .accessibilityLabel(String(localized: "scan.photo.a11y", defaultValue: "Scan a photo", bundle: .module))
         .accessibilityIdentifier(QRAccessibilityID.scanPhoto)
     }
@@ -215,7 +213,7 @@ public struct ScanScreen: View {
         PasteScanButton { codes in
             Task { await handle(codes, empty: Self.nothingToPasteText) }
         }
-        .controlSize(.large)
+        .controlSize(.regular)
         .accessibilityIdentifier(QRAccessibilityID.scanPaste)
     }
 

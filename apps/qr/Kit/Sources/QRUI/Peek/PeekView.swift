@@ -31,7 +31,6 @@ public struct PeekView: View {
                     }
                 }
         }
-        .tint(Tokens.ink)
         .task {
             if case .idle = model.state { model.start() }
         }

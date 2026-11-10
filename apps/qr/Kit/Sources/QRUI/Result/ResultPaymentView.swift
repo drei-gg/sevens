@@ -75,33 +75,33 @@ struct ResultPaymentView: View {
         ResultCard(title: String(localized: "result.payment.title", defaultValue: "Who you would pay", bundle: .module)) {
             VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                 Text(payee)
-                    .font(.largeTitle.weight(.bold)).foregroundStyle(Tokens.ink)
+                    .font(.largeTitle.weight(.bold)).foregroundStyle(.primary)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
                 if let alternate = info.extra["alternateName"], !alternate.isEmpty {
-                    Text(alternate).font(.title3).foregroundStyle(Tokens.muted)
+                    Text(alternate).font(.title3).foregroundStyle(.secondary)
                         .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                 }
             }
             if let partyText {
-                Text(partyText).font(.headline).foregroundStyle(Tokens.ink)
+                Text(partyText).font(.headline).foregroundStyle(.primary)
             } else {
                 Text(String(localized: "result.payment.checkMatch", defaultValue: "Check that this is who you meant to pay.", bundle: .module))
-                    .font(.headline).foregroundStyle(Tokens.ink)
+                    .font(.headline).foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             ResultField(label: String(localized: "result.payment.amount", defaultValue: "Amount", bundle: .module), value: amountText)
             if let network = info.network, !network.isEmpty {
                 ResultField(label: String(localized: "result.payment.network", defaultValue: "Network", bundle: .module), value: network)
             }
-            if let kindText { Text(kindText).font(.subheadline).foregroundStyle(Tokens.muted) }
+            if let kindText { Text(kindText).font(.subheadline).foregroundStyle(.secondary) }
             if let checksumText {
                 Label {
-                    Text(checksumText).foregroundStyle(Tokens.ink)
+                    Text(checksumText).foregroundStyle(.primary)
                 } icon: {
                     Image(systemName: info.checksum == .invalid ? "xmark.octagon" : "checkmark.circle")
-                        .foregroundStyle(info.checksum == .invalid ? Tokens.danger : Tokens.muted)
+                        .foregroundStyle(info.checksum == .invalid ? .red : .secondary)
                 }
                 .font(.subheadline)
             }
@@ -115,7 +115,7 @@ struct ResultPaymentView: View {
                     }
                     .padding(.top, Tokens.Space.s)
                 }
-                .foregroundStyle(Tokens.ink)
+                .foregroundStyle(.primary)
             }
         }
     }

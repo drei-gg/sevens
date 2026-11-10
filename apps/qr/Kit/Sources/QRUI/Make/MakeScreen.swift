@@ -30,7 +30,7 @@ public struct MakeScreen: View {
                 }
             } header: {
                 Text(verbatim: model.kind.title)
-                    .foregroundStyle(Tokens.muted)
+                    .foregroundStyle(.secondary)
             }
             MakeLinkOptionsSection(model: model)
             previewSection
@@ -38,8 +38,6 @@ public struct MakeScreen: View {
             MakeStyleSection(foreground: $model.foreground, background: $model.background,
                              warnings: model.contrastWarnings)
         }
-        .scrollContentBackground(.hidden)
-        .background(Tokens.paper)
         .navigationTitle(Text(verbatim: String(localized: "make.title", defaultValue: "Make a code", bundle: .module)))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -96,7 +94,7 @@ public struct MakeScreen: View {
                         .resizable()
                         .scaledToFit()
                         .frame(maxWidth: 320)
-                        .overlay(Rectangle().stroke(Tokens.muted.opacity(0.4), lineWidth: 1))
+                        .overlay(Rectangle().stroke(Color.secondary.opacity(0.4), lineWidth: 1))
                         .accessibilityElement()
                         .accessibilityLabel(Text(verbatim: model.codeAccessibilityLabel))
                         .accessibilityAddTraits(.isImage)
@@ -116,14 +114,13 @@ public struct MakeScreen: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Tokens.red)
                 .disabled(!model.canExport)
                 .accessibilityIdentifier(QRAccessibilityID.makeExport)
             }
             .frame(maxWidth: .infinity)
         } header: {
             Text(verbatim: String(localized: "make.preview.header", defaultValue: "Your code", bundle: .module))
-                .foregroundStyle(Tokens.muted)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -150,13 +147,13 @@ public struct MakeScreen: View {
             }
         } header: {
             Text(verbatim: String(localized: "make.codeType.header", defaultValue: "Code options", bundle: .module))
-                .foregroundStyle(Tokens.muted)
+                .foregroundStyle(.secondary)
         } footer: {
             if model.symbology.supportsCorrection {
                 Text(verbatim: String(localized: "make.correction.footer",
                                       defaultValue: "Auto keeps the code as small as it can. Higher levels survive more damage but make a denser code.",
                                       bundle: .module))
-                    .foregroundStyle(Tokens.muted)
+                    .foregroundStyle(.secondary)
             }
         }
     }

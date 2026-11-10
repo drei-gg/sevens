@@ -57,7 +57,7 @@ struct MakeStyleSection: View {
             .accessibilityIdentifier("make.style.background")
             ForEach(warnings, id: \.self) { warning in
                 Label(MakeStyle.warningText(warning), systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(Tokens.ink)
+                    .foregroundStyle(.primary)
                     .accessibilityIdentifier("make.style.warning")
             }
             if foreground != .black || background != .white {
@@ -70,7 +70,7 @@ struct MakeStyleSection: View {
             }
         } header: {
             Text(verbatim: String(localized: "make.style.header", defaultValue: "Colors", bundle: .module))
-                .foregroundStyle(Tokens.muted)
+                .foregroundStyle(.secondary)
         }
     }
 }

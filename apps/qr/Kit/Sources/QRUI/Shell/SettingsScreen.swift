@@ -27,8 +27,6 @@ public struct SettingsScreen: View {
             SevenDebugPanel()
             #endif
         }
-        .scrollContentBackground(.hidden)
-        .background(Tokens.paper.ignoresSafeArea())
         .navigationTitle(String(localized: "settings.title", defaultValue: "Settings", bundle: .module))
         .sheet(isPresented: $showBeforeYouBuy) {
             BeforeYouBuyView(content: QRGate.beforeYouBuyContent()) { _ in showBeforeYouBuy = false }
@@ -59,21 +57,21 @@ public struct SettingsScreen: View {
             .disabled(model.historyIsReadOnly || model.historyCount == 0)
         } header: {
             Text(String(localized: "settings.history.header", defaultValue: "History", bundle: .module))
-                .foregroundStyle(Tokens.muted)
+                .foregroundStyle(.secondary)
         } footer: {
             if model.historyIsReadOnly, let reason = model.historyReadOnlyReason {
                 Text(reason)
-                    .foregroundStyle(Tokens.muted)
+                    .foregroundStyle(.secondary)
             } else if model.historyIsLocked && keepHistory.wrappedValue {
                 Text(String(localized: "settings.history.locked",
                             defaultValue: "Saving new scans needs the unlock. What is already saved stays readable.",
                             bundle: .module))
-                    .foregroundStyle(Tokens.muted)
+                    .foregroundStyle(.secondary)
             } else {
                 Text(String(localized: "settings.history.footer",
                             defaultValue: "Turning this off stops saving new codes. It doesn't delete what is already saved.",
                             bundle: .module))
-                    .foregroundStyle(Tokens.muted)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -94,7 +92,7 @@ public struct SettingsScreen: View {
             AboutNoticesRow(notices: SettingsNotices.paragraphs())
         } header: {
             Text(String(localized: "settings.about.header", defaultValue: "About", bundle: .module))
-                .foregroundStyle(Tokens.muted)
+                .foregroundStyle(.secondary)
         }
     }
 }

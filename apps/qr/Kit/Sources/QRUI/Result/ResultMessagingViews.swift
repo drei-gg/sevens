@@ -10,7 +10,7 @@ struct ResultPhoneView: View {
     var body: some View {
         ResultCard {
             Text(info.number)
-                .font(.largeTitle.weight(.bold)).foregroundStyle(Tokens.ink)
+                .font(.largeTitle.weight(.bold)).foregroundStyle(.primary)
                 .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
         }

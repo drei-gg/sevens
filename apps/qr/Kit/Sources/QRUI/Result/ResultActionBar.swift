@@ -21,7 +21,6 @@ struct ResultActionBar: View {
                 row(for: action)
                     .buttonStyle(.bordered)
                     .controlSize(.large)
-                    .tint(Tokens.ink)
                     .frame(maxWidth: .infinity)
             }
         }

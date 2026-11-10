@@ -25,7 +25,6 @@ public struct RootView: View {
                     }
                 }
         }
-        .tint(Tokens.ink)
         .task(id: model.store.hasStarted) {
             if model.store.hasStarted && model.store.launchSheet == .beforeYouBuy { showFirstLaunch = true }
         }

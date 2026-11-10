@@ -37,7 +37,6 @@ public struct HistoryScreen: View {
             case .noItems: noItemsView
             }
         }
-        .background(Tokens.paper.ignoresSafeArea())
         .navigationTitle(String(localized: "history.title", defaultValue: "History", bundle: .module))
         .environment(\.editMode, $editMode)
         .toolbar {
@@ -62,7 +61,7 @@ public struct HistoryScreen: View {
     private var list: some View {
         List(selection: $selection) {
             if let reason = model.historyReadOnlyReason, model.historyIsReadOnly {
-                Section { Text(reason).font(.callout).foregroundStyle(Tokens.muted) }
+                Section { Text(reason).font(.callout).foregroundStyle(.secondary) }
             }
             if HistoryEmptyState.showsLockedNote(itemCount: model.historyCount, keepHistory: model.keepsHistory,
                                                  locked: model.historyIsLocked, readOnly: model.historyIsReadOnly) {
@@ -75,7 +74,6 @@ public struct HistoryScreen: View {
                     } label: {
                         HistoryRow(item: item)
                     }
-                    .listRowBackground(Tokens.card)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) {
                             delete([item.id])
@@ -88,7 +86,6 @@ public struct HistoryScreen: View {
             }
         }
         .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .accessibilityIdentifier(QRAccessibilityID.historyList)
         .overlay {
             if isSearching && results?.isEmpty == true { ContentUnavailableView.search(text: query) }
@@ -135,7 +132,7 @@ public struct HistoryScreen: View {
 
     private var lockedNote: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s) {
-            Text(HistoryScreen.lockedText).font(.callout).foregroundStyle(Tokens.ink)
+            Text(HistoryScreen.lockedText).font(.callout).foregroundStyle(.primary)
             unlockButton
         }
     }

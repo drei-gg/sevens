@@ -19,14 +19,14 @@ struct ResultWiFiView: View {
     var body: some View {
         ResultCard {
             Text(info.ssid.isEmpty ? String(localized: "result.wifi.noName", defaultValue: "No network name", bundle: .module) : info.ssid)
-                .font(.largeTitle.weight(.bold)).foregroundStyle(Tokens.ink)
+                .font(.largeTitle.weight(.bold)).foregroundStyle(.primary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             ResultField(label: String(localized: "result.wifi.security", defaultValue: "Security", bundle: .module), value: securityText)
             if info.isHidden {
                 Text(String(localized: "result.wifi.hidden", defaultValue: "Hidden network", bundle: .module))
-                    .font(.subheadline).foregroundStyle(Tokens.muted)
+                    .font(.subheadline).foregroundStyle(.secondary)
             }
             if !info.isOpen {
                 passwordRow
@@ -39,13 +39,13 @@ struct ResultWiFiView: View {
         if ResultActionPlan.hasPassword(info), let password = info.password {
             VStack(alignment: .leading, spacing: Tokens.Space.s) {
                 Text(String(localized: "result.wifi.password", defaultValue: "Password", bundle: .module))
-                    .font(.caption).foregroundStyle(Tokens.muted)
+                    .font(.caption).foregroundStyle(.secondary)
                 if revealed {
-                    Text(password).font(.body.monospaced()).foregroundStyle(Tokens.ink)
+                    Text(password).font(.body.monospaced()).foregroundStyle(.primary)
                         .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                 } else {
                     Text(String(localized: "result.wifi.hasPassword", defaultValue: "The code includes a password", bundle: .module))
-                        .font(.body).foregroundStyle(Tokens.ink)
+                        .font(.body).foregroundStyle(.primary)
                 }
                 Button {
                     revealed.toggle()
@@ -55,7 +55,6 @@ struct ResultWiFiView: View {
                          : String(localized: "result.wifi.show", defaultValue: "Show password", bundle: .module))
                 }
                 .buttonStyle(.bordered)
-                .tint(Tokens.ink)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
@@ -78,6 +77,6 @@ struct ResultWiFiView: View {
     }
 
     private func note(_ text: String) -> some View {
-        Text(text).font(.subheadline).foregroundStyle(Tokens.muted).fixedSize(horizontal: false, vertical: true)
+        Text(text).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
     }
 }

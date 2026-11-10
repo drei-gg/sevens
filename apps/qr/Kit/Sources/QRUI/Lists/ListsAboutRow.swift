@@ -18,10 +18,10 @@ struct ListsAboutRow: View {
     var body: some View {
         Group {
             VStack(alignment: .leading, spacing: Tokens.Space.xs) {
-                Text(ListsAboutText.title(for: model.lists)).foregroundStyle(Tokens.ink)
+                Text(ListsAboutText.title(for: model.lists)).foregroundStyle(.primary)
                     .accessibilityIdentifier(ListsAccessibilityID.title)
                 if ListsAboutText.isOld(built: model.lists.built) {
-                    Text(ListsAboutText.oldLine).font(.footnote).foregroundStyle(Tokens.muted)
+                    Text(ListsAboutText.oldLine).font(.footnote).foregroundStyle(.secondary)
                         .accessibilityIdentifier(ListsAccessibilityID.old)
                 }
             }
@@ -41,7 +41,7 @@ struct ListsAboutRow: View {
             }
 
             if case .finished(let sentence) = model.phase {
-                Text(sentence).font(.callout).foregroundStyle(Tokens.muted)
+                Text(sentence).font(.callout).foregroundStyle(.secondary)
                     .accessibilityIdentifier(ListsAccessibilityID.result)
             }
 

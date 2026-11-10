@@ -18,7 +18,7 @@ struct ResultKnownOffer: View {
         VStack(alignment: .leading, spacing: Tokens.Space.m) {
             Text(question)
                 .font(.body.weight(.semibold))
-                .foregroundStyle(Tokens.ink)
+                .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             VStack(spacing: Tokens.Space.s) {
@@ -32,7 +32,6 @@ struct ResultKnownOffer: View {
                     .multilineTextAlignment(.center)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Tokens.ink)
                 .keyboardShortcut(.defaultAction)
                 .accessibilityLabel(Text(String(localized: "result.known.keep.label",
                                                 defaultValue: "Keep warning me, recommended", bundle: .module)))
@@ -44,7 +43,6 @@ struct ResultKnownOffer: View {
                         .multilineTextAlignment(.center)
                 }
                 .buttonStyle(.bordered)
-                .tint(Tokens.ink)
                 .accessibilityHint(Text(String(localized: "result.known.know.hint",
                                                defaultValue: "Remembers \(domain) on this phone. Other checks still run.",
                                                bundle: .module)))
@@ -54,7 +52,7 @@ struct ResultKnownOffer: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Tokens.Space.m)
-        .background(Tokens.card, in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(QRAccessibilityID.knownOffer)
     }
