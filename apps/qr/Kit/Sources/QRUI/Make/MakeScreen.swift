@@ -32,6 +32,7 @@ public struct MakeScreen: View {
                 Text(verbatim: model.kind.title)
                     .foregroundStyle(Tokens.muted)
             }
+            MakeLinkOptionsSection(model: model)
             previewSection
             codeTypeSection
             MakeStyleSection(foreground: $model.foreground, background: $model.background,
@@ -153,7 +154,7 @@ public struct MakeScreen: View {
         } footer: {
             if model.symbology.supportsCorrection {
                 Text(verbatim: String(localized: "make.correction.footer",
-                                      defaultValue: "Auto uses medium. Higher levels survive more damage but make a denser code.",
+                                      defaultValue: "Auto keeps the code as small as it can. Higher levels survive more damage but make a denser code.",
                                       bundle: .module))
                     .foregroundStyle(Tokens.muted)
             }

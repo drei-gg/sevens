@@ -14,7 +14,7 @@ public enum PayloadEncoder {
         case .event(let e): return PayloadEncoder.vEvent(e)
         case .email(let e): return email(e)
         case .sms(let s): return sms(s)
-        case .phone(let n): return "tel:" + StructuredText.percentEncode(StructuredText.trimmed(n), keep: numberKeep)
+        case .phone(let n): return "TEL:" + StructuredText.percentEncode(StructuredText.trimmed(n), keep: numberKeep)
         case .geo(let g): return geo(g)
         }
     }

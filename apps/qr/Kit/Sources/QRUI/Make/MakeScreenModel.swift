@@ -16,12 +16,20 @@ final class MakeScreenModel {
         var correction: Correction
         var foreground: RGBColor
         var background: RGBColor
+        /// The "Same link, smaller code" switch (SPEC §8).
+        var useSmallerCode: Bool
     }
 
     struct Generated: Sendable {
         var matrix: BitMatrix
         var png: Data
+        /// The text actually encoded.
         var text: String
+        var typedText: String
+        /// The capitalized link makes a smaller QR version than the typed one (SPEC §8).
+        var smallerCodeAvailable: Bool
+        var trackingTags: [String]
+        var trackingFree: String?
     }
 
     var kind: MakeFormKind
@@ -30,12 +38,22 @@ final class MakeScreenModel {
     var correction = Correction.auto
     var foreground = Color.black
     var background = Color.white
+    /// "Same link, smaller code": on by default; only offered when it really shrinks the code.
+    var useSmallerCode = true
+    /// Tracking tags to match; nil means the bundled list. Tests inject their own.
+    var trackingList: [TrackingParam]?
 
     private(set) var matrix: BitMatrix?
     private(set) var previewImage: UIImage?
     private(set) var payloadText: String?
     private(set) var generationError: MakeError?
     private(set) var generatedKey: InputKey?
+    /// What the person typed, when `payloadText` (what is encoded) differs or not.
+    private(set) var typedText: String?
+    private(set) var smallerCodeAvailable = false
+    private(set) var trackingTags: [String] = []
+    /// The link without its tracking tags, for the preview and the button.
+    private(set) var trackingFreeLink: String?
     private(set) var recorded: Set<String> = []
 
     /// Debounce before regenerating while the person types.
@@ -56,7 +74,7 @@ final class MakeScreenModel {
 
     var inputKey: InputKey {
         InputKey(kind: kind, form: form, symbology: symbology, correction: correction,
-                 foreground: foregroundRGB, background: backgroundRGB)
+                 foreground: foregroundRGB, background: backgroundRGB, useSmallerCode: useSmallerCode)
     }
 
     var outcome: MakeFormState.Outcome { form.result(for: kind) }
@@ -87,18 +105,38 @@ final class MakeScreenModel {
             matrix = nil
             previewImage = nil
             payloadText = nil
+            typedText = nil
+            smallerCodeAvailable = false
+            trackingTags = []
+            trackingFreeLink = nil
             generationError = nil
             generatedKey = key
             return
         }
-        let text = PayloadEncoder.encode(request)
+        let typed = PayloadEncoder.encode(request)
         let symbology = symbology, correction = correction
         let fg = key.foreground, bg = key.background
+        let isLink = kind == .link, useSmaller = useSmallerCode, list = trackingList
         let result: Result<Generated, MakeError> = await Task.detached(priority: .userInitiated) {
             do {
-                let m = try CodeGenerator.generate(text: text, symbology: symbology, correction: correction)
+                var m = try CodeGenerator.generate(text: typed, symbology: symbology, correction: correction)
+                var text = typed
+                var smaller = false
+                if isLink, symbology == .qr, let compact = LinkCompactor.compacted(typed), compact != typed,
+                   let c = try? CodeGenerator.generate(text: compact, symbology: symbology, correction: correction),
+                   let before = CodeGenerator.qrVersion(of: m), let after = CodeGenerator.qrVersion(of: c), after < before {
+                    smaller = true
+                    if useSmaller { m = c; text = compact }
+                }
+                var tags: [String] = [], free: String?
+                if isLink {
+                    let params = list ?? BundledData.shared.trackingParams
+                    tags = LinkCompactor.trackingParameters(in: typed, list: params)
+                    free = LinkCompactor.removingTracking(from: typed, list: params)
+                }
                 let png = PNGRenderer.png(matrix: m, pixelSize: 512, foreground: fg, background: bg)
-                return .success(Generated(matrix: m, png: png, text: text))
+                return .success(Generated(matrix: m, png: png, text: text, typedText: typed,
+                                          smallerCodeAvailable: smaller, trackingTags: tags, trackingFree: free))
             } catch let error as MakeError {
                 return .failure(error)
             } catch {
@@ -106,14 +144,22 @@ final class MakeScreenModel {
             }
         }.value
         guard !Task.isCancelled else { return }
-        payloadText = text
         generatedKey = key
+        typedText = typed
         switch result {
         case .success(let g):
+            payloadText = g.text
+            smallerCodeAvailable = g.smallerCodeAvailable
+            trackingTags = g.trackingTags
+            trackingFreeLink = g.trackingFree
             matrix = g.matrix
             previewImage = UIImage(data: g.png)
             generationError = nil
         case .failure(let error):
+            payloadText = typed
+            smallerCodeAvailable = false
+            trackingTags = []
+            trackingFreeLink = nil
             matrix = nil
             previewImage = nil
             generationError = error
@@ -122,7 +168,13 @@ final class MakeScreenModel {
 
     /// "QR code for https://example.org/menu", the VoiceOver label of the picture.
     var codeAccessibilityLabel: String {
-        symbology.accessibilityLabel(for: payloadText ?? "")
+        symbology.accessibilityLabel(for: typedText ?? payloadText ?? "")
+    }
+
+    /// "Remove them": puts the link without its tracking tags into the field. Never automatic.
+    func removeTrackingTags() {
+        guard kind == .link, let free = trackingFreeLink else { return }
+        form.link = free
     }
 
     /// Saves the current code to History once per distinct payload (and symbology). No-op unless

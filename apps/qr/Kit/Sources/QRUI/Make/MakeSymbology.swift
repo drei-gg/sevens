@@ -18,11 +18,12 @@ public enum MakeSymbology: String, Sendable, CaseIterable, Hashable {
     public var supportsCorrection: Bool { self == .qr || self == .aztec }
 }
 
-/// Error correction. Auto is M. Aztec takes a percentage: L 5, M/Auto 23, Q 40, H 60.
+/// Error correction. For QR, Auto is the smallest version at M, then the highest level that fits
+/// that same version (`CodeGenerator.autoQR`). Aztec takes a percentage: L 5, M/Auto 23, Q 40, H 60.
 public enum Correction: String, Sendable, CaseIterable, Hashable {
     case auto, L, M, Q, H
 
-    /// The QR level letter CoreImage expects (Auto = M).
+    /// The QR level letter CoreImage expects (Auto starts at M; the generator may raise it).
     var qrLevel: String {
         switch self {
         case .auto, .M: return "M"
