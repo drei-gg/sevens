@@ -9,16 +9,16 @@ bad() { echo "FAIL $1"; shift; printf '  %s\n' "$@"; fail=1; }
 
 swift_files() { git ls-files --cached --others --exclude-standard -- '*.swift' | grep -v '/\.build/' ; }
 
-# G6a: network APIs only in PeekClient (and its tests) and SevenKit's StoreKit layer.
-hits=$(swift_files | grep -vE '^apps/qr/Kit/Sources/QRUI/Peek/PeekClient\.swift$|^apps/qr/Kit/Tests/QRUITests/Peek[^/]*\.swift$|^SevenKit/Sources/SevenKit/' \
+# G6a: network APIs only in PeekClient, ListsUpdater (and their tests) and SevenKit's StoreKit layer.
+hits=$(swift_files | grep -vE '^apps/qr/Kit/Sources/QRUI/Peek/PeekClient\.swift$|^apps/qr/Kit/Sources/QRUI/Lists/ListsUpdater\.swift$|^apps/qr/Kit/Tests/QRUITests/(Peek|Lists)[^/]*\.swift$|^SevenKit/Sources/SevenKit/' \
   | xargs -r grep -nE '\b(URLSession|NWConnection|URLRequest|FoundationNetworking|CFNetwork|NSURLConnection)\b' || true)
-[ -z "$hits" ] || bad "G6 network API outside PeekClient/SevenKit:" "$hits"
+[ -z "$hits" ] || bad "G6 network API outside PeekClient/ListsUpdater/SevenKit:" "$hits"
 # SevenKit may use StoreKit, but not raw networking either.
 hits=$(swift_files | grep -E '^SevenKit/Sources/' | xargs -r grep -nE '\b(URLSession|NWConnection|URLRequest)\b' || true)
 [ -z "$hits" ] || bad "G6 raw network API in SevenKit:" "$hits"
 
 # G6b: imports are Apple frameworks or our own modules only.
-allowed='Foundation|SwiftUI|UIKit|Combine|Observation|os|Dispatch|Darwin|Glibc|Musl|Synchronization|VisionKit|Vision|CoreImage|CoreImage\.CIFilterBuiltins|CoreGraphics|CoreText|ImageIO|UniformTypeIdentifiers|AVFoundation|AVKit|PhotosUI|Photos|SafariServices|NetworkExtension|Contacts|ContactsUI|EventKit|EventKitUI|MessageUI|StoreKit|StoreKitTest|Security|PDFKit|QuickLook|QuickLookThumbnailing|LinkPresentation|CoreTransferable|Social|MobileCoreServices|Testing|XCTest|QRCore|QRUI|SevenKit|SevenKitCore'
+allowed='Foundation|SwiftUI|UIKit|Combine|Observation|os|Dispatch|Darwin|Glibc|Musl|Synchronization|VisionKit|Vision|CoreImage|CoreImage\.CIFilterBuiltins|CoreGraphics|CoreText|ImageIO|UniformTypeIdentifiers|AVFoundation|AVKit|PhotosUI|Photos|SafariServices|NetworkExtension|Contacts|ContactsUI|EventKit|EventKitUI|MessageUI|StoreKit|StoreKitTest|Security|PDFKit|QuickLook|QuickLookThumbnailing|LinkPresentation|CoreTransferable|Social|MobileCoreServices|CryptoKit|Testing|XCTest|QRCore|QRUI|SevenKit|SevenKitCore'
 hits=$(swift_files | grep -v 'Package\.swift$' | xargs -r grep -nE '^\s*(@testable\s+|@preconcurrency\s+|@_spi\([A-Za-z]+\)\s+)*import\s+(class |struct |enum |func |protocol )?[A-Za-z_.]+' \
   | grep -vE "import\s+(class |struct |enum |func |protocol )?($allowed)(\.[A-Za-z_]+)?\s*(//.*)?$" || true)
 [ -z "$hits" ] || bad "G6 non-Apple import:" "$hits"
