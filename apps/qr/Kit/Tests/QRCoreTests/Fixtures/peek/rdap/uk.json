@@ -1,0 +1,27 @@
+{
+  "objectClassName": "domain",
+  "ldhName": "bbc.co.uk",
+  "status": [
+    "server delete prohibited",
+    "server transfer prohibited",
+    "server update prohibited"
+  ],
+  "events": [
+    {
+      "eventAction": "registration",
+      "eventDate": "1994-12-13T03:49:48Z"
+    },
+    {
+      "eventAction": "last changed",
+      "eventDate": "2025-10-29T03:51:11.009091Z"
+    },
+    {
+      "eventAction": "expiration",
+      "eventDate": "2034-12-13T03:49:48Z"
+    },
+    {
+      "eventAction": "last update of RDAP database",
+      "eventDate": "2026-11-10T14:46:13.177Z"
+    }
+  ]
+}

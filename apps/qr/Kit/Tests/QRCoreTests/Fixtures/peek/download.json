@@ -1,0 +1,27 @@
+{
+  "id": "peek-download",
+  "original": "https://files.example/update",
+  "hops": [
+    {
+      "url": "https://files.example/update",
+      "status": 200
+    }
+  ],
+  "stoppedBecause": "finished",
+  "contentType": "application/octet-stream",
+  "contentDisposition": "attachment; filename=\"update.apk\"",
+  "ageDays": 700,
+  "expect": {
+    "title": null,
+    "signals": [
+      "downloadsFile"
+    ],
+    "sniff": {
+      "formActions": [],
+      "scriptRedirect": false,
+      "metaRefreshURL": null,
+      "inputTypes": [],
+      "scriptCount": 0
+    }
+  }
+}

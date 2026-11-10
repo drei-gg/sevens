@@ -1,0 +1,33 @@
+{
+  "id": "peek-brand-mismatch-login",
+  "original": "https://paypa1-login.example/signin",
+  "hops": [
+    {
+      "url": "https://paypa1-login.example/signin",
+      "status": 200
+    }
+  ],
+  "stoppedBecause": "finished",
+  "contentType": "text/html; charset=utf-8",
+  "contentDisposition": null,
+  "ageDays": 5,
+  "expect": {
+    "title": "PayPal - Log in to your account",
+    "signals": [
+      "secretFormBrandMismatch",
+      "domainVeryNew"
+    ],
+    "sniff": {
+      "formActions": [
+        "login.php"
+      ],
+      "scriptRedirect": false,
+      "metaRefreshURL": null,
+      "inputTypes": [
+        "text",
+        "PASSWORD"
+      ],
+      "scriptCount": 0
+    }
+  }
+}

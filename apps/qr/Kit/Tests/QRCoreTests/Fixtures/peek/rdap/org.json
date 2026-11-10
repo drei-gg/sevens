@@ -1,0 +1,31 @@
+{
+  "objectClassName": "domain",
+  "ldhName": "wikipedia.org",
+  "status": [
+    "client delete prohibited",
+    "client transfer prohibited",
+    "client update prohibited"
+  ],
+  "events": [
+    {
+      "eventAction": "transfer",
+      "eventDate": "2012-03-09T16:33:50.754Z"
+    },
+    {
+      "eventAction": "expiration",
+      "eventDate": "2027-01-13T00:12:14Z"
+    },
+    {
+      "eventAction": "registration",
+      "eventDate": "2001-01-13T00:12:14.754Z"
+    },
+    {
+      "eventAction": "last changed",
+      "eventDate": "2026-08-12T08:47:19.41Z"
+    },
+    {
+      "eventAction": "last update of RDAP database",
+      "eventDate": "2026-11-10T14:45:59.996Z"
+    }
+  ]
+}
