@@ -148,7 +148,8 @@ public struct WebAddress: Sendable, Hashable {
         var isPrivate = false, known = false
         if host.kind == .domain {
             let m = psl.match(hostASCII: host.ascii)
-            registrable = m.registrableDomain.map(URLHost.unicodeForm)
+            // Contract (LinkInfo): nil for unknown suffixes, i.e. when only PSL's default rule applied.
+            registrable = m.matchedExplicitRule ? m.registrableDomain.map(URLHost.unicodeForm) : nil
             suffix = URLHost.unicodeForm(m.publicSuffix)
             isPrivate = m.isPrivate
             known = m.matchedExplicitRule
