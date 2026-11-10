@@ -38,12 +38,52 @@ import Testing
             }
             for k in b.keywords {
                 #expect(k == k.lowercased(), "\(k) not lowercase")
-                #expect(k.count >= 4, "\(k) shorter than 4")
+                #expect(k.count >= 3, "\(k) shorter than 3")
+                #expect(k.count >= 4 || b.ambiguous, "\(b.name): three-letter keyword \(k) needs ambiguous = true")
+                #expect(k.unicodeScalars.allSatisfy { $0.properties.isLowercase || $0.properties.numericType != nil }, "\(k) not lowercase letters or digits")
                 #expect(k.unicodeScalars.allSatisfy { $0.isASCII }, "\(k) not ASCII")
                 #expect(!bait.contains(k), "\(k) is a bait word")
                 if let other = seen[k] { Issue.record("keyword \(k) in \(other) and \(b.name)") }
                 seen[k] = b.name
             }
+        }
+    }
+
+    @Test func brandDomainsBelongToOneBrand() {
+        var owner: [String: String] = [:]
+        for b in Self.data.brands {
+            for d in b.domains {
+                if let other = owner[d], other != b.name { Issue.record("domain \(d) in \(other) and \(b.name)") }
+                owner[d] = b.name
+            }
+            #expect(Set(b.domains).count == b.domains.count, "\(b.name) lists a domain twice")
+        }
+    }
+
+    @Test func brandsKnowTheirSecondaryDomains() {
+        func domains(_ name: String) -> Set<String> {
+            Set(Self.data.brands.first { $0.name == name }?.domains ?? [])
+        }
+        #expect(domains("PayPal").isSuperset(of: ["paypal.com", "paypal.me"]))
+        #expect(domains("WhatsApp").isSuperset(of: ["whatsapp.com", "wa.me", "whatsapp.net"]))
+        #expect(domains("Facebook").isSuperset(of: ["fb.me", "m.me"]))
+        #expect(domains("Microsoft").isSuperset(of: ["microsoft.de", "microsoft.co.uk"]))
+        #expect(domains("Netflix").isSuperset(of: ["netflix.com", "netflix.co"]))
+        #expect(domains("Mastercard").contains("mastercard.com.ph"))
+        #expect(domains("Google").isSuperset(of: ["google.co.uk", "google.com.ph"]))
+        #expect(domains("Amazon").isSuperset(of: ["amazon.de", "amazon.co.uk"]))
+        // Left out on purpose: no source could be read for these, and the fixtures use netflix.xyz as
+        // an abused-ending example.
+        #expect(!domains("Netflix").contains("netflix.xyz"))
+        #expect(!domains("Facebook").contains("facebook.co.uk"))
+        #expect(!domains("GCash").contains("gcash.ph"))
+    }
+
+    @Test func brandsHaveThreeLetterKeywordsForTheMostImpersonatedShortNames() {
+        for (name, keyword) in [("DHL", "dhl"), ("BPI", "bpi"), ("BDO Unibank", "bdo"), ("UPS", "ups")] {
+            let brand = Self.data.brands.first { $0.name == name }
+            #expect(brand?.keywords.contains(keyword) == true, "\(name) lacks \(keyword)")
+            #expect(brand?.ambiguous == true, "\(name) must need a bait word")
         }
     }
 
@@ -88,7 +128,26 @@ import Testing
         #expect(raw.count >= 30 && raw.count <= 60, "bait count \(raw.count)")
         #expect(Set(raw).count == raw.count)
         #expect(raw.allSatisfy { $0 == $0.lowercased() && !$0.isEmpty && $0.unicodeScalars.allSatisfy { $0.isASCII } })
-        #expect(Set(raw).isSuperset(of: ["login", "verify", "secure", "account"]))
+        #expect(Set(raw).isSuperset(of: ["login", "verify", "secure", "account", "tracking", "delivery", "parcel", "online"]))
+    }
+
+    // MARK: tracking parameters
+
+    @Test func trackingParamsAreSourcedAndWellFormed() throws {
+        let list = Self.data.trackingParams
+        #expect(list.count >= 15, "tracking param count \(list.count)")
+        #expect(Set(list.map(\.name)).count == list.count, "duplicate tracking param names")
+        for p in list {
+            let body = p.name.hasSuffix("*") ? String(p.name.dropLast()) : p.name
+            #expect(!body.isEmpty && body.unicodeScalars.allSatisfy { ("a"..."z").contains($0) || ("0"..."9").contains($0) || $0 == "_" }, "name \(p.name)")
+            #expect(p.source.hasPrefix("https://") && p.source.count > 12 && !p.source.contains(" "), "\(p.name) source")
+        }
+        let names = Set(list.map(\.name))
+        #expect(names.isSuperset(of: ["utm_*", "fbclid", "gclid", "dclid", "gbraid", "wbraid", "msclkid", "mc_eid", "mc_cid", "yclid", "twclid", "ttclid", "li_fat_id", "_hsenc", "_hsmi", "mkt_tok"]))
+        #expect(list.first { $0.name == "utm_*" }?.matches("UTM_Source") == true)
+        if let raw = Self.sourceFile("tracking-params.json") {
+            #expect(try JSONDecoder().decode([TrackingParam].self, from: raw).count == list.count)
+        }
     }
 
     // MARK: confusables
@@ -114,7 +173,7 @@ import Testing
 
     @Test func emvNetworksAreSourced() {
         let n = Self.data.paymentNetworks.emv
-        #expect(!n.isEmpty)
+        #expect(n.count >= 5)
         #expect(Set(n.map { $0.id.lowercased() }).count == n.count)
         for e in n {
             #expect(!e.id.isEmpty && !e.name.isEmpty)

@@ -35,4 +35,11 @@ import Testing
             #expect(b.keywords.allSatisfy { $0 == $0.lowercased() }, "\(b.name)")
         }
     }
+
+    @Test func bundledDataLoadsTrackingParams() {
+        let d = BundledData.shared
+        #expect(d.trackingParams.contains { $0.matches("utm_campaign") })
+        #expect(d.trackingParams.contains { $0.matches("fbclid") })
+        #expect(!d.trackingParams.contains { $0.matches("q") || $0.matches("id") || $0.matches("page") })
+    }
 }
