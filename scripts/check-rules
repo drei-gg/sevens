@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Gates G6 (network, imports, dependencies) and G7 ("safe", hard-coded prices).
+# Gates G6 (network, no data-collecting SDKs, pinned and credited dependencies) and G7 ("safe", hard-coded prices).
 # usage: scripts/check-rules        exits non-zero on any violation
 set -uo pipefail
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
@@ -17,21 +17,34 @@ hits=$(swift_files | grep -vE '^apps/qr/Kit/Sources/QRUI/Peek/PeekClient\.swift$
 hits=$(swift_files | grep -E '^SevenKit/Sources/' | xargs -r grep -nE '\b(URLSession|NWConnection|URLRequest)\b' || true)
 [ -z "$hits" ] || bad "G6 raw network API in SevenKit:" "$hits"
 
-# G6b: imports are Apple frameworks or our own modules only.
-allowed='Foundation|SwiftUI|UIKit|Combine|Observation|os|Dispatch|Darwin|Glibc|Musl|Synchronization|VisionKit|Vision|CoreImage|CoreImage\.CIFilterBuiltins|CoreGraphics|CoreText|ImageIO|UniformTypeIdentifiers|AVFoundation|AVKit|PhotosUI|Photos|SafariServices|NetworkExtension|Contacts|ContactsUI|EventKit|EventKitUI|MessageUI|StoreKit|StoreKitTest|Security|PDFKit|QuickLook|QuickLookThumbnailing|LinkPresentation|CoreTransferable|Social|MobileCoreServices|CryptoKit|Testing|XCTest|QRCore|QRUI|SevenKit|SevenKitCore'
-hits=$(swift_files | grep -v 'Package\.swift$' | xargs -r grep -nE '^\s*(@testable\s+|@preconcurrency\s+|@_spi\([A-Za-z]+\)\s+)*import\s+(class |struct |enum |func |protocol )?[A-Za-z_.]+' \
-  | grep -vE "import\s+(class |struct |enum |func |protocol )?($allowed)(\.[A-Za-z_]+)?\s*(//.*)?$" || true)
-[ -z "$hits" ] || bad "G6 non-Apple import:" "$hits"
+# G6b: no SDK that collects anything (analytics, ads, crash reporting, push, telemetry).
+deny='Firebase[A-Za-z]*|GoogleAnalytics|GoogleMobileAds|Crashlytics|Sentry[A-Za-z]*|Bugsnag[A-Za-z]*|Amplitude[A-Za-z]*|Mixpanel|AppsFlyer[A-Za-z]*|Adjust[A-Za-z]*|Segment[A-Za-z]*|FBSDK[A-Za-z]*|FBAudienceNetwork|AdMob|AppLovin[A-Za-z]*|OneSignal[A-Za-z]*|Datadog[A-Za-z]*|NewRelic[A-Za-z]*'
+hits=$(swift_files | xargs -r grep -nE "^\s*(@[A-Za-z_]+(\([A-Za-z]+\))?\s+)*import\s+(class |struct |enum |func |protocol )?($deny)\b" || true)
+hits+=$(git ls-files --cached --others --exclude-standard -- '*Package.swift' '*.pbxproj' '*Package.resolved' | xargs -r grep -niE "($deny)" | grep -viE 'firebase-free|no-analytics' || true)
+[ -z "$hits" ] || bad "G6 data-collecting SDK (deny-list):" "$hits"
 # Pure targets import Foundation (and their own siblings) only.
 hits=$(swift_files | grep -E '^(apps/qr/Kit/Sources/QRCore|SevenKit/Sources/SevenKitCore)/' \
   | xargs -r grep -nE '^\s*(@[a-zA-Z]+\s+)*import\s' | grep -vE 'import\s+(Foundation|QRCore|SevenKitCore)\s*$' || true)
 [ -z "$hits" ] || bad "G6 pure target imports something other than Foundation:" "$hits"
 
-# G6c: no package dependencies other than local paths.
-hits=$(git ls-files --cached --others --exclude-standard -- '*Package.swift' | xargs -r grep -nE '\.package\(\s*(name:[^,]*,\s*)?url:' || true)
-[ -z "$hits" ] || bad "G6 remote package dependency:" "$hits"
-hits=$(git ls-files --cached --others --exclude-standard -- '*.pbxproj' | xargs -r grep -nE 'XCRemoteSwiftPackageReference' || true)
-[ -z "$hits" ] || bad "G6 remote package in the Xcode project:" "$hits"
+# G6c: open-source libraries are welcome, but every one is pinned and credited in THIRD-PARTY.md
+# with an allowed licence. Local path packages (SevenKit, QRKit) are ours and exempt.
+licences='MIT|BSD-2-Clause|BSD-3-Clause|Apache-2\.0|MPL-2\.0|ISC|Zlib|Unicode|GPL-3\.0|LGPL-3\.0|GPL-3\.0-compatible'
+deps=$(git ls-files --cached --others --exclude-standard -- '*Package.swift' | xargs -r grep -noE '\.package\(\s*(name:[^,]*,\s*)?url:[^)]*\)?' || true)
+unpinned=$(printf '%s\n' "$deps" | grep -vE '(exact:|revision:|\.exact\(|\.revision\()' | grep -v '^$' || true)
+[ -z "$unpinned" ] || bad "G6 package dependency not pinned to an exact version or revision:" "$unpinned"
+pbx=$(git ls-files --cached --others --exclude-standard -- '*.pbxproj' || true)
+if [ -n "$pbx" ] && grep -q 'XCRemoteSwiftPackageReference' $pbx; then
+  hits=$(grep -nA4 'requirement = {' $pbx | grep -nE 'kind = ' | grep -vE 'kind = (exactVersion|revision);' || true)
+  [ -z "$hits" ] || bad "G6 Xcode package not pinned to an exact version or revision:" "$hits"
+  deps+=$'\n'$(grep -nE 'repositoryURL = ' $pbx || true)
+fi
+for url in $(printf '%s\n' "$deps" | grep -oE 'https?://[^"]+' | sed -E 's/\.git$//' | sort -u); do
+  line=$(grep -F "$url" THIRD-PARTY.md 2>/dev/null | head -1)
+  if [ -z "$line" ]; then bad "G6 dependency missing from THIRD-PARTY.md:" "$url"
+  elif ! printf '%s' "$line" | grep -qE "\b($licences)\b"; then bad "G6 dependency licence not on the allowed list (THIRD-PARTY.md):" "$line"
+  fi
+done
 
 # G7: user-facing text. String catalogs, plists and string literals in UI code.
 ui_swift=$(swift_files | grep -E '^(apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)

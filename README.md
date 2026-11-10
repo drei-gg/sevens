@@ -14,7 +14,8 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 - The first screen says what the phone already does built in. If that's enough, keep your seven dollars.
 - No third-party SDKs: no analytics, ads, or crash reporters. We collect nothing.
 - No backend of ours unless a feature truly needs one, you agree to it, and we say exactly what's sent.
-- Native: SwiftUI on iOS, Kotlin and Compose on Android. No dependencies beyond the platform.
+- Native: SwiftUI on iOS, Kotlin and Compose on Android.
+- Built on open-source work where the problem is already solved. Every library is pinned, read before it ships, and credited in the app's notices. Nothing that collects data or phones home.
 
 ## Working documents
 
