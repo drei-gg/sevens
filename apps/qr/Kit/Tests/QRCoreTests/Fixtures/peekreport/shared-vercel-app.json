@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-shared-vercel-app",
+ "original": "https://my-site.vercel.app/",
+ "hops": [
+  {
+   "url": "https://my-site.vercel.app/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Harbour news",
+  "signals": [],
+  "info": [
+   "sharedHostingDomain"
+  ],
+  "level": 0,
+  "finalHost": "my-site.vercel.app",
+  "hopLevels": [
+   0
+  ]
+ }
+}

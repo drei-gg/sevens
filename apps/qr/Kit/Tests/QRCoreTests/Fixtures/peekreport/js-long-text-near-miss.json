@@ -1,0 +1,24 @@
+{
+ "id": "peekreport-js-long-text-near-miss",
+ "original": "https://news.example.com/",
+ "hops": [
+  {
+   "url": "https://news.example.com/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "News",
+  "signals": [],
+  "info": [],
+  "level": 0,
+  "finalHost": "news.example.com",
+  "hopLevels": [
+   0
+  ]
+ }
+}

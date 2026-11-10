@@ -1,0 +1,25 @@
+{
+ "id": "peekreport-form-same-site-near-miss",
+ "original": "https://www.example.com/contact",
+ "hops": [
+  {
+   "url": "https://www.example.com/contact",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Prize claim",
+  "signals": [],
+  "info": [],
+  "level": 0,
+  "finalHost": "www.example.com",
+  "hopLevels": [
+   0
+  ]
+ },
+ "note": "another subdomain of the same registrable domain"
+}

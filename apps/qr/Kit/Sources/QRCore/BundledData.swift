@@ -36,6 +36,11 @@ public struct BundledData: Sendable {
     /// so the first `analyze` rarely waits (PLAN §7).
     public static let shared: BundledData = load()
 
+    /// Starts loading `shared` on a background task. Cheap; call once at launch.
+    public static func preload() {
+        _ = Task.detached(priority: .utility) { _ = BundledData.shared }
+    }
+
     /// Loads from the package's own resource bundle (`Data/` copied as a folder).
     public static func load() -> BundledData {
         func data(_ name: String) -> Data? {

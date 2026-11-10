@@ -1,0 +1,32 @@
+{
+ "id": "peekreport-incomplete-timeout-after-redirect",
+ "original": "https://a.example.com/x",
+ "hops": [
+  {
+   "url": "https://a.example.com/x",
+   "status": 302
+  },
+  {
+   "url": "https://slow.example.net/y",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "timeout",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": null,
+ "expect": {
+  "title": null,
+  "signals": [],
+  "info": [
+   "peekIncomplete",
+   "ageUnknown"
+  ],
+  "level": 0,
+  "finalHost": "a.example.com",
+  "hopLevels": [
+   0,
+   0
+  ]
+ }
+}

@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-age-182",
+ "original": "https://age.example.com/",
+ "hops": [
+  {
+   "url": "https://age.example.com/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 182,
+ "expect": {
+  "title": "Harbour news",
+  "signals": [
+   "domainNew"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "age.example.com",
+  "hopLevels": [
+   0
+  ]
+ }
+}

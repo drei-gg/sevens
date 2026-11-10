@@ -1,0 +1,25 @@
+{
+ "id": "peekreport-download-pdf-inline-near-miss",
+ "original": "https://docs.example.org/menu.pdf",
+ "hops": [
+  {
+   "url": "https://docs.example.org/menu.pdf",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "application/pdf",
+ "contentDisposition": "inline; filename=\"menu.pdf\"",
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [],
+  "info": [],
+  "level": 0,
+  "finalHost": "docs.example.org",
+  "hopLevels": [
+   0
+  ]
+ },
+ "note": "pdf shown inline is not a download"
+}

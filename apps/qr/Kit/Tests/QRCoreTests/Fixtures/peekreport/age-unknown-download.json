@@ -1,0 +1,28 @@
+{
+ "id": "peekreport-age-unknown-download",
+ "original": "https://files.example.org/tool.exe",
+ "hops": [
+  {
+   "url": "https://files.example.org/tool.exe",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "application/octet-stream",
+ "contentDisposition": null,
+ "ageDays": null,
+ "expect": {
+  "title": null,
+  "signals": [
+   "downloadsFile"
+  ],
+  "info": [
+   "ageUnknown"
+  ],
+  "level": 1,
+  "finalHost": "files.example.org",
+  "hopLevels": [
+   0
+  ]
+ }
+}

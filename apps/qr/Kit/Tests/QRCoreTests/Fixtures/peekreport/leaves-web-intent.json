@@ -1,0 +1,31 @@
+{
+ "id": "peekreport-leaves-web-intent",
+ "original": "https://example.com/app",
+ "hops": [
+  {
+   "url": "https://example.com/app",
+   "status": 302
+  },
+  {
+   "url": "intent://scan#Intent;scheme=zxing;end",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "nonWebTarget",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "redirectLeavesWeb"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "example.com",
+  "hopLevels": [
+   0,
+   1
+  ]
+ }
+}

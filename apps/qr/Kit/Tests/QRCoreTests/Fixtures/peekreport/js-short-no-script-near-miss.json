@@ -1,0 +1,24 @@
+{
+ "id": "peekreport-js-short-no-script-near-miss",
+ "original": "https://tiny.example.com/",
+ "hops": [
+  {
+   "url": "https://tiny.example.com/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Hi",
+  "signals": [],
+  "info": [],
+  "level": 0,
+  "finalHost": "tiny.example.com",
+  "hopLevels": [
+   0
+  ]
+ }
+}

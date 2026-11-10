@@ -1,0 +1,25 @@
+{
+ "id": "peekreport-script-redirect-near-miss",
+ "original": "https://reader.example.com/",
+ "hops": [
+  {
+   "url": "https://reader.example.com/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Reader",
+  "signals": [],
+  "info": [],
+  "level": 0,
+  "finalHost": "reader.example.com",
+  "hopLevels": [
+   0
+  ]
+ },
+ "note": "a script that never touches location"
+}

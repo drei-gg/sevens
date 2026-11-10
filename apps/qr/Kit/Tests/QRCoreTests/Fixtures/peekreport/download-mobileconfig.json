@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-download-mobileconfig",
+ "original": "https://profile.example.net/install/Wifi.MobileConfig?x=1",
+ "hops": [
+  {
+   "url": "https://profile.example.net/install/Wifi.MobileConfig?x=1",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "application/x-apple-aspen-config",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "downloadsFile"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "profile.example.net",
+  "hopLevels": [
+   0
+  ]
+ }
+}

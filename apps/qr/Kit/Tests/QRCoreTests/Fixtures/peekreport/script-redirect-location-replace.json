@@ -1,0 +1,28 @@
+{
+ "id": "peekreport-script-redirect-location-replace",
+ "original": "https://bounce.example.com/",
+ "hops": [
+  {
+   "url": "https://bounce.example.com/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Wait",
+  "signals": [
+   "scriptRedirect"
+  ],
+  "info": [
+   "needsJavaScript"
+  ],
+  "level": 1,
+  "finalHost": "bounce.example.com",
+  "hopLevels": [
+   0
+  ]
+ }
+}

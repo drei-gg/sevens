@@ -1,0 +1,76 @@
+{
+ "id": "peekreport-too-many-loop",
+ "original": "https://loop.example.com/a",
+ "hops": [
+  {
+   "url": "https://loop.example.com/a",
+   "status": 302
+  },
+  {
+   "url": "https://loop.example.com/b",
+   "status": 302
+  },
+  {
+   "url": "https://loop.example.com/a",
+   "status": 302
+  },
+  {
+   "url": "https://loop.example.com/b",
+   "status": 302
+  },
+  {
+   "url": "https://loop.example.com/a",
+   "status": 302
+  },
+  {
+   "url": "https://loop.example.com/b",
+   "status": 302
+  },
+  {
+   "url": "https://loop.example.com/a",
+   "status": 302
+  },
+  {
+   "url": "https://loop.example.com/b",
+   "status": 302
+  },
+  {
+   "url": "https://loop.example.com/a",
+   "status": 302
+  },
+  {
+   "url": "https://loop.example.com/b",
+   "status": 302
+  },
+  {
+   "url": "https://loop.example.com/a",
+   "status": 302
+  }
+ ],
+ "stoppedBecause": "tooManyRedirects",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "tooManyRedirects"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "loop.example.com",
+  "hopLevels": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ }
+}
