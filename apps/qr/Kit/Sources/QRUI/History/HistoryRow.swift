@@ -13,11 +13,13 @@ struct HistoryRow: View {
         let note = HistoryRowSummary.notePreview(item.note)
         VStack(alignment: .leading, spacing: Tokens.Space.xs) {
             Label {
-                Text(VerdictText.title(for: item.level)).font(.subheadline.weight(.semibold))
+                Text(VerdictText.title(for: item.level))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Tokens.ink)
+                    .fixedSize(horizontal: false, vertical: true)
             } icon: {
-                Image(systemName: style.symbolName)
+                Image(systemName: style.symbolName).foregroundStyle(style.color)
             }
-            .foregroundStyle(style.color)
             Text(payload)
                 .font(.body)
                 .foregroundStyle(Tokens.ink)

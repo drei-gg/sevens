@@ -11,6 +11,7 @@ public struct ScanScreen: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     @State private var torch = TorchController()
     @State private var availability = ScannerView.availability
@@ -34,7 +35,8 @@ public struct ScanScreen: View {
             .toolbar { toolbar }
             .sheet(item: $result) { shown in
                 ResultSheet(analysis: shown.analysis)
-                    .presentationDetents([.medium, .large])
+                    // At accessibility sizes the half-height sheet shows only the verdict; open it full.
+                    .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.medium, .large])
             }
             .sheet(item: Binding(get: { candidates.map(CandidateList.init) }, set: { if $0 == nil { candidates = nil } }),
                    onDismiss: showChosen) { list in

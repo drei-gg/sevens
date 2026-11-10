@@ -43,6 +43,7 @@ public struct HistoryDetail: View {
                 Text(shown.payloadEncoding == .base64
                      ? String(localized: "history.detail.payload.binary", defaultValue: "Contents (binary, shown as base64)", bundle: .module)
                      : String(localized: "history.detail.payload", defaultValue: "Contents", bundle: .module))
+                    .foregroundStyle(Tokens.muted)
             }
             .listRowBackground(Tokens.card)
             Section {
@@ -69,6 +70,7 @@ public struct HistoryDetail: View {
                 Text(String(localized: "history.detail.checkAgain.footer",
                             defaultValue: "Runs today's checks on this code. The verdict above is the one it got when it was saved.",
                             bundle: .module))
+                    .foregroundStyle(Tokens.muted)
             }
             .listRowBackground(Tokens.card)
             noteSection
@@ -150,6 +152,7 @@ public struct HistoryDetail: View {
             .disabled(!HistoryNote.isChanged(draft: draft, saved: current.note))
         } header: {
             Text(String(localized: "history.detail.note", defaultValue: "Note", bundle: .module))
+                .foregroundStyle(Tokens.muted)
         }
         .listRowBackground(Tokens.card)
     }
