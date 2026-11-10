@@ -8,14 +8,15 @@ public enum QRAccessibilityID {
     public static let scanSettings = "scan.settings"
     public static let scanPhoto = "scan.photo"
     public static let scanPaste = "scan.paste"
-    // First launch (WP 3.1)
-    public static let firstLaunchTrial = "firstlaunch.trial"
-    public static let firstLaunchFree = "firstlaunch.free"
+    // First launch (WP 3.1): set by SevenKit's BeforeYouBuyView buttons.
+    public static let firstLaunchTrial = "seven.beforeYouBuy.startTrial"
+    public static let firstLaunchFree = "seven.beforeYouBuy.justScan"
     // Result sheet (WP 3.2): the verdict header element; its label starts with the verdict word.
     public static let resultVerdict = "result.verdict"
     public static let resultDone = "result.done"
     public static let resultPeek = "result.peek"
     public static let resultOpen = "result.open"
+    public static let peekVerdict = "peek.verdict"
     // Make (WP 3.3)
     public static let makeTypePicker = "make.type"
     public static let makeLinkField = "make.field.link"
