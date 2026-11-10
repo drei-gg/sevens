@@ -1,0 +1,25 @@
+{
+  "id": "peek-fix1-analytics-reads-location",
+  "original": "https://fix1-menu.example/spring",
+  "hops": [
+    {
+      "url": "https://fix1-menu.example/spring",
+      "status": 200
+    }
+  ],
+  "stoppedBecause": "finished",
+  "contentType": "text/html; charset=utf-8",
+  "contentDisposition": null,
+  "ageDays": 2000,
+  "expect": {
+    "title": "Spring menu",
+    "signals": [],
+    "sniff": {
+      "formActions": [],
+      "scriptRedirect": false,
+      "metaRefreshURL": null,
+      "inputTypes": [],
+      "scriptCount": 1
+    }
+  }
+}

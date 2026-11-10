@@ -44,7 +44,7 @@ private func sniff(_ html: String, contentType: String? = "text/html; charset=ut
 
     @Test func scriptRedirectPatterns() {
         for js in ["location.href='/x'", "location.replace('/x')", "location.assign('/x')", "window.location = '/x'",
-                   "window.location='/x'", "top.location.href", "LOCATION.HREF = 1"] {
+                   "window.location='/x'", "LOCATION.HREF = 1"] {
             #expect(sniff("<script>\(js)</script>").scriptRedirect, "\(js)")
         }
         #expect(!sniff("<script>if (window.location == 'a') {}</script>").scriptRedirect)
@@ -146,5 +146,70 @@ private func sniff(_ html: String, contentType: String? = "text/html; charset=ut
         #expect(r.scriptCount == 0)
         let lt = HTMLSniffer.sniff(body: Array(String(repeating: "<script>", count: 60_000).utf8), contentType: nil)
         #expect(lt.scriptCount == 1)
+    }
+
+    // MARK: script redirect (SPEC §6.1)
+
+    @Test func scriptRedirectFiresOnAssignmentsAndCalls() {
+        let yes = [
+            "location = '/x'", "location='/x'", "location.href = '/x'", "location . href = '/x'",
+            "window.location = '/x'", "window.location.href = '/x'", "window . location . href = '/x'",
+            "document.location = '/x'", "document.location.href='/x'", "top.location = '/x'", "top.location.href = '/x'",
+            "self.location = '/x'", "self.location.replace('/x')", "parent.location = '/x'",
+            "location.replace('/x')", "location.replace ('/x')", "location.assign('/x')", "window.location.replace('/x')",
+            "window.location.assign( '/x' )", "location[\"href\"] = '/x'", "location['href']='/x'", "window.location[ \"href\" ] = 1",
+            "location[\"replace\"]('/x')", "window.location = 1",
+            "setTimeout(function(){ location.href = u }, 5)", "if (a) location = b; else x()", "var u = 1;\nlocation\n=\n'/x'",
+            "document.location.replace('/x')", "Location.Replace('/x')", "x=1;window.location=x",
+        ]
+        #expect(yes.count >= 15)
+        for js in yes { #expect(sniff("<script>\(js)</script>").scriptRedirect, "\(js)") }
+    }
+
+    @Test func scriptRedirectIgnoresReadsComparisonsAndLookalikes() {
+        let no = [
+            "var u = location.href", "var u = window.location.href;", "if (location.href.indexOf('a') > -1) {}",
+            "ga('send', 'pageview', location.href)", "location.href == x", "location.href === x", "location.href != x",
+            "location.href !== x", "window.location == 'a'", "window.location === a", "window.location != a",
+            "mylocation = 1", "geolocation = 1", "navigator.geolocation.getCurrentPosition(f)", "var location_name = 1",
+            "location.hostname = 'a'", "location.search", "location.hash = '#x'", "foo(location)", "x = location",
+            "console.log(location.replace)", "a.location = 1", "this.location = 1", "obj.window.location = 1",
+            "location => 1", "relocation.href = 1", "location.reload()", "location.href.replace('a','b')",
+            "location[\"hash\"] = 1", "location.href", "var s = 'location is here'", "",
+        ]
+        #expect(no.count >= 15)
+        for js in no { #expect(!sniff("<script>\(js)</script>").scriptRedirect, "\(js)") }
+    }
+
+    @Test func scriptRedirectNeedsInlineScript() {
+        #expect(!sniff("<script src=a.js>location.href = '/x'</script>").scriptRedirect)
+        #expect(sniff("<script>var a=1;</script><script>location.replace('/x')</script>").scriptRedirect)
+        #expect(!sniff("<p>location.href = '/x'</p>").scriptRedirect)
+        #expect(!sniff("<script>location.").scriptRedirect)
+    }
+
+    @Test func scriptRedirectMetaRefreshUnchanged() {
+        let r = sniff(#"<meta http-equiv="refresh" content="0; url=/x"><script>var u = location.href</script>"#)
+        #expect(r.metaRefreshURL == "/x")
+        #expect(!r.scriptRedirect)
+    }
+
+    @Test func scriptRedirectAdversarialInputStaysFast() {
+        let clock = ContinuousClock()
+        let cases: [String] = [
+            String(repeating: "location", count: 65_000),
+            String(repeating: "location ", count: 58_000),
+            String(repeating: "window.location.", count: 32_000),
+            String(repeating: "a . ", count: 100_000) + "location",
+            "location" + String(repeating: " ", count: 500_000),
+            String(repeating: "location[\"", count: 50_000),
+            String(repeating: ".location", count: 58_000),
+            String(repeating: "x ", count: 250_000),
+        ]
+        for js in cases {
+            let body = Array(("<script>" + js + "</script>").utf8.prefix(512 * 1024))
+            let t = clock.measure { _ = HTMLSniffer.sniff(body: body, contentType: nil) }
+            #expect(t < .seconds(2), "took \(t)")
+        }
     }
 }

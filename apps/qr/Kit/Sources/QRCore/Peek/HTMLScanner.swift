@@ -115,7 +115,7 @@ struct HTMLScanner {
         result.scriptCount += 1
         let close = find(Array("</script".utf8), in: lower, from: i)
         let end = close ?? b.count
-        if attrs["src"] == nil, !result.scriptRedirect, containsRedirect(lower[i..<end]) {
+        if attrs["src"] == nil, !result.scriptRedirect, HTMLScriptRedirect.contains(lower[i..<end]) {
             result.scriptRedirect = true
         }
         return end
@@ -145,21 +145,6 @@ struct HTMLScanner {
         while let l = rest.last, quotes.contains(l) { rest.removeLast() }
         rest = rest.trimmingCharacters(in: .whitespacesAndNewlines)
         return rest.isEmpty ? nil : rest
-    }
-
-    private func containsRedirect(_ s: ArraySlice<UInt8>) -> Bool {
-        let t = Array(s)
-        for p in ["location.href", "location.replace", "location.assign", "top.location"]
-        where find(Array(p.utf8), in: t, from: 0) != nil { return true }
-        let key = Array("window.location".utf8)
-        var from = 0
-        while let at = find(key, in: t, from: from) {
-            var j = at + key.count
-            while j < t.count, isSpace(t[j]) { j += 1 }
-            if j < t.count, t[j] == 0x3D, !(j + 1 < t.count && t[j + 1] == 0x3D) { return true }
-            from = at + 1
-        }
-        return false
     }
 
     // MARK: text

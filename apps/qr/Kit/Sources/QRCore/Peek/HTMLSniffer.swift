@@ -20,7 +20,7 @@ public struct HTMLSniff: Sendable, Hashable {
     public var inputs: [Input]
     /// The URL part of a `<meta http-equiv="refresh">`, if any.
     public var metaRefreshURL: String?
-    /// Inline script contains location.href / location.replace / location.assign / window.location = / top.location.
+    /// Inline script assigns `location` / `location.href` or calls `location.replace` / `location.assign` (SPEC §6.1). Reading does not count.
     public var scriptRedirect: Bool
     public var scriptCount: Int
     /// Characters of visible text (outside tags, script and style), whitespace collapsed.
