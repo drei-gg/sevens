@@ -144,7 +144,7 @@ public final class Store {
             facts = await source.currentFacts()
             recompute()
         } catch {
-            lastError = seven("seven.error.restore", "Couldn't restore purchases right now. Please try again.")
+            lastError = seven("seven.error.restore", "Couldn't restore purchases. Check your connection and try again.")
         }
     }
 
@@ -162,7 +162,7 @@ public final class Store {
             facts = await source.currentFacts()
             recompute()
         } catch {
-            lastError = seven("seven.error.purchase", "The purchase didn't go through. Please try again.")
+            lastError = seven("seven.error.purchase", "The purchase didn't go through. Try again in a moment.")
         }
     }
 
