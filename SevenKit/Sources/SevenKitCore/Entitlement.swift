@@ -31,12 +31,15 @@ public struct EntitlementFacts: Sendable, Equatable {
 }
 
 public func entitlementState(_ facts: EntitlementFacts, now: Date, trialLength: TimeInterval = 7 * 86_400) -> EntitlementState {
-    // Unlock wins over everything (pending, an expired trial). A pending purchase hides the
-    // trial until Apple resolves it. A clock moved back before the start never extends the
-    // trial (the end is always start + length) and never punishes it either.
+    // Unlock wins over everything (pending, an expired trial). A running trial wins over a
+    // pending purchase: waiting for Ask to Buy never takes away days already given. Pending
+    // shows only when there's no running trial. A clock moved back before the start never
+    // extends the trial (the end is always start + length) and never punishes it either.
     if facts.hasUnlock { return .unlocked }
-    if facts.purchasePending { return .pending }
-    guard let start = facts.trialStartedAt else { return .notStarted }
-    let end = start.addingTimeInterval(trialLength)
-    return now < end ? .trial(endsAt: end) : .expired(endedAt: end)
+    if let start = facts.trialStartedAt {
+        let end = start.addingTimeInterval(trialLength)
+        if now < end { return .trial(endsAt: end) }
+        return facts.purchasePending ? .pending : .expired(endedAt: end)
+    }
+    return facts.purchasePending ? .pending : .notStarted
 }

@@ -58,10 +58,11 @@ import SevenKitCore
         #expect(state(f, at: 0) == .unlocked)
     }
 
-    @Test func pendingHidesNotStartedAndTrial() {
+    @Test func pendingNeverTakesAwayARunningTrial() {
         #expect(entitlementState(EntitlementFacts(purchasePending: true), now: start) == .pending)
         let f = EntitlementFacts(trialStartedAt: start, purchasePending: true)
-        #expect(state(f, at: 86_400) == .pending)
+        #expect(state(f, at: 86_400) == .trial(endsAt: start.addingTimeInterval(7 * 86_400)))
+        #expect(state(f, at: 8 * 86_400) == .pending)
         #expect(!EntitlementState.pending.paidFeaturesAvailable)
     }
 
