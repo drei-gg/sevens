@@ -4,3 +4,4 @@ xcuserdata/
 *.xcresult
 .swiftpm/xcode/xcuserdata/
 .DS_Store
+.sevens-device.command

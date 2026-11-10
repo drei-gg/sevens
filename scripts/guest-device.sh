@@ -1,15 +1,17 @@
 #!/bin/bash
-# Runs IN THE VM (called by `scripts/vm device`). Signing needs the GUI session's keychain,
-# so this hands the build to Terminal.app and follows its log.
-# usage: bash scripts/guest-device.sh <derived-data-path>
+# Runs IN THE VM (called by `scripts/vm device|ui --device|lock-device`). Signing needs the GUI
+# session's keychain (runbook: signing over SSH fails), so this hands xcodebuild to Terminal.app
+# and follows its log.
+# usage: bash scripts/guest-device.sh <derived-data-path> install
+#        bash scripts/guest-device.sh <derived-data-path> test <extra xcodebuild args...>
 set -euo pipefail
-dd=${1:?derived data path}
+dd=${1:?derived data path}; mode=${2:-install}; shift 2 || true
 here=$(pwd)
 log=/tmp/sevens-device.log; status=/tmp/sevens-device.status
 rm -f "$log" "$status"
 xcrun devicectl list devices --json-output /tmp/sevens-devices.json >/dev/null 2>&1 || true
 udid=$(python3 -c '
-import json, sys
+import json
 d = json.load(open("/tmp/sevens-devices.json"))["result"]["devices"]
 for x in d:
     if x.get("hardwareProperties", {}).get("platform") == "iOS" and x.get("connectionProperties", {}).get("pairingState") == "paired":
@@ -17,22 +19,22 @@ for x in d:
 ' 2>/dev/null || true)
 [ -n "$udid" ] || { echo "no paired iPhone"; exit 4; }
 echo "$udid" > ~/.sevens-device-udid
+xb="xcodebuild -project apps/qr/QR.xcodeproj -scheme QR -configuration Debug -destination platform=iOS,id=$udid -derivedDataPath $dd-device -allowProvisioningUpdates"
+if [ "$mode" = install ]; then
+  run="$xb build && xcrun devicectl device install app --device $udid \"\$(ls -d $dd-device/Build/Products/Debug-iphoneos/QR.app)\""
+else
+  run="$xb -parallel-testing-enabled NO $* test"
+fi
 cmdfile=$here/.sevens-device.command
 cat > "$cmdfile" <<CMD
 #!/bin/bash
 cd "$here"
-{
-  xcodebuild -project apps/qr/QR.xcodeproj -scheme QR -configuration Debug \
-    -destination "platform=iOS,id=$udid" -derivedDataPath "$dd-device" -allowProvisioningUpdates build \
-  && app=\$(ls -d "$dd-device"/Build/Products/Debug-iphoneos/QR.app) \
-  && xcrun devicectl device install app --device "$udid" "\$app"
-  echo \$? > "$status"
-} > "$log" 2>&1
+{ $run; echo \$? > "$status"; } > "$log" 2>&1
 exit
 CMD
 chmod +x "$cmdfile"
 open -a Terminal "$cmdfile"
-for _ in $(seq 1 180); do [ -f "$status" ] && break; sleep 5; done
+for _ in $(seq 1 240); do [ -f "$status" ] && break; sleep 5; done
 cat "$log"
 s=$(cat "$status" 2>/dev/null || echo 124)
 echo "device run exit $s"
