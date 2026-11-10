@@ -41,7 +41,6 @@ public struct CheckExtensionRoot: View {
                 }
                 .padding(Tokens.Space.m)
             }
-            .background(Tokens.paper.ignoresSafeArea())
             .navigationTitle(String(localized: "ext.check.title", defaultValue: "Check this code", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -62,7 +61,7 @@ public struct CheckExtensionRoot: View {
             if showsImageHeaders {
                 Text(String(format: String(localized: "ext.check.image", defaultValue: "Image %lld", bundle: .module), image.position))
                     .font(.headline)
-                    .foregroundStyle(Tokens.muted)
+                    .foregroundStyle(.secondary)
                     .accessibilityAddTraits(.isHeader)
             }
             if image.unreadable {
@@ -78,10 +77,10 @@ public struct CheckExtensionRoot: View {
     private func note(_ text: String) -> some View {
         Text(text)
             .font(.body)
-            .foregroundStyle(Tokens.ink)
+            .foregroundStyle(.primary)
             .padding(Tokens.Space.m)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Tokens.card, in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
     }
 
     private func card(_ code: ExtensionCheckCode) -> some View {
@@ -91,25 +90,24 @@ public struct CheckExtensionRoot: View {
         let shown = analysis.allSignals.filter { $0.severity != .info }
         return VStack(alignment: .leading, spacing: Tokens.Space.s) {
             HStack(spacing: Tokens.Space.s) {
-                Image(systemName: style.symbolName)
-                Text(VerdictText.title(for: analysis.level))
+                Image(systemName: style.symbolName).foregroundStyle(style.color)
+                Text(VerdictText.title(for: analysis.level)).foregroundStyle(.primary)
             }
             .font(.title2.weight(.semibold))
-            .foregroundStyle(style.color)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(VerdictText.accessibilitySentence(level: analysis.level, typeName: typeName, signals: analysis.allSignals))
             .accessibilityAddTraits(.isHeader)
 
-            Text(typeName).font(.subheadline).foregroundStyle(Tokens.muted)
+            Text(typeName).font(.subheadline).foregroundStyle(.secondary)
 
             ForEach(Array(SignalText.sentences(for: shown).enumerated()), id: \.offset) { _, sentence in
-                Text(sentence).font(.body).foregroundStyle(Tokens.ink)
+                Text(sentence).font(.body).foregroundStyle(.primary)
             }
 
             if let summary = code.summary {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(summary.label).font(.caption).foregroundStyle(Tokens.muted)
-                    Text(summary.value).font(.body).foregroundStyle(Tokens.ink)
+                    Text(summary.label).font(.caption).foregroundStyle(.secondary)
+                    Text(summary.value).font(.body).foregroundStyle(.primary)
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -124,12 +122,11 @@ public struct CheckExtensionRoot: View {
                           systemImage: copiedID == code.id ? "checkmark" : "doc.on.doc")
                 }
                 .buttonStyle(.bordered)
-                .tint(Tokens.red)
             }
         }
         .padding(Tokens.Space.m)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tokens.card, in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
     }
 
     @MainActor

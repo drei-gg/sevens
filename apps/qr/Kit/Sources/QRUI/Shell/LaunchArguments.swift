@@ -12,6 +12,8 @@ struct LaunchArguments: Equatable, Sendable {
     var skipFirstLaunch = false
     var entitlement: String?
     var resetHistory = false
+    var resetKnown = false
+    var resetFlags = false
 
     static func parse(_ arguments: [String]) -> LaunchArguments {
         var result = LaunchArguments()
@@ -28,6 +30,10 @@ struct LaunchArguments: Equatable, Sendable {
                 if let value, entitlementNames.contains(value) { result.entitlement = value; index += 1 }
             case QRLaunchArgument.resetHistory:
                 result.resetHistory = true
+            case QRLaunchArgument.resetKnown:
+                result.resetKnown = true
+            case QRLaunchArgument.resetFlags:
+                result.resetFlags = true
             default:
                 break
             }

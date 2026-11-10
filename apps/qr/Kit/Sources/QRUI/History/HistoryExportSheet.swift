@@ -17,10 +17,10 @@ struct HistoryExportSheet: View {
             VStack(alignment: .leading, spacing: Tokens.Space.m) {
                 Text(String(localized: "history.export.ready", defaultValue: "Your export is ready.", bundle: .module))
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(Tokens.ink)
+                    .foregroundStyle(.primary)
                 Text(file.url.lastPathComponent)
                     .font(.footnote)
-                    .foregroundStyle(Tokens.muted)
+                    .foregroundStyle(.secondary)
                     .textSelection(.enabled)
                 ShareLink(item: file.url) {
                     Label(String(localized: "history.export.share", defaultValue: "Share or save the file", bundle: .module),
@@ -33,7 +33,6 @@ struct HistoryExportSheet: View {
             }
             .padding(Tokens.Space.m)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Tokens.paper.ignoresSafeArea())
             .navigationTitle(String(localized: "history.export.title", defaultValue: "Export", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -30,7 +30,7 @@ struct ResultContent: View {
                 ResultPayloadView(payload: analysis.payload, wifiPlan: wifiPlan)
                 ResultEmbeddedList(embedded: analysis.embedded)
                 if let notice = center.notice {
-                    Text(notice).font(.subheadline).foregroundStyle(Tokens.ink)
+                    Text(notice).font(.subheadline).foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
@@ -40,7 +40,6 @@ struct ResultContent: View {
             }
             .padding(Tokens.Space.m)
         }
-        .background(Tokens.paper.ignoresSafeArea())
         .navigationTitle(String(localized: "result.title", defaultValue: "Result", bundle: .module))
         .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog(

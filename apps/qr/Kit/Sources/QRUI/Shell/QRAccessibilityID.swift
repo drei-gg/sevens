@@ -48,4 +48,9 @@ public enum QRLaunchArgument {
     public static let entitlement = "-qr.entitlement"
     /// `-qr.resetHistory`: start with an empty History (UI tests).
     public static let resetHistory = "-qr.resetHistory"
+    /// `-qr.resetKnown`: forget every "I know this address" (the screenshot tour).
+    public static let resetKnown = "-qr.resetKnown"
+    /// `-qr.resetFlags`: Before you buy and the trial-ended sheet count as never shown, so the
+    /// launch sheets appear again (the screenshot tour). Applied before the store starts.
+    public static let resetFlags = "-qr.resetFlags"
 }

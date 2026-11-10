@@ -8,7 +8,7 @@ Draft 0.3 · 11 November 2026 (0.2 settled decisions D1–D16; 0.3 adds the fixe
 | App Store subtitle | Scanner, maker & scam check |
 | Under the icon | 7&D QR Kit |
 
-The store name uses `7&D` without the `$`: Apple doesn't allow prices in app names (guideline 2.3.7). The full `$7&D` mark stays on the splash screen and the site. About and the store listing carry the line "QR Code is a registered trademark of DENSO WAVE INCORPORATED."
+The store name uses `7&D` without the `$`: Apple doesn't allow prices in app names (guideline 2.3.7). The full `$7&D` mark appears only on the About screen and the site. About and the store listing carry the line "QR Code is a registered trademark of DENSO WAVE INCORPORATED."
 
 A QR reader and maker that tells you where a code really goes before you go there. Paid for once.
 
@@ -26,6 +26,7 @@ The iPhone's camera already scans QR codes, and the app says so on its first scr
 - **Never say "safe."** We show what we see and how worried we are, with reasons.
 - **Fast first.** Offline checks finish before the result sheet appears. The network is used when a feature needs it: Peek, domain age, opening a link.
 - **We collect nothing.** No analytics, no accounts, no backend of ours. The app shows every kind of network contact it makes (see "Network contact").
+- **Look.** The app looks like iOS: the system's colors, navigation bars, controls and backgrounds on every screen, with the system accent color and no tints of ours. A verdict is an icon plus a word, with the word in the primary text color; the icon is the system's own `.secondary` check mark for "Looks normal", orange for "Be careful" and red for "Likely scam". Red otherwise appears only through a destructive button's role and as an error or failed-check icon, never as text. Our colors and the `$7&D` wordmark appear only on the About screen.
 - **Global by default.** The core logic is built on standards. Anything regional, like brand lists or payment network names, lives in bundled data files that anyone can extend with a pull request.
 
 ## Platform
@@ -36,7 +37,7 @@ iOS 17+, iPhone, SwiftUI, Swift 6. It uses no third-party code libraries today; 
 
 ## 1. First launch
 
-1. **No splash.** The launch screen is a plain background in the scan screen's own paper color (light and dark), with no wordmark or image, so nothing flashes between launch and the scan screen. The `$7&D` mark appears on the unlock sheet (as an image in branded builds, as the app's name otherwise). Before you buy, the About footer and the thank-you moment show text only.
+1. **No splash.** The launch screen is the system background (light and dark), with no wordmark or image, so nothing flashes between launch and the scan screen. The `$7&D` mark appears only in About (as an image in branded builds, as the app's name otherwise). The unlock sheet, Before you buy, the trial-ended sheet and the thank-you moment are plain system screens with text only.
 2. **Before you buy**, shown once and reachable later from About:
    > **Your iPhone already scans QR codes.** Point the Camera at one, or use Code Scanner in Control Center. If that's all you need, delete this app and keep your seven dollars.
    >

@@ -32,20 +32,18 @@ public struct HistoryDetail: View {
         let shown = current
         List {
             Section { verdictHeader(shown) }
-                .listRowBackground(Tokens.card)
             Section {
                 Text(shown.payload)
                     .font(.body.monospaced())
-                    .foregroundStyle(Tokens.ink)
+                    .foregroundStyle(.primary)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } header: {
                 Text(shown.payloadEncoding == .base64
                      ? String(localized: "history.detail.payload.binary", defaultValue: "Contents (binary, shown as base64)", bundle: .module)
                      : String(localized: "history.detail.payload", defaultValue: "Contents", bundle: .module))
-                    .foregroundStyle(Tokens.muted)
+                    .foregroundStyle(.secondary)
             }
-            .listRowBackground(Tokens.card)
             Section {
                 LabeledContent(String(localized: "history.detail.kind", defaultValue: "Scanned or made", bundle: .module)) {
                     Text(HistoryLabels.kind(shown.kind))
@@ -57,7 +55,6 @@ public struct HistoryDetail: View {
                     Text(shown.date.formatted(date: .abbreviated, time: .shortened))
                 }
             }
-            .listRowBackground(Tokens.card)
             Section {
                 Button {
                     checkAgain(shown)
@@ -70,9 +67,8 @@ public struct HistoryDetail: View {
                 Text(String(localized: "history.detail.checkAgain.footer",
                             defaultValue: "Runs today's checks on this code. The verdict above is the one it got when it was saved.",
                             bundle: .module))
-                    .foregroundStyle(Tokens.muted)
+                    .foregroundStyle(.secondary)
             }
-            .listRowBackground(Tokens.card)
             noteSection
             Section {
                 Button(role: .destructive) {
@@ -82,10 +78,7 @@ public struct HistoryDetail: View {
                           systemImage: "trash")
                 }
             }
-            .listRowBackground(Tokens.card)
         }
-        .scrollContentBackground(.hidden)
-        .background(Tokens.paper.ignoresSafeArea())
         .navigationTitle(VerdictText.typeName(for: shown.typeID))
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $fresh) { fresh in ResultSheet(analysis: fresh.analysis) }
@@ -116,17 +109,16 @@ public struct HistoryDetail: View {
         let reasons = SignalText.sentences(for: signals.filter { $0.severity != .info })
         return VStack(alignment: .leading, spacing: Tokens.Space.s) {
             Label {
-                Text(VerdictText.title(for: shown.level)).font(.title2.weight(.semibold))
+                Text(VerdictText.title(for: shown.level)).font(.title2.weight(.semibold)).foregroundStyle(.primary)
             } icon: {
-                Image(systemName: style.symbolName)
+                Image(systemName: style.symbolName).foregroundStyle(style.color)
             }
-            .foregroundStyle(style.color)
-            Text(typeName).font(.headline).foregroundStyle(Tokens.ink)
+            Text(typeName).font(.headline).foregroundStyle(.primary)
             ForEach(reasons, id: \.self) { reason in
-                Text(reason).font(.callout).foregroundStyle(Tokens.ink)
+                Text(reason).font(.callout).foregroundStyle(.primary)
             }
             Text(String(localized: "history.detail.atTheTime", defaultValue: "The verdict when it was saved", bundle: .module))
-                .font(.footnote).foregroundStyle(Tokens.muted)
+                .font(.footnote).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
@@ -138,7 +130,6 @@ public struct HistoryDetail: View {
             TextEditor(text: $draft)
                 .font(.body)
                 .frame(minHeight: 120)
-                .scrollContentBackground(.hidden)
                 .accessibilityLabel(String(localized: "history.detail.note", defaultValue: "Note", bundle: .module))
                 .onChange(of: draft) { _, value in
                     if value.count > HistoryStore.maxNoteLength { draft = String(value.prefix(HistoryStore.maxNoteLength)) }
@@ -152,9 +143,8 @@ public struct HistoryDetail: View {
             .disabled(!HistoryNote.isChanged(draft: draft, saved: current.note))
         } header: {
             Text(String(localized: "history.detail.note", defaultValue: "Note", bundle: .module))
-                .foregroundStyle(Tokens.muted)
+                .foregroundStyle(.secondary)
         }
-        .listRowBackground(Tokens.card)
     }
 
     private func checkAgain(_ shown: HistoryItem) {

@@ -9,7 +9,7 @@
 - About shows how old the scam lists are, and Check for newer lists fetches a signed update from our public code, only when you tap.
 - Make: smaller codes for links (the address part in capitals), automatic error correction uses spare room without growing the code, and an offer to remove tracking tags.
 - Peek no longer reports a script redirect when a page only reads its own address.
-- No splash screen: the app opens straight to the scanner.
+- No splash screen: the app opens straight to the scanner. The app looks like iOS everywhere except About: system colors, bars and buttons, verdicts as an icon plus a word in the system's orange and red, and our own colors and wordmark only on the About screen.
 
 ## 0.1.0 (build 1, not released)
 

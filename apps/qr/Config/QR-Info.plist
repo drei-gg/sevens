@@ -5,10 +5,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UILaunchScreen</key>
-	<dict>
-		<key>UIColorName</key>
-		<string>LaunchBackground</string>
-	</dict>
+	<dict/>
 	<key>SevensAppGroup</key>
 	<string>$(SEVENS_APP_GROUP)</string>
 	<key>SevensProductTrial</key>

@@ -45,7 +45,6 @@ public struct ResultSheet: View {
                     }
                 }
         }
-        .tint(Tokens.ink)
     }
 
     /// Capped so the question never pushes the result off the screen at the largest text sizes.
@@ -59,7 +58,6 @@ public struct ResultSheet: View {
             card
             ScrollView { card }.frame(maxHeight: 320)
         }
-        .background(Tokens.paper)
     }
 
     private func know(_ domain: String) {

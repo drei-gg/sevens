@@ -33,7 +33,6 @@ public struct MakeExtensionRoot: View {
         NavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Tokens.paper.ignoresSafeArea())
                 .navigationTitle(String(localized: "ext.make.title", defaultValue: "Make QR code", bundle: .module))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -77,7 +76,7 @@ public struct MakeExtensionRoot: View {
     private func message(_ text: String) -> some View {
         Text(text)
             .font(.body)
-            .foregroundStyle(Tokens.ink)
+            .foregroundStyle(.primary)
             .multilineTextAlignment(.leading)
             .padding(Tokens.Space.l)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -104,7 +103,6 @@ public struct MakeExtensionRoot: View {
             .buttonStyle(.bordered)
         }
         .controlSize(.large)
-        .tint(Tokens.red)
     }
 
     private func finish() {

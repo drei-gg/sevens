@@ -20,12 +20,12 @@ struct ResultEmbeddedList: View {
                         NavigationLink(value: ResultRoute.embedded(item)) {
                             HStack(spacing: Tokens.Space.s) {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(Self.domain(of: item)).font(.headline).foregroundStyle(Tokens.ink)
+                                    Text(Self.domain(of: item)).font(.headline).foregroundStyle(.primary)
                                         .fixedSize(horizontal: false, vertical: true)
                                     VerdictLabel(level: item.level)
                                 }
                                 Spacer(minLength: 0)
-                                Image(systemName: "chevron.right").foregroundStyle(Tokens.muted).accessibilityHidden(true)
+                                Image(systemName: "chevron.right").foregroundStyle(.secondary).accessibilityHidden(true)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(Rectangle())

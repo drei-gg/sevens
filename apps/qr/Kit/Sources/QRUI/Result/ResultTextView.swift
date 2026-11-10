@@ -10,12 +10,12 @@ struct ResultTextView: View {
         ResultCard(title: String(localized: "result.text.title", defaultValue: "Text in the code", bundle: .module)) {
             Text(info.text.isEmpty ? String(localized: "result.text.empty", defaultValue: "The code holds no text.", bundle: .module) : info.text)
                 .font(.body)
-                .foregroundStyle(Tokens.ink)
+                .foregroundStyle(.primary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
             if info.isTruncated {
                 Text(String(localized: "result.text.truncated", defaultValue: "The code holds more text than this. Only the first part is shown and checked.", bundle: .module))
-                    .font(.footnote).foregroundStyle(Tokens.muted)
+                    .font(.footnote).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -29,7 +29,7 @@ struct ResultAppLinkView: View {
     var body: some View {
         ResultCard {
             Text(String(localized: "result.appLink.title", defaultValue: "Opens an app", bundle: .module))
-                .font(.largeTitle.weight(.bold)).foregroundStyle(Tokens.ink)
+                .font(.largeTitle.weight(.bold)).foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             ResultField(label: String(localized: "result.appLink.scheme", defaultValue: "Starts with", bundle: .module),
@@ -47,9 +47,9 @@ struct ResultBinaryView: View {
     var body: some View {
         ResultCard {
             Text(String(localized: "result.binary.title", defaultValue: "Data, not text", bundle: .module))
-                .font(.title2.weight(.bold)).foregroundStyle(Tokens.ink)
+                .font(.title2.weight(.bold)).foregroundStyle(.primary)
             Text(String(localized: "result.binary.count", defaultValue: "\(byteCount) bytes. This app can't show what is inside.", bundle: .module))
-                .font(.body).foregroundStyle(Tokens.muted)
+                .font(.body).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

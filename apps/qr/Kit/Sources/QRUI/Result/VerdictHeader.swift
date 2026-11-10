@@ -25,7 +25,7 @@ struct VerdictHeader: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Tokens.Space.m)
-        .background(Tokens.card, in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(VerdictText.accessibilitySentence(level: level, typeName: typeName, signals: signals))
         .accessibilityIdentifier(identifier)
@@ -42,10 +42,10 @@ struct VerdictHeader: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(VerdictText.title(for: level))
                 .font(.title.bold())
-                .foregroundStyle(Tokens.ink)
+                .foregroundStyle(.primary)
             Text(typeName)
                 .font(.subheadline)
-                .foregroundStyle(Tokens.muted)
+                .foregroundStyle(.secondary)
         }
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -58,7 +58,7 @@ struct VerdictLabel: View {
     var body: some View {
         let style = VerdictText.style(for: level)
         Label {
-            Text(VerdictText.title(for: level)).foregroundStyle(Tokens.ink)
+            Text(VerdictText.title(for: level)).foregroundStyle(.primary)
         } icon: {
             Image(systemName: style.symbolName).foregroundStyle(style.color)
         }

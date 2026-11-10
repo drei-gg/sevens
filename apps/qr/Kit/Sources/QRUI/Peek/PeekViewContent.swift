@@ -26,7 +26,7 @@ struct PeekViewContent: View {
                 progress
                 if case .failed = state {
                     Text(String(localized: "peek.notLink", defaultValue: "This isn't a web link, so there is nothing to Peek at.", bundle: .module))
-                        .font(.body).foregroundStyle(Tokens.ink)
+                        .font(.body).foregroundStyle(.primary)
                 }
                 if let report { ResultSignalList(signals: report.signals) }
                 hops
@@ -34,7 +34,6 @@ struct PeekViewContent: View {
             }
             .padding(Tokens.Space.m)
         }
-        .background(Tokens.paper.ignoresSafeArea())
     }
 
     @ViewBuilder private var progress: some View {
@@ -45,12 +44,12 @@ struct PeekViewContent: View {
                 Text(stage == .fetching
                      ? String(localized: "peek.fetching", defaultValue: "Fetching…", bundle: .module)
                      : String(localized: "peek.checkingAge", defaultValue: "Checking the domain's age…", bundle: .module))
-                    .font(.body).foregroundStyle(Tokens.ink)
+                    .font(.body).foregroundStyle(.primary)
             }
             .accessibilityElement(children: .combine)
         case .idle:
             Text(String(localized: "peek.starting", defaultValue: "Starting…", bundle: .module))
-                .font(.body).foregroundStyle(Tokens.muted)
+                .font(.body).foregroundStyle(.secondary)
         case .finished, .failed:
             EmptyView()
         }
@@ -65,13 +64,13 @@ struct PeekViewContent: View {
                     ForEach(rows, id: \.number) { row in
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(row.number). \(row.domain)")
-                                .font(.headline.bold()).foregroundStyle(Tokens.ink)
+                                .font(.headline.bold()).foregroundStyle(.primary)
                                 .fixedSize(horizontal: false, vertical: true)
-                            Text(row.url).font(.footnote).foregroundStyle(Tokens.muted)
+                            Text(row.url).font(.footnote).foregroundStyle(.secondary)
                                 .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                             Text(row.status.map { code in String(localized: "peek.status", defaultValue: "Answered \(code)", bundle: .module) }
                                  ?? String(localized: "peek.notFetched", defaultValue: "Not fetched", bundle: .module))
-                                .font(.caption).foregroundStyle(Tokens.muted)
+                                .font(.caption).foregroundStyle(.secondary)
                             if let level = row.level, level != .normal { VerdictLabel(level: level) }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)

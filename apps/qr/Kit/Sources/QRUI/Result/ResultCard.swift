@@ -16,14 +16,14 @@ struct ResultCard<Content: View>: View {
             if let title {
                 Text(title)
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(Tokens.muted)
+                    .foregroundStyle(.secondary)
                     .accessibilityAddTraits(.isHeader)
             }
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Tokens.Space.m)
-        .background(Tokens.card, in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
     }
 }
 
@@ -36,10 +36,10 @@ struct ResultField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.caption).foregroundStyle(Tokens.muted)
+            Text(label).font(.caption).foregroundStyle(.secondary)
             Text(value)
                 .font(monospaced ? .body.monospaced() : .body)
-                .foregroundStyle(muted ? Tokens.muted : Tokens.ink)
+                .foregroundStyle(muted ? .secondary : .primary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
         }

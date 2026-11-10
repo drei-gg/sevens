@@ -25,7 +25,7 @@ struct MakeLinkOptionsSection: View {
                                                   defaultValue: "The web address is written in capitals, which fit a smaller code. It opens the same place.",
                                                   bundle: .module))
                                 .font(.footnote)
-                                .foregroundStyle(Tokens.muted)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .accessibilityIdentifier(MakeLinkAccessibilityID.smallerCodeSwitch)
@@ -37,7 +37,7 @@ struct MakeLinkOptionsSection: View {
                             .accessibilityIdentifier(MakeLinkAccessibilityID.trackingPrompt)
                         Text(verbatim: model.trackingTags.joined(separator: ", "))
                             .font(.footnote)
-                            .foregroundStyle(Tokens.muted)
+                            .foregroundStyle(.secondary)
                         Text(verbatim: shorter)
                             .font(.footnote.monospaced())
                             .textSelection(.enabled)
