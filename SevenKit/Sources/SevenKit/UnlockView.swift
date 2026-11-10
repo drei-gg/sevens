@@ -86,7 +86,7 @@ public struct UnlockView: View {
             SevenPlainButton(title: seven("seven.restore", "Restore purchases"), disabled: store.isBusy) {
                 Task { await store.restore() }
             }
-            SevenPlainButton(title: seven("seven.notNow", "Not now")) { dismiss() }
+            SevenButton(title: seven("seven.notNow", "Not now")) { dismiss() }  // as prominent as the buy button (PLAN §6.10)
         }
     }
 }
