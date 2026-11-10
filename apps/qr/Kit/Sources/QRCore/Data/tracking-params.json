@@ -1,1 +1,90 @@
-[]
+[
+ {
+  "name": "utm_*",
+  "source": "https://support.google.com/analytics/answer/1033863"
+ },
+ {
+  "name": "fbclid",
+  "source": "https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/fbp-and-fbc"
+ },
+ {
+  "name": "gclid",
+  "source": "https://support.google.com/google-ads/answer/9744275"
+ },
+ {
+  "name": "dclid",
+  "source": "https://support.google.com/campaignmanager/answer/9182069"
+ },
+ {
+  "name": "gad_source",
+  "source": "https://support.google.com/campaignmanager/answer/9182069"
+ },
+ {
+  "name": "gbraid",
+  "source": "https://support.google.com/google-ads/answer/10417364"
+ },
+ {
+  "name": "wbraid",
+  "source": "https://support.google.com/google-ads/answer/10417364"
+ },
+ {
+  "name": "srsltid",
+  "source": "https://support.google.com/merchants/answer/15191080"
+ },
+ {
+  "name": "_gl",
+  "source": "https://support.google.com/analytics/answer/10071811"
+ },
+ {
+  "name": "msclkid",
+  "source": "https://learn.microsoft.com/en-us/advertising/guides/uet-conversion-api-integration"
+ },
+ {
+  "name": "mc_eid",
+  "source": "https://mailchimp.com/developer/marketing/docs/e-commerce/"
+ },
+ {
+  "name": "mc_cid",
+  "source": "https://mailchimp.com/developer/marketing/docs/e-commerce/"
+ },
+ {
+  "name": "yclid",
+  "source": "https://yandex.com/support/metrica/en/data/yclid.md"
+ },
+ {
+  "name": "twclid",
+  "source": "https://docs.x.com/x-ads-api/measurement/web-conversions"
+ },
+ {
+  "name": "ttclid",
+  "source": "https://ads.tiktok.com/help/article/tiktok-click-id"
+ },
+ {
+  "name": "li_fat_id",
+  "source": "https://learn.microsoft.com/en-us/linkedin/marketing/conversions/enabling-first-party-cookies"
+ },
+ {
+  "name": "_hsenc",
+  "source": "https://knowledge.hubspot.com/email/links-in-emails-or-ctas-lead-to-an-error-page"
+ },
+ {
+  "name": "_hsmi",
+  "source": "https://knowledge.hubspot.com/email/links-in-emails-or-ctas-lead-to-an-error-page"
+ },
+ {
+  "name": "mkt_tok",
+  "source": "https://experienceleague.adobe.com/en/docs/experience-cloud-kcs/kbarticles/ka-28604"
+ },
+ {
+  "name": "sccid",
+  "source": "https://support.google.com/campaignmanager/answer/16742554"
+ },
+ {
+  "name": "rdt_cid",
+  "source": "https://support.google.com/campaignmanager/answer/16742554"
+ },
+ {
+  "name": "vmcid",
+  "source": "https://support.google.com/campaignmanager/answer/16742554"
+ }
+]
