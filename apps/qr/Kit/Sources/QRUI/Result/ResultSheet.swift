@@ -1,10 +1,10 @@
 import SwiftUI
 import QRCore
-
-// Phase 3 seam (Opus): WP 3.2 owns this file and replaces the body. Keep the type name and init.
+import SevenKit
 
 public struct ResultSheet: View {
     let analysis: Analysis
+    @Environment(\.dismiss) private var dismiss
 
     /// The result sheet's content for one analysis. The caller presents it (as a sheet from
     /// the scan screen, or pushed from history). It reads `AppModel` from the environment; it
@@ -14,6 +14,24 @@ public struct ResultSheet: View {
     }
 
     public var body: some View {
-        Text(verbatim: "ResultSheet")
+        NavigationStack {
+            ResultContent(analysis: analysis)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "result.done", defaultValue: "Done", bundle: .module)) { dismiss() }
+                            .accessibilityIdentifier(QRAccessibilityID.resultDone)
+                    }
+                }
+                .navigationDestination(for: ResultRoute.self) { route in
+                    switch route {
+                    case .embedded(let nested):
+                        ResultContent(analysis: nested)
+                    case .make(let request):
+                        MakeScreen(prefill: request)
+                            .gated(feature: String(localized: "result.feature.make", defaultValue: "Make", bundle: .module))
+                    }
+                }
+        }
+        .tint(Tokens.ink)
     }
 }
