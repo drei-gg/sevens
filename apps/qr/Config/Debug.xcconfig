@@ -7,3 +7,6 @@ DEBUG_INFORMATION_FORMAT = dwarf
 ONLY_ACTIVE_ARCH = YES
 ENABLE_TESTABILITY = YES
 MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE
+
+// C8: free signing has no Hotspot capability. Debug: Copy password + "Join in Settings".
+WIFI_JOIN_AVAILABLE = NO
