@@ -36,7 +36,7 @@ iOS 17+, iPhone, SwiftUI, Swift 6, with no dependencies beyond Apple's framework
 
 ## 1. First launch
 
-1. **Splash:** `$7&D` wordmark (ink, with a red 7), shown only as long as iOS needs it.
+1. **No splash.** The launch screen is a plain background in the scan screen's own paper color (light and dark), with no wordmark or image, so nothing flashes between launch and the scan screen. The `$7&D` mark appears on the unlock sheet (as an image in branded builds, as the app's name otherwise). Before you buy, the About footer and the thank-you moment show text only.
 2. **Before you buy**, shown once and reachable later from About:
    > **Your iPhone already scans QR codes.** Point the Camera at one, or use Code Scanner in Control Center. If that's all you need, delete this app and keep your seven dollars.
    >

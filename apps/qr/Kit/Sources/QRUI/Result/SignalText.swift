@@ -3,6 +3,8 @@ import QRCore
 
 /// D5: QRCore gives signal IDs and args; this turns them into one plain sentence each.
 /// Rules: at most 20 words, no blame, no scores, and never the banned reassurance word (G7).
+/// Unknown fails soft (SPEC §4.2): where a list is only incomplete the sentence says what we
+/// don't know ("an address we know for X"), not that the site is false; facts stay facts.
 /// Every `SignalID` has a sentence, with or without its args (a test checks all of them).
 ///
 /// Args read (all optional; a missing one gets a generic wording):
@@ -41,17 +43,17 @@ public enum SignalText {
         case .lookalikeBrand:
             if let brand = arg(args, "brand") {
                 return String(localized: "signal.lookalikeBrand.brand",
-                              defaultValue: "This address is built to look like \(brand), but it isn't their site.", bundle: .module)
+                              defaultValue: "This address imitates the look of \(brand), and it isn't one we know for them.", bundle: .module)
             }
             return String(localized: "signal.lookalikeBrand",
-                          defaultValue: "This address is built to look like a well-known brand, but it isn't their site.", bundle: .module)
+                          defaultValue: "This address imitates the look of a well-known brand, and it isn't one we know for them.", bundle: .module)
         case .brandInDomain:
             if let brand = arg(args, "brand") {
                 return String(localized: "signal.brandInDomain.brand",
-                              defaultValue: "The name \(brand) appears in this address, but the site doesn't belong to them.", bundle: .module)
+                              defaultValue: "The name \(brand) appears in this address, but it isn't one we know for them.", bundle: .module)
             }
             return String(localized: "signal.brandInDomain",
-                          defaultValue: "A well-known brand's name appears in this address, but the site doesn't belong to them.",
+                          defaultValue: "A well-known brand's name appears in this address, but it isn't one we know for them.",
                           bundle: .module)
         case .nearBrand:
             if let brand = arg(args, "brand") {

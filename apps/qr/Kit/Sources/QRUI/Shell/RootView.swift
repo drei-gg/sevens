@@ -9,7 +9,9 @@ public struct RootView: View {
     @Environment(AppModel.self) private var model
     @State private var showFirstLaunch = false
 
-    public init() {}
+    public init() {
+        SevenBars.install()
+    }
 
     public var body: some View {
         NavigationStack {
@@ -27,7 +29,7 @@ public struct RootView: View {
         }
         .tint(Tokens.ink)
         .task(id: model.store.hasStarted) {
-            if model.store.hasStarted && model.store.shouldPresentBeforeYouBuy { showFirstLaunch = true }
+            if model.store.hasStarted && model.store.launchSheet == .beforeYouBuy { showFirstLaunch = true }
         }
         .sheet(isPresented: $showFirstLaunch) {
             FirstLaunchFlow { showFirstLaunch = false }

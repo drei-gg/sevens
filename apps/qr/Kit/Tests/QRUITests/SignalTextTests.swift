@@ -57,6 +57,19 @@ import SevenKit
         #expect(SignalText.sentence(for: Signal(.asksForSecret, ["kind": "code"])).contains("code"))
     }
 
+    @Test func listBasedSignalsSayWhatWeDontKnow() {
+        #expect(SignalText.sentence(for: Signal(.brandOtherEnding, ["brand": "PayPal"])) == "This isn't an address we know for PayPal.")
+        #expect(SignalText.sentence(for: Signal(.unknownEnding)).hasPrefix("We don't recognize"))
+        #expect(SignalText.sentence(for: Signal(.knownByYou)).contains("You told us"))
+        for id in [SignalID.brandInDomain, .lookalikeBrand] {
+            for args in [["brand": "PayPal"], [:]] {
+                let text = SignalText.sentence(for: Signal(id, args))
+                #expect(text.contains("we know"), "\(id): \(text)")
+                #expect(!text.contains("doesn't belong") && !text.contains("isn't their site"), "\(id): \(text)")
+            }
+        }
+    }
+
     @Test func hostileArgsAreCutAndCleaned() {
         let long = String(repeating: "A", count: 10_000)
         let hostile = "Pay\u{202E}Pal\nline\u{0000}"
