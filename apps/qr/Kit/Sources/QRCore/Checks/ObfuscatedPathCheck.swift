@@ -1,15 +1,19 @@
 import Foundation
 
 enum ObfuscatedPathCheck {
-    /// A bait word in host or path, and (path+query over 150 characters, or 10+ percent-escapes,
-    /// or another http URL inside the path).
+    /// A bait word in host or path, and (path over 150 characters, or 10+ percent-escapes in the path,
+    /// or another http URL inside the path; the query and fragment never count).
     static func signal(_ link: LinkInfo, baitWords: [String]) -> Signal? {
         let host = link.hostUnicode.lowercased()
         let path = link.pathAndQuery.lowercased()
         guard let bait = baitWords.first(where: { host.contains($0) || path.contains($0) }) else { return nil }
-        let long = link.pathAndQuery.count > 150
-        let escapes = percentEscapes(in: link.pathAndQuery)
-        let nested = ["http://", "https://", "http%3a%2f%2f", "https%3a%2f%2f"].contains { path.contains($0) }
+        // Only the path counts, for length, escapes and nested links: sign-in links carry long,
+        // encoded queries (SPEC §4.2).
+        let rawPath = String(link.pathAndQuery.prefix { $0 != "?" && $0 != "#" })
+        let pathOnly = rawPath.lowercased()
+        let long = rawPath.count > 150
+        let escapes = percentEscapes(in: rawPath)
+        let nested = ["http://", "https://", "http%3a%2f%2f", "https%3a%2f%2f"].contains { pathOnly.contains($0) }
         guard long || escapes >= 10 || nested else { return nil }
         return Signal(.obfuscatedPath, ["word": bait])
     }

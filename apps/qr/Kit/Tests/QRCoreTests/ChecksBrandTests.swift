@@ -34,8 +34,10 @@ import Testing
         #expect(LinkChecks.signals(for: try link("https://x.top/"), ctx).first?.args["tld"] == "top")
     }
 
-    @Test func checksBrandChecksSkipUnknownSuffixAndIPs() throws {
-        #expect(try ids("https://paypal.com.example/login").isEmpty, "unknown suffix: no registrable domain")
+    @Test func checksBrandChecksRunOnUnknownSuffixAndSkipIPs() throws {
+        let r = try ids("https://paypal.com.example/login")
+        #expect(r.contains(.brandInDomain), "unknown suffix: the last label is the suffix, so paypal is a subdomain")
+        #expect(r.contains(.unknownEnding))
         #expect(try ids("https://203.0.113.9/paypal").contains(.brandInDomain) == false)
     }
 
