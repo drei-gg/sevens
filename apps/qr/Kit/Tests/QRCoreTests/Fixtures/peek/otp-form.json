@@ -1,0 +1,31 @@
+{
+  "id": "peek-otp-form",
+  "original": "https://accounts.example/verify",
+  "hops": [
+    {
+      "url": "https://accounts.example/verify",
+      "status": 200
+    }
+  ],
+  "stoppedBecause": "finished",
+  "contentType": "text/html; charset=utf-8",
+  "contentDisposition": null,
+  "ageDays": 2500,
+  "expect": {
+    "title": "Verify",
+    "signals": [
+      "asksForSecret"
+    ],
+    "sniff": {
+      "formActions": [
+        "/verify"
+      ],
+      "scriptRedirect": false,
+      "metaRefreshURL": null,
+      "inputTypes": [
+        "tel"
+      ],
+      "scriptCount": 0
+    }
+  }
+}

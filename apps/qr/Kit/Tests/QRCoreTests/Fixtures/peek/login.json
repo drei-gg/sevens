@@ -1,0 +1,32 @@
+{
+  "id": "peek-login",
+  "original": "https://example-bank.com/login",
+  "hops": [
+    {
+      "url": "https://example-bank.com/login",
+      "status": 200
+    }
+  ],
+  "stoppedBecause": "finished",
+  "contentType": "text/html; charset=utf-8",
+  "contentDisposition": null,
+  "ageDays": 4000,
+  "expect": {
+    "title": "Sign in",
+    "signals": [
+      "asksForSecret"
+    ],
+    "sniff": {
+      "formActions": [
+        "/session"
+      ],
+      "scriptRedirect": false,
+      "metaRefreshURL": null,
+      "inputTypes": [
+        "email",
+        "password"
+      ],
+      "scriptCount": 0
+    }
+  }
+}

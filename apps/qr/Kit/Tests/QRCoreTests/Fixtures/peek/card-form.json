@@ -1,0 +1,33 @@
+{
+  "id": "peek-card-form",
+  "original": "https://shop.example/checkout",
+  "hops": [
+    {
+      "url": "https://shop.example/checkout",
+      "status": 200
+    }
+  ],
+  "stoppedBecause": "finished",
+  "contentType": "text/html; charset=utf-8",
+  "contentDisposition": null,
+  "ageDays": 2500,
+  "expect": {
+    "title": "Checkout",
+    "signals": [
+      "asksForSecret"
+    ],
+    "sniff": {
+      "formActions": [
+        "/pay"
+      ],
+      "scriptRedirect": false,
+      "metaRefreshURL": null,
+      "inputTypes": [
+        "text",
+        "text",
+        "text"
+      ],
+      "scriptCount": 0
+    }
+  }
+}

@@ -39,6 +39,14 @@ public struct HTMLSniff: Sendable, Hashable {
 }
 
 public enum HTMLSniffer {
+    /// Largest body looked at; the rest is ignored (PeekClient stops at the same size).
+    static let maxBytes = 512 * 1024
+
     /// Decodes by the header `charset`, else a `<meta>` charset, else UTF-8 with replacement.
-    public static func sniff(body: [UInt8], contentType: String?) -> HTMLSniff { fatalError("WP 1.6") }
+    public static func sniff(body: [UInt8], contentType: String?) -> HTMLSniff {
+        let bytes = body.count > maxBytes ? Array(body[0..<maxBytes]) : body
+        let text = HTMLCharset.decode(bytes, contentType: contentType)
+        var scanner = HTMLScanner(Array(text.utf8))
+        return scanner.scan()
+    }
 }
