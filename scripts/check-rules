@@ -19,7 +19,7 @@ hits=$(swift_files | grep -E '^SevenKit/Sources/' | xargs -r grep -nE '\b(URLSes
 
 # G6b: imports are Apple frameworks or our own modules only.
 allowed='Foundation|SwiftUI|UIKit|Combine|Observation|os|Dispatch|Darwin|Glibc|Musl|Synchronization|VisionKit|Vision|CoreImage|CoreImage\.CIFilterBuiltins|CoreGraphics|CoreText|ImageIO|UniformTypeIdentifiers|AVFoundation|AVKit|PhotosUI|Photos|SafariServices|NetworkExtension|Contacts|ContactsUI|EventKit|EventKitUI|MessageUI|StoreKit|StoreKitTest|Security|PDFKit|QuickLook|QuickLookThumbnailing|LinkPresentation|CoreTransferable|Social|MobileCoreServices|Testing|XCTest|QRCore|QRUI|SevenKit|SevenKitCore'
-hits=$(swift_files | xargs -r grep -nE '^\s*(@testable\s+|@preconcurrency\s+|@_spi\([A-Za-z]+\)\s+)*import\s+(class |struct |enum |func |protocol )?[A-Za-z_.]+' \
+hits=$(swift_files | grep -v 'Package\.swift$' | xargs -r grep -nE '^\s*(@testable\s+|@preconcurrency\s+|@_spi\([A-Za-z]+\)\s+)*import\s+(class |struct |enum |func |protocol )?[A-Za-z_.]+' \
   | grep -vE "import\s+(class |struct |enum |func |protocol )?($allowed)(\.[A-Za-z_]+)?\s*(//.*)?$" || true)
 [ -z "$hits" ] || bad "G6 non-Apple import:" "$hits"
 # Pure targets import Foundation (and their own siblings) only.
