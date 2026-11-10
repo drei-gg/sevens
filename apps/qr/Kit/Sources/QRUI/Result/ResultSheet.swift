@@ -24,11 +24,8 @@ public struct ResultSheet: View {
 
     public var body: some View {
         NavigationStack {
-            ResultContent(analysis: analysis)
+            ResultContent(analysis: analysis, afterSignals: offer.map { AnyView(offerCard($0)) })
                 .id(generation)
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    if let domain = offer { offerCard(domain) }
-                }
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button(String(localized: "result.done", defaultValue: "Done", bundle: .module)) { dismiss() }
@@ -47,17 +44,12 @@ public struct ResultSheet: View {
         }
     }
 
-    /// Capped so the question never pushes the result off the screen at the largest text sizes.
+    /// Inside the result's scroll view, after the reasons: the verdict stays at the top (SPEC §3).
     private func offerCard(_ domain: String) -> some View {
-        let card = ResultKnownOffer(
+        ResultKnownOffer(
             question: ResultKnownText.question(for: analysis, domain: domain), domain: domain,
             onKeep: { withAnimation { dismissedOffer = true } },
             onKnow: { know(domain) })
-            .padding(Tokens.Space.m)
-        return ViewThatFits(in: .vertical) {
-            card
-            ScrollView { card }.frame(maxHeight: 320)
-        }
     }
 
     private func know(_ domain: String) {

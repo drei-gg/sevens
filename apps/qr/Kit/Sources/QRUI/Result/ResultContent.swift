@@ -6,11 +6,15 @@ import SevenKit
 /// root and for each pushed embedded link.
 struct ResultContent: View {
     let analysis: Analysis
+    /// Shown right after the signals (the "I know this address" question, SPEC §3), so the
+    /// verdict always stays at the top.
+    let afterSignals: AnyView?
     @State private var center: ResultActionCenter
     @Environment(\.openURL) private var openURL
 
-    init(analysis: Analysis, capabilities: ResultCapabilities = .current()) {
+    init(analysis: Analysis, capabilities: ResultCapabilities = .current(), afterSignals: AnyView? = nil) {
         self.analysis = analysis
+        self.afterSignals = afterSignals
         _center = State(initialValue: ResultActionCenter(analysis: analysis, capabilities: capabilities))
     }
 
@@ -27,6 +31,7 @@ struct ResultContent: View {
                 VerdictHeader(level: analysis.level, typeName: VerdictText.typeName(for: analysis.payload.typeID),
                               signals: analysis.allSignals)
                 ResultSignalList(signals: analysis.signals)
+                if let afterSignals { afterSignals }
                 ResultPayloadView(payload: analysis.payload, wifiPlan: wifiPlan)
                 ResultEmbeddedList(embedded: analysis.embedded)
                 if let notice = center.notice {
