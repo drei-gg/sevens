@@ -6,7 +6,7 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 
 | App | Status |
 | --- | --- |
-| [7&D QR Code Kit](apps/qr/SPEC.md) | building ([plan](apps/qr/PLAN.md), [changelog](apps/qr/CHANGELOG.md)) |
+| [7&D QR Code Kit](apps/qr/SPEC.md) | building ([changelog](apps/qr/CHANGELOG.md)) |
 
 ## Rules every app follows
 
@@ -15,6 +15,10 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 - No third-party SDKs: no analytics, ads, or crash reporters. We collect nothing.
 - No backend of ours unless a feature truly needs one, you agree to it, and we say exactly what's sent.
 - Native: SwiftUI on iOS, Kotlin and Compose on Android. No dependencies beyond the platform.
+
+## Working documents
+
+Plans, build reports and reviews are kept outside this repository. What is public here is each app's `SPEC.md`, its `CHANGELOG.md`, the code and the tests.
 
 ## License
 

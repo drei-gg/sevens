@@ -44,5 +44,9 @@ hits=$( { [ -z "$ui_swift" ] || echo "$ui_swift" | xargs grep -nP '"(?:[^"\\]|\\
           [ -z "$ui_text" ] || echo "$ui_text" | xargs grep -nPi '\$\s?\d+(?!&)|seven dollars'; } 2>/dev/null || true)
 [ -z "$hits" ] || bad "G7 hard-coded price in user-facing text:" "$hits"
 
+# Internal process documents (plans, build reports, reviews) never get tracked; they live in the private brand repo.
+hits=$(git ls-files | grep -E '(^|/)(PLAN(-.*)?|BUILD-REPORT.*|REVIEW.*)\.md$' || true)
+[ -z "$hits" ] || bad "internal process document tracked (move it to the private brand repo):" "$hits"
+
 [ $fail = 0 ] && echo "check-rules: G6 and G7 pass"
 exit $fail

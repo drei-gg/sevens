@@ -5,3 +5,11 @@ xcuserdata/
 .swiftpm/xcode/xcuserdata/
 .DS_Store
 .sevens-device.command
+
+# Internal process documents live in the private brand repo, never here
+PLAN.md
+PLAN-*.md
+BUILD-REPORT*.md
+REVIEW*.md
+/docs/sevenkit-plan.md
+*.internal.md
