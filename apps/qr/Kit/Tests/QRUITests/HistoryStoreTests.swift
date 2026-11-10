@@ -120,7 +120,7 @@ enum HistoryTestSupport {
 
             #expect(await store.isReadOnly)
             #expect(await store.items.isEmpty)
-            #expect(await store.readOnlyReason == "This version can't read the saved history.")
+            #expect(await store.readOnlyReason == "This version can't read the saved history, so new scans aren't being saved.")
             #expect(await store.add(S.item("new")) == false)
             #expect(await store.update(note: "n", for: UUID()) == false)
             #expect(await store.delete(ids: [UUID()]) == 0)

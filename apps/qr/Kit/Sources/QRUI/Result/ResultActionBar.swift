@@ -94,7 +94,7 @@ struct ResultActionBar: View {
         case .copy: return String(localized: "result.action.copy", defaultValue: "Copy", bundle: .module)
         case .copyDetails: return String(localized: "result.action.copyDetails", defaultValue: "Copy details", bundle: .module)
         case .share: return String(localized: "result.action.share", defaultValue: "Share", bundle: .module)
-        case .makeCode: return String(localized: "result.action.make", defaultValue: "Make code", bundle: .module)
+        case .makeCode: return String(localized: "result.action.make", defaultValue: "Make a code", bundle: .module)
         }
     }
 

@@ -28,11 +28,11 @@ public enum SignalText {
         case .userinfoTrick:
             if let host = arg(args, "host") {
                 return String(localized: "signal.userinfoTrick.host",
-                              defaultValue: "The text before the @ sign is just a name. The link really goes to \(host).",
+                              defaultValue: "The text before the @ sign is a name, not the destination. The link really goes to \(host).",
                               bundle: .module)
             }
             return String(localized: "signal.userinfoTrick",
-                          defaultValue: "The text before the @ sign is just a name. The link really goes to the address after it.",
+                          defaultValue: "The text before the @ sign is a name, not the destination. The link goes to the address after it.",
                           bundle: .module)
         case .mixedScript:
             return String(localized: "signal.mixedScript",
@@ -77,7 +77,7 @@ public enum SignalText {
                               defaultValue: "Addresses ending in .\(ending) show up often in scam reports.", bundle: .module)
             }
             return String(localized: "signal.riskyTLD",
-                          defaultValue: "This address ends in a domain ending that shows up often in scam reports.", bundle: .module)
+                          defaultValue: "This address uses an ending that shows up often in scam reports.", bundle: .module)
         case .deepSubdomains:
             return String(localized: "signal.deepSubdomains",
                           defaultValue: "The address has an unusually long chain of parts before the main name, which can hide the real site.",
@@ -100,7 +100,7 @@ public enum SignalText {
                           defaultValue: "This payment code failed its built-in check. It may be damaged or altered.", bundle: .module)
         case .tlsProblem:
             return String(localized: "signal.tlsProblem",
-                          defaultValue: "The site's security certificate didn't check out, so the connection can't be trusted.", bundle: .module)
+                          defaultValue: "The site's certificate didn't check out, so this connection can't be trusted.", bundle: .module)
         case .secretFormBrandMismatch:
             let what = secret(args["kind"])
             if let brand = arg(args, "brand") {
@@ -113,7 +113,7 @@ public enum SignalText {
         case .domainVeryNew:
             if let days = dayCount(args) {
                 return String(localized: "signal.domainVeryNew.days",
-                              defaultValue: "This domain was registered only \(days) ago, which is very recent.", bundle: .module)
+                              defaultValue: "This domain was registered \(days) ago, which is very recent.", bundle: .module)
             }
             return String(localized: "signal.domainVeryNew",
                           defaultValue: "This domain was registered within the last month.", bundle: .module)
@@ -146,13 +146,13 @@ public enum SignalText {
         case .domainNew:
             if let days = dayCount(args) {
                 return String(localized: "signal.domainNew.days",
-                              defaultValue: "This domain was registered only \(days) ago.", bundle: .module)
+                              defaultValue: "This domain was registered \(days) ago.", bundle: .module)
             }
             return String(localized: "signal.domainNew",
                           defaultValue: "This domain was registered within the last six months.", bundle: .module)
         case .assumedHTTPS:
             return String(localized: "signal.assumedHTTPS",
-                          defaultValue: "The code had no prefix, so it was read as a secure web address.", bundle: .module)
+                          defaultValue: "The code had no prefix, so it was read as an https web address.", bundle: .module)
         case .sharedHostingDomain:
             return String(localized: "signal.sharedHostingDomain",
                           defaultValue: "This site sits on a shared hosting domain, so the domain's age says little about it.", bundle: .module)

@@ -51,7 +51,7 @@ public struct MakeExtensionRoot: View {
             ProgressView().accessibilityLabel(String(localized: "ext.make.loading", defaultValue: "Preparing your code", bundle: .module))
         case .locked:
             message(String(localized: "ext.make.locked",
-                           defaultValue: "Make QR code is part of the unlock. Open the app to start your free 7 days or unlock.",
+                           defaultValue: "Make QR code is part of the unlock. Open the app to see what it adds.",
                            bundle: .module))
         case .unsupported:
             message(String(localized: "ext.make.unsupported", defaultValue: "Can't make a code from this file.", bundle: .module))

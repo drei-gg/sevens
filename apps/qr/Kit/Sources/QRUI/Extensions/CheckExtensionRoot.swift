@@ -66,7 +66,7 @@ public struct CheckExtensionRoot: View {
                     .accessibilityAddTraits(.isHeader)
             }
             if image.unreadable {
-                note(String(localized: "ext.check.unreadable", defaultValue: "This image could not be read.", bundle: .module))
+                note(String(localized: "ext.check.unreadable", defaultValue: "This image couldn't be read.", bundle: .module))
             } else if image.codes.isEmpty {
                 note(String(localized: "ext.check.none", defaultValue: "No code found in this image", bundle: .module))
             } else {
