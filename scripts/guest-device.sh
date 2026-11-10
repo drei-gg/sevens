@@ -7,13 +7,14 @@ dd=${1:?derived data path}
 here=$(pwd)
 log=/tmp/sevens-device.log; status=/tmp/sevens-device.status
 rm -f "$log" "$status"
-udid=$(xcrun devicectl list devices --json-output /dev/stdout 2>/dev/null | python3 -c '
+xcrun devicectl list devices --json-output /tmp/sevens-devices.json >/dev/null 2>&1 || true
+udid=$(python3 -c '
 import json, sys
-d = json.load(sys.stdin)["result"]["devices"]
+d = json.load(open("/tmp/sevens-devices.json"))["result"]["devices"]
 for x in d:
     if x.get("hardwareProperties", {}).get("platform") == "iOS" and x.get("connectionProperties", {}).get("pairingState") == "paired":
         print(x["hardwareProperties"]["udid"]); break
-')
+' 2>/dev/null || true)
 [ -n "$udid" ] || { echo "no paired iPhone"; exit 4; }
 echo "$udid" > ~/.sevens-device-udid
 cmdfile=$here/.sevens-device.command
