@@ -1,0 +1,6 @@
+// Unbranded defaults (D3). scripts/apply-brand copies a brand's own Brand.xcconfig over this file.
+SEVENS_BUNDLE_ID_BASE = org.example.sevens.qr
+SEVENS_DISPLAY_NAME = QR Code Kit
+SEVENS_PRODUCT_ID_PREFIX = org.example.sevens.qr
+SEVENS_SUPPORT_EMAIL = support@example.org
+SEVENS_BRANDED = NO
