@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Apply a brand to an app: copies the brand's asset catalog and Brand.xcconfig over the
+# unbranded ones. The brand directory lives outside this public repo (TRADEMARKS.md).
+#
+# usage: scripts/apply-brand <brand-dir> [app]      app defaults to "qr"
+#   <brand-dir>/<app>/Brand.xcassets    replaces apps/<app>/Brand/Brand.xcassets
+#   <brand-dir>/<app>/Brand.xcconfig    replaces apps/<app>/Config/Brand.xcconfig
+#   <brand-dir>/<app>/QR.storekit       (optional) replaces apps/<app>/QR.storekit
+#
+# Undo with: git checkout -- apps/<app>/Brand apps/<app>/Config/Brand.xcconfig apps/<app>/QR.storekit
+set -euo pipefail
+root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+brand=${1:?usage: scripts/apply-brand <brand-dir> [app]}
+app=${2:-qr}
+src="$brand/$app"
+dst="$root/apps/$app"
+[ -d "$src" ] || { echo "apply-brand: no $src" >&2; exit 2; }
+[ -d "$dst" ] || { echo "apply-brand: no app at $dst" >&2; exit 2; }
+[ -d "$src/Brand.xcassets" ] || { echo "apply-brand: $src/Brand.xcassets missing" >&2; exit 2; }
+[ -f "$src/Brand.xcconfig" ] || { echo "apply-brand: $src/Brand.xcconfig missing" >&2; exit 2; }
+grep -q '^SEVENS_BUNDLE_ID_BASE *=' "$src/Brand.xcconfig" || { echo "apply-brand: Brand.xcconfig lacks SEVENS_BUNDLE_ID_BASE" >&2; exit 2; }
+
+rm -rf "$dst/Brand/Brand.xcassets"
+cp -R "$src/Brand.xcassets" "$dst/Brand/Brand.xcassets"
+cp "$src/Brand.xcconfig" "$dst/Config/Brand.xcconfig"
+[ -f "$src/QR.storekit" ] && cp "$src/QR.storekit" "$dst/QR.storekit"
+echo "apply-brand: applied $src to apps/$app (don't commit branded files to the public repo)"
