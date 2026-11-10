@@ -95,14 +95,14 @@ public struct BeforeYouBuyView: View {
                 }
             } else if store.state == .notStarted {
                 SevenButton(title: content.startTrialLabel ?? seven("seven.trial.start", "Start my free 7 days"),
-                            disabled: store.isBusy) {
+                            disabled: store.isBusy, identifier: "seven.beforeYouBuy.startTrial") {
                     Task {
                         await store.startTrial()
                         if store.state != .notStarted { finish(.startedTrial) }
                     }
                 }
                 SevenButton(title: content.justScanLabel ?? seven("seven.beforeYouBuy.justScan", "Just scan for free"),
-                            disabled: store.isBusy) {
+                            disabled: store.isBusy, identifier: "seven.beforeYouBuy.justScan") {
                     finish(.justScan)
                 }
             } else {

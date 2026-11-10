@@ -24,6 +24,8 @@ struct SevenListLines: View {
 struct SevenButton: View {
     let title: String
     var disabled = false
+    /// Accessibility identifier for UI tests; empty means none.
+    var identifier = ""
     let action: () -> Void
 
     var body: some View {
@@ -34,6 +36,7 @@ struct SevenButton: View {
         .buttonStyle(.bordered)
         .controlSize(.large)
         .tint(Tokens.ink)
+        .accessibilityIdentifier(identifier)
         .disabled(disabled)
         .accessibilityLabel(title)
     }
