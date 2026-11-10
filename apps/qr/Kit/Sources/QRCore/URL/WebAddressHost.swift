@@ -47,13 +47,17 @@ enum URLHost {
             return Parsed(ascii: h, unicode: h, kind: .ipv6, malformed: false)
         }
         guard var host = percentDecode(raw) else { return nil }
-        for scalar in host.unicodeScalars where forbidden.contains(scalar) || scalar.value <= 0x20 || scalar.value == 0x7F {
-            return nil
-        }
+        // Browsers fold compatibility forms (full-width letters, ligatures) before looking the host
+        // up, so we check the folded form (SPEC §4.2). Folding can create characters a host can't
+        // hold (full-width `/`, `#`, `@`), so the forbidden-character test runs afterwards.
+        host = host.precomposedStringWithCompatibilityMapping
         host = host.unicodeScalars.map { s -> String in
             (s.value == 0x3002 || s.value == 0xFF0E || s.value == 0xFF61) ? "." : String(s)
         }.joined()
-        host = host.precomposedStringWithCanonicalMapping.lowercased()
+        for scalar in host.unicodeScalars where forbidden.contains(scalar) || scalar.value <= 0x20 || scalar.value == 0x7F {
+            return nil
+        }
+        host = host.lowercased().precomposedStringWithCompatibilityMapping
         if host.hasSuffix(".") { host.removeLast() }
         guard !host.isEmpty else { return nil }
 

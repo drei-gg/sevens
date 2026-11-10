@@ -148,8 +148,10 @@ public struct WebAddress: Sendable, Hashable {
         var isPrivate = false, known = false
         if host.kind == .domain {
             let m = psl.match(hostASCII: host.ascii)
-            // Contract (LinkInfo): nil for unknown suffixes, i.e. when only PSL's default rule applied.
-            registrable = m.matchedExplicitRule ? m.registrableDomain.map(URLHost.unicodeForm) : nil
+            // Contract (LinkInfo): an ending without an explicit rule falls back to the last label
+            // as the suffix (PSL's default rule), so a registrable domain exists for every domain host
+            // that has at least two labels. `suffixIsKnown` tells the checks to add `unknownEnding`.
+            registrable = m.registrableDomain.map(URLHost.unicodeForm)
             suffix = URLHost.unicodeForm(m.publicSuffix)
             isPrivate = m.isPrivate
             known = m.matchedExplicitRule

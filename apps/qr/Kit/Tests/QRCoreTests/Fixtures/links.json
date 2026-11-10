@@ -1050,7 +1050,8 @@
  {
   "id": "link-obf-nested-url",
   "spec": "4.2",
-  "input": "https://example.com/login?next=https%3A%2F%2Fevil.example%2Fa",
+  "input": "https://example.com/login/https%3A%2F%2Fevil.example%2Fa",
+  "note": "a second link inside the path (a return address in the query no longer counts)",
   "symbology": "qr",
   "expect": {
    "type": "link",
@@ -1089,7 +1090,8 @@
  {
   "id": "link-obf-plain-nested",
   "spec": "4.2",
-  "input": "https://example.com/signin?redirect=http://other.example/",
+  "input": "https://example.com/signin/http://other.example/",
+  "note": "a second link inside the path (a return address in the query no longer counts)",
   "symbology": "qr",
   "expect": {
    "type": "link",
@@ -1393,6 +1395,142 @@
    "type": "wifi",
    "level": 0,
    "signals": []
+  }
+ },
+ {
+  "id": "fx1-strong-gcash-top",
+  "spec": "4.2",
+  "input": "https://gcash.top/",
+  "symbology": "qr",
+  "note": "F1: GCash's name on an abused ending",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain",
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "fx1-strong-paypal-help",
+  "spec": "4.2",
+  "input": "https://paypal.help/",
+  "symbology": "qr",
+  "note": "F1: exact name, abused ending",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain",
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "fx1-strong-netflix-xyz",
+  "spec": "4.2",
+  "input": "https://netflix.xyz/",
+  "symbology": "qr",
+  "note": "F1: exact name on an ending that is not a country code or com/net/org",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-strong-secure-paypa1",
+  "spec": "4.2",
+  "input": "https://secure-paypa1.com/",
+  "symbology": "qr",
+  "note": "F3: look-alike word joined to another word",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "fx1-strong-faceb00k-login",
+  "spec": "4.2",
+  "input": "https://faceb00k-login.com/",
+  "symbology": "qr",
+  "note": "F3: look-alike word beside a bait word",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "fx1-strong-unknown-ending-brand-sub",
+  "spec": "4.2",
+  "input": "https://paypal.evil-site.newtldxyz/",
+  "symbology": "qr",
+  "note": "F2: unlisted ending, brand in a subdomain",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ],
+   "info": [
+    "unknownEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-unknown-ending-plain",
+  "spec": "4.2",
+  "input": "https://example.newtldxyz/",
+  "symbology": "qr",
+  "note": "F2: unlisted ending alone is info only",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": [],
+   "info": [
+    "unknownEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-unknown-ending-shop",
+  "spec": "4.2",
+  "input": "https://shop.mystore.zzzz/",
+  "symbology": "qr",
+  "note": "F2: unlisted ending with a subdomain",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": [],
+   "info": [
+    "unknownEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-unknown-ending-http",
+  "spec": "4.2",
+  "input": "http://router.lan/",
+  "symbology": "qr",
+  "note": "F2: info signal never changes the verdict; plain http still warns",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "plainHTTP"
+   ],
+   "info": [
+    "unknownEnding"
+   ]
   }
  }
 ]

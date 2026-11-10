@@ -1,0 +1,782 @@
+[
+ {
+  "id": "fx1-adv-01",
+  "spec": "4.2",
+  "input": "https://login.microsoft.de/",
+  "symbology": "qr",
+  "note": "F1: a subdomain of <brand>.<ending> does not change the verdict",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-02",
+  "spec": "4.2",
+  "input": "https://netflix.com.ph/",
+  "symbology": "qr",
+  "note": "F1: second-level ending com.ph",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-03",
+  "spec": "4.2",
+  "input": "https://netflix.org/",
+  "symbology": "qr",
+  "note": "F1: org counts",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-04",
+  "spec": "4.2",
+  "input": "https://netflix.net/",
+  "symbology": "qr",
+  "note": "F1: net counts",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-05",
+  "spec": "4.2",
+  "input": "https://netflix.co.uk/",
+  "symbology": "qr",
+  "note": "F1: co.uk counts",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-06",
+  "spec": "4.2",
+  "input": "https://netflix.io/",
+  "symbology": "qr",
+  "note": "F1: a two-letter ending that is not abused",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-07",
+  "spec": "4.2",
+  "input": "https://paypal.github.io/",
+  "symbology": "qr",
+  "note": "F1: a private suffix is a host anyone can register on, never gentle",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-08",
+  "spec": "4.2",
+  "input": "https://paypal.evil.com/",
+  "symbology": "qr",
+  "note": "F1: brand in a subdomain",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-09",
+  "spec": "4.2",
+  "input": "https://paypal-verify.de/",
+  "symbology": "qr",
+  "note": "F1: brand mixed with other words",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-10",
+  "spec": "4.2",
+  "input": "https://paypal.cc/",
+  "symbology": "qr",
+  "note": "F1: two-letter ending on the abused list stays strong",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain",
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-11",
+  "spec": "4.2",
+  "input": "https://netflix.tk/",
+  "symbology": "qr",
+  "note": "F1: abused country ending",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain",
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-12",
+  "spec": "4.2",
+  "input": "https://netflix.xn--p1ai/",
+  "symbology": "qr",
+  "note": "F1: an internationalized ending is not a two-letter country code",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-13",
+  "spec": "4.2",
+  "input": "https://netflix.shop/",
+  "symbology": "qr",
+  "note": "F1: other ending",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-14",
+  "spec": "4.2",
+  "input": "https://paypal.dev/",
+  "symbology": "qr",
+  "note": "F1: other ending",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-15",
+  "spec": "4.2",
+  "input": "https://amazon-prime.co.uk/",
+  "symbology": "qr",
+  "note": "F1: brand plus another word on a common ending",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-16",
+  "spec": "4.2",
+  "input": "https://amazon.co.uk/",
+  "symbology": "qr",
+  "note": "F1: the brand's own listed domain never fires",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-17",
+  "spec": "4.2",
+  "input": "https://paypal.me.evil.com/",
+  "symbology": "qr",
+  "note": "F1: the brand is a subdomain of someone else's domain",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-18",
+  "spec": "4.2",
+  "input": "https://paypal.com.evil.org/",
+  "symbology": "qr",
+  "note": "F1: classic subdomain trick",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-19",
+  "spec": "4.2",
+  "input": "https://apple.de/",
+  "symbology": "qr",
+  "note": "F1: ambiguous brands need a bait word, so no signal",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-20",
+  "spec": "4.2",
+  "input": "https://login.apple.de/",
+  "symbology": "qr",
+  "note": "F1: ambiguous brand with a bait word stays strong, not gentle",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-21",
+  "spec": "4.2",
+  "input": "https://netflix.zz/",
+  "symbology": "qr",
+  "note": "F1/F2: an unlisted two-letter ending is not a known country code",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ],
+   "info": [
+    "unknownEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-22",
+  "spec": "4.2",
+  "input": "https://login.paypal.example/",
+  "symbology": "qr",
+  "note": "F2: .example is not in the suffix list; paypal.example is the registrable domain",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ],
+   "info": [
+    "unknownEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-23",
+  "spec": "4.2",
+  "input": "https://secure.ebay.newtld/",
+  "symbology": "qr",
+  "note": "F2: brand in a subdomain of an unlisted ending",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ],
+   "info": [
+    "unknownEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-24",
+  "spec": "4.2",
+  "input": "https://shop.bakery.newtldxyz/",
+  "symbology": "qr",
+  "note": "F2: ordinary site on an unlisted ending is not accused",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": [],
+   "info": [
+    "unknownEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-25",
+  "spec": "4.2",
+  "input": "https://localhost/",
+  "symbology": "qr",
+  "note": "F2: a single label has no registrable domain and no ending to report",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": [],
+   "info": []
+  }
+ },
+ {
+  "id": "fx1-adv-26",
+  "spec": "4.2",
+  "input": "https://203.0.113.9/",
+  "symbology": "qr",
+  "note": "F2: IP hosts never get the ending signal",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "ipHost"
+   ],
+   "info": []
+  }
+ },
+ {
+  "id": "fx1-adv-27",
+  "spec": "4.2",
+  "input": "www.example.newtldxyz/page",
+  "symbology": "qr",
+  "note": "F2/D9: schemeless text still needs a real ending, so it stays plain text",
+  "expect": {
+   "type": "text",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-28",
+  "spec": "4.2",
+  "input": "https://paypa1-login.com/",
+  "symbology": "qr",
+  "note": "F3: digit one for l, joined with a bait word",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-29",
+  "spec": "4.2",
+  "input": "https://paypa1.evil.com/",
+  "symbology": "qr",
+  "note": "F3: look-alike word in a subdomain",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-30",
+  "spec": "4.2",
+  "input": "https://my-micr0soft-account.com/",
+  "symbology": "qr",
+  "note": "F3: zero for o inside a longer name",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-31",
+  "spec": "4.2",
+  "input": "https://g00gle-support.net/",
+  "symbology": "qr",
+  "note": "F3: two zeros",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-32",
+  "spec": "4.2",
+  "input": "https://rnicrosoft-login.com/",
+  "symbology": "qr",
+  "note": "F3: r n for m",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-33",
+  "spec": "4.2",
+  "input": "https://app1e-login.com/",
+  "symbology": "qr",
+  "note": "F3: ambiguous brand with a bait word beside it",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-34",
+  "spec": "4.2",
+  "input": "https://app1e-garden.com/",
+  "symbology": "qr",
+  "note": "F3: ambiguous brand look-alike without a bait word is not accused",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-35",
+  "spec": "4.2",
+  "input": "https://secure-pay-online.com/",
+  "symbology": "qr",
+  "note": "F3: bait words alone are not a brand",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-36",
+  "spec": "4.2",
+  "input": "https://my-garden-shop.com/",
+  "symbology": "qr",
+  "note": "F3: ordinary hyphenated words",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-37",
+  "spec": "4.2",
+  "input": "https://www.paypal.com/",
+  "symbology": "qr",
+  "note": "F3: the real thing",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-38",
+  "spec": "4.2",
+  "input": "https://tracking.dhl.com/",
+  "symbology": "qr",
+  "note": "F4: DHL's own domain next to a bait word",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-39",
+  "spec": "4.2",
+  "input": "https://dhl.tracking-info.top/",
+  "symbology": "qr",
+  "note": "F4 (needs R2 data): three-letter brand as a whole token beside a bait word",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain",
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-40",
+  "spec": "4.2",
+  "input": "https://www.upsilon-labs.com/",
+  "symbology": "qr",
+  "note": "F4: a longer word that starts with ups is not the token ups",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-41",
+  "spec": "4.2",
+  "input": "https://dhlogistics-online.com/",
+  "symbology": "qr",
+  "note": "F4: dhl inside a longer word is not a match",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-42",
+  "spec": "4.2",
+  "input": "https://dh1-tracking.help/",
+  "symbology": "qr",
+  "note": "F4: no look-alike matching on three-letter keywords",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-43",
+  "spec": "4.2",
+  "input": "https://example.com/signin?redirect=http://other.example/",
+  "symbology": "qr",
+  "note": "F5: return address in the query",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-44",
+  "spec": "4.2",
+  "input": "https://example.com/login?next=https%3A%2F%2Fevil.example%2Fa",
+  "symbology": "qr",
+  "note": "F5: encoded return address in the query",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-45",
+  "spec": "4.2",
+  "input": "https://example.com/login#https://x.example/",
+  "symbology": "qr",
+  "note": "F5: a link in the fragment",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-46",
+  "spec": "4.2",
+  "input": "https://example.com/login/http%3A%2F%2Fevil.example",
+  "symbology": "qr",
+  "note": "F5: encoded link in the path still counts",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "obfuscatedPath"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-47",
+  "spec": "4.2",
+  "input": "https://example.com/verify/https://evil.example/a?x=1",
+  "symbology": "qr",
+  "note": "F5: link in the path, query after it",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "obfuscatedPath"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-48",
+  "spec": "4.2",
+  "input": "https://example.com/login?x=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "symbology": "qr",
+  "note": "F5: a very long query is still caught by the length rule",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "obfuscatedPath"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-49",
+  "spec": "4.2",
+  "input": "https://paypal。com/",
+  "symbology": "qr",
+  "note": "F6: ideographic full stop U+3002 is a label dot",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-50",
+  "spec": "4.2",
+  "input": "https://paypal．com/",
+  "symbology": "qr",
+  "note": "F6: full-width full stop U+FF0E",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-51",
+  "spec": "4.2",
+  "input": "https://paypal｡com/",
+  "symbology": "qr",
+  "note": "F6: half-width ideographic full stop U+FF61",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-52",
+  "spec": "4.2",
+  "input": "https://ｐａｙｐａｌ.help/",
+  "symbology": "qr",
+  "note": "F6: folded to paypal.help, which is strong",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain",
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-53",
+  "spec": "4.2",
+  "input": "https://ｐａｙｐａｌ-login.com/",
+  "symbology": "qr",
+  "note": "F6: folded, then brand mixed with a bait word",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ },
+ {
+  "id": "fx1-adv-54",
+  "spec": "4.2",
+  "input": "https://ＰＡＹＰＡＬ.COM/",
+  "symbology": "qr",
+  "note": "F6: full-width capitals",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-adv-55",
+  "spec": "4.2",
+  "input": "https://paypаl.com/",
+  "symbology": "qr",
+  "note": "F6 control: a Cyrillic letter is not folded by NFKC and stays a look-alike",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "lookalikeBrand",
+    "mixedScript"
+   ]
+  }
+ },
+ {
+  "id": "fx1-strong-dhl-tracking-help",
+  "spec": "4.2",
+  "input": "https://dhl-tracking.help/",
+  "symbology": "qr",
+  "note": "F4 (needs R2 data): DHL with a bait word",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain",
+    "riskyTLD"
+   ]
+  }
+ },
+ {
+  "id": "fx1-strong-bpi-online-verify-site",
+  "spec": "4.2",
+  "input": "https://bpi-online.verify.site/",
+  "symbology": "qr",
+  "note": "F4 (needs R2 data): BPI with a bait word",
+  "expect": {
+   "type": "link",
+   "level": 2,
+   "signals": [
+    "brandInDomain"
+   ]
+  }
+ }
+]

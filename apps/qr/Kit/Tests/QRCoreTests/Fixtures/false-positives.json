@@ -1469,5 +1469,163 @@
     "plainHTTP"
    ]
   }
+ },
+ {
+  "id": "fx1-fp-paypal-me",
+  "spec": "4.2",
+  "input": "https://paypal.me/someone",
+  "symbology": "qr",
+  "note": "F1: PayPal's payment-link domain; level 0 once brands.json lists paypal.me",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-fp-whatsapp-net",
+  "spec": "4.2",
+  "input": "https://whatsapp.net/",
+  "symbology": "qr",
+  "note": "F1: level 0 once brands.json lists whatsapp.net",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-fp-microsoft-de",
+  "spec": "4.2",
+  "input": "https://www.microsoft.de/",
+  "symbology": "qr",
+  "note": "F1: regional site; level 0 once brands.json lists microsoft.de",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-fp-netflix-co",
+  "spec": "4.2",
+  "input": "https://netflix.co/",
+  "symbology": "qr",
+  "note": "F1: level 0 once brands.json lists netflix.co",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-fp-facebook-co-uk",
+  "spec": "4.2",
+  "input": "https://facebook.co.uk/",
+  "symbology": "qr",
+  "note": "F1: second-level ending co.uk; level 0 once listed",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-fp-gcash-ph",
+  "spec": "4.2",
+  "input": "https://gcash.ph/",
+  "symbology": "qr",
+  "note": "F1: level 0 once brands.json lists gcash.ph",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-fp-wa-me",
+  "spec": "4.2",
+  "input": "https://wa.me/639171234567",
+  "symbology": "qr",
+  "note": "F1: WhatsApp's chat-link domain; 'wa' is not a brand keyword",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-fb-me",
+  "spec": "4.2",
+  "input": "https://fb.me/abc123",
+  "symbology": "qr",
+  "note": "F1: Facebook's short-link domain; fb is not a brand keyword, but fb.me is on the shortener list (honest warning)",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "shortener"
+   ]
+  }
+ },
+ {
+  "id": "fx1-fp-m-me",
+  "spec": "4.2",
+  "input": "https://m.me/somepage",
+  "symbology": "qr",
+  "note": "F1: Messenger's link domain",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-google-oauth",
+  "spec": "4.2",
+  "input": "https://accounts.google.com/o/oauth2/v2/auth?client_id=1234567890-abc.apps.googleusercontent.com&redirect_uri=https://app.example.org/cb&response_type=code",
+  "symbology": "qr",
+  "note": "F5: a return address in the query is not a nested link (bait word 'account' in the host)",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-google-oauth-encoded",
+  "spec": "4.2",
+  "input": "https://accounts.google.com/signin/oauth?client_id=123456-abc.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fapp.example.org%2Fcb",
+  "symbology": "qr",
+  "note": "F5: the same with the return address percent-encoded",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-fullwidth-paypal",
+  "spec": "4.2",
+  "input": "https://ｐａｙｐａｌ.com/",
+  "symbology": "qr",
+  "note": "F6: full-width letters fold to plain paypal.com, which is PayPal's own domain",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
  }
 ]

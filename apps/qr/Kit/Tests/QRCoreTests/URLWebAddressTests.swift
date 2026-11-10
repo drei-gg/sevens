@@ -253,11 +253,13 @@ import Testing
         #expect(try #require(parse("https://test.ck/")).link.registrableDomain == nil)
     }
 
-    @Test func unknownSuffixHasNoRegistrableDomain() throws {
-        // Contract (LinkInfo.registrableDomain): nil for unknown suffixes.
+    @Test func unknownSuffixFallsBackToTheLastLabel() throws {
+        // Contract (LinkInfo.registrableDomain): the last label is the suffix when the ending isn't listed.
         let a = try #require(parse("https://www.example.zzzz/"))
-        #expect(a.link.registrableDomain == nil)
+        #expect(a.link.registrableDomain == "example.zzzz")
         #expect(a.link.publicSuffix == "zzzz")
+        #expect(try #require(parse("https://zzzz/")).link.registrableDomain == nil)
+        #expect(try #require(parse("https://203.0.113.9/")).link.registrableDomain == nil)
         #expect(!a.suffixIsKnown)
         #expect(!a.assumedHTTPS)
     }
