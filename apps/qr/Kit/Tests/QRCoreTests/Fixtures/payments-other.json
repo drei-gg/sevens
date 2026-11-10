@@ -1,0 +1,470 @@
+[
+ {
+  "id": "upi-pay-01",
+  "spec": "5",
+  "input": "upi://pay?pa=shop@okbank&pn=Corner%20Shop&am=250.00&cu=INR&tn=Order%2012&tr=T123",
+  "symbology": "qr",
+  "expect": {
+   "type": "payment",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "format": "upi",
+    "payeeAccount": "shop@okbank",
+    "payeeName": "Corner Shop",
+    "amount": "250.00",
+    "currency": "INR",
+    "note": "Order 12",
+    "reference": "T123",
+    "extra.kind": "pay",
+    "checksum": "absent",
+    "party": "unknown"
+   }
+  }
+ },
+ {
+  "id": "upi-pay-02-no-amount",
+  "spec": "5",
+  "input": "UPI://PAY?pa=alice@upi&pn=Alice",
+  "symbology": "qr",
+  "expect": {
+   "type": "payment",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "format": "upi",
+    "payeeAccount": "alice@upi",
+    "payeeName": "Alice",
+    "extra.kind": "pay"
+   }
+  }
+ },
+ {
+  "id": "upi-mandate-01",
+  "spec": "5",
+  "input": "upi://mandate?pa=biller@bank&pn=Biller&am=499&cu=inr&mc=4900&mode=13&url=https%3A%2F%2Fbiller.example%2Fm",
+  "symbology": "qr",
+  "expect": {
+   "type": "payment",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "format": "upi",
+    "extra.kind": "mandate",
+    "currency": "INR",
+    "extra.mcc": "4900",
+    "extra.mode": "13",
+    "extra.url": "https://biller.example/m"
+   }
+  }
+ },
+ {
+  "id": "epc-v002-01",
+  "spec": "5",
+  "input": "BCD\n002\n1\nSCT\n\nRed Cross\nDE89 3704 0044 0532 0130 00\nEUR12.34\nCHAR\n\nDonation\nThanks",
+  "symbology": "qr",
+  "expect": {
+   "type": "payment",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "format": "epc",
+    "payeeName": "Red Cross",
+    "payeeAccount": "DE89370400440532013000",
+    "currency": "EUR",
+    "amount": "12.34",
+    "checksum": "valid",
+    "extra.purpose": "CHAR",
+    "note": "Donation",
+    "extra.information": "Thanks"
+   }
+  }
+ },
+ {
+  "id": "epc-v001-01",
+  "spec": "5",
+  "input": "BCD\n001\n1\nSCT\nBHBLDEHHXXX\nFranz Mustermann\nDE89370400440532013000\nEUR1\n\nRF18539007547034\n\n\r\n",
+  "symbology": "qr",
+  "note": "trailing newline",
+  "expect": {
+   "type": "payment",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "format": "epc",
+    "extra.bic": "BHBLDEHHXXX",
+    "amount": "1",
+    "reference": "RF18539007547034",
+    "checksum": "valid"
+   }
+  }
+ },
+ {
+  "id": "epc-crlf-01",
+  "spec": "5",
+  "input": "BCD\r\n002\r\n1\r\nSCT\r\n\r\nAnna\r\nNL91ABNA0417164300\r\nEUR50.00",
+  "symbology": "qr",
+  "note": "CRLF and missing trailing lines",
+  "expect": {
+   "type": "payment",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "payeeAccount": "NL91ABNA0417164300",
+    "amount": "50.00",
+    "checksum": "valid"
+   }
+  }
+ },
+ {
+  "id": "epc-bad-iban-01",
+  "spec": "5",
+  "input": "BCD\n002\n1\nSCT\n\nRed Cross\nDE89370400440532013001\nEUR12.34\n\n\n\n",
+  "symbology": "qr",
+  "expect": {
+   "type": "payment",
+   "level": 2,
+   "signals": [
+    "paymentChecksumFail"
+   ],
+   "fields": {
+    "format": "epc",
+    "checksum": "invalid",
+    "payeeAccount": "DE89370400440532013001"
+   }
+  }
+ },
+ {
+  "id": "epc-short-01",
+  "spec": "5",
+  "input": "BCD\n002\n1\nSCT\n\nShort Name",
+  "symbology": "qr",
+  "note": "no IBAN: checksum absent",
+  "expect": {
+   "type": "payment",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "payeeName": "Short Name",
+    "checksum": "absent"
+   }
+  }
+ },
+ {
+  "id": "swiss-qrr-valid-01",
+  "spec": "5",
+  "input": "SPC\n0200\n1\nCH4431999123000889012\nS\nRobert Schneider AG\nRue du Lac\n1268\n2501\nBiel\nCH\n\n\n\n\n\n\n\n1949.75\nCHF\nS\nPia Rutschmann\nBahnhofstrasse\n1\n8001\nZürich\nCH\nQRR\n210000000003139471430009017\nInvoice 3139\nEPD\nOrder 1",
+  "symbology": "qr",
+  "expect": {
+   "type": "payment",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "format": "swiss",
+    "payeeAccount": "CH4431999123000889012",
+    "payeeName": "Robert Schneider AG",
+    "city": "Biel",
+    "country": "CH",
+    "amount": "1949.75",
+    "currency": "CHF",
+    "extra.debtorName": "Pia Rutschmann",
+    "extra.referenceType": "QRR",
+    "reference": "210000000003139471430009017",
+    "note": "Invoice 3139",
+    "extra.billingInfo": "Order 1",
+    "checksum": "valid",
+    "extra.creditorAddress": "Rue du Lac\n1268\n2501\nBiel"
+   }
+  }
+ },
+ {
+  "id": "swiss-qrr-bad-01",
+  "spec": "5",
+  "input": "SPC\n0200\n1\nCH4431999123000889012\nS\nRobert Schneider AG\nRue du Lac\n1268\n2501\nBiel\nCH\n\n\n\n\n\n\n\n10.00\nCHF\nS\nPia\nBahnhofstrasse\n1\n8001\nZürich\nCH\nQRR\n210000000003139471430009018\n\nEPD\nOrder 1",
+  "symbology": "qr",
+  "expect": {
+   "type": "payment",
+   "level": 2,
+   "signals": [
+    "paymentChecksumFail"
+   ],
+   "fields": {
+    "format": "swiss",
+    "checksum": "invalid"
+   }
+  }
+ },
+ {
+  "id": "swiss-scor-valid-01",
+  "spec": "5",
+  "input": "SPC\n0200\n1\nCH9300762011623852957\nK\nMuster GmbH\nHauptstrasse 5\n8000 Zürich\n\n\nCH\n\n\n\n\n\n\n\n\nEUR\n\n\nBahnhofstrasse\n1\n8001\nZürich\nCH\nSCOR\nRF18539007547034\nRechnung\nEPD\nOrder 1",
+  "symbology": "qr",
+  "expect": {
+   "type": "payment",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "format": "swiss",
+    "currency": "EUR",
+    "extra.referenceType": "SCOR",
+    "checksum": "valid",
+    "extra.creditorAddress": "Hauptstrasse 5\n8000 Zürich"
+   }
+  }
+ },
+ {
+  "id": "swiss-scor-bad-01",
+  "spec": "5",
+  "input": "SPC\n0200\n1\nCH9300762011623852957\nK\nMuster GmbH\nHauptstrasse 5\n8000 Zürich\n\n\nCH\n\n\n\n\n\n\n\n5.00\nCHF\n\n\nBahnhofstrasse\n1\n8001\nZürich\nCH\nSCOR\nRF19539007547034\n\nEPD\nOrder 1",
+  "symbology": "qr",
+  "expect": {
+   "type": "payment",
+   "level": 2,
+   "signals": [
+    "paymentChecksumFail"
+   ],
+   "fields": {
+    "format": "swiss",
+    "checksum": "invalid"
+   }
+  }
+ },
+ {
+  "id": "swiss-non-01",
+  "spec": "5",
+  "input": "SPC\n0200\n1\nCH9300762011623852957\nS\nMuster GmbH\nHauptstrasse\n5\n8000\nZürich\nCH\n\n\n\n\n\n\n\n20.00\nCHF\n\n\nBahnhofstrasse\n1\n8001\nZürich\nCH\nNON\n\n\nEPD\nOrder 1",
+  "symbology": "qr",
+  "expect": {
+   "type": "payment",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "format": "swiss",
+    "extra.referenceType": "NON",
+    "checksum": "valid",
+    "city": "Zürich"
+   }
+  }
+ },
+ {
+  "id": "swiss-bad-iban-01",
+  "spec": "5",
+  "input": "SPC\n0200\n1\nCH9300762011623852958\nS\nMuster GmbH\nHauptstrasse\n5\n8000\nZürich\nCH\n\n\n\n\n\n\n\n20.00\nCHF\n\n\nBahnhofstrasse\n1\n8001\nZürich\nCH\nNON\n\n\nEPD\nOrder 1",
+  "symbology": "qr",
+  "expect": {
+   "type": "payment",
+   "level": 2,
+   "signals": [
+    "paymentChecksumFail"
+   ],
+   "fields": {
+    "format": "swiss",
+    "checksum": "invalid"
+   }
+  }
+ },
+ {
+  "id": "swiss-truncated-01",
+  "spec": "5",
+  "input": "SPC\n0200\n1\nCH9300762011623852957\nS\nMuster GmbH\nHauptstrasse",
+  "symbology": "qr",
+  "note": "lines run out",
+  "expect": {
+   "type": "payment",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "format": "swiss",
+    "payeeName": "Muster GmbH",
+    "checksum": "valid"
+   }
+  }
+ },
+ {
+  "id": "crypto-bitcoin-01",
+  "spec": "5",
+  "input": "bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?amount=0.5&label=Luke-Jr&message=Donation%20for%20project",
+  "symbology": "qr",
+  "expect": {
+   "type": "crypto",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "scheme": "bitcoin",
+    "network": "Bitcoin",
+    "address": "175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W",
+    "amount": "0.5",
+    "label": "Luke-Jr",
+    "message": "Donation for project"
+   }
+  }
+ },
+ {
+  "id": "crypto-bitcoin-02-upper",
+  "spec": "5",
+  "input": "BITCOIN:bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+  "symbology": "qr",
+  "expect": {
+   "type": "crypto",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "scheme": "bitcoin",
+    "address": "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"
+   }
+  }
+ },
+ {
+  "id": "crypto-ethereum-01",
+  "spec": "5",
+  "input": "ethereum:pay-0x52908400098527886E0F7030069857D2E4169EE7@1/transfer?value=2.014e18",
+  "symbology": "qr",
+  "expect": {
+   "type": "crypto",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "scheme": "ethereum",
+    "network": "Ethereum",
+    "address": "0x52908400098527886E0F7030069857D2E4169EE7",
+    "chainID": "1",
+    "amount": "2.014e18"
+   }
+  }
+ },
+ {
+  "id": "crypto-lightning-01",
+  "spec": "5",
+  "input": "lightning:LNBC2500U1PVJLUEZPP5QQQSYQCYQ5RQWZQFQQQSYQCYQ5RQWZQFQQQSYQCYQ5RQWZQFQYPQDQ",
+  "symbology": "qr",
+  "expect": {
+   "type": "crypto",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "scheme": "lightning",
+    "network": "Lightning",
+    "isLightningInvoice": "true",
+    "amount": "0.0025"
+   }
+  }
+ },
+ {
+  "id": "crypto-lightning-02-no-amount",
+  "spec": "5",
+  "input": "lightning:lnbc1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq",
+  "symbology": "qr",
+  "expect": {
+   "type": "crypto",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "isLightningInvoice": "true",
+    "network": "Lightning"
+   }
+  }
+ },
+ {
+  "id": "crypto-litecoin-01",
+  "spec": "5",
+  "input": "litecoin:LdP8Qox1VAhCzLJNqrr74YovaWYyNBUWvL?amount=1.25",
+  "symbology": "qr",
+  "expect": {
+   "type": "crypto",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "scheme": "litecoin",
+    "network": "Litecoin",
+    "amount": "1.25"
+   }
+  }
+ },
+ {
+  "id": "crypto-bip21-lightning-01",
+  "spec": "5",
+  "input": "bitcoin:?lightning=lnbc20m1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq",
+  "symbology": "qr",
+  "expect": {
+   "type": "crypto",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "network": "Lightning",
+    "amount": "0.02",
+    "isLightningInvoice": "true"
+   }
+  }
+ },
+ {
+  "id": "crypto-bare-bc1-01",
+  "spec": "5",
+  "input": "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+  "symbology": "qr",
+  "expect": {
+   "type": "crypto",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "network": "Bitcoin",
+    "address": "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"
+   }
+  }
+ },
+ {
+  "id": "crypto-bare-ltc1-01",
+  "spec": "5",
+  "input": "ltc1qpzry9x8gf2tvdw0s3jn5csc0dt",
+  "symbology": "qr",
+  "expect": {
+   "type": "crypto",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "network": "Litecoin",
+    "address": "ltc1qpzry9x8gf2tvdw0s3jn5csc0dt"
+   }
+  }
+ },
+ {
+  "id": "crypto-bare-bc1-badsum-01",
+  "spec": "5",
+  "input": "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5",
+  "symbology": "qr",
+  "note": "broken checksum: not an address",
+  "expect": {
+   "type": "text",
+   "level": 0,
+   "signals": [],
+   "fields": {}
+  }
+ },
+ {
+  "id": "crypto-bare-eth-01",
+  "spec": "5",
+  "input": "0x52908400098527886E0F7030069857D2E4169EE7",
+  "symbology": "qr",
+  "expect": {
+   "type": "crypto",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "network": "Ethereum"
+   }
+  }
+ },
+ {
+  "id": "crypto-bare-base58-01",
+  "spec": "5",
+  "input": "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2",
+  "symbology": "qr",
+  "expect": {
+   "type": "crypto",
+   "level": 0,
+   "signals": [],
+   "fields": {
+    "network": "Bitcoin"
+   }
+  }
+ }
+]
