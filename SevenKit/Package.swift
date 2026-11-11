@@ -22,7 +22,9 @@ var targets: [Target] = [
 
 #if canImport(Darwin)
 products.append(.library(name: "SevenKit", targets: ["SevenKit"]))
+products.append(.library(name: "SevenCompanion", targets: ["SevenCompanion"]))
 targets += [
+    .target(name: "SevenCompanion", dependencies: ["SevenKitCore"], swiftSettings: strict),
     .target(name: "SevenKit", dependencies: ["SevenKitCore"],
             resources: [.process("Resources")], swiftSettings: strict),
     .testTarget(name: "SevenKitTests", dependencies: ["SevenKit"], swiftSettings: strict),
@@ -32,7 +34,7 @@ targets += [
 let package = Package(
     name: "SevenKit",
     defaultLocalization: "en",
-    platforms: [.iOS(.v17), .macOS(.v14)],
+    platforms: [.iOS(.v17), .macOS(.v14), .watchOS(.v10)],
     products: products,
     targets: targets
 )

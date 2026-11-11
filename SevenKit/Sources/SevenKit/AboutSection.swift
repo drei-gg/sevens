@@ -14,15 +14,17 @@ public struct AboutSection: View {
     @Environment(Store.self) private var store
     @State private var showUnlock = false
     private let onShowBeforeYouBuy: (() -> Void)?
+    private let notStartedStatus: String?
 
-    public init(onShowBeforeYouBuy: (() -> Void)? = nil) {
+    public init(onShowBeforeYouBuy: (() -> Void)? = nil, notStartedStatus: String? = nil) {
         self.onShowBeforeYouBuy = onShowBeforeYouBuy
+        self.notStartedStatus = notStartedStatus
     }
 
     public var body: some View {
         Section {
             AboutWordmark()
-            Text(AboutStatus.line(for: store.state, day: store.trialDay, totalDays: store.trialDaysTotal))
+            Text(store.state == .notStarted ? (notStartedStatus ?? AboutStatus.line(for: store.state, day: store.trialDay, totalDays: store.trialDaysTotal)) : AboutStatus.line(for: store.state, day: store.trialDay, totalDays: store.trialDaysTotal))
                 .foregroundStyle(Tokens.ink)
             if store.state != .unlocked {
                 Button(store.unlockButtonTitle) { showUnlock = true }

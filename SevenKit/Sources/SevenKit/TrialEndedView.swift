@@ -39,6 +39,7 @@ public struct TrialEndedView: View {
             }
             .padding(Tokens.Space.m)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .sevenReadableSheet()
         }
         .onAppear { store.markTrialEndedShown() }
         .onChange(of: store.paidFeaturesAvailable) { _, available in

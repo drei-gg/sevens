@@ -82,6 +82,7 @@ public struct BeforeYouBuyView: View {
             }
             .padding(Tokens.Space.m)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .sevenReadableSheet()
         }
         .safeAreaInset(edge: .bottom) { buttons.padding(Tokens.Space.m).background(.bar) }
     }

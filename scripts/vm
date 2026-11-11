@@ -11,13 +11,20 @@
 #   device         build, sign and install on the iPhone (runs in the guest's GUI session)
 #   lock-device    lock the iPhone (run last; nothing can unlock it remotely)
 #   sh CMD...      run a command in the synced checkout
-# env: VM_SLOT (default: worktree folder name, "main" for the main checkout)
+# env: SEVENS_APP (an app under apps/ with a case below; defaults to qr)
+#      VM_SLOT (default: worktree folder name, "main" for the main checkout)
 #      VM_VERBOSE=1 streams the whole log; otherwise errors, warnings and the tail.
 set -euo pipefail
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 cmd=${1:-}; [ $# -gt 0 ] && shift
+app=${SEVENS_APP:-qr}
+case "$app" in qr) scheme=QR;; *) echo "Unknown app: $app" >&2; exit 2;; esac
+if [ "$app" != qr ] && [[ "$cmd" = device || "$cmd" = lock-device || ( "$cmd" = ui && "${1:-}" = --device ) ]]; then
+  echo "vm: device signing for $app is not configured yet" >&2; exit 2
+fi
 base=$(basename "$root"); [ "$base" = sevens ] && base=main
 slot=${VM_SLOT:-$base}
+[ "$app" = qr ] || slot="$slot-$app"
 remote="src/sevens-$slot"
 dd="\$HOME/src/dd-$slot"
 logdir="$HOME/.cache/sevens/logs"; mkdir -p "$logdir"
@@ -31,12 +38,11 @@ ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe true || { echo "vm: tahoe is not
 # Standing rule (Drei, 10 Nov 2026, corrected): one shared simulator. Boot it only when work
 # needs it, keep it up while work continues; a guest timer shuts it down after 15 idle minutes.
 # Commands that run an app or tests on it first call the guest's ~/bin/sim-ensure --wait and
-# take its UDID from sim-ensure --print (VM_SIM_UDID overrides). Plain `build` targets the
-# generic simulator platform and never touches the device. Scripts never shut down, erase or
+# take its UDID from sim-ensure --print (VM_SIM_UDID overrides). Builds and tests use the shared simulator UDID. Scripts never shut down, erase or
 # delete it, and tests never clone it (-parallel-testing-enabled NO). Need a clean app state?
 # Uninstall the app instead.
 case "$cmd" in
-  test|test-kit|ui|screens)
+  build|test|test-kit|ui|screens)
     if [ "$cmd" = ui ] && [ "${1:-}" = --device ]; then :; else
       ssh tahoe '~/bin/sim-ensure --wait' >/dev/null || { echo "vm: simulator not ready (sim-ensure --wait failed)" >&2; exit 3; }
       sim=${VM_SIM_UDID:-$(ssh tahoe '~/bin/sim-ensure --print')}
@@ -53,23 +59,23 @@ sync_tree() {
 }
 
 strictw="SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES"
-xb="xcodebuild -project apps/qr/QR.xcodeproj -scheme QR -derivedDataPath $dd $strictw"
+xb="xcodebuild -project apps/$app/$scheme.xcodeproj -scheme $scheme -derivedDataPath $dd $strictw"
 case "$cmd" in
   version) remote_cmd="xcodebuild -version";;
-  build)   remote_cmd="$xb -configuration Debug -destination 'generic/platform=iOS Simulator' build";;
-  test)    remote_cmd="$xb -configuration Debug -destination '$dest' -skip-testing:QRSmokeUITests $noclone test";;
-  test-kit) remote_cmd="set -o pipefail; (cd SevenKit && xcodebuild -scheme SevenKit-Package -derivedDataPath $dd-sevenkit $strictw -destination '$dest' $noclone test) && (cd apps/qr/Kit && xcodebuild -scheme QRKit-Package -derivedDataPath $dd-qrkit $strictw -destination '$dest' $noclone test)";;
+  build)   remote_cmd="$xb -configuration Debug -destination '$dest' build";;
+  test)    remote_cmd="$xb -configuration Debug -destination '$dest' -skip-testing:${scheme}SmokeUITests $noclone test";;
+  test-kit) remote_cmd="set -o pipefail; (cd SevenKit && xcodebuild -scheme SevenKit-Package -derivedDataPath $dd-sevenkit $strictw -destination '$dest' $noclone test) && (cd apps/$app/Kit && xcodebuild -scheme ${scheme}Kit-Package -derivedDataPath $dd-${app}kit $strictw -destination '$dest' $noclone test)";;
   ui)
     if [ "${1:-}" = --device ]; then
-      remote_cmd="bash scripts/guest-device.sh '$dd' test -only-testing:QRSmokeUITests -skip-testing:QRSmokeUITests/LockDeviceTests -skip-testing:QRSmokeUITests/ScreensTourTests"
+      remote_cmd="bash scripts/guest-device.sh '$dd' test -only-testing:${scheme}SmokeUITests -skip-testing:${scheme}SmokeUITests/LockDeviceTests -skip-testing:${scheme}SmokeUITests/ScreensTourTests"
     else
-      remote_cmd="$xb -configuration Debug -destination '$dest' -only-testing:QRSmokeUITests -skip-testing:QRSmokeUITests/LockDeviceTests -skip-testing:QRSmokeUITests/ScreensTourTests $noclone test"
+      remote_cmd="$xb -configuration Debug -destination '$dest' -only-testing:${scheme}SmokeUITests -skip-testing:${scheme}SmokeUITests/LockDeviceTests -skip-testing:${scheme}SmokeUITests/ScreensTourTests $noclone test"
     fi;;
   screens)
-    remote_cmd="rm -rf \$HOME/src/screens-$slot.xcresult; $xb -configuration Debug -destination '$dest' -only-testing:QRSmokeUITests/ScreensTourTests -resultBundlePath \$HOME/src/screens-$slot.xcresult $noclone test";;
+    remote_cmd="rm -rf \$HOME/src/screens-$slot.xcresult; $xb -configuration Debug -destination '$dest' -only-testing:${scheme}SmokeUITests/ScreensTourTests -resultBundlePath \$HOME/src/screens-$slot.xcresult $noclone test";;
   lock-device)
     # The very last device step: lock the iPhone (UI-test target only; see LockDeviceTests).
-    remote_cmd="bash scripts/guest-device.sh '$dd' test -only-testing:QRSmokeUITests/LockDeviceTests";;
+    remote_cmd="bash scripts/guest-device.sh '$dd' test -only-testing:${scheme}SmokeUITests/LockDeviceTests";;
   device)
     # Signing needs the GUI session's keychain (runbook: signing over SSH fails),
     # so the build runs in Terminal.app and we follow its log.

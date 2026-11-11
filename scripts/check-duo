@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# SDK gate for a full-display Duo build. Ordinary older-SDK builds remain supported.
+set -euo pipefail
+root=$(cd "$(dirname "$0")/.." && pwd)
+if ! command -v xcrun >/dev/null; then
+  echo 'check-duo: run on the Mac with the intended Xcode selected via DEVELOPER_DIR.' >&2
+  exit 2
+fi
+sdk=$(xcrun --sdk iphoneos --show-sdk-version)
+major=${sdk%%.*}; rest=${sdk#*.}; minor=${rest%%.*}
+if (( major < 27 || (major == 27 && minor < 1) )); then
+  echo "check-duo: iOS SDK $sdk selected; full-display Duo builds require 27.1 or later." >&2
+  exit 1
+fi
+if grep -sREn 'UIScreen\.main|UIDevice\.current\.orientation|userInterfaceIdiom' \
+  "$root/SevenKit/Sources" "$root"/apps/*/Kit/Sources "$root"/apps/*/App; then
+  echo 'check-duo: review screen/device heuristics; layout must use its current proposal.' >&2
+  exit 1
+fi
+echo "check-duo: SDK $sdk ready. Run the resize and real Duo acceptance checks before claiming compatibility."

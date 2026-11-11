@@ -32,6 +32,7 @@ public struct UnlockView: View {
             }
             .padding(Tokens.Space.m)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .sevenReadableSheet()
         }
         .onChange(of: store.paidFeaturesAvailable) { _, available in
             if available { dismiss() }

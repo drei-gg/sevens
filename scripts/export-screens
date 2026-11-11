@@ -6,6 +6,8 @@ dest=${1:?destination directory}
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 base=$(basename "$root"); [ "$base" = sevens ] && base=main
 slot=${VM_SLOT:-$base}
+app=${SEVENS_APP:-qr}
+[ "$app" = qr ] || slot="$slot-$app"
 out="src/screens-$slot-export"
 ssh tahoe "rm -rf $out && mkdir -p $out && xcrun xcresulttool export attachments --path \$HOME/src/screens-$slot.xcresult --output-path $out" >&2
 mkdir -p "$dest"

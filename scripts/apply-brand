@@ -5,13 +5,14 @@
 # usage: scripts/apply-brand <brand-dir> [app]      app defaults to "qr"
 #   <brand-dir>/<app>/Brand.xcassets    replaces apps/<app>/Brand/Brand.xcassets
 #   <brand-dir>/<app>/Brand.xcconfig    replaces apps/<app>/Config/Brand.xcconfig
-#   <brand-dir>/<app>/QR.storekit       (optional) replaces apps/<app>/QR.storekit
+#   <brand-dir>/<app>/<Scheme>.storekit (optional) replaces the app StoreKit test configuration
 #
-# Undo with: git checkout -- apps/<app>/Brand apps/<app>/Config/Brand.xcconfig apps/<app>/QR.storekit
+# Undo with: git checkout -- apps/<app>/Brand apps/<app>/Config/Brand.xcconfig apps/<app>/<Scheme>.storekit
 set -euo pipefail
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 brand=${1:?usage: scripts/apply-brand <brand-dir> [app]}
 app=${2:-qr}
+case "$app" in qr) scheme=QR;; *) echo "apply-brand: unknown app $app" >&2; exit 2;; esac
 src="$brand/$app"
 dst="$root/apps/$app"
 [ -d "$src" ] || { echo "apply-brand: no $src" >&2; exit 2; }
@@ -23,5 +24,5 @@ grep -q '^SEVENS_BUNDLE_ID_BASE *=' "$src/Brand.xcconfig" || { echo "apply-brand
 rm -rf "$dst/Brand/Brand.xcassets"
 cp -R "$src/Brand.xcassets" "$dst/Brand/Brand.xcassets"
 cp "$src/Brand.xcconfig" "$dst/Config/Brand.xcconfig"
-[ -f "$src/QR.storekit" ] && cp "$src/QR.storekit" "$dst/QR.storekit"
+[ -f "$src/$scheme.storekit" ] && cp "$src/$scheme.storekit" "$dst/$scheme.storekit"
 echo "apply-brand: applied $src to apps/$app (don't commit branded files to the public repo)"
