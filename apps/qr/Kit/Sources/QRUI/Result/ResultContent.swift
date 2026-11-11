@@ -45,6 +45,7 @@ struct ResultContent: View {
             }
             .padding(Tokens.Space.m)
         }
+        .sevenScreenBackground()
         .navigationTitle(String(localized: "result.title", defaultValue: "Result", bundle: .module))
         .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog(

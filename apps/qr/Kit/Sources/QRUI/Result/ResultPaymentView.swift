@@ -80,7 +80,7 @@ struct ResultPaymentView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
                 if let alternate = info.extra["alternateName"], !alternate.isEmpty {
-                    Text(alternate).font(.title3).foregroundStyle(.secondary)
+                    Text(alternate).font(.title3).foregroundStyle(Tokens.muted)
                         .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -95,13 +95,13 @@ struct ResultPaymentView: View {
             if let network = info.network, !network.isEmpty {
                 ResultField(label: String(localized: "result.payment.network", defaultValue: "Network", bundle: .module), value: network)
             }
-            if let kindText { Text(kindText).font(.subheadline).foregroundStyle(.secondary) }
+            if let kindText { Text(kindText).font(.subheadline).foregroundStyle(Tokens.muted) }
             if let checksumText {
                 Label {
                     Text(checksumText).foregroundStyle(.primary)
                 } icon: {
                     Image(systemName: info.checksum == .invalid ? "xmark.octagon" : "checkmark.circle")
-                        .foregroundStyle(info.checksum == .invalid ? .red : .secondary)
+                        .foregroundStyle(info.checksum == .invalid ? Tokens.danger : Tokens.muted)
                 }
                 .font(.subheadline)
             }

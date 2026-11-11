@@ -48,13 +48,14 @@ struct ScanScreenPickList: View {
                     VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                         Text(candidate.typeName).font(.headline).foregroundStyle(.primary)
                         if let domain = candidate.domain {
-                            Text(domain).font(.subheadline).foregroundStyle(.secondary)
+                            Text(domain).font(.subheadline).foregroundStyle(Tokens.muted)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .accessibilityLabel(candidate.rowLabel)
             }
+            .sevenScreenBackground()
             .navigationTitle(String(localized: "scan.pick.title", defaultValue: "Pick a code", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

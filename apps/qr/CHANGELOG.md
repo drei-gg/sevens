@@ -7,9 +7,11 @@
 - Sign-in links that carry a return address are no longer flagged; full-width letters are read the way browsers read them.
 - "I know this address": on a caution that comes only from our lists, you can tell the app you know the address. Manage them in Settings.
 - About shows how old the scam lists are, and Check for newer lists fetches a signed update from our public code, only when you tap.
+- Make: scrolling puts the keyboard away, so the code and its options are never hidden under it.
 - Make: smaller codes for links (the address part in capitals), automatic error correction uses spare room without growing the code, and an offer to remove tracking tags.
 - Peek no longer reports a script redirect when a page only reads its own address.
-- No splash screen: the app opens straight to the scanner. The app looks like iOS everywhere except About: system colors, bars and buttons, verdicts as an icon plus a word in the system's orange and red, and our own colors and wordmark only on the About screen.
+- No splash screen: the app opens straight to the scanner.
+- The Sevens' look on native controls: ink instead of system blue, paper behind every screen, and a red Unlock button. Every color passes contrast in light and dark mode, including secondary text, which is now darker than the system grey. Verdicts are an icon plus a word, in amber and red that pass as text.
 
 ## 0.1.0 (build 1, not released)
 

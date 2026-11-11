@@ -25,11 +25,11 @@ struct HistoryRow: View {
                 .foregroundStyle(.primary)
                 .lineLimit(2)
             if let note {
-                Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(2)
+                Text(note).font(.callout).foregroundStyle(Tokens.muted).lineLimit(2)
             }
             Text(verbatim: "\(typeName) · \(HistoryLabels.kind(item.kind)) · \(item.date.formatted(date: .abbreviated, time: .shortened))")
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Tokens.muted)
         }
         .padding(.vertical, Tokens.Space.xs)
         .accessibilityElement(children: .ignore)

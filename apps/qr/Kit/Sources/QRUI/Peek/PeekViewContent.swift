@@ -34,6 +34,7 @@ struct PeekViewContent: View {
             }
             .padding(Tokens.Space.m)
         }
+        .sevenScreenBackground()
     }
 
     @ViewBuilder private var progress: some View {
@@ -49,7 +50,7 @@ struct PeekViewContent: View {
             .accessibilityElement(children: .combine)
         case .idle:
             Text(String(localized: "peek.starting", defaultValue: "Starting…", bundle: .module))
-                .font(.body).foregroundStyle(.secondary)
+                .font(.body).foregroundStyle(Tokens.muted)
         case .finished, .failed:
             EmptyView()
         }
@@ -66,11 +67,11 @@ struct PeekViewContent: View {
                             Text("\(row.number). \(row.domain)")
                                 .font(.headline.bold()).foregroundStyle(.primary)
                                 .fixedSize(horizontal: false, vertical: true)
-                            Text(row.url).font(.footnote).foregroundStyle(.secondary)
+                            Text(row.url).font(.footnote).foregroundStyle(Tokens.muted)
                                 .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                             Text(row.status.map { code in String(localized: "peek.status", defaultValue: "Answered \(code)", bundle: .module) }
                                  ?? String(localized: "peek.notFetched", defaultValue: "Not fetched", bundle: .module))
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption).foregroundStyle(Tokens.muted)
                             if let level = row.level, level != .normal { VerdictLabel(level: level) }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)

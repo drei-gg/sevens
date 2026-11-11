@@ -61,7 +61,7 @@ public struct HistoryScreen: View {
     private var list: some View {
         List(selection: $selection) {
             if let reason = model.historyReadOnlyReason, model.historyIsReadOnly {
-                Section { Text(reason).font(.callout).foregroundStyle(.secondary) }
+                Section { Text(reason).font(.callout).foregroundStyle(Tokens.muted) }
             }
             if HistoryEmptyState.showsLockedNote(itemCount: model.historyCount, keepHistory: model.keepsHistory,
                                                  locked: model.historyIsLocked, readOnly: model.historyIsReadOnly) {
@@ -85,6 +85,7 @@ public struct HistoryScreen: View {
                 }
             }
         }
+        .sevenScreenBackground()
         .listStyle(.insetGrouped)
         .accessibilityIdentifier(QRAccessibilityID.historyList)
         .overlay {

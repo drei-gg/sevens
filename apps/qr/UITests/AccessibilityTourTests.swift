@@ -92,6 +92,10 @@ final class AccessibilityTourTests: XCTestCase {
         app.buttons["Network contact"].firstMatch.tap()
         sleep(1)
         try audit(app, "network-contact")
+        // The rows below the fold, scrolled into view, so text under the bottom edge is audited too.
+        app.swipeUp()
+        sleep(1)
+        try audit(app, "network-contact-scrolled")
     }
 
     /// Before you buy as the first-launch flow shows it. The first-launch flag persists across
@@ -253,15 +257,22 @@ final class AccessibilityTourTests: XCTestCase {
             // header; we cannot name it, the line is printed either way.
             return issue.element == nil || issue.element?.elementType == .staticText
         case .contrast:
-            // Our own colors are gone, so every contrast issue left is on a stock control with
-            // stock colors; none is "fixed" with custom colors. Accepted, each by what it is:
-            // - the system accent color on a navigation-bar button (Done, Close): stock bar item;
-            // - `.secondary` section headers and footers of grouped Forms (Code type, Error
-            //   correction, the export sheet's note): stock list styling, text from the system;
+            // The contrast gate for the Sevens' look (polish guide §3.2). Every color of ours is
+            // checked numerically (PaletteContrastTests), so text of ours is never accepted here.
+            // Accepted is only the stock baseline, which a build with system colors reports too:
+            // - sheet-bar buttons (Done, Close): dark text on iOS 26 glass, which the audit
+            //   samples through the blur;
             // - an issue the audit reports without an element (stock bar or Form chrome).
-            // Buttons and images of ours are not accepted.
+            // - static text not wholly inside the visible area: past the top or bottom of the
+            //   window (iOS 26 fades content under the scroll edges on purpose). The audit
+            //   samples the faded pixels. Text that is wholly visible is never accepted;
+            //   network-contact-scrolled audits the rows below the fold in view, and Make
+            //   dismisses the keyboard on scroll, so no audited row sits under it.
             if ["make.done", "result.done", "make.export.close"].contains(id) { return true }
-            return issue.element == nil || issue.element?.elementType == .staticText
+            if let element = issue.element, element.elementType == .staticText {
+                return !XCUIApplication().windows.firstMatch.frame.contains(element.frame)
+            }
+            return issue.element == nil
         default:
             return false
         }

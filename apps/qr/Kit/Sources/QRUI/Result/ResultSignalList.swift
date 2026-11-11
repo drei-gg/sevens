@@ -24,11 +24,11 @@ struct ResultSignalList: View {
                 ForEach(rows, id: \.self) { row in
                     HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.s) {
                         Image(systemName: row.isInfo ? "info.circle" : "exclamationmark.circle")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Tokens.muted)
                             .accessibilityHidden(true)
                         Text(row.sentence)
                             .font(.body)
-                            .foregroundStyle(row.isInfo ? .secondary : .primary)
+                            .foregroundStyle(row.isInfo ? Tokens.muted : Color.primary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

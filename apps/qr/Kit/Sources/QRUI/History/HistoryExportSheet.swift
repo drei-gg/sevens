@@ -20,14 +20,14 @@ struct HistoryExportSheet: View {
                     .foregroundStyle(.primary)
                 Text(file.url.lastPathComponent)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Tokens.muted)
                     .textSelection(.enabled)
                 ShareLink(item: file.url) {
                     Label(String(localized: "history.export.share", defaultValue: "Share or save the file", bundle: .module),
                           systemImage: "square.and.arrow.up")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .sevenProminentButton()
                 .controlSize(.large)
                 Spacer(minLength: 0)
             }

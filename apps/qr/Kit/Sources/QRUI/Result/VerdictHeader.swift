@@ -25,7 +25,7 @@ struct VerdictHeader: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Tokens.Space.m)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
+        .sevenCard()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(VerdictText.accessibilitySentence(level: level, typeName: typeName, signals: signals))
         .accessibilityIdentifier(identifier)
@@ -45,7 +45,7 @@ struct VerdictHeader: View {
                 .foregroundStyle(.primary)
             Text(typeName)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Tokens.muted)
         }
         .fixedSize(horizontal: false, vertical: true)
     }

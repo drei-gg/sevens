@@ -15,7 +15,7 @@ struct ResultTextView: View {
                 .fixedSize(horizontal: false, vertical: true)
             if info.isTruncated {
                 Text(String(localized: "result.text.truncated", defaultValue: "The code holds more text than this. Only the first part is shown and checked.", bundle: .module))
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(Tokens.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -49,7 +49,7 @@ struct ResultBinaryView: View {
             Text(String(localized: "result.binary.title", defaultValue: "Data, not text", bundle: .module))
                 .font(.title2.weight(.bold)).foregroundStyle(.primary)
             Text(String(localized: "result.binary.count", defaultValue: "\(byteCount) bytes. This app can't show what is inside.", bundle: .module))
-                .font(.body).foregroundStyle(.secondary)
+                .font(.body).foregroundStyle(Tokens.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

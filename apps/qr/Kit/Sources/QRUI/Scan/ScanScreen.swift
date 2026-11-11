@@ -87,6 +87,7 @@ public struct ScanScreen: View {
                 }
                 .padding(Tokens.Space.m)
             }
+            .sevenScreenBackground()
         }
     }
 
@@ -112,7 +113,7 @@ public struct ScanScreen: View {
                     .foregroundStyle(.primary)
                     .padding(.horizontal, Tokens.Space.m)
                     .padding(.vertical, Tokens.Space.s)
-                    .background(Color(.secondarySystemBackground), in: Capsule())
+                    .background(Tokens.card, in: Capsule())
                     .padding(Tokens.Space.m)
                     .transition(reduceMotion ? .identity : .opacity)
             }
@@ -129,7 +130,7 @@ public struct ScanScreen: View {
                 .font(.title2)
                 .foregroundStyle(.primary)
                 .frame(minWidth: 44, minHeight: 44)
-                .background(Color(.secondarySystemBackground), in: Circle())
+                .background(Tokens.card, in: Circle())
         }
         .accessibilityLabel(String(localized: "scan.torch", defaultValue: "Torch", bundle: .module))
         .accessibilityValue(torch.isOn
@@ -141,7 +142,7 @@ public struct ScanScreen: View {
         VStack(spacing: Tokens.Space.s) {
             Image(systemName: availability == .unsupported ? "photo.on.rectangle" : "camera.fill")
                 .font(.largeTitle)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Tokens.muted)
                 .accessibilityHidden(true)
             Text(fallbackText)
                 .font(.body)

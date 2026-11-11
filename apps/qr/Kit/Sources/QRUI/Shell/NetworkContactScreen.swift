@@ -28,13 +28,14 @@ public struct NetworkContactScreen: View {
                 Text(NetworkContactContent.privacyLabel).foregroundStyle(.primary)
             }
         }
+        .sevenScreenBackground()
         .navigationTitle(String(localized: "network.title", defaultValue: "Network contact", bundle: .module))
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private func line(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(label).font(.footnote).foregroundStyle(.secondary)
+            Text(label).font(.footnote).foregroundStyle(Tokens.muted)
             Text(value).font(.body).foregroundStyle(.primary)
         }
     }

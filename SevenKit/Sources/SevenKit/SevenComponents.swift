@@ -10,7 +10,7 @@ struct SevenListLines: View {
         VStack(alignment: .leading, spacing: Tokens.Space.s) {
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.s) {
-                    Image(systemName: symbol).foregroundStyle(.secondary).accessibilityHidden(true)
+                    Image(systemName: symbol).foregroundStyle(Tokens.muted).accessibilityHidden(true)
                     Text(line).font(.body).foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -20,11 +20,14 @@ struct SevenListLines: View {
     }
 }
 
-/// A full-width button. `prominent` is the filled system style; the default is the bordered one,
-/// the same size and shape. Both use the system accent color. Equal weight where two sit together (SPEC §13).
+/// A full-width button. `prominent` is the filled system style in ink; `brand` is the filled
+/// style in brand red, for the Unlock button only; the default is the bordered one, the same size
+/// and shape. Filled labels are set to `onInk`/`onRed` explicitly: the system's automatic white
+/// fails contrast on dark-mode ink and red. Equal weight where two sit together (SPEC §13).
 struct SevenButton: View {
     let title: String
     var prominent = false
+    var brand = false
     var disabled = false
     /// Accessibility identifier for UI tests; empty means none.
     var identifier = ""
@@ -35,7 +38,7 @@ struct SevenButton: View {
             Text(title).font(.headline).multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, minHeight: 28)
         }
-        .modifier(SevenButtonStyle(prominent: prominent))
+        .modifier(SevenButtonStyle(kind: brand ? .brand : prominent ? .prominent : .bordered))
         .controlSize(.large)
         .accessibilityIdentifier(identifier)
         .disabled(disabled)
@@ -43,11 +46,29 @@ struct SevenButton: View {
     }
 }
 
-private struct SevenButtonStyle: ViewModifier {
-    let prominent: Bool
-    func body(content: Content) -> some View {
-        if prominent { content.buttonStyle(.borderedProminent) } else { content.buttonStyle(.bordered) }
+/// The filled and bordered button styles with the label colors the contrast gate checks
+/// (`Palette.renderedPairs`). Public so apps fill their own prominent buttons the same way;
+/// `scripts/check-rules` rejects a bare `.borderedProminent` outside SevenKit.
+public struct SevenButtonStyle: ViewModifier {
+    public enum Kind: Sendable { case prominent, brand, bordered }
+    let kind: Kind
+    public init(kind: Kind) { self.kind = kind }
+
+    public func body(content: Content) -> some View {
+        switch kind {
+        case .prominent:
+            content.buttonStyle(.borderedProminent).tint(Tokens.ink).foregroundStyle(Tokens.onInk)
+        case .brand:
+            content.buttonStyle(.borderedProminent).tint(Tokens.red).foregroundStyle(Tokens.onRed)
+        case .bordered:
+            content.buttonStyle(.bordered).tint(Tokens.ink)
+        }
     }
+}
+
+public extension View {
+    /// A filled ink button with its `onInk` label (`.borderedProminent` plus the right label color).
+    func sevenProminentButton() -> some View { modifier(SevenButtonStyle(kind: .prominent)) }
 }
 
 /// "Not now", Restore: plain text buttons.
@@ -61,7 +82,7 @@ struct SevenPlainButton: View {
             Text(title).font(.body).frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Tokens.muted)
         .disabled(disabled)
         .accessibilityLabel(title)
     }

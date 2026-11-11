@@ -16,7 +16,7 @@ struct ResultCryptoView: View {
                 Text(info.isLightningInvoice
                      ? String(localized: "result.crypto.invoice", defaultValue: "Invoice", bundle: .module)
                      : String(localized: "result.crypto.address", defaultValue: "Address", bundle: .module))
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Tokens.muted)
                 Text(groups.joined(separator: " "))
                     .font(.body.monospaced())
                     .foregroundStyle(.primary)

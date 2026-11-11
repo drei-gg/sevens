@@ -23,7 +23,7 @@ struct ResultContactView: View {
                 .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             if !roleLine.isEmpty {
-                Text(roleLine).font(.title3).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Text(roleLine).font(.title3).foregroundStyle(Tokens.muted).fixedSize(horizontal: false, vertical: true)
             }
             list(String(localized: "result.contact.phones", defaultValue: "Phone", bundle: .module), info.phones)
             list(String(localized: "result.contact.emails", defaultValue: "Email", bundle: .module), info.emails)

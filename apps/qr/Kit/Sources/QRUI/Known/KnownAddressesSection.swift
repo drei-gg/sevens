@@ -17,7 +17,7 @@ struct KnownAddressesSection: View {
                     Text(String(localized: "settings.known.row", defaultValue: "Addresses you know", bundle: .module))
                     Spacer()
                     Text(model.knownAddresses.entries.count.formatted())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Tokens.muted)
                         .accessibilityHidden(true)
                 }
                 .accessibilityElement(children: .combine)
@@ -27,7 +27,7 @@ struct KnownAddressesSection: View {
             Text(String(localized: "settings.known.footer",
                         defaultValue: "Addresses you told us you know stop getting list-based warnings. Every other check still runs.",
                         bundle: .module))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Tokens.muted)
         }
     }
 }
@@ -42,14 +42,14 @@ struct KnownAddressesList: View {
             if model.knownAddresses.isEmpty {
                 Text(String(localized: "settings.known.empty",
                             defaultValue: "You haven't told us you know any addresses.", bundle: .module))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Tokens.muted)
             } else {
                 Section {
                     ForEach(model.knownAddresses.entries, id: \.domain) { entry in
                         VStack(alignment: .leading, spacing: 2) {
                             Text(entry.domain).font(.body)
                             Text(entry.added.formatted(date: .abbreviated, time: .omitted))
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption).foregroundStyle(Tokens.muted)
                         }
                         .accessibilityElement(children: .combine)
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -75,6 +75,7 @@ struct KnownAddressesList: View {
                 }
             }
         }
+        .sevenScreenBackground()
         .accessibilityIdentifier(QRAccessibilityID.knownList)
         .navigationTitle(String(localized: "settings.known.row", defaultValue: "Addresses you know", bundle: .module))
         .confirmationDialog(

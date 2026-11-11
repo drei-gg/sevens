@@ -44,6 +44,7 @@ struct ExportSheet: View {
                 }
                 shareSection
             }
+            .sevenScreenBackground()
             .navigationTitle(Text(verbatim: String(localized: "make.export.title", defaultValue: "Export", bundle: .module)))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -79,7 +80,7 @@ struct ExportSheet: View {
             if options.sizeChoice == .custom {
                 VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                     Text(verbatim: String(localized: "make.export.customLabel", defaultValue: "Width in pixels (up to 4096)", bundle: .module))
-                        .font(.subheadline).foregroundStyle(.secondary).accessibilityHidden(true)
+                        .font(.subheadline).foregroundStyle(Tokens.muted).accessibilityHidden(true)
                     TextField(String(localized: "make.export.customLabel", defaultValue: "Width in pixels (up to 4096)", bundle: .module),
                               text: $options.customSize)
                         .keyboardType(.numberPad)
@@ -96,7 +97,7 @@ struct ExportSheet: View {
             Text(verbatim: String(localized: "make.export.pngFooter",
                                   defaultValue: "The image is a whole number of pixels per square, so it can be a little smaller than the size you pick.",
                                   bundle: .module))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Tokens.muted)
         }
     }
 
@@ -133,7 +134,7 @@ struct ExportSheet: View {
             .accessibilityIdentifier("make.export.paper")
             VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                 Text(verbatim: String(localized: "make.export.caption", defaultValue: "Caption (optional)", bundle: .module))
-                    .font(.subheadline).foregroundStyle(.secondary).accessibilityHidden(true)
+                    .font(.subheadline).foregroundStyle(Tokens.muted).accessibilityHidden(true)
                 TextField(String(localized: "make.export.caption", defaultValue: "Caption (optional)", bundle: .module),
                           text: $options.caption)
                     .accessibilityIdentifier("make.export.captionField")
@@ -166,7 +167,7 @@ struct ExportSheet: View {
             .accessibilityIdentifier("make.export.copy")
         } footer: {
             Text(verbatim: fileName)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Tokens.muted)
         }
     }
 

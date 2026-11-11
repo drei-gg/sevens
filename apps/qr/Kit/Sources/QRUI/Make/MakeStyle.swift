@@ -70,7 +70,7 @@ struct MakeStyleSection: View {
             }
         } header: {
             Text(verbatim: String(localized: "make.style.header", defaultValue: "Colors", bundle: .module))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Tokens.muted)
         }
     }
 }
