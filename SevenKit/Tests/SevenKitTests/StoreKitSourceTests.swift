@@ -2,7 +2,7 @@
 // that into a module build failure (Xcode 26.5 SDK). So this file only compiles on request:
 //   scripts/vm sh "cd SevenKit && xcodebuild -scheme SevenKit-Package -destination '…' \
 //        OTHER_SWIFT_FLAGS=-DSEVEN_STOREKIT_TESTS test"
-// Observed (WP 1.9): compiled that way, SKTestSession(contentsOf:) loads QR.storekit but in an
+// Observed (WP 1.9): compiled that way, SKTestSession(contentsOf:) loads the StoreKit file but in an
 // unhosted package test bundle Product.products(for:) returns nothing and the serialized suite
 // stalls after the first test. Needs a host app to be useful; the fact-mapping rules these tests
 // target are covered without StoreKit in EntitlementFactsTests (SevenKitCoreTests).
@@ -13,13 +13,12 @@ import StoreKitTest
 import Testing
 @testable import SevenKit
 
-/// Runs against `apps/qr/QR.storekit` with `SKTestSession`. One suite,
+/// Runs against `Fixture.storekit` beside this file (a copy of an app's test products) with `SKTestSession`. One suite,
 /// serialized: StoreKit test state is process-wide.
 @MainActor
 @Suite(.serialized) struct StoreKitSourceTests {
     static let storekitFile: URL = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        .appendingPathComponent("apps/qr/QR.storekit")
+        .deletingLastPathComponent().appendingPathComponent("Fixture.storekit")
 
     let session: SKTestSession
     let source: StoreKitSource

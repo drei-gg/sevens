@@ -6,7 +6,6 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 
 | App | Status |
 | --- | --- |
-| [7&D QR Code Kit](apps/qr/SPEC.md) | building ([changelog](apps/qr/CHANGELOG.md)) |
 
 ## Rules every app follows
 

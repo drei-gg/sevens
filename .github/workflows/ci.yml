@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   linux:
-    name: Linux (swift test ×2, rules)
+    name: Linux (swift test, rules)
     runs-on: ubuntu-24.04
     container: swift:6.3   # keep in step with scripts/swift-version
     steps:
@@ -17,13 +17,11 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: SevenKit
         run: swift test --package-path SevenKit
-      - name: QRKit
-        run: swift test --package-path apps/qr/Kit
       - name: Rules (G6, G7)
         run: scripts/check-rules
 
   macos:
-    name: macOS (xcodebuild build + test)
+    name: macOS (xcodebuild test)
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,9 +35,9 @@ jobs:
           ios = sorted((k for k in d if "iOS" in k), reverse=True)
           print(next(x["udid"] for k in ios for x in d[k] if x["name"].startswith("iPhone")))')
           echo "SIM_UDID=$udid" >> "$GITHUB_ENV"
-      - name: Build and test
+      - name: Test SevenKit
+        working-directory: SevenKit
         run: >
-          xcodebuild -project apps/qr/QR.xcodeproj -scheme QR -configuration Debug
-          -destination "platform=iOS Simulator,id=$SIM_UDID"
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
-          build test
+          xcodebuild -scheme SevenKit-Package
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
