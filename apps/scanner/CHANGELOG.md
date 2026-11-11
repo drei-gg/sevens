@@ -24,3 +24,9 @@
 - Notes, favorites, library sorting, system/light/dark appearance, continuous PDF preview and whole-document text sharing.
 - Isolate unreadable document folders, refuse incomplete backups, and reject stale page ordering after an append.
 - File-backed exports and managed temporary preview cleanup.
+
+### Audit fixes
+
+- Adding pages to an existing document needs the trial or unlock, like a new document; editing existing pages stays free.
+- Removing a page deletes its image file; launch housekeeping clears interrupted staging folders and older leftover images.
+- Camera pages are prepared off the main thread, so the app stays responsive after a long scan.

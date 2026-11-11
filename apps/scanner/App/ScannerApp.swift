@@ -89,7 +89,7 @@ struct ScannerLibrary: View {
         .fileImporter(isPresented: $importing, allowedContentTypes: [.image, .pdf], allowsMultipleSelection: true) { result in
             do { let urls = try result.get(); Task { await model.importFiles(urls) } } catch { model.error = error.localizedDescription }
         }
-        .alert("Could not complete", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) { Button("OK", role: .cancel) { model.error = nil } } message: { Text(model.error ?? "") }
+        .alert("Could not complete", isPresented: Binding(get: { model.error != nil }, set: { shown in if !shown { model.error = nil } })) { Button("OK", role: .cancel) { model.error = nil } } message: { Text(model.error ?? "") }
     }
 }
 struct ScannerSettings: View {
@@ -144,8 +144,8 @@ struct DocumentDetail: View {
                 Text("Tap a page to rotate or adjust it. Use Edit to reorder or remove pages.").font(.footnote).foregroundStyle(.secondary)
             }
             Section("Add pages") {
-                Button("Scan more pages") { camera = true }.disabled(!VNDocumentCameraViewController.isSupported || model.busy)
-                Button("Append images or PDF") { importing = true }.disabled(model.busy)
+                GatedButton(feature: "Scan documents", action: { camera = true }) { Text("Scan more pages") }.disabled(!VNDocumentCameraViewController.isSupported || model.busy)
+                GatedButton(feature: "Import documents", action: { importing = true }) { Text("Append images or PDF") }.disabled(model.busy)
                 if model.busy { ProgressView(model.progress) }
             }
             Section("Notes") {

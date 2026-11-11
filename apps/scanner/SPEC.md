@@ -2,7 +2,7 @@
 
 Native SwiftUI, iOS 17+. Scanner-specific code stays in this app; reuse existing SevenKit purchase components. Extract new shared infrastructure only after a second app uses it.
 
-Notes and Files already scan documents. Scanner adds a dedicated local library, editing, searchable PDFs and portable backup. No backend, analytics or subscription. Explicit seven-day trial and one-time unlock from SevenKit. Existing documents remain readable, editable, deletable and exportable after expiry; new documents require access. Backup and restore are included, with no additional app fee.
+Notes and Files already scan documents. Scanner adds a dedicated local library, editing, searchable PDFs and portable backup. No backend, analytics or subscription. Explicit seven-day trial and one-time unlock from SevenKit. Existing documents remain readable, editable, deletable and exportable after expiry; new documents and added pages (scanned or imported) require access. Backup and restore are included, with no additional app fee.
 
 ## Capture and library
 
@@ -16,7 +16,7 @@ Search names, notes and recognized text. Sort newest/oldest/name, filter favorit
 
 Rotate pages, adjust brightness/contrast, toggle grayscale and reset adjustments to the original. Stored originals are unchanged. Saving adjustments clears the previous recognition and reruns OCR for the edited page. There is no manual crop or annotation tool yet.
 
-Whole-document deletion moves the folder to Recently Deleted. Restore or explicitly delete permanently; there is no automatic purge. This is local recovery, not a backup, and does not undo individual page removals. Removed-page image files remain until permanent whole-document deletion.
+Whole-document deletion moves the folder to Recently Deleted. Restore or explicitly delete permanently; there is no automatic purge. This is local recovery, not a backup, and does not undo individual page removals. A removed page's image file is deleted once the document's updated page list is saved. On launch, the app removes staging folders left by an interrupted save or restore, and page images an earlier build left behind; unreadable documents are left untouched.
 
 ## Export
 
@@ -34,7 +34,7 @@ Restore checks structure, limits and checksums in staging before adding copies w
 
 ## Verification and remaining release work
 
-Portable tests: `scripts/test-linux apps/scanner/Kit`. Ten tests cover compatibility, persistence, delayed/stale OCR, edits, append limits, stale page ordering, trash, export selection and backup round-trip/corruption rejection. Strict Apple Debug build and native simulator UI checks cover creation/OCR/rename/relaunch, selected export, trash recovery, page adjustment persistence and backup Files-picker presentation with enabled Save. A processing audit exports/imports 50 pages and checks searchable Letter PDF text, rotation and reset. Generated PDFs are inspected with PDFKit, Poppler and visual rendering. Synthetic simulator checks do not establish physical-device performance.
+Portable tests: `scripts/test-linux apps/scanner/Kit`. Twelve tests cover compatibility, removed-page cleanup, launch housekeeping, persistence, delayed/stale OCR, edits, append limits, stale page ordering, trash, export selection and backup round-trip/corruption rejection. Strict Apple Debug build and native simulator UI checks cover creation/OCR/rename/relaunch, selected export, trash recovery, page adjustment persistence and backup Files-picker presentation with enabled Save. A processing audit exports/imports 50 pages and checks searchable Letter PDF text, rotation and reset. Generated PDFs are inspected with PDFKit, Poppler and visual rendering. Synthetic simulator checks do not establish physical-device performance.
 
 Physical-camera acceptance, actual cloud-provider delivery, production purchases, broader real-world OCR/PDF compatibility, localization completion and real-device memory/performance remain release work. No folders, automatic cloud synchronization, annotations or manual crop. Public icon remains a neutral document placeholder. Local source only; no release or device installation is implied.
 

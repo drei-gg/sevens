@@ -148,7 +148,7 @@ enum DocumentProcessing {
             if let date = try? url.resourceValues(forKeys: [.creationDateKey]).creationDate, now.timeIntervalSince(date) > 86_400 { try? FileManager.default.removeItem(at: url) }
         }
     }
-    @MainActor static func normalized(_ image: UIImage) throws -> Data {
+    nonisolated static func normalized(_ image: UIImage) throws -> Data {
         let scale = min(1, 2400 / max(image.size.width, image.size.height))
         let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
         guard size.width > 0, size.height > 0 else { throw ScanError.invalidDocument }

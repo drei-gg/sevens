@@ -32,7 +32,11 @@ import ScannerCore
         #endif
         repository = DocumentStore(root: root)
     }
-    func start() async { guard !started else { return }; started = true; DocumentProcessing.cleanOldExports(); await reload(); await store.start() }
+    func start() async {
+        guard !started else { return }; started = true; DocumentProcessing.cleanOldExports()
+        _ = try? await repository.cleanUp()
+        await reload(); await store.start()
+    }
     func reload() async {
         do {
             let active = try await repository.readLibrary(); let deleted = try await repository.readLibrary(deleted: true)
@@ -42,21 +46,27 @@ import ScannerCore
     }
     func create(_ images: [UIImage], appendTo: UUID? = nil) async {
         guard !busy else { return }
-        guard appendTo != nil || store.paidFeaturesAvailable else { error = String(localized: "Start a trial or unlock to add documents. Your saved documents remain available."); return }
+        // Adding pages is new scanning, so it needs access like a new document. Editing existing pages stays free.
+        guard store.paidFeaturesAvailable else { error = String(localized: "Start a trial or unlock to scan or import pages. Your saved documents remain available."); return }
         busy = true; progress = String(localized: "Preparing pages…"); defer { busy = false; progress = "" }
         do {
             guard !images.isEmpty, images.count <= 50 else { throw ScanError.tooLarge }
-            var data: [Data] = []; var total = 0
-            for image in images {
-                let bytes = try autoreleasepool { try DocumentProcessing.normalized(image) }
-                total += bytes.count; guard total <= 100_000_000 else { throw ScanError.tooLarge }; data.append(bytes)
-            }
+            // Normalizing up to 50 camera pages is heavy; keep it off the main actor so the UI stays responsive.
+            let pages = CapturedPages(images: images)
+            let data = try await Task.detached(priority: .userInitiated) { () throws -> [Data] in
+                var data: [Data] = []; var total = 0
+                for image in pages.images {
+                    let bytes = try autoreleasepool { try DocumentProcessing.normalized(image) }
+                    total += bytes.count; guard total <= 100_000_000 else { throw ScanError.tooLarge }; data.append(bytes)
+                }
+                return data
+            }.value
             try await persist(data, appendTo: appendTo)
         } catch { self.error = error.localizedDescription }
     }
     func importFiles(_ urls: [URL], appendTo: UUID? = nil) async {
         guard !busy else { return }
-        guard appendTo != nil || store.paidFeaturesAvailable else { error = String(localized: "Start a trial or unlock to add documents."); return }
+        guard store.paidFeaturesAvailable else { error = String(localized: "Start a trial or unlock to scan or import pages. Your saved documents remain available."); return }
         busy = true; progress = String(localized: "Importing pages…"); defer { busy = false; progress = "" }
         do {
             let data = try await Task.detached { try DocumentProcessing.importFiles(urls) }.value
@@ -113,6 +123,9 @@ import ScannerCore
     }
     #endif
 }
+
+/// Camera output is immutable once captured; it is only read while normalizing.
+struct CapturedPages: @unchecked Sendable { let images: [UIImage] }
 
 enum ScannerGate {
     static let unlock = UnlockContent(appName: "Document Scanner", features: ["Scan and import documents", "A private searchable library", "Page management and PDF export"])

@@ -78,6 +78,34 @@ public actor DocumentStore {
         try document.validate()
         for page in document.pages where !FileManager.default.fileExists(atPath: imageURL(document.id, page.id).path) { throw ScanError.missingPage }
         try write(JSONEncoder().encode(document), to: folder(document.id).appendingPathComponent("document.json"))
+        removeUnlistedPages(in: folder(document.id), keeping: document)
+    }
+    /// A removed page's image goes when the manifest that dropped it is committed, never before.
+    private func removeUnlistedPages(in folder: URL, keeping document: ScanDocument) {
+        let keep = Set(document.pages.map { $0.id.uuidString + ".jpg" })
+        guard let files = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil) else { return }
+        for file in files where file.pathExtension == "jpg" && !keep.contains(file.lastPathComponent) { try? FileManager.default.removeItem(at: file) }
+    }
+    /// Launch housekeeping: staging folders left by an interrupted create or restore, and page images
+    /// that an earlier build left behind after removing a page. Unreadable documents are never touched.
+    @discardableResult public func cleanUp() throws -> Int {
+        var removed = 0
+        guard FileManager.default.fileExists(atPath: root.path) else { return 0 }
+        for item in try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)
+        where item.lastPathComponent.hasPrefix(".pending-") || item.lastPathComponent.hasPrefix(".restore-") {
+            try? FileManager.default.removeItem(at: item); removed += 1
+        }
+        for base in [root, trash] where FileManager.default.fileExists(atPath: base.path) {
+            for folder in try FileManager.default.contentsOfDirectory(at: base, includingPropertiesForKeys: nil) where UUID(uuidString: folder.lastPathComponent) != nil {
+                guard let data = try? Data(contentsOf: folder.appendingPathComponent("document.json")),
+                      let doc = try? JSONDecoder().decode(ScanDocument.self, from: data), (try? doc.validate()) != nil,
+                      doc.id.uuidString == folder.lastPathComponent else { continue }
+                let before = (try? FileManager.default.contentsOfDirectory(atPath: folder.path).count) ?? 0
+                removeUnlistedPages(in: folder, keeping: doc)
+                removed += before - ((try? FileManager.default.contentsOfDirectory(atPath: folder.path).count) ?? before)
+            }
+        }
+        return removed
     }
     public func images(_ document: ScanDocument) throws -> [Data] {
         try document.pages.map { page in

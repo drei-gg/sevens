@@ -73,3 +73,34 @@ import Foundation
     #expect(throws: ScanError.self) { try PDFExportPlan(document: doc, selected: []) }
     #expect(throws: ScanError.self) { try PDFExportPlan(document: doc, selected: [UUID()]) }
 }
+@Test func removingAPageDeletesItsImageOnlyAfterTheManifestCommits() async throws {
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    let store = DocumentStore(root: root)
+    let doc = try await store.create(title: "Two pages", images: [Data([1]), Data([2])], text: ["", ""])
+    let folder = root.appendingPathComponent(doc.id.uuidString)
+    let kept = try await store.setPageOrder(documentID: doc.id, pageIDs: [doc.pages[1].id])
+    let files = try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted()
+    #expect(files == ["document.json", doc.pages[1].id.uuidString + ".jpg"].sorted())
+    #expect(try await store.images(kept) == [Data([2])])
+}
+@Test func cleanUpRemovesStagingAndOldOrphansButNotUnreadableDocuments() async throws {
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    let store = DocumentStore(root: root)
+    let doc = try await store.create(title: "Keep", images: [Data([1])], text: [""])
+    let fm = FileManager.default
+    try fm.createDirectory(at: root.appendingPathComponent(".pending-" + UUID().uuidString), withIntermediateDirectories: true)
+    try fm.createDirectory(at: root.appendingPathComponent(".restore-" + UUID().uuidString), withIntermediateDirectories: true)
+    let orphan = root.appendingPathComponent(doc.id.uuidString).appendingPathComponent(UUID().uuidString + ".jpg")
+    try Data([9]).write(to: orphan)
+    let broken = root.appendingPathComponent(UUID().uuidString)
+    try fm.createDirectory(at: broken, withIntermediateDirectories: true)
+    try Data("not json".utf8).write(to: broken.appendingPathComponent("document.json"))
+    let stray = broken.appendingPathComponent(UUID().uuidString + ".jpg"); try Data([7]).write(to: stray)
+    #expect(try await store.cleanUp() == 3)
+    #expect(!fm.fileExists(atPath: orphan.path))
+    #expect(fm.fileExists(atPath: stray.path))
+    #expect(try await store.images(doc) == [Data([1])])
+    #expect(try fm.contentsOfDirectory(atPath: root.path).filter { $0.hasPrefix(".pending-") || $0.hasPrefix(".restore-") }.isEmpty)
+}
