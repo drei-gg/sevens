@@ -23,8 +23,8 @@ hits=$(swift_files | xargs -r grep -nE "^\s*(@[A-Za-z_]+(\([A-Za-z]+\))?\s+)*imp
 hits+=$(git ls-files --cached --others --exclude-standard -- '*Package.swift' '*.pbxproj' '*Package.resolved' | xargs -r grep -niE "($deny)" | grep -viE 'firebase-free|no-analytics' || true)
 [ -z "$hits" ] || bad "G6 data-collecting SDK (deny-list):" "$hits"
 # Pure targets import Foundation (and their own siblings) only.
-hits=$(swift_files | grep -E '^(apps/qr/Kit/Sources/QRCore|SevenKit/Sources/SevenKitCore)/' \
-  | xargs -r grep -nE '^\s*(@[a-zA-Z]+\s+)*import\s' | grep -vE 'import\s+(Foundation|QRCore|SevenKitCore)\s*$' || true)
+hits=$(swift_files | grep -E '^(apps/scanner/Kit/Sources/ScannerCore|apps/qr/Kit/Sources/QRCore|SevenKit/Sources/SevenKitCore)/' \
+  | xargs -r grep -nE '^\s*(@[a-zA-Z]+\s+)*import\s' | grep -vE 'import\s+(Foundation|ScannerCore|QRCore|SevenKitCore)\s*$' || true)
 [ -z "$hits" ] || bad "G6 pure target imports something other than Foundation:" "$hits"
 
 # G6c: open-source libraries are welcome, but every one is pinned and credited in THIRD-PARTY.md
@@ -47,8 +47,8 @@ for url in $(printf '%s\n' "$deps" | grep -oE 'https?://[^"]+' | sed -E 's/\.git
 done
 
 # G7: user-facing text. String catalogs, plists and string literals in UI code.
-ui_swift=$(swift_files | grep -E '^(apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
-ui_text=$(git ls-files --cached --others --exclude-standard -- '*.xcstrings' '*.strings' 'apps/qr/*Info.plist' 'apps/qr/**/Info.plist' 'apps/qr/Config/*.plist' || true)
+ui_swift=$(swift_files | grep -E '^(apps/scanner/App|apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
+ui_text=$(git ls-files --cached --others --exclude-standard -- '*.xcstrings' '*.strings' 'apps/qr/*Info.plist' 'apps/qr/**/Info.plist' 'apps/qr/Config/*.plist' 'apps/scanner/Config/*.plist' || true)
 hits=$( { [ -z "$ui_swift" ] || echo "$ui_swift" | xargs grep -nP '"(?:[^"\\]|\\.)*\bsafe(ly|ty|r|st)?\b(?:[^"\\]|\\.)*"' -i; \
           [ -z "$ui_text" ] || echo "$ui_text" | xargs grep -nPi '\bsafe(ly|ty|r|st)?\b'; } 2>/dev/null || true)
 [ -z "$hits" ] || bad "G7 the word \"safe\" in user-facing text:" "$hits"
