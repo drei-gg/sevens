@@ -24,3 +24,10 @@
 - Added weekday, weekend and every-day presets; next-alarm countdowns and system time formatting.
 - Added an explicit local diagnostics export that omits personal routine data and raw errors.
 - Added backward-compatibility, defaults persistence, nap-boundary and diagnostic privacy coverage, plus simulator flows for custom naps and weekday presets.
+
+## 0.1.0 — audit fixes
+
+- A one-off alarm or nap turns off once it has rung, and its record is kept for an hour so Open and Stop still find it.
+- Snoozes and wake-up checks belong to the ringing that started them, so different days never share an alarm ID.
+- Clearing wake-up checks and emergency stop skip alarms that have already rung instead of failing partway.
+- Editing an alarm replaces its system registration if the system refuses the same ID.

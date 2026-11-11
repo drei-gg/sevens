@@ -8,4 +8,4 @@ dependencies.append(.package(path: "../../../SevenKit"))
 products.append(.library(name: "AlarmUI", targets: ["AlarmUI"]))
 targets += [.target(name: "AlarmUI", dependencies: ["AlarmCore", .product(name: "SevenKit", package: "SevenKit")], resources: [.process("Resources")]), .testTarget(name: "AlarmUITests", dependencies: ["AlarmUI"])]
 #endif
-let package = Package(name: "AlarmKit", defaultLocalization: "en", platforms: [.iOS("26.1")], products: products, dependencies: dependencies, targets: targets)
+let package = Package(name: "AlarmLoopsKit", defaultLocalization: "en", platforms: [.iOS("26.1")], products: products, dependencies: dependencies, targets: targets)

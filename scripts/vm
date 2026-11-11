@@ -64,7 +64,7 @@ case "$cmd" in
   version) remote_cmd="xcodebuild -version";;
   build)   remote_cmd="$xb -configuration Debug -destination '$dest' build";;
   test)    if [ "$app" = alarm ]; then
-             remote_cmd="cd apps/alarm/Kit && xcodebuild -scheme AlarmKit-Package -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
+             remote_cmd="cd apps/alarm/Kit && xcodebuild -scheme AlarmLoopsKit-Package -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
            else
              remote_cmd="$xb -configuration Debug -destination '$dest' -skip-testing:${scheme}SmokeUITests $noclone test"
            fi;;

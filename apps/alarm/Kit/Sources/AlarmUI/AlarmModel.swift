@@ -50,7 +50,14 @@ import UserNotifications
         let alert = AlarmPresentation.Alert(title:LocalizedStringResource(stringLiteral:r.routine.name),secondaryButton:AlarmButton(text:"Open",textColor:.white,systemImageName:"arrow.up.right"),secondaryButtonBehavior:.custom)
         let attributes = AlarmAttributes<LoopMetadata>(presentation:AlarmPresentation(alert:alert),metadata:LoopMetadata(),tintColor:.accentColor)
         let configuration = AlarmManager.AlarmConfiguration(schedule:schedule,attributes:attributes,stopIntent:StopLoopIntent(id:r.id.uuidString),secondaryIntent:OpenLoopIntent(id:r.id.uuidString),sound:(r.routine.tone ?? .system) == .system ? .default : .named("alarm-\(r.routine.tone!.rawValue).wav"))
-        _ = try await AlarmManager.shared.schedule(id:r.id,configuration:configuration)
+        do { _ = try await AlarmManager.shared.schedule(id:r.id,configuration:configuration) }
+        catch {
+            // An edit keeps its ID. If AlarmKit refuses an ID it already holds, replace that alarm once;
+            // any other failure leaves the existing registration untouched.
+            guard (try? AlarmManager.shared.alarms.contains(where: { $0.id == r.id })) == true else { throw error }
+            try AlarmManager.shared.cancel(id:r.id)
+            _ = try await AlarmManager.shared.schedule(id:r.id,configuration:configuration)
+        }
     }
     public func cancel(_ r: Registration) async throws {
         if r.routine.delivery == .reminder { UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers:[r.id.uuidString]) }
@@ -83,12 +90,17 @@ public struct StopLoopIntent: LiveActivityIntent {
 @MainActor public final class PreviewAlarmDriver: AlarmDriver {
     public var rows: [UUID:Registration] = [:]
     public var failure: String?
+    /// Tests set this to fail like a native cancel of an alarm that no longer exists.
+    public var strictCancel = false
     public init() {}
     public var status: String { "Preview mode — no alarms scheduled" }
     public func request() async throws {}
     public func identifiers() async throws -> Set<UUID> { Set(rows.keys) }
     public func schedule(_ r: Registration) async throws { if let failure { throw LoopError.invalid(failure) }; rows[r.id] = r }
-    public func cancel(_ r: Registration) async throws { rows.removeValue(forKey:r.id) }
+    public func cancel(_ r: Registration) async throws {
+        if strictCancel && rows[r.id] == nil { throw LoopError.invalid("No such alarm.") }
+        rows.removeValue(forKey:r.id)
+    }
     public func stop(_ r: Registration) async throws {}
 }
 @Observable @MainActor public final class AlarmModel {
@@ -180,8 +192,10 @@ public struct StopLoopIntent: LiveActivityIntent {
     }
     public func clearWakeUpChecks() async {
         do {
+            let liveIDs = try await driver.identifiers()
             for row in archive.installed where row.purpose == "followUp" {
-                try await driver.cancel(row)
+                // A check that already rang has no native alarm left to cancel; drop its receipt anyway.
+                if liveIDs.contains(row.id) { try await driver.cancel(row) }
                 guard await mutate({ $0.installed.removeAll { $0.id == row.id } }) else { return }
             }
             await synchronize()
@@ -208,6 +222,11 @@ public struct StopLoopIntent: LiveActivityIntent {
         repeat {
             syncAgain = false
             do {
+                // A one-off that has rung is finished: show it as off rather than enabled with a past date.
+                let now = Date()
+                if archive.routines.contains(where: { $0.timing == .once && $0.enabled && $0.once <= now }) {
+                    _ = await mutate { a in for i in a.routines.indices where a.routines[i].timing == .once && a.routines[i].enabled && a.routines[i].once <= now { a.routines[i].enabled = false } }
+                }
                 let desired = try desired()
                 let liveIDs = try await driver.identifiers()
                 var failures: [String] = []
@@ -225,7 +244,11 @@ public struct StopLoopIntent: LiveActivityIntent {
                 for row in archive.installed where !wanted.contains(row.id) && failures.isEmpty {
                     let enabled = archive.routines.contains(where:{$0.id == row.routine.id && $0.enabled}) || row.purpose == "test"
                     let activeExtra = enabled && ((row.purpose != "schedule" && (row.date ?? .distantPast) > Date()) || (row.date != nil && liveIDs.contains(row.id)))
-                    if activeExtra { continue }
+                    // Keep a receipt that just rang (or whose mission is open) so the Open and Stop intents,
+                    // which may run right after this launch's reconcile, can still find it, and so a one-off
+                    // that is still alerting is never cancelled out from under its mission. Pruned after an hour.
+                    let justRang = row.date.map { $0 <= Date() && Date().timeIntervalSince($0) < 3600 } ?? false
+                    if activeExtra || archive.pending?.id == row.id || justRang { continue }
                     do {
                         if liveIDs.contains(row.id) { try await driver.cancel(row) }
                         _ = await mutate { $0.installed.removeAll { $0.id == row.id } }
@@ -240,15 +263,22 @@ public struct StopLoopIntent: LiveActivityIntent {
     }
     public func openNative(_ id: String) async throws {
         await reload()
-        guard let row = archive.installed.first(where:{$0.id.uuidString == id}) else { throw LoopError.invalid("The alarm is no longer in your saved schedule.") }
-        guard await mutate({ $0.pending = row }) else { throw LoopError.invalid("Could not save the active mission.") }
-        mission = row
+        guard var row = archive.installed.first(where:{$0.id.uuidString == id}) else { throw LoopError.invalid("The alarm is no longer in your saved schedule.") }
+        if archive.pending?.id == row.id, let pending = archive.pending { row = pending }
+        // Each ringing is its own occurrence, so snoozes and checks from different days never share IDs.
+        if row.occurrenceID == nil { row.occurrenceID = UUID() }
+        let opened = row
+        guard await mutate({ $0.pending = opened }) else { throw LoopError.invalid("Could not save the active mission.") }
+        mission = opened
     }
     public func dismissNative(_ id: String) async throws {
         await reload()
-        guard let row = archive.installed.first(where:{$0.id.uuidString == id}) else { return }
+        guard var row = archive.installed.first(where:{$0.id.uuidString == id}) else { return }
+        if archive.pending?.id == row.id, let pending = archive.pending { row = pending }
+        if row.occurrenceID == nil { row.occurrenceID = UUID() }
         let event = LoopEvent(routine:row.routine,kind:.dismissed,note:"Stopped with the system control; mission completion is unconfirmed.")
-        guard await mutate({ $0.events.append(event); if $0.pending?.id == row.id { $0.pending = nil } }) else { throw LoopError.invalid("Could not record dismissal.") }
+        let rowID = row.id
+        guard await mutate({ $0.events.append(event); if $0.pending?.id == rowID { $0.pending = nil } }) else { throw LoopError.invalid("Could not record dismissal.") }
         if row.purpose != "followUp" && row.routine.followUpMinutes > 0 { try await extra(row,minutes:row.routine.followUpMinutes,purpose:"followUp") }
     }
     public func extra(_ row: Registration, minutes: Int, purpose: String) async throws {
@@ -265,8 +295,9 @@ public struct StopLoopIntent: LiveActivityIntent {
                 try await extra(row,minutes:row.routine.snoozeMinutes,purpose:"snooze")
             } else if kind == .completed && row.purpose != "followUp" && row.routine.followUpMinutes > 0 { try await extra(row,minutes:row.routine.followUpMinutes,purpose:"followUp") }
             if kind == .emergencyStop || (kind == .completed && row.purpose == "followUp") {
+                let liveIDs = try await driver.identifiers()
                 for extra in archive.installed where extra.routine.id == row.routine.id && extra.purpose != "schedule" && extra.id != row.id {
-                    try await driver.cancel(extra)
+                    if liveIDs.contains(extra.id) { try await driver.cancel(extra) }
                     _ = await mutate { $0.installed.removeAll { $0.id == extra.id } }
                 }
             }

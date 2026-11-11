@@ -54,6 +54,6 @@ jobs:
       - name: Test Alarm core and models
         working-directory: apps/alarm/Kit
         run: >
-          xcodebuild -scheme AlarmKit-Package
+          xcodebuild -scheme AlarmLoopsKit-Package
           -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
           CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
