@@ -17,6 +17,8 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: SevenKit
         run: swift test --package-path SevenKit
+      - name: FastKit
+        run: swift test --package-path apps/fast/Kit
       - name: Rules (G6, G7)
         run: scripts/check-rules
 
@@ -41,3 +43,12 @@ jobs:
           xcodebuild -scheme SevenKit-Package
           -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
           CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
+
+      - name: Install Watch platform for the embedded companion
+        run: xcodebuild -downloadPlatform watchOS
+      - name: Build and test Fast Tracker
+        run: >
+          xcodebuild -project apps/fast/Fast.xcodeproj -scheme Fast -configuration Debug
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
+          build test

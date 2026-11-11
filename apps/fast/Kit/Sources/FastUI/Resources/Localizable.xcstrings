@@ -1,0 +1,2826 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "A complete calendar, heatmap and trends": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A complete calendar, heatmap and trends"
+          }
+        }
+      }
+    },
+    "A fast is already running. End it before starting another.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A fast is already running. End it before starting another."
+          }
+        }
+      }
+    },
+    "A little structure. Room for real life.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A little structure. Room for real life."
+          }
+        }
+      }
+    },
+    "A private journal and optional measurements": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A private journal and optional measurements"
+          }
+        }
+      }
+    },
+    "A quiet check-in": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A quiet check-in"
+          }
+        }
+      }
+    },
+    "A record of how it felt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A record of how it felt."
+          }
+        }
+      }
+    },
+    "A record, not a prescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A record, not a prescription"
+          }
+        }
+      }
+    },
+    "A reminder, not a deadline. Start your next fast when it suits you.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A reminder, not a deadline. Start your next fast when it suits you."
+          }
+        }
+      }
+    },
+    "A time you set aside for fasting. Start only if it suits your day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A time you set aside for fasting. Start only if it suits your day."
+          }
+        }
+      }
+    },
+    "About": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
+    "About fasting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About fasting"
+          }
+        }
+      }
+    },
+    "About fasting & this tracker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About fasting & this tracker"
+          }
+        }
+      }
+    },
+    "Add a check-in": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a check-in"
+          }
+        }
+      }
+    },
+    "Add a past fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a past fast"
+          }
+        }
+      }
+    },
+    "Add a past fast or try another search.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a past fast or try another search."
+          }
+        }
+      }
+    },
+    "Add measurement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add measurement"
+          }
+        }
+      }
+    },
+    "Add past fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add past fast"
+          }
+        }
+      }
+    },
+    "All fasts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All fasts"
+          }
+        }
+      }
+    },
+    "All records deleted. Preferences were kept.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All records deleted. Preferences were kept."
+          }
+        }
+      }
+    },
+    "An actual record cannot be in the future. Use Plans for a future fast.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An actual record cannot be in the future. Use Plans for a future fast."
+          }
+        }
+      }
+    },
+    "An early finish is still a record. This timer does not measure ketosis, autophagy or fat burning.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An early finish is still a record. This timer does not measure ketosis, autophagy or fat burning."
+          }
+        }
+      }
+    },
+    "An ordinary day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An ordinary day"
+          }
+        }
+      }
+    },
+    "Apple Health": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health"
+          }
+        }
+      }
+    },
+    "Apple Health could not be read. You can still enter measurements manually.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health could not be read. You can still enter measurements manually."
+          }
+        }
+      }
+    },
+    "Apple Health import": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health import"
+          }
+        }
+      }
+    },
+    "Apple Health is unavailable on this device.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health is unavailable on this device."
+          }
+        }
+      }
+    },
+    "Apple Health returned more than 100,000 measurements. Nothing was imported.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health returned more than 100,000 measurements. Nothing was imported."
+          }
+        }
+      }
+    },
+    "Apple handles purchases and restores through StoreKit. Tracking, journal entries, reminders and measurements stay on this device.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple handles purchases and restores through StoreKit. Tracking, journal entries, reminders and measurements stay on this device."
+          }
+        }
+      }
+    },
+    "At the right moment": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At the right moment"
+          }
+        }
+      }
+    },
+    "At your own pace.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At your own pace."
+          }
+        }
+      }
+    },
+    "Average duration": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average duration"
+          }
+        }
+      }
+    },
+    "Back to today": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to today"
+          }
+        }
+      }
+    },
+    "Backups include your private journal and measurements. Choose where to keep them. JSON restores exactly; CSV is for reading in a spreadsheet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backups include your private journal and measurements. Choose where to keep them. JSON restores exactly; CSV is for reading in a spreadsheet."
+          }
+        }
+      }
+    },
+    "Bring your records": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bring your records"
+          }
+        }
+      }
+    },
+    "Built with Apple's frameworks and the shared SevenKit package. No third-party libraries or tracking SDKs.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built with Apple's frameworks and the shared SevenKit package. No third-party libraries or tracking SDKs."
+          }
+        }
+      }
+    },
+    "Calendar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendar"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Charts describe your records. They do not diagnose conditions or prove that fasting caused changes in your weight, mood or energy.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Charts describe your records. They do not diagnose conditions or prove that fasting caused changes in your weight, mood or energy."
+          }
+        }
+      }
+    },
+    "Check in": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check in"
+          }
+        }
+      }
+    },
+    "Check the values, dates and journal links. Nothing was saved.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the values, dates and journal links. Nothing was saved."
+          }
+        }
+      }
+    },
+    "Choose a day to read its fasting records and observations below.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a day to read its fasting records and observations below."
+          }
+        }
+      }
+    },
+    "Choose a rhythm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a rhythm"
+          }
+        }
+      }
+    },
+    "Clock can time a fast, Notes can hold a journal, and Health can record your weight. If that's all you need, keep your money.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clock can time a fast, Notes can hold a journal, and Health can record your weight. If that's all you need, keep your money."
+          }
+        }
+      }
+    },
+    "Completed fasts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completed fasts"
+          }
+        }
+      }
+    },
+    "Could not read the records for export. Unlock your phone and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not read the records for export. Unlock your phone and try again."
+          }
+        }
+      }
+    },
+    "Could not save": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save"
+          }
+        }
+      }
+    },
+    "Custom preset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom preset"
+          }
+        }
+      }
+    },
+    "Darker means more recorded time, not a better day. A dot marks a journal entry.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Darker means more recorded time, not a better day. A dot marks a journal entry."
+          }
+        }
+      }
+    },
+    "Date": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date"
+          }
+        }
+      }
+    },
+    "Day to explore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day to explore"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "Delete all records": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all records"
+          }
+        }
+      }
+    },
+    "Delete entry": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete entry"
+          }
+        }
+      }
+    },
+    "Delete every fast, journal entry, measurement, plan and rest day?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete every fast, journal entry, measurement, plan and rest day?"
+          }
+        }
+      }
+    },
+    "Delete fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete fast"
+          }
+        }
+      }
+    },
+    "Delete measurement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete measurement"
+          }
+        }
+      }
+    },
+    "Delete plan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete plan"
+          }
+        }
+      }
+    },
+    "Delete this fast? Journal entries will be kept.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this fast? Journal entries will be kept."
+          }
+        }
+      }
+    },
+    "Delete this journal entry?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this journal entry?"
+          }
+        }
+      }
+    },
+    "Delete this measurement?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this measurement?"
+          }
+        }
+      }
+    },
+    "Delete this plan?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this plan?"
+          }
+        }
+      }
+    },
+    "Delete this preset?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this preset?"
+          }
+        }
+      }
+    },
+    "Discard fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard fast"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "Duration": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duration"
+          }
+        }
+      }
+    },
+    "Eating window": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eating window"
+          }
+        }
+      }
+    },
+    "Eating window ending": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eating window ending"
+          }
+        }
+      }
+    },
+    "Eating window hours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eating window hours"
+          }
+        }
+      }
+    },
+    "Edit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        }
+      }
+    },
+    "Edit fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit fast"
+          }
+        }
+      }
+    },
+    "Edit start or goal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit start or goal"
+          }
+        }
+      }
+    },
+    "End fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End fast"
+          }
+        }
+      }
+    },
+    "Ending": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ending"
+          }
+        }
+      }
+    },
+    "Ending and saving a fast already in progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ending and saving a fast already in progress"
+          }
+        }
+      }
+    },
+    "Energy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Energy"
+          }
+        }
+      }
+    },
+    "Enter a positive goal and eating window.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a positive goal and eating window."
+          }
+        }
+      }
+    },
+    "Entry deleted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entry deleted"
+          }
+        }
+      }
+    },
+    "Everything is stored on this phone. No account, ads or analytics. Your device backup may include these records.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything is stored on this phone. No account, ads or analytics. Your device backup may include these records."
+          }
+        }
+      }
+    },
+    "Export complete JSON backup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export complete JSON backup"
+          }
+        }
+      }
+    },
+    "Export records as CSV": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export records as CSV"
+          }
+        }
+      }
+    },
+    "Export saved.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export saved."
+          }
+        }
+      }
+    },
+    "Export, import & delete": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export, import & delete"
+          }
+        }
+      }
+    },
+    "Exports go only to the destination you choose. About links open only when tapped.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exports go only to the destination you choose. About links open only when tapped."
+          }
+        }
+      }
+    },
+    "Fast Tracker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast Tracker"
+          }
+        }
+      }
+    },
+    "Fast deleted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast deleted"
+          }
+        }
+      }
+    },
+    "Fast details": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast details"
+          }
+        }
+      }
+    },
+    "Fasting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fasting"
+          }
+        }
+      }
+    },
+    "Fasting and eating timers, with flexible plans": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fasting and eating timers, with flexible plans"
+          }
+        }
+      }
+    },
+    "Fasting goal reached": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fasting goal reached"
+          }
+        }
+      }
+    },
+    "Fasting is not appropriate for everyone. People under 18, people who are pregnant or breastfeeding, and people with a history of eating disorders should not use this app to pursue fasting. If you have a medical condition or take medication, discuss fasting with a qualified clinician first.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fasting is not appropriate for everyone. People under 18, people who are pregnant or breastfeeding, and people with a history of eating disorders should not use this app to pursue fasting. If you have a medical condition or take medication, discuss fasting with a qualified clinician first."
+          }
+        }
+      }
+    },
+    "Fasts:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fasts:"
+          }
+        }
+      }
+    },
+    "Filter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter"
+          }
+        }
+      }
+    },
+    "Finished": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finished"
+          }
+        }
+      }
+    },
+    "First development build: editable fasting records, calendar and heatmap, journal, measurements, plans, reminders and portable backups.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First development build: editable fasting records, calendar and heatmap, journal, measurements, plans, reminders and portable backups."
+          }
+        }
+      }
+    },
+    "First → latest in this period": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First → latest in this period"
+          }
+        }
+      }
+    },
+    "Free trial not started. Your saved records stay accessible.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free trial not started. Your saved records stay accessible."
+          }
+        }
+      }
+    },
+    "Goal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal"
+          }
+        }
+      }
+    },
+    "Goal hours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal hours"
+          }
+        }
+      }
+    },
+    "Goal reached": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal reached"
+          }
+        }
+      }
+    },
+    "Goal:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal:"
+          }
+        }
+      }
+    },
+    "Goals reached": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goals reached"
+          }
+        }
+      }
+    },
+    "Good": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good"
+          }
+        }
+      }
+    },
+    "Heatmap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heatmap"
+          }
+        }
+      }
+    },
+    "High": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High"
+          }
+        }
+      }
+    },
+    "History": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        }
+      }
+    },
+    "History view": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History view"
+          }
+        }
+      }
+    },
+    "Hours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hours"
+          }
+        }
+      }
+    },
+    "Hours are split at midnight in your current time zone:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hours are split at midnight in your current time zone:"
+          }
+        }
+      }
+    },
+    "Hours include portions of fasts within this period. Completed fasts and averages use sessions that ended in it. Open-ended fasts have no goal score.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hours include portions of fasts within this period. Completed fasts and averages use sessions that ended in it. Open-ended fasts have no goal score."
+          }
+        }
+      }
+    },
+    "Hunger": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hunger"
+          }
+        }
+      }
+    },
+    "Import": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import"
+          }
+        }
+      }
+    },
+    "Import JSON backup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import JSON backup"
+          }
+        }
+      }
+    },
+    "Import complete.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import complete."
+          }
+        }
+      }
+    },
+    "Import these records?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import these records?"
+          }
+        }
+      }
+    },
+    "Import weight from Apple Health": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import weight from Apple Health"
+          }
+        }
+      }
+    },
+    "Import weight measurements you already keep in Apple Health. Access is optional and requested only when you tap Import. Nothing is written to Health.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import weight measurements you already keep in Apple Health. Access is optional and requested only when you tap Import. Nothing is written to Health."
+          }
+        }
+      }
+    },
+    "Imported weight measurements:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imported weight measurements:"
+          }
+        }
+      }
+    },
+    "Intention": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intention"
+          }
+        }
+      }
+    },
+    "Johns Hopkins: Intermittent fasting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Johns Hopkins: Intermittent fasting"
+          }
+        }
+      }
+    },
+    "Journal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Journal"
+          }
+        }
+      }
+    },
+    "Journal entries": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Journal entries"
+          }
+        }
+      }
+    },
+    "Journal:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Journal:"
+          }
+        }
+      }
+    },
+    "Jump to date": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jump to date"
+          }
+        }
+      }
+    },
+    "Keep a copy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep a copy"
+          }
+        }
+      }
+    },
+    "Leave room for real life. Add dates that work for you.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave room for real life. Add dates that work for you."
+          }
+        }
+      }
+    },
+    "Linked fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linked fast"
+          }
+        }
+      }
+    },
+    "List": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "List"
+          }
+        }
+      }
+    },
+    "Local reminders and portable backups": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local reminders and portable backups"
+          }
+        }
+      }
+    },
+    "Log water": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log water"
+          }
+        }
+      }
+    },
+    "Log your own observations. There is no target you have to meet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log your own observations. There is no target you have to meet."
+          }
+        }
+      }
+    },
+    "Longer fasts are not necessarily better. End a fast if you feel unwell and seek medical help when needed. An early finish is a valid record.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longer fasts are not necessarily better. End a fast if you feel unwell and seek medical help when needed. An early finish is a valid record."
+          }
+        }
+      }
+    },
+    "Look around first": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look around first"
+          }
+        }
+      }
+    },
+    "Low": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low"
+          }
+        }
+      }
+    },
+    "Make it yours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make it yours"
+          }
+        }
+      }
+    },
+    "Mark as a rest day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark as a rest day"
+          }
+        }
+      }
+    },
+    "Measurements:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measurements:"
+          }
+        }
+      }
+    },
+    "Month": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Month"
+          }
+        }
+      }
+    },
+    "Mood": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mood"
+          }
+        }
+      }
+    },
+    "Network contact": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network contact"
+          }
+        }
+      }
+    },
+    "New journal entry": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New journal entry"
+          }
+        }
+      }
+    },
+    "New records:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New records:"
+          }
+        }
+      }
+    },
+    "Next month": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next month"
+          }
+        }
+      }
+    },
+    "Next thirteen weeks": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next thirteen weeks"
+          }
+        }
+      }
+    },
+    "No fast running": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No fast running"
+          }
+        }
+      }
+    },
+    "No matching fasts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching fasts"
+          }
+        }
+      }
+    },
+    "No new weight measurements were available.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No new weight measurements were available."
+          }
+        }
+      }
+    },
+    "None": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None"
+          }
+        }
+      }
+    },
+    "Not recorded": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not recorded"
+          }
+        }
+      }
+    },
+    "Not saved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not saved"
+          }
+        }
+      }
+    },
+    "Nothing logged in this period.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing logged in this period."
+          }
+        }
+      }
+    },
+    "Nothing recorded for this day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing recorded for this day."
+          }
+        }
+      }
+    },
+    "Notice your day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notice your day"
+          }
+        }
+      }
+    },
+    "Notifications are not allowed. Tracking still works; enable notifications in iPhone Settings for reminders.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications are not allowed. Tracking still works; enable notifications in iPhone Settings for reminders."
+          }
+        }
+      }
+    },
+    "Now": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Observation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Observation"
+          }
+        }
+      }
+    },
+    "Observations": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Observations"
+          }
+        }
+      }
+    },
+    "Only the reminders you choose. No journal text is shown in notifications. Focus and notification settings may silence delivery.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the reminders you choose. No journal text is shown in notifications. Focus and notification settings may silence delivery."
+          }
+        }
+      }
+    },
+    "Only the times you record. It cannot measure ketosis, autophagy, fat burning or your health. The preset durations are timer conveniences, not personalized recommendations.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the times you record. It cannot measure ketosis, autophagy, fat burning or your health. The preset durations are timer conveniences, not personalized recommendations."
+          }
+        }
+      }
+    },
+    "Open ended": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open ended"
+          }
+        }
+      }
+    },
+    "Open iPhone notification settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open iPhone notification settings"
+          }
+        }
+      }
+    },
+    "Opening your records": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opening your records"
+          }
+        }
+      }
+    },
+    "Optional check-in": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional check-in"
+          }
+        }
+      }
+    },
+    "Period": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
+          }
+        }
+      }
+    },
+    "Period ending": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period ending"
+          }
+        }
+      }
+    },
+    "Plan a fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan a fast"
+          }
+        }
+      }
+    },
+    "Planned": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planned"
+          }
+        }
+      }
+    },
+    "Planned fasts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planned fasts"
+          }
+        }
+      }
+    },
+    "Planned finish": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planned finish"
+          }
+        }
+      }
+    },
+    "Planned start": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planned start"
+          }
+        }
+      }
+    },
+    "Plans": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plans"
+          }
+        }
+      }
+    },
+    "Plans & presets": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plans & presets"
+          }
+        }
+      }
+    },
+    "Plans are reminders, not records. Nothing starts automatically.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plans are reminders, not records. Nothing starts automatically."
+          }
+        }
+      }
+    },
+    "Plans:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plans:"
+          }
+        }
+      }
+    },
+    "Preset name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset name"
+          }
+        }
+      }
+    },
+    "Presets": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets"
+          }
+        }
+      }
+    },
+    "Presets:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets:"
+          }
+        }
+      }
+    },
+    "Preview first. New records are merged; identical copies are skipped. Conflicting IDs or overlapping fasts stop the whole import. Your current preferences stay as they are.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview first. New records are merged; identical copies are skipped. Conflicting IDs or overlapping fasts stop the whole import. Your current preferences stay as they are."
+          }
+        }
+      }
+    },
+    "Previous month": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous month"
+          }
+        }
+      }
+    },
+    "Previous thirteen weeks": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous thirteen weeks"
+          }
+        }
+      }
+    },
+    "Quarter": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quarter"
+          }
+        }
+      }
+    },
+    "Read the source": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the source"
+          }
+        }
+      }
+    },
+    "Reading, correcting, deleting and exporting your records": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading, correcting, deleting and exporting your records"
+          }
+        }
+      }
+    },
+    "Recorded fasting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded fasting"
+          }
+        }
+      }
+    },
+    "Recorded hours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded hours"
+          }
+        }
+      }
+    },
+    "Recorded time zone": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded time zone"
+          }
+        }
+      }
+    },
+    "Records are unavailable. Retry after unlocking the phone, or export the original file.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Records are unavailable. Retry after unlocking the phone, or export the original file."
+          }
+        }
+      }
+    },
+    "Reflection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reflection"
+          }
+        }
+      }
+    },
+    "Remaining": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remaining"
+          }
+        }
+      }
+    },
+    "Reminder settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder settings"
+          }
+        }
+      }
+    },
+    "Reminders": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders"
+          }
+        }
+      }
+    },
+    "Reminders are enabled. Delivery follows your iPhone notification and Focus settings.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders are enabled. Delivery follows your iPhone notification and Focus settings."
+          }
+        }
+      }
+    },
+    "Reminders are off.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders are off."
+          }
+        }
+      }
+    },
+    "Remove rest day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove rest day"
+          }
+        }
+      }
+    },
+    "Rest day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest day"
+          }
+        }
+      }
+    },
+    "Rest days:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest days:"
+          }
+        }
+      }
+    },
+    "Room for your observations": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Room for your observations"
+          }
+        }
+      }
+    },
+    "Running": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "Save a custom preset": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save a custom preset"
+          }
+        }
+      }
+    },
+    "Search intentions, reflections & tags": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search intentions, reflections & tags"
+          }
+        }
+      }
+    },
+    "Search observations & tags": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search observations & tags"
+          }
+        }
+      }
+    },
+    "Set a goal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set a goal"
+          }
+        }
+      }
+    },
+    "Set an intention. Notice what happens. Keep what you learn.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set an intention. Notice what happens. Keep what you learn."
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "Shorter than planned": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shorter than planned"
+          }
+        }
+      }
+    },
+    "Show Live Activity on Lock Screen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Live Activity on Lock Screen"
+          }
+        }
+      }
+    },
+    "Show eating window": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show eating window"
+          }
+        }
+      }
+    },
+    "Show elapsed time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show elapsed time"
+          }
+        }
+      }
+    },
+    "Show time remaining": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show time remaining"
+          }
+        }
+      }
+    },
+    "Show weight": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show weight"
+          }
+        }
+      }
+    },
+    "Sleep": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep"
+          }
+        }
+      }
+    },
+    "Some reminders could not be scheduled. Reopen reminder settings and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some reminders could not be scheduled. Reopen reminder settings and try again."
+          }
+        }
+      }
+    },
+    "Start a fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a fast"
+          }
+        }
+      }
+    },
+    "Start now": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start now"
+          }
+        }
+      }
+    },
+    "Start now from this plan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start now from this plan"
+          }
+        }
+      }
+    },
+    "Start this plan now?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start this plan now?"
+          }
+        }
+      }
+    },
+    "Started": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Started"
+          }
+        }
+      }
+    },
+    "Starting new fasts, plans, journal entries and measurements": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting new fasts, plans, journal entries and measurements"
+          }
+        }
+      }
+    },
+    "Strong": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strong"
+          }
+        }
+      }
+    },
+    "Tags": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tags"
+          }
+        }
+      }
+    },
+    "Tags, separated by commas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tags, separated by commas"
+          }
+        }
+      }
+    },
+    "The actual start will be now. You can correct it later.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The actual start will be now. You can correct it later."
+          }
+        }
+      }
+    },
+    "The change could not be saved. Check available storage and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The change could not be saved. Check available storage and try again."
+          }
+        }
+      }
+    },
+    "The export was not saved. Try another location.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The export was not saved. Try another location."
+          }
+        }
+      }
+    },
+    "The finish must be after the start.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The finish must be after the start."
+          }
+        }
+      }
+    },
+    "The saved file could not be read. The original is untouched; export it before attempting recovery.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The saved file could not be read. The original is untouched; export it before attempting recovery."
+          }
+        }
+      }
+    },
+    "The timer keeps running until you end it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The timer keeps running until you end it."
+          }
+        }
+      }
+    },
+    "The trial has ended or has not started. Open Settings to start a trial or unlock new records. Your existing records remain available.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The trial has ended or has not started. Open Settings to start a trial or unlock new records. Your existing records remain available."
+          }
+        }
+      }
+    },
+    "These are your observations, not a score to improve.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These are your observations, not a score to improve."
+          }
+        }
+      }
+    },
+    "These describe your entries. They do not show that fasting caused a change.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These describe your entries. They do not show that fasting caused a change."
+          }
+        }
+      }
+    },
+    "These times overlap another fast. Correct the times before saving.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These times overlap another fast. Correct the times before saving."
+          }
+        }
+      }
+    },
+    "This also ends any running timer and removes custom presets. Export a backup first if you want to keep a copy. This cannot be undone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This also ends any running timer and removes custom presets. Export a backup first if you want to keep a copy. This cannot be undone."
+          }
+        }
+      }
+    },
+    "This backup conflicts with records already here. Nothing was imported.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This backup conflicts with records already here. Nothing was imported."
+          }
+        }
+      }
+    },
+    "This brings your timers, calendar, patterns and private journal together. Try everything for 7 days, no card. Then a one-time purchase. Nothing renews.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This brings your timers, calendar, patterns and private journal together. Try everything for 7 days, no card. Then a one-time purchase. Nothing renews."
+          }
+        }
+      }
+    },
+    "This brings your timers, calendar, patterns and private journal together. Try everything for 7 days, no card. Then {price}, once. Nothing renews.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This brings your timers, calendar, patterns and private journal together. Try everything for 7 days, no card. Then {price}, once. Nothing renews."
+          }
+        }
+      }
+    },
+    "This file comes from a newer version. Update the app to open it. The original file is untouched.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file comes from a newer version. Update the app to open it. The original file is untouched."
+          }
+        }
+      }
+    },
+    "This file is too large to open. The limit is 25 MB or 100,000 records.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file is too large to open. The limit is 25 MB or 100,000 records."
+          }
+        }
+      }
+    },
+    "This is a manual import, not background sync. Existing samples are skipped when you import again. Health does not tell us whether read permission was denied or no measurements exist.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is a manual import, not background sync. Existing samples are skipped when you import again. Health does not tell us whether read permission was denied or no measurements exist."
+          }
+        }
+      }
+    },
+    "Time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        }
+      }
+    },
+    "Time remaining": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time remaining"
+          }
+        }
+      }
+    },
+    "Times": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Times"
+          }
+        }
+      }
+    },
+    "Today": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        }
+      }
+    },
+    "Trends": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trends"
+          }
+        }
+      }
+    },
+    "Try again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
+    "US fl oz": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "US fl oz"
+          }
+        }
+      }
+    },
+    "Value": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Value"
+          }
+        }
+      }
+    },
+    "View & edit measurements": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View & edit measurements"
+          }
+        }
+      }
+    },
+    "Waist": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waist"
+          }
+        }
+      }
+    },
+    "Water": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water"
+          }
+        }
+      }
+    },
+    "Water in US fluid ounces": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water in US fluid ounces"
+          }
+        }
+      }
+    },
+    "Week": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Week"
+          }
+        }
+      }
+    },
+    "Weekly start reminder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly start reminder"
+          }
+        }
+      }
+    },
+    "Weight": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight"
+          }
+        }
+      }
+    },
+    "Weight in pounds": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight in pounds"
+          }
+        }
+      }
+    },
+    "What did you notice? What would you change?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What did you notice? What would you change?"
+          }
+        }
+      }
+    },
+    "What the timer knows": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What the timer knows"
+          }
+        }
+      }
+    },
+    "What would you like to make room for?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What would you like to make room for?"
+          }
+        }
+      }
+    },
+    "What's happening in your body, your day, or your thoughts?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What's happening in your body, your day, or your thoughts?"
+          }
+        }
+      }
+    },
+    "When": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When"
+          }
+        }
+      }
+    },
+    "Write during a fast, after it, or on an ordinary day. Nothing here is scored.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write during a fast, after it, or on an ordinary day. Nothing here is scored."
+          }
+        }
+      }
+    },
+    "Year": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Year"
+          }
+        }
+      }
+    },
+    "You can review, edit or delete imported measurements in Trends. Manage Health permissions in iPhone Settings.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can review, edit or delete imported measurements in Trends. Manage Health permissions in iPhone Settings."
+          }
+        }
+      }
+    },
+    "Your check-ins": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your check-ins"
+          }
+        }
+      }
+    },
+    "Your data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data"
+          }
+        }
+      }
+    },
+    "Your first records will appear here.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your first records will appear here."
+          }
+        }
+      }
+    },
+    "Your iPhone already has a timer.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your iPhone already has a timer."
+          }
+        }
+      }
+    },
+    "Your intention": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your intention"
+          }
+        }
+      }
+    },
+    "Your planned eating window has elapsed. Adjust your day as you need.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your planned eating window has elapsed. Adjust your day as you need."
+          }
+        }
+      }
+    },
+    "Your planned fasting time has elapsed. End your fast when you are ready.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your planned fasting time has elapsed. End your fast when you are ready."
+          }
+        }
+      }
+    },
+    "Your presets": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your presets"
+          }
+        }
+      }
+    },
+    "Your records need attention": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your records need attention"
+          }
+        }
+      }
+    },
+    "Your rhythm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your rhythm"
+          }
+        }
+      }
+    },
+    "Your saved records always stay readable, editable and exportable, even after the trial.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your saved records always stay readable, editable and exportable, even after the trial."
+          }
+        }
+      }
+    },
+    "Your time is yours. There is no fast scheduled to start automatically.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your time is yours. There is no fast scheduled to start automatically."
+          }
+        }
+      }
+    },
+    "cm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cm"
+          }
+        }
+      }
+    },
+    "h": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h"
+          }
+        }
+      }
+    },
+    "hours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hours"
+          }
+        }
+      }
+    },
+    "iOS limits each Live Activity to eight hours. Your fast keeps running; reopen the app to refresh the Lock Screen timer. The Home Screen widget remains available.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS limits each Live Activity to eight hours. Your fast keeps running; reopen the app to refresh the Lock Screen timer. The Home Screen widget remains available."
+          }
+        }
+      }
+    },
+    "kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kg"
+          }
+        }
+      }
+    },
+    "lb": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lb"
+          }
+        }
+      }
+    },
+    "mL": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mL"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
