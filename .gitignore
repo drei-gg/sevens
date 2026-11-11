@@ -13,3 +13,6 @@ BUILD-REPORT*.md
 REVIEW*.md
 /docs/sevenkit-plan.md
 *.internal.md
+
+# Machine-local signing (DEVELOPMENT_TEAM); every app includes it, none commits it
+Local.xcconfig
