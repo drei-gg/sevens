@@ -17,6 +17,8 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: SevenKit
         run: swift test --package-path SevenKit
+      - name: AlarmCore
+        run: swift test --package-path apps/alarm/Kit
       - name: Rules (G6, G7)
         run: scripts/check-rules
 
@@ -39,5 +41,19 @@ jobs:
         working-directory: SevenKit
         run: >
           xcodebuild -scheme SevenKit-Package
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
+
+      - name: Build and test Alarm
+        run: >
+          xcodebuild -project apps/alarm/Alarm.xcodeproj -scheme Alarm -configuration Debug
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
+          build test
+
+      - name: Test Alarm core and models
+        working-directory: apps/alarm/Kit
+        run: >
+          xcodebuild -scheme AlarmKit-Package
           -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
           CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test

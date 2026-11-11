@@ -1,0 +1,328 @@
+// !$*UTF8*$!
+{
+	"archiveVersion" = "1";
+	"classes" = {
+	};
+	"objectVersion" = "77";
+	"objects" = {
+		"000000000000000000000001" = {
+			"isa" = "PBXFileReference";
+			"path" = "Debug.xcconfig";
+			"sourceTree" = "<group>";
+			"lastKnownFileType" = "text.xcconfig";
+		};
+		"000000000000000000000002" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"baseConfigurationReference" = "000000000000000000000001";
+			"buildSettings" = {
+			};
+		};
+		"000000000000000000000003" = {
+			"isa" = "PBXFileReference";
+			"path" = "Release.xcconfig";
+			"sourceTree" = "<group>";
+			"lastKnownFileType" = "text.xcconfig";
+		};
+		"000000000000000000000004" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"baseConfigurationReference" = "000000000000000000000003";
+			"buildSettings" = {
+			};
+		};
+		"000000000000000000000005" = {
+			"isa" = "PBXGroup";
+			"path" = "Config";
+			"sourceTree" = "<group>";
+			"children" = (
+				"000000000000000000000001",
+				"000000000000000000000003",
+			);
+		};
+		"000000000000000000000006" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"000000000000000000000002",
+				"000000000000000000000004",
+			);
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+		};
+		"000000000000000000000007" = {
+			"isa" = "PBXFileSystemSynchronizedRootGroup";
+			"path" = "App";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000008" = {
+			"isa" = "PBXFileSystemSynchronizedRootGroup";
+			"path" = "UITests";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000009" = {
+			"isa" = "PBXFileSystemSynchronizedRootGroup";
+			"path" = "Brand";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000000A" = {
+			"isa" = "XCLocalSwiftPackageReference";
+			"relativePath" = "Kit";
+		};
+		"00000000000000000000000B" = {
+			"isa" = "XCLocalSwiftPackageReference";
+			"relativePath" = "../../SevenKit";
+		};
+		"00000000000000000000000C" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "AlarmUI";
+			"package" = "00000000000000000000000A";
+		};
+		"00000000000000000000000D" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "00000000000000000000000C";
+		};
+		"00000000000000000000000E" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_FILE" = "Config/Alarm-Info.plist";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID)";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "$(SEVENS_DISPLAY_NAME)";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+			};
+		};
+		"00000000000000000000000F" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_FILE" = "Config/Alarm-Info.plist";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID)";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "$(SEVENS_DISPLAY_NAME)";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+			};
+		};
+		"000000000000000000000010" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"00000000000000000000000E",
+				"00000000000000000000000F",
+			);
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+		};
+		"000000000000000000000011" = {
+			"isa" = "PBXFileReference";
+			"path" = "Alarm.app";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+			"explicitFileType" = "wrapper.application";
+			"includeInIndex" = "0";
+		};
+		"000000000000000000000012" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"000000000000000000000013" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"00000000000000000000000D",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"000000000000000000000014" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"000000000000000000000015" = {
+			"isa" = "PBXNativeTarget";
+			"name" = "Alarm";
+			"productName" = "Alarm";
+			"productType" = "com.apple.product-type.application";
+			"productReference" = "000000000000000000000011";
+			"buildConfigurationList" = "000000000000000000000010";
+			"fileSystemSynchronizedGroups" = (
+				"000000000000000000000007",
+				"000000000000000000000009",
+			);
+			"buildPhases" = (
+				"000000000000000000000012",
+				"000000000000000000000013",
+				"000000000000000000000014",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+			"packageProductDependencies" = (
+				"00000000000000000000000C",
+			);
+		};
+		"000000000000000000000016" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).uitests";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"TEST_TARGET_NAME" = "Alarm";
+				"SWIFT_EMIT_LOC_STRINGS" = "NO";
+			};
+		};
+		"000000000000000000000017" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).uitests";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"TEST_TARGET_NAME" = "Alarm";
+				"SWIFT_EMIT_LOC_STRINGS" = "NO";
+			};
+		};
+		"000000000000000000000018" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"000000000000000000000016",
+				"000000000000000000000017",
+			);
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+		};
+		"000000000000000000000019" = {
+			"isa" = "PBXFileReference";
+			"path" = "AlarmSmokeUITests.xctest";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+			"explicitFileType" = "wrapper.cfbundle";
+			"includeInIndex" = "0";
+		};
+		"00000000000000000000001A" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"00000000000000000000001B" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"00000000000000000000001C" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"00000000000000000000001D" = {
+			"isa" = "PBXNativeTarget";
+			"name" = "AlarmSmokeUITests";
+			"productName" = "AlarmSmokeUITests";
+			"productType" = "com.apple.product-type.bundle.ui-testing";
+			"productReference" = "000000000000000000000019";
+			"buildConfigurationList" = "000000000000000000000018";
+			"fileSystemSynchronizedGroups" = (
+				"000000000000000000000008",
+			);
+			"buildPhases" = (
+				"00000000000000000000001A",
+				"00000000000000000000001B",
+				"00000000000000000000001C",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+				"000000000000000000000022",
+			);
+			"packageProductDependencies" = (
+			);
+		};
+		"00000000000000000000001E" = {
+			"isa" = "PBXGroup";
+			"name" = "Products";
+			"sourceTree" = "<group>";
+			"children" = (
+				"000000000000000000000011",
+				"000000000000000000000019",
+			);
+		};
+		"00000000000000000000001F" = {
+			"isa" = "PBXGroup";
+			"sourceTree" = "<group>";
+			"children" = (
+				"000000000000000000000007",
+				"000000000000000000000008",
+				"000000000000000000000009",
+				"000000000000000000000005",
+				"00000000000000000000001E",
+			);
+		};
+		"000000000000000000000020" = {
+			"isa" = "PBXProject";
+			"attributes" = {
+				"LastUpgradeCheck" = "2660";
+				"TargetAttributes" = {
+					"00000000000000000000001D" = {
+						"TestTargetID" = "000000000000000000000015";
+					};
+				};
+			};
+			"buildConfigurationList" = "000000000000000000000006";
+			"compatibilityVersion" = "Xcode 16.0";
+			"developmentRegion" = "en";
+			"knownRegions" = (
+				"en",
+				"Base",
+			);
+			"mainGroup" = "00000000000000000000001F";
+			"productRefGroup" = "00000000000000000000001E";
+			"projectDirPath" = "";
+			"projectRoot" = "";
+			"targets" = (
+				"000000000000000000000015",
+				"00000000000000000000001D",
+			);
+			"packageReferences" = (
+				"00000000000000000000000A",
+				"00000000000000000000000B",
+			);
+		};
+		"000000000000000000000021" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "000000000000000000000020";
+			"proxyType" = "1";
+			"remoteGlobalIDString" = "000000000000000000000015";
+			"remoteInfo" = "Alarm";
+		};
+		"000000000000000000000022" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "000000000000000000000015";
+			"targetProxy" = "000000000000000000000021";
+		};
+	};
+	"rootObject" = "000000000000000000000020";
+}

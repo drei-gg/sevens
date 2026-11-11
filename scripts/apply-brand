@@ -12,7 +12,7 @@ set -euo pipefail
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 brand=${1:?usage: scripts/apply-brand <brand-dir> [app]}
 app=${2:-qr}
-case "$app" in qr) scheme=QR;; *) echo "apply-brand: unknown app $app" >&2; exit 2;; esac
+case "$app" in qr) scheme=QR;; alarm) scheme=Alarm;; *) echo "apply-brand: unknown app $app" >&2; exit 2;; esac
 src="$brand/$app"
 dst="$root/apps/$app"
 [ -d "$src" ] || { echo "apply-brand: no $src" >&2; exit 2; }

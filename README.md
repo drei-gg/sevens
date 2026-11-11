@@ -6,6 +6,7 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 
 | App | Status |
 | --- | --- |
+| [7&D Alarm](apps/alarm/SPEC.md) | building ([changelog](apps/alarm/CHANGELOG.md)) |
 
 ## Rules every app follows
 
@@ -33,3 +34,14 @@ SevenKit provides `SevenAdaptiveColumns` (two children; vertical at narrow width
 Not yet tested: no full-display iPhone Duo build has run. For a Duo build, use an Apple-silicon Mac and select Xcode with iOS SDK 27.1 or later and run `scripts/check-duo` on that Mac. Older-SDK builds remain useful for regular iPhone development but do not prove Duo optimization. Verify narrow/wide transitions with an open draft, rotation, split windows, keyboards, largest text and system sidebars on the Duo runtime before release.
 
 `SevenCompanion` is a separate iOS/watchOS product without purchase UI. It owns one WatchConnectivity session per process and transports opaque snapshots and acknowledged requests. The app owns its schema, authorization, atomic persistence, idempotency and error presentation. Do not treat successful message submission as a saved action. Family Sharing never synchronizes personal records.
+
+## Build Alarm & Loops
+
+```sh
+scripts/test-linux apps/alarm/Kit
+SEVENS_APP=alarm scripts/vm build
+SEVENS_APP=alarm scripts/vm test
+SEVENS_APP=alarm scripts/vm ui
+```
+
+Open `apps/alarm/Alarm.xcodeproj` on a Mac with the iOS 26.1+ SDK. Debug-only `-alarm.demo` uses in-memory fixtures; `-alarm.ui -alarm.reset` uses a separate archive. Both disable actual alarm scheduling and use a development purchase fixture. Physical-phone delivery acceptance is separate.
