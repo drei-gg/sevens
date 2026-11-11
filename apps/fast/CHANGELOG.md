@@ -13,3 +13,4 @@
 - Shared SevenKit trial, one-time unlock and restore.
 - Adaptive Today and History workspaces, with readable shared purchase sheets.
 - Paired Watch timer, start/end and water actions with confirmed saves and duplicate protection.
+- Records stay available to the Watch while the phone is locked (protected until first unlock after restart).

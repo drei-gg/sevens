@@ -60,7 +60,8 @@ public actor ArchiveStore {
     public static let atomicWrite: Writer = { data, url in
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         #if os(iOS)
-        try data.write(to: url, options: [.atomic, .completeFileProtection])
+        // Until first unlock, not complete: Watch commands and background launches arrive while the phone is locked.
+        try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         #else
         try data.write(to: url, options: .atomic)
         #endif

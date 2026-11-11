@@ -73,7 +73,7 @@ Watch actions currently start a 16-hour fast, finish the specifically displayed 
 
 ## Data ownership
 
-Versioned local JSON, atomic protected writes. A failed write must not look like a successful save. Corrupt or newer-version files are preserved and block mutations; recovery is explicit. No backend or analytics. No network needed for tracking.
+Versioned local JSON, atomic writes protected until the first unlock after restart (so Watch commands can save while the phone is locked). A failed write must not look like a successful save. Corrupt or newer-version files are preserved and block mutations; recovery is explicit. No backend or analytics. No network needed for tracking.
 
 Export all records as JSON (round-trip backup) and CSV (readable tables with units, timezone and links). Import validates the whole file, previews counts and merges by stable IDs; duplicate IDs with different content (allowing only sub-microsecond date serialization noise) or overlapping records are rejected without partial changes. Export and deletion never require payment. No hidden automatic cloud sync. The OS may include app data in device backups.
 
