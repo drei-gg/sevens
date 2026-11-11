@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import Testing
 @testable import SevenKit
+import SevenKitCore
 
 @Suite struct StoreContentTests {
     // BeforeYouBuy: the price comes from the store at runtime (G7).
@@ -89,15 +90,25 @@ import Testing
         #expect(rgb(Tokens.paper, .light) == 0xF3EFE6 && rgb(Tokens.paper, .dark) == 0x121110)
         #expect(rgb(Tokens.ink, .light) == 0x161513 && rgb(Tokens.ink, .dark) == 0xEEE9DF)
         #expect(rgb(Tokens.muted, .light) == 0x55504A && rgb(Tokens.muted, .dark) == 0xA8A196)
+        // Every token resolves to its Palette value, so the Linux contrast gate covers what renders.
+        let tokens: [(Color, Palette.Pair)] = [
+            (Tokens.paper, Palette.paper), (Tokens.card, Palette.card), (Tokens.ink, Palette.ink),
+            (Tokens.onInk, Palette.onInk), (Tokens.muted, Palette.muted), (Tokens.red, Palette.red),
+            (Tokens.onRed, Palette.onRed), (Tokens.caution, Palette.caution), (Tokens.danger, Palette.danger),
+        ]
+        for (color, pair) in tokens {
+            #expect(rgb(color, .light) == pair.light && rgb(color, .dark) == pair.dark)
+        }
     }
     #endif
 
-    @Test func verdictStylesUseTheDocumentedSymbolsAndSystemColors() {
+    @Test func verdictStylesUseTheDocumentedSymbolsAndStatusTokens() {
         #expect(Tokens.VerdictStyle.normal.symbolName == "checkmark.circle")
         #expect(Tokens.VerdictStyle.careful.symbolName == "exclamationmark.triangle")
         #expect(Tokens.VerdictStyle.likelyScam.symbolName == "xmark.octagon")
-        #expect(Tokens.VerdictStyle.normal.color == .secondary)
-        #expect(Tokens.VerdictStyle.careful.color == .orange)
-        #expect(Tokens.VerdictStyle.likelyScam.color == .red)
+        #expect(Tokens.VerdictStyle.normal.color == Tokens.muted)
+        #expect(Tokens.VerdictStyle.careful.color == Tokens.caution)
+        #expect(Tokens.VerdictStyle.likelyScam.color == Tokens.danger)
+        #expect(Tokens.VerdictStyle.likelyScam.color != Tokens.red)
     }
 }

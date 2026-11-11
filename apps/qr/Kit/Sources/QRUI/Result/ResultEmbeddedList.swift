@@ -25,7 +25,7 @@ struct ResultEmbeddedList: View {
                                     VerdictLabel(level: item.level)
                                 }
                                 Spacer(minLength: 0)
-                                Image(systemName: "chevron.right").foregroundStyle(.secondary).accessibilityHidden(true)
+                                Image(systemName: "chevron.right").foregroundStyle(Tokens.muted).accessibilityHidden(true)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(Rectangle())

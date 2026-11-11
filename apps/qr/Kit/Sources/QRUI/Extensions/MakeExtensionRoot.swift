@@ -41,6 +41,7 @@ public struct MakeExtensionRoot: View {
                     }
                 }
         }
+        .sevenLook()
         .task { await prepare() }
     }
 
@@ -69,6 +70,7 @@ public struct MakeExtensionRoot: View {
                 }
                 .padding(Tokens.Space.m)
             }
+            .sevenScreenBackground()
             .background(ExtensionBrightness())
         }
     }
@@ -89,7 +91,7 @@ public struct MakeExtensionRoot: View {
                     Label(String(localized: "ext.make.save", defaultValue: "Save image", bundle: .module), systemImage: "square.and.arrow.down")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .sevenProminentButton()
             }
             Button {
                 UIPasteboard.general.image = made.image

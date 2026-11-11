@@ -31,7 +31,7 @@ public struct TrialEndedView: View {
                 section(seven("seven.trialEnded.free", "What stays free"), content.stillFree)
                 section(seven("seven.trialEnded.keeps", "What the unlock keeps"), content.unlockKeeps)
                 VStack(spacing: Tokens.Space.s) {
-                    SevenButton(title: store.unlockButtonTitle, prominent: true, disabled: !store.canPurchase) {
+                    SevenButton(title: store.unlockButtonTitle, brand: true, disabled: !store.canPurchase) {
                         Task { await store.unlock() }
                     }
                     SevenButton(title: seven("seven.notNow", "Not now")) { dismiss() }  // same size and shape as the buy button, which alone is filled (SPEC §13)
@@ -41,6 +41,7 @@ public struct TrialEndedView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .sevenReadableSheet()
         }
+        .sevenScreenBackground()
         .onAppear { store.markTrialEndedShown() }
         .onChange(of: store.paidFeaturesAvailable) { _, available in
             if available { dismiss() }

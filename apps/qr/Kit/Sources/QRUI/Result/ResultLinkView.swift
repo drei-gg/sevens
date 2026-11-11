@@ -56,10 +56,10 @@ struct ResultLinkView: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(String(localized: "result.link.full", defaultValue: "The whole link", bundle: .module))
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Tokens.muted)
                 Text(link.original)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Tokens.muted)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
             }

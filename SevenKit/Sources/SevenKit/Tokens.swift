@@ -1,45 +1,73 @@
 import SwiftUI
 import UIKit
+import SevenKitCore
 
-/// Layout constants for every screen, and the brand colors for the About screen alone (SPEC
-/// "Look"). Everywhere else the app uses the system's own colors, bars and controls.
+/// The Sevens' look: colors built from `SevenKitCore.Palette` (where the contrast gate lives), and
+/// layout constants. Ink is the app-wide accent and paper the background of our screens (K17),
+/// under the contrast rules in the brand repo's polish guide §3.2: labels on ink and red fills use
+/// `onInk`/`onRed`, secondary text uses `muted` (never system `.secondary`), statuses use
+/// `caution`/`danger` (never system orange/red), toggles stay untinted.
 public enum Tokens {
-    /// Brand hex values, light and dark. Only `AboutSection.swift` may use the colors built from
-    /// them (`scripts/check-rules` enforces it).
+    /// Brand hex values, light and dark (from `Palette`).
     public enum Hex {
-        public static let paper = (light: 0xF3EFE6, dark: 0x121110)
-        public static let ink = (light: 0x161513, dark: 0xEEE9DF)
-        public static let muted = (light: 0x55504A, dark: 0xA8A196)
+        public static let paper = (light: Palette.paper.light, dark: Palette.paper.dark)
+        public static let card = (light: Palette.card.light, dark: Palette.card.dark)
+        public static let ink = (light: Palette.ink.light, dark: Palette.ink.dark)
+        public static let onInk = (light: Palette.onInk.light, dark: Palette.onInk.dark)
+        public static let muted = (light: Palette.muted.light, dark: Palette.muted.dark)
+        public static let red = (light: Palette.red.light, dark: Palette.red.dark)
+        public static let onRed = (light: Palette.onRed.light, dark: Palette.onRed.dark)
+        public static let caution = (light: Palette.caution.light, dark: Palette.caution.dark)
+        public static let danger = (light: Palette.danger.light, dark: Palette.danger.dark)
     }
 
-    public static let paper = Color(light: Hex.paper.light, dark: Hex.paper.dark)
-    public static let ink = Color(light: Hex.ink.light, dark: Hex.ink.dark)
-    public static let muted = Color(light: Hex.muted.light, dark: Hex.muted.dark)
+    /// Background of our screens and grouped lists.
+    public static let paper = Color(Palette.paper)
+    /// Our own containers on paper (verdict header, result cards).
+    public static let card = Color(Palette.card)
+    /// The accent. Applied once at the root with `.sevenLook()`.
+    public static let ink = Color(Palette.ink)
+    /// Labels on ink fills. Set explicitly: the system's automatic white fails on dark-mode ink.
+    public static let onInk = Color(Palette.onInk)
+    /// Secondary text, section headers and footers, decorative icons.
+    public static let muted = Color(Palette.muted)
+    /// Brand red: the Unlock button, the wordmark 7, the stamp. Never a status.
+    public static let red = Color(Palette.red)
+    /// Labels on the red Unlock fill.
+    public static let onRed = Color(Palette.onRed)
+    /// Status "Be careful".
+    public static let caution = Color(Palette.caution)
+    /// Status "Likely scam", failed checks, field errors.
+    public static let danger = Color(Palette.danger)
+    /// Hairlines and decorative outlines (not text).
+    public static let rule = Color(Palette.ink).opacity(0.14)
 
     /// Layout constants.
     public enum Space {
         public static let xs: CGFloat = 4
         public static let s: CGFloat = 8
+        public static let ms: CGFloat = 12
         public static let m: CGFloat = 16
         public static let l: CGFloat = 24
         public static let xl: CGFloat = 32
+        public static let xxl: CGFloat = 48
     }
     public enum Radius {
         public static let card: CGFloat = 14
         public static let button: CGFloat = 12
     }
 
-    /// How a verdict looks, in the system's own colors. Normal = `.secondary` + `checkmark.circle`;
-    /// careful = `.orange` + `exclamationmark.triangle`; likely scam = `.red` + `xmark.octagon`.
-    /// The color is for the icon only; the verdict word stays `.primary`. Never color alone.
+    /// How a verdict looks. Normal = `muted` + `checkmark.circle`; careful = `caution` +
+    /// `exclamationmark.triangle`; likely scam = `danger` + `xmark.octagon`. The color is for the
+    /// icon only; the verdict word stays `.primary`. Never color alone.
     public enum VerdictStyle: Sendable, CaseIterable {
         case normal, careful, likelyScam
 
         public var color: Color {
             switch self {
-            case .normal: return .secondary
-            case .careful: return .orange
-            case .likelyScam: return .red
+            case .normal: return Tokens.muted
+            case .careful: return Tokens.caution
+            case .likelyScam: return Tokens.danger
             }
         }
 
@@ -54,6 +82,9 @@ public enum Tokens {
 }
 
 extension Color {
+    /// A palette pair as an appearance-aware color.
+    init(_ pair: Palette.Pair) { self.init(light: pair.light, dark: pair.dark) }
+
     /// A color that switches between two sRGB hex values with the appearance.
     init(light: Int, dark: Int) {
         self.init(uiColor: UIColor { traits in

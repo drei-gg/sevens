@@ -26,7 +26,7 @@ struct ResultWiFiView: View {
             ResultField(label: String(localized: "result.wifi.security", defaultValue: "Security", bundle: .module), value: securityText)
             if info.isHidden {
                 Text(String(localized: "result.wifi.hidden", defaultValue: "Hidden network", bundle: .module))
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(Tokens.muted)
             }
             if !info.isOpen {
                 passwordRow
@@ -39,7 +39,7 @@ struct ResultWiFiView: View {
         if ResultActionPlan.hasPassword(info), let password = info.password {
             VStack(alignment: .leading, spacing: Tokens.Space.s) {
                 Text(String(localized: "result.wifi.password", defaultValue: "Password", bundle: .module))
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Tokens.muted)
                 if revealed {
                     Text(password).font(.body.monospaced()).foregroundStyle(.primary)
                         .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
@@ -77,6 +77,6 @@ struct ResultWiFiView: View {
     }
 
     private func note(_ text: String) -> some View {
-        Text(text).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        Text(text).font(.subheadline).foregroundStyle(Tokens.muted).fixedSize(horizontal: false, vertical: true)
     }
 }

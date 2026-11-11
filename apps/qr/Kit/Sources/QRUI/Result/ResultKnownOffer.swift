@@ -31,7 +31,7 @@ struct ResultKnownOffer: View {
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)
                 }
-                .buttonStyle(.borderedProminent)
+                .sevenProminentButton()
                 .keyboardShortcut(.defaultAction)
                 .accessibilityLabel(Text(String(localized: "result.known.keep.label",
                                                 defaultValue: "Keep warning me, recommended", bundle: .module)))
@@ -52,7 +52,7 @@ struct ResultKnownOffer: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Tokens.Space.m)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
+        .sevenCard()
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(QRAccessibilityID.knownOffer)
     }

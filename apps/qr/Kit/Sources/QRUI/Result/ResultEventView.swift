@@ -15,7 +15,7 @@ struct ResultEventView: View {
             if let time = ResultEventFormat.timeText(info) {
                 ResultField(label: String(localized: "result.event.when", defaultValue: "When", bundle: .module), value: time)
                 if let organiser = ResultEventFormat.organiserText(info) {
-                    Text(organiser).font(.subheadline).foregroundStyle(.secondary)
+                    Text(organiser).font(.subheadline).foregroundStyle(Tokens.muted)
                 }
             } else {
                 ResultField(label: String(localized: "result.event.when", defaultValue: "When", bundle: .module),

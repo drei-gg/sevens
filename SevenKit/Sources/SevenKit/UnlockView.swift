@@ -24,7 +24,7 @@ public struct UnlockView: View {
                     .accessibilityAddTraits(.isHeader)
                 if let feature {
                     Text(seven("seven.unlock.feature", "%@ is part of the unlock.", feature))
-                        .font(.body).foregroundStyle(.secondary)
+                        .font(.body).foregroundStyle(Tokens.muted)
                 }
                 SevenListLines(lines: content.features)
                 statusNote
@@ -34,6 +34,7 @@ public struct UnlockView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .sevenReadableSheet()
         }
+        .sevenScreenBackground()
         .onChange(of: store.paidFeaturesAvailable) { _, available in
             if available { dismiss() }
         }
@@ -56,7 +57,7 @@ public struct UnlockView: View {
     }
 
     private func note(_ text: String) -> some View {
-        Text(text).font(.callout).foregroundStyle(.secondary)
+        Text(text).font(.callout).foregroundStyle(Tokens.muted)
             .accessibilityElement(children: .combine)
     }
 
@@ -67,7 +68,7 @@ public struct UnlockView: View {
                     Task { await store.startTrial() }
                 }
             }
-            SevenButton(title: store.unlockButtonTitle, prominent: true, disabled: !store.canPurchase) {
+            SevenButton(title: store.unlockButtonTitle, brand: true, disabled: !store.canPurchase) {
                 Task { await store.unlock() }
             }
             if store.isBusy { ProgressView().padding(.vertical, Tokens.Space.xs)

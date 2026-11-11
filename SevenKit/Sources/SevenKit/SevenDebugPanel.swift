@@ -17,9 +17,9 @@ public struct SevenDebugPanel: View {
                     .accessibilityLabel(Self.title(preset))
             }
         } header: {
-            Text("Debug: entitlement")
+            Text("Debug: entitlement").foregroundStyle(Tokens.muted)
         } footer: {
-            Text("Choosing a preset switches to the local source for this run.")
+            Text("Choosing a preset switches to the local source for this run.").foregroundStyle(Tokens.muted)
         }
     }
 

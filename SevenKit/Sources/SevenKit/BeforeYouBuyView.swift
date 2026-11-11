@@ -77,13 +77,14 @@ public struct BeforeYouBuyView: View {
                     Text(text).font(.body).foregroundStyle(.primary)
                 }
                 if let error = store.lastError {
-                    Text(error).font(.callout).foregroundStyle(.secondary)
+                    Text(error).font(.callout).foregroundStyle(Tokens.muted)
                 }
             }
             .padding(Tokens.Space.m)
             .frame(maxWidth: .infinity, alignment: .leading)
             .sevenReadableSheet()
         }
+        .sevenScreenBackground()
         .safeAreaInset(edge: .bottom) { buttons.padding(Tokens.Space.m).background(.bar) }
     }
 

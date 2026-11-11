@@ -42,7 +42,7 @@ public struct HistoryDetail: View {
                 Text(shown.payloadEncoding == .base64
                      ? String(localized: "history.detail.payload.binary", defaultValue: "Contents (binary, shown as base64)", bundle: .module)
                      : String(localized: "history.detail.payload", defaultValue: "Contents", bundle: .module))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Tokens.muted)
             }
             Section {
                 LabeledContent(String(localized: "history.detail.kind", defaultValue: "Scanned or made", bundle: .module)) {
@@ -67,7 +67,7 @@ public struct HistoryDetail: View {
                 Text(String(localized: "history.detail.checkAgain.footer",
                             defaultValue: "Runs today's checks on this code. The verdict above is the one it got when it was saved.",
                             bundle: .module))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Tokens.muted)
             }
             noteSection
             Section {
@@ -79,6 +79,7 @@ public struct HistoryDetail: View {
                 }
             }
         }
+        .sevenScreenBackground()
         .navigationTitle(VerdictText.typeName(for: shown.typeID))
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $fresh) { fresh in ResultSheet(analysis: fresh.analysis) }
@@ -118,7 +119,7 @@ public struct HistoryDetail: View {
                 Text(reason).font(.callout).foregroundStyle(.primary)
             }
             Text(String(localized: "history.detail.atTheTime", defaultValue: "The verdict when it was saved", bundle: .module))
-                .font(.footnote).foregroundStyle(.secondary)
+                .font(.footnote).foregroundStyle(Tokens.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
@@ -143,7 +144,7 @@ public struct HistoryDetail: View {
             .disabled(!HistoryNote.isChanged(draft: draft, saved: current.note))
         } header: {
             Text(String(localized: "history.detail.note", defaultValue: "Note", bundle: .module))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Tokens.muted)
         }
     }
 
