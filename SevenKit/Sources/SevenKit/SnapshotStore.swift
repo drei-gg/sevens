@@ -38,6 +38,7 @@ public enum ExtensionEntitlement {
         snapshots: EntitlementSnapshotStore? = nil,
         source: (any EntitlementSource)? = nil
     ) async -> EntitlementState {
+        if DevUnlock.isActive { return .unlocked }
         let store = snapshots ?? EntitlementSnapshotStore(appGroup: config.appGroup)
         let fromSnapshot = store?.read()?.resolvedState(now: now)
         if let fromSnapshot, fromSnapshot.paidFeaturesAvailable { return fromSnapshot }

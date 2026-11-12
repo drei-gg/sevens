@@ -49,7 +49,7 @@ public final class Store {
     ) {
         self.config = config
         self.trialPolicy = trialPolicy
-        self.source = source ?? StoreKitSource(config: config)
+        self.source = source ?? DevUnlock.source() ?? StoreKitSource(config: config)
         self.trialStartStore = trialStartStore ?? KeychainTrialStartStore(service: config.productIDs.unlock)
         self.snapshots = EntitlementSnapshotStore(appGroup: config.appGroup)
         self.defaults = defaults
