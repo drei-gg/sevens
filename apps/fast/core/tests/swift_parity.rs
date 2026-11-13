@@ -615,23 +615,23 @@ fn water_trend_days_include_missing_logs_and_respect_selected_period() {
 
 // MARK: CompanionTests.swift
 
-fn request(sent_at: SystemTime, action: FastWatchAction, revision: Option<Uuid>, active: Option<Uuid>) -> FastWatchRequest {
-    FastWatchRequest { version: 1, id: Uuid::new_v4(), sent_at, action, revision, active_id: active }
+fn request(sent_at: SystemTime, action: CompanionAction, revision: Option<Uuid>, active: Option<Uuid>) -> CompanionRequest {
+    CompanionRequest { version: 1, id: Uuid::new_v4(), sent_at, action, revision, active_id: active }
 }
 
 #[test]
 fn watch_commands_are_idempotent_and_reject_stale_state() {
     let now = at(1_800_000_000.0);
     let original = new_archive();
-    let water = request(now, FastWatchAction::Water, Some(original.companion_revision), None);
+    let water = request(now, CompanionAction::Water, Some(original.companion_revision), None);
     // The store gives every committed change a new revision.
     let mut first = watch_apply(&original, water.clone(), true, "UTC".into(), now).unwrap();
     first.companion_revision = new_companion_revision();
     let repeat = watch_apply(&first, water.clone(), true, "UTC".into(), now).unwrap();
     assert_eq!(first, repeat);
     assert_eq!(repeat.metrics.len(), 1);
-    let stale = FastWatchRequest { id: Uuid::new_v4(), ..water.clone() };
-    assert_eq!(watch_apply(&first, stale, true, "UTC".into(), now), Err(FastWatchFailure::Stale));
+    let stale = CompanionRequest { id: Uuid::new_v4(), ..water.clone() };
+    assert_eq!(watch_apply(&first, stale, true, "UTC".into(), now), Err(CompanionFailure::Stale));
     let restored = archive_decode_slice(&archive_encode(&first).unwrap(), now).unwrap();
     let replayed = watch_apply(&restored, water, false, "UTC".into(), now).unwrap();
     assert_eq!(replayed.metrics.len(), 1);
@@ -641,10 +641,10 @@ fn watch_commands_are_idempotent_and_reject_stale_state() {
 fn watch_cannot_create_after_expiry_but_can_finish() {
     let now = at(1_800_000_000.0);
     let archive = new_archive();
-    let start = request(now, FastWatchAction::Start, Some(archive.companion_revision), None);
-    assert_eq!(watch_apply(&archive, start.clone(), false, "UTC".into(), now), Err(FastWatchFailure::Locked));
+    let start = request(now, CompanionAction::Start, Some(archive.companion_revision), None);
+    assert_eq!(watch_apply(&archive, start.clone(), false, "UTC".into(), now), Err(CompanionFailure::Locked));
     let archive = watch_apply(&archive, start, true, "UTC".into(), now).unwrap();
-    let end = request(now, FastWatchAction::End, Some(archive.companion_revision), archive_active(&archive).map(|f| f.id));
+    let end = request(now, CompanionAction::End, Some(archive.companion_revision), archive_active(&archive).map(|f| f.id));
     let archive = watch_apply(&archive, end, false, "UTC".into(), plus(now, 1.0)).unwrap();
     assert!(archive_active(&archive).is_none());
     assert_eq!(archive.fasts.len(), 1);
@@ -654,17 +654,17 @@ fn watch_cannot_create_after_expiry_but_can_finish() {
 fn watch_rejects_expired_malformed_and_unsupported_requests() {
     let now = at(1_800_000_000.0);
     let archive = new_archive();
-    let mut r = request(plus(now, -121.0), FastWatchAction::Water, Some(archive.companion_revision), None);
-    assert_eq!(watch_apply(&archive, r.clone(), true, "UTC".into(), now), Err(FastWatchFailure::Expired));
+    let mut r = request(plus(now, -121.0), CompanionAction::Water, Some(archive.companion_revision), None);
+    assert_eq!(watch_apply(&archive, r.clone(), true, "UTC".into(), now), Err(CompanionFailure::Expired));
     r.sent_at = plus(now, 31.0);
-    assert_eq!(watch_apply(&archive, r.clone(), true, "UTC".into(), now), Err(FastWatchFailure::Expired));
+    assert_eq!(watch_apply(&archive, r.clone(), true, "UTC".into(), now), Err(CompanionFailure::Expired));
     r.sent_at = now;
     r.version = 2;
-    assert_eq!(watch_apply(&archive, r.clone(), true, "UTC".into(), now), Err(FastWatchFailure::Unsupported));
+    assert_eq!(watch_apply(&archive, r.clone(), true, "UTC".into(), now), Err(CompanionFailure::Unsupported));
     r.version = 1;
     let archive = watch_apply(&archive, r.clone(), true, "UTC".into(), now).unwrap();
-    r.action = FastWatchAction::Start;
-    assert_eq!(watch_apply(&archive, r, true, "UTC".into(), now), Err(FastWatchFailure::Malformed));
+    r.action = CompanionAction::Start;
+    assert_eq!(watch_apply(&archive, r, true, "UTC".into(), now), Err(CompanionFailure::Malformed));
 }
 
 #[test]
@@ -684,7 +684,7 @@ fn receipt_replay_survives_fractional_date_backup_precision() {
     // Swift: Date(timeIntervalSinceReferenceDate: 815_465_950.776_553_2)
     let now = at(978_307_200.0 + 815_465_950.776_553_2);
     let archive = new_archive();
-    let r = request(now, FastWatchAction::Water, Some(archive.companion_revision), None);
+    let r = request(now, CompanionAction::Water, Some(archive.companion_revision), None);
     let archive = watch_apply(&archive, r.clone(), true, "UTC".into(), now).unwrap();
     let restored = archive_decode_slice(&archive_encode(&archive).unwrap(), now).unwrap();
     let replayed = watch_apply(&restored, r, true, "UTC".into(), plus(now, 1.0)).unwrap();

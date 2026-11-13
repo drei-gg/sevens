@@ -1,7 +1,7 @@
 //! The archive: every record, the settings, and the one validation used by UI mutations, disk
 //! reads and imports. No repair by silently dropping data.
 
-use crate::companion::FastWatchReceipt;
+use crate::companion::CompanionReceipt;
 use crate::model::*;
 use crate::text::{characters, trimmed};
 use crate::time::{self, upper};
@@ -58,7 +58,7 @@ pub struct FastArchive {
     #[serde(with = "upper", default = "new_revision")]
     pub companion_revision: Uuid,
     #[serde(default)]
-    pub companion_receipts: Vec<FastWatchReceipt>,
+    pub companion_receipts: Vec<CompanionReceipt>,
 }
 
 impl Default for FastArchive {

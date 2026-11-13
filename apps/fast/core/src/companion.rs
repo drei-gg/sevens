@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
 #[serde(rename_all = "lowercase")]
-pub enum FastWatchAction {
+pub enum CompanionAction {
     Refresh,
     Start,
     End,
@@ -20,13 +20,13 @@ pub enum FastWatchAction {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
-pub struct FastWatchRequest {
+pub struct CompanionRequest {
     pub version: i32,
     #[serde(with = "upper")]
     pub id: Uuid,
     #[serde(rename = "sentAt", with = "ms")]
     pub sent_at: SystemTime,
-    pub action: FastWatchAction,
+    pub action: CompanionAction,
     #[serde(with = "upper_opt", default, skip_serializing_if = "Option::is_none")]
     pub revision: Option<Uuid>,
     #[serde(rename = "activeID", with = "upper_opt", default, skip_serializing_if = "Option::is_none")]
@@ -34,14 +34,14 @@ pub struct FastWatchRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
-pub struct FastWatchReceipt {
-    pub request: FastWatchRequest,
+pub struct CompanionReceipt {
+    pub request: CompanionRequest,
     #[serde(rename = "savedAt", with = "ms")]
     pub saved_at: SystemTime,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error, uniffi::Error)]
-pub enum FastWatchFailure {
+pub enum CompanionFailure {
     #[error("unsupported")]
     Unsupported,
     #[error("malformed")]
@@ -63,8 +63,8 @@ pub enum FastWatchFailure {
 /// Returns the archive unchanged for a refresh or a replay. A fast started from the Watch records
 /// `time_zone_id`, the phone's current zone.
 #[uniffi::export]
-pub fn watch_apply(archive: &FastArchive, request: FastWatchRequest, can_create_records: bool, time_zone_id: String, now: SystemTime) -> Result<FastArchive, FastWatchFailure> {
-    use FastWatchFailure::*;
+pub fn watch_apply(archive: &FastArchive, request: CompanionRequest, can_create_records: bool, time_zone_id: String, now: SystemTime) -> Result<FastArchive, CompanionFailure> {
+    use CompanionFailure::*;
     if request.version != 1 {
         return Err(Unsupported);
     }
@@ -79,7 +79,7 @@ pub fn watch_apply(archive: &FastArchive, request: FastWatchRequest, can_create_
         }
         return if saved == request { Ok(archive.clone()) } else { Err(Malformed) };
     }
-    if request.action == FastWatchAction::Refresh {
+    if request.action == CompanionAction::Refresh {
         return Ok(archive.clone());
     }
     if request.revision != Some(archive.companion_revision) || request.active_id != archive.active().map(|f| f.id) {
@@ -87,8 +87,8 @@ pub fn watch_apply(archive: &FastArchive, request: FastWatchRequest, can_create_
     }
     let mut next = archive.clone();
     match request.action {
-        FastWatchAction::Refresh => {}
-        FastWatchAction::Start => {
+        CompanionAction::Refresh => {}
+        CompanionAction::Start => {
             if !can_create_records {
                 return Err(Locked);
             }
@@ -98,7 +98,7 @@ pub fn watch_apply(archive: &FastArchive, request: FastWatchRequest, can_create_
             let fast = FastRecord { id: request.id, ..new_fast_record(now, time_zone_id) };
             next.save(fast, now).map_err(|_| SaveFailed)?;
         }
-        FastWatchAction::End => {
+        CompanionAction::End => {
             let Some(mut current) = archive.active().cloned() else { return Err(Stale) };
             if now <= current.start {
                 return Err(Stale);
@@ -106,7 +106,7 @@ pub fn watch_apply(archive: &FastArchive, request: FastWatchRequest, can_create_
             current.end = Some(now);
             next.save(current, now).map_err(|_| SaveFailed)?;
         }
-        FastWatchAction::Water => {
+        CompanionAction::Water => {
             if !can_create_records {
                 return Err(Locked);
             }
@@ -117,6 +117,6 @@ pub fn watch_apply(archive: &FastArchive, request: FastWatchRequest, can_create_
     if next.companion_receipts.len() >= 2_000 {
         return Err(Unavailable);
     }
-    next.companion_receipts.push(FastWatchReceipt { request, saved_at: now });
+    next.companion_receipts.push(CompanionReceipt { request, saved_at: now });
     Ok(next)
 }
