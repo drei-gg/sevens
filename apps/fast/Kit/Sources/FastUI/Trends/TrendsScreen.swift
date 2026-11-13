@@ -17,25 +17,49 @@ struct TrendsScreen: View {
         let days = HistoryMath.days(in: interval, archive: model.archive, calendar: .current, now: Date())
         List {
             Section {
-                Picker(f("Period"), selection: $range) {
-                    Text(f("Week")).tag(7); Text(f("Month")).tag(30); Text(f("Quarter")).tag(90); Text(f("Year")).tag(365)
-                }.pickerStyle(.segmented)
-                DatePicker(f("Ending"), selection: $periodEnd, in: ...Date(), displayedComponents: .date)
-                LabeledContent(f("Recorded hours"), value: (summary.seconds / 3_600).formatted(.number.precision(.fractionLength(1))))
-                LabeledContent(f("Completed fasts"), value: summary.completedCount.formatted())
-                LabeledContent(f("Average duration"), value: summary.averageDuration.map(FastFormat.duration) ?? "—")
-                if summary.goalsCount > 0 {
-                    LabeledContent(f("Goals reached"), value: "\(summary.goalsMet) / \(summary.goalsCount)")
+                VStack(spacing: Tokens.Space.ms) {
+                    Picker(f("Period"), selection: $range) {
+                        Text(f("Week")).tag(7); Text(f("Month")).tag(30); Text(f("Quarter")).tag(90); Text(f("Year")).tag(365)
+                    }.pickerStyle(.segmented)
+                    HStack {
+                        Text(interval.start.formatted(date: .abbreviated, time: .omitted) + " – " + periodEnd.formatted(date: .abbreviated, time: .omitted))
+                            .textRole(.secondary).numeric()
+                        Spacer(minLength: 0)
+                        DatePicker(f("Ending"), selection: $periodEnd, in: ...Date(), displayedComponents: .date).labelsHidden()
+                    }
+                    StatGrid {
+                        StatTile(title: f("Recorded hours"), value: (summary.seconds / 3_600).formatted(.number.precision(.fractionLength(0...1))), tint: Tokens.dataWarm)
+                        StatTile(title: f("Completed fasts"), value: summary.completedCount.formatted())
+                        StatTile(title: f("Average duration"), value: summary.averageDuration.map(FastFormat.duration) ?? "–")
+                        if summary.goalsCount > 0 {
+                            StatTile(title: f("Goals reached"), value: "\(summary.goalsMet) / \(summary.goalsCount)")
+                        }
+                    }
+                    if days.contains(where: { $0.seconds > 0 }) {
+                        VStack(alignment: .leading, spacing: Tokens.Space.s) {
+                            Text(f("Your rhythm")).textRole(.section).accessibilityAddTraits(.isHeader)
+                            Chart(days) { day in
+                                BarMark(x: .value(f("Date"), day.date, unit: .day), y: .value(f("Hours"), day.seconds / 3_600))
+                                    .cornerRadius(range > 90 ? 1 : 4)
+                                    .foregroundStyle(Tokens.dataWarm)
+                                    .accessibilityLabel(day.date.formatted(date: .abbreviated, time: .omitted))
+                                    .accessibilityValue(FastFormat.duration(day.seconds))
+                            }
+                            .chartYScale(domain: 0...24)
+                            .chartYAxis { AxisMarks(values: [0, 8, 16, 24]) }
+                            .chartYAxisLabel(f("Hours"))
+                            .frame(height: 200)
+                        }
+                        .padding(Tokens.Space.ms)
+                        .background(Tokens.card, in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
+                    } else {
+                        Text(f("Your first records will appear here.")).foregroundStyle(Tokens.muted)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    Text(f("Hours include portions of fasts within this period. Completed fasts and averages use sessions that ended in it. Open-ended fasts have no goal score."))
+                        .textRole(.caption).frame(maxWidth: .infinity, alignment: .leading)
                 }
-            } footer: { Text(f("Hours include portions of fasts within this period. Completed fasts and averages use sessions that ended in it. Open-ended fasts have no goal score.")) }
-            Section(f("Your rhythm")) {
-                if days.contains(where: { $0.seconds > 0 }) {
-                    Chart(days) { day in
-                        BarMark(x: .value(f("Date"), day.date, unit: .day), y: .value(f("Hours"), day.seconds / 3_600))
-                            .accessibilityLabel(day.date.formatted(date: .abbreviated, time: .omitted))
-                            .accessibilityValue(FastFormat.duration(day.seconds))
-                    }.frame(height: 180).chartYAxisLabel(f("Hours"))
-                } else { Text(f("Your first records will appear here.")).foregroundStyle(.secondary) }
+                .bareListRow()
             }
             if model.archive.settings.showWeight {
                 metricSection(.weight)
@@ -54,10 +78,10 @@ struct TrendsScreen: View {
                         }
                     }
                 }
-                Text(f("These describe your entries. They do not show that fasting caused a change.")).font(.footnote).foregroundStyle(.secondary)
+                Text(f("These describe your entries. They do not show that fasting caused a change.")).textRole(.caption)
             }
         }
-        .navigationTitle(f("Trends"))
+        .sevenScreenBackground().navigationTitle(f("Trends"))
         .sheet(item: Binding(get: { metric.map(MetricSelection.init) }, set: { metric = $0?.kind })) { MetricEditor(kind: $0.kind) }
     }
     @ViewBuilder private func metricSection(_ kind: MetricKind) -> some View {
@@ -69,6 +93,7 @@ struct TrendsScreen: View {
                     Chart(values.keys.sorted(), id: \.self) { day in
                         BarMark(x: .value(f("Date"), day, unit: .day), y: .value(FastFormat.unit(kind, settings: model.archive.settings),
                             Units.display(values[day]!.reduce(0) { $0 + $1.value }, kind: kind, settings: model.archive.settings)))
+                            .cornerRadius(4).foregroundStyle(Tokens.dataCool)
                     }.frame(height: 140)
                 } else {
                     Chart(entries) { entry in
@@ -80,7 +105,7 @@ struct TrendsScreen: View {
                     }
                 }
                 NavigationLink(f("View & edit measurements")) { MetricHistoryScreen(kind: kind) }
-            } else { Text(f("Nothing logged in this period.")).foregroundStyle(.secondary) }
+            } else { Text(f("Nothing logged in this period.")).foregroundStyle(Tokens.muted) }
             GatedButton(feature: FastFormat.kind(kind), action: { metric = kind }) { Label(f("Add measurement"), systemImage: "plus") }
         }
     }

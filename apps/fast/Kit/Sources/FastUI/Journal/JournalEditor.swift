@@ -24,7 +24,7 @@ struct JournalEditor: View {
                     }
                 }
                 Section(f("Observation")) {
-                    TextField(f("What's happening in your body, your day, or your thoughts?"), text: $entry.text, axis: .vertical)
+                    TextField(f("What’s happening in your body, your day, or your thoughts?"), text: $entry.text, axis: .vertical)
                         .lineLimit(6...16).accessibilityIdentifier("journal.text")
                 }
                 Section {
@@ -35,7 +35,7 @@ struct JournalEditor: View {
                 Section { TextField(f("Tags, separated by commas"), text: $tags) }
             }
             .onAppear { model.message = nil }
-            .navigationTitle(f("Check in")).navigationBarTitleDisplayMode(.inline)
+            .sevenScreenBackground().navigationTitle(f("Check in")).navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button(f("Cancel")) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

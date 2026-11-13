@@ -19,7 +19,7 @@ struct HistoryScreen: View {
         VStack(spacing: 0) {
             Picker(f("History view"), selection: $mode) {
                 Text(f("Calendar")).tag(0); Text(f("Heatmap")).tag(1); Text(f("List")).tag(2)
-            }.pickerStyle(.segmented).padding(.horizontal).padding(.bottom, 8)
+            }.pickerStyle(.segmented).padding(.horizontal).padding(.bottom, Tokens.Space.s)
             if mode != 2 {
                 ScrollView {
                     SevenAdaptiveColumns(accessibilityText: textSize.isAccessibilitySize) {
@@ -42,7 +42,7 @@ struct HistoryScreen: View {
                 }
             }
         }
-        .navigationTitle(f("History"))
+        .sevenScreenBackground().navigationTitle(f("History"))
         .searchable(text: $query, prompt: f("Search intentions, reflections & tags"))
         .onChange(of: query) { _, new in if !new.isEmpty { mode = 2 } }
         .toolbar {
@@ -53,7 +53,7 @@ struct HistoryScreen: View {
         .sheet(isPresented: $jump) {
             NavigationStack {
                 Form { DatePicker(f("Date"), selection: $month, displayedComponents: .date).datePickerStyle(.wheel) }
-                    .navigationTitle(f("Jump to date")).navigationBarTitleDisplayMode(.inline)
+                    .sevenScreenBackground().navigationTitle(f("Jump to date")).navigationBarTitleDisplayMode(.inline)
                     .toolbar { Button(f("Done")) { selected = month; jump = false } }
             }.presentationDetents([.medium])
         }
@@ -61,29 +61,29 @@ struct HistoryScreen: View {
         .sheet(isPresented: $journal) { JournalEditor(date: min(selected, Date())) }
     }
     private var calendarPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Tokens.Space.ms) {
             if !textSize.isAccessibilitySize {
                 HStack {
                     Button { shift(-1) } label: { Image(systemName: "chevron.left").frame(minWidth: 44, minHeight: 44) }
                         .accessibilityLabel(mode == 0 ? f("Previous month") : f("Previous thirteen weeks"))
                     Spacer()
-                    Button { jump = true } label: { Text(month, format: .dateTime.month(.wide).year()).font(.headline) }.accessibilityLabel(f("Jump to date"))
+                    Button { jump = true } label: { Text(month, format: .dateTime.month(.wide).year()).textRole(.rowTitle, emphasized: true) }.accessibilityLabel(f("Jump to date"))
                     Spacer()
                     Button { shift(1) } label: { Image(systemName: "chevron.right").frame(minWidth: 44, minHeight: 44) }
                         .accessibilityLabel(mode == 0 ? f("Next month") : f("Next thirteen weeks"))
                 }
             } else if mode == 1 {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(f("Period ending")).font(.headline)
+                VStack(alignment: .leading, spacing: Tokens.Space.ms) {
+                    Text(f("Period ending")).textRole(.rowTitle, emphasized: true)
                     DatePicker(f("Period ending"), selection: $month, displayedComponents: .date)
                         .labelsHidden().accessibilityLabel(f("Period ending"))
                 }
             }
             if mode == 0 { MonthCalendar(month: month, selected: $selected) }
             else { HeatmapView(end: month, selected: $selected) }
-            Button(f("Back to today")) { month = Date(); selected = Date() }.font(.subheadline)
+            Button(f("Back to today")) { month = Date(); selected = Date() }.foregroundStyle(.tint).textRole(.secondary)
             Text(f("Hours are split at midnight in your current time zone:") + " " + TimeZone.current.identifier)
-                .font(.caption).foregroundStyle(.secondary)
+                .textRole(.caption)
         }
     }
     private var filtered: [FastRecord] {
@@ -99,7 +99,7 @@ struct HistoryScreen: View {
     @ViewBuilder private var daySection: some View {
         let summary = HistoryMath.day(selected, archive: model.archive, calendar: calendar, now: Date())
         GroupBox {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: Tokens.Space.m) {
             LabeledContent(f("Recorded fasting"), value: FastFormat.duration(summary.seconds))
             if summary.isRestDay { Label(f("Rest day"), systemImage: "leaf") }
             ForEach(model.archive.fasts.filter { summary.fastIDs.contains($0.id) }.sorted { $0.start < $1.start }) { fast in
@@ -119,7 +119,7 @@ struct HistoryScreen: View {
                 }
             }
             if summary.fastIDs.isEmpty && summary.journalCount == 0 && summary.planCount == 0 && !model.archive.metrics.contains(where: { calendar.isDate($0.date, inSameDayAs: selected) }) {
-                Text(f("Nothing recorded for this day.")).foregroundStyle(.secondary)
+                Text(f("Nothing recorded for this day.")).foregroundStyle(Tokens.muted)
             }
             if summary.isRestDay {
                 Button { Task { await toggleRest() } } label: { Label(f("Remove rest day"), systemImage: "leaf") }
@@ -147,16 +147,16 @@ struct HistoryScreen: View {
 struct FastRow: View {
     let fast: FastRecord
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: Tokens.Space.xs) {
             HStack {
-                Text(FastFormat.duration(fast.duration(at: Date()))).font(.headline).monospacedDigit()
+                Text(FastFormat.duration(fast.duration(at: Date()))).textRole(.rowTitle, emphasized: true).monospacedDigit()
                 Spacer()
-                if fast.end == nil { Label(f("Running"), systemImage: "timer").font(.caption) }
-                else if fast.metGoal == true { Image(systemName: "checkmark.circle").foregroundStyle(.secondary).accessibilityLabel(f("Goal reached")) }
+                if fast.end == nil { Label(f("Running"), systemImage: "timer").textRole(.caption) }
+                else if fast.metGoal == true { Image(systemName: "checkmark.circle").foregroundStyle(Tokens.muted).accessibilityLabel(f("Goal reached")) }
             }
             Text(fast.start.formatted(date: .abbreviated, time: .shortened) + " – " + (fast.end?.formatted(date: .abbreviated, time: .shortened) ?? f("Now")))
-                .font(.caption).foregroundStyle(.secondary)
-            if !fast.intention.isEmpty { Text(fast.intention).font(.subheadline).lineLimit(2) }
-        }.padding(.vertical, 3).accessibilityElement(children: .combine)
+                .textRole(.caption)
+            if !fast.intention.isEmpty { Text(fast.intention).textRole(.secondary).lineLimit(2) }
+        }.padding(.vertical, Tokens.Space.xs).accessibilityElement(children: .combine)
     }
 }

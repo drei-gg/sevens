@@ -11,7 +11,7 @@ struct FastDetailScreen: View {
         if let fast = model.archive.fasts.first(where: { $0.id == id }) {
             List {
                 Section {
-                    Text(FastFormat.duration(fast.duration(at: Date()))).font(.largeTitle).monospacedDigit()
+                    Text(FastFormat.duration(fast.duration(at: Date()))).textRole(.hero).monospacedDigit()
                     LabeledContent(f("Started"), value: fast.start.formatted(date: .abbreviated, time: .shortened))
                     if let end = fast.end { LabeledContent(f("Finished"), value: end.formatted(date: .abbreviated, time: .shortened)) }
                     LabeledContent(f("Goal"), value: FastFormat.goal(fast.goalMinutes))
@@ -27,7 +27,7 @@ struct FastDetailScreen: View {
                     GatedButton(feature: f("Journal"), action: { checkIn = true }) { Label(f("Add a check-in"), systemImage: "square.and.pencil") }
                 }
             }
-            .navigationTitle(f("Fast details"))
+            .sevenScreenBackground().navigationTitle(f("Fast details"))
             .toolbar { Button(f("Edit")) { edit = true } }
             .sheet(isPresented: $edit) { FastEditor(mode: .edit(fast)) }
             .sheet(isPresented: $checkIn) { JournalEditor(fastID: id) }

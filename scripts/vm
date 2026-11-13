@@ -11,17 +11,17 @@
 #   device         build, sign and install on the iPhone (runs in the guest's GUI session)
 #   lock-device    lock the iPhone (run last; nothing can unlock it remotely)
 #   sh CMD...      run a command in the synced checkout
-# env: SEVENS_APP (an app under apps/ with a case below; defaults to qr)
+# env: SEVENS_BRAND_DIR (private brand checkout; official builds only, see brand_overlay)
+#      SEVENS_APP (an app under apps/ with a case below; defaults to qr)
 #      VM_SLOT (default: worktree folder name, "main" for the main checkout)
 #      VM_VERBOSE=1 streams the whole log; otherwise errors, warnings and the tail.
+#      VM_SIM_SLOT=2 uses the guest's second simulator (sim-ensure slot 2), with its own lock,
+#                 DerivedData and logs, so it can run beside a slot-1 run. Not for device commands.
 set -euo pipefail
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 cmd=${1:-}; [ $# -gt 0 ] && shift
 app=${SEVENS_APP:-qr}
 case "$app" in qr) scheme=QR;; fast) scheme=Fast;; *) echo "Unknown app: $app" >&2; exit 2;; esac
-if [ "$app" != qr ] && [[ "$cmd" = device || "$cmd" = lock-device || ( "$cmd" = ui && "${1:-}" = --device ) ]]; then
-  echo "vm: device signing for $app is not configured yet" >&2; exit 2
-fi
 base=$(basename "$root"); [ "$base" = sevens ] && base=main
 slot=${VM_SLOT:-$base}
 [ "$app" = qr ] || slot="$slot-$app"
@@ -30,8 +30,22 @@ dd="\$HOME/src/dd-$slot"
 logdir="$HOME/.cache/sevens/logs"; mkdir -p "$logdir"
 log="$logdir/$slot-$cmd.log"
 
-exec 9>"$HOME/.cache/sevens/vm.lock"
-if ! flock -n 9; then echo "vm: waiting for the lock (another build is running)…" >&2; flock 9; fi
+# The iPhone and the simulator each have their own lock, so `ui --device` can run while the
+# simulator runs the tour. Device builds already use their own DerivedData (`$dd-device`, see
+# guest-device.sh); both share the one source copy, which each sync leaves identical.
+target=sim
+case "$cmd" in device|lock-device) target=device;; ui) [ "${1:-}" != --device ] || target=device;; esac
+lockfile="$HOME/.cache/sevens/vm.lock"
+simslot=${VM_SIM_SLOT:-1}; rs=""; [ "$simslot" = 1 ] || rs="-sim$simslot"
+if [ $target = sim ] && [ "$simslot" != 1 ]; then
+  lockfile="$HOME/.cache/sevens/vm-sim$simslot.lock"; dd="$dd-sim$simslot"; log="$logdir/$slot-$cmd-sim$simslot.log"
+  target="sim$simslot"
+fi
+if [ $target = device ]; then
+  lockfile="$HOME/.cache/sevens/vm-device.lock"; log="$logdir/$slot-$cmd-device.log"
+fi
+exec 9>"$lockfile"
+if ! flock -n 9; then echo "vm: waiting for the $target lock (another $target run is going)…" >&2; flock 9; fi
 
 ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe true || { echo "vm: tahoe is not reachable" >&2; exit 3; }
 
@@ -44,8 +58,8 @@ ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe true || { echo "vm: tahoe is not
 case "$cmd" in
   build|test|test-kit|ui|screens)
     if [ "$cmd" = ui ] && [ "${1:-}" = --device ]; then :; else
-      ssh tahoe '~/bin/sim-ensure --wait' >/dev/null || { echo "vm: simulator not ready (sim-ensure --wait failed)" >&2; exit 3; }
-      sim=${VM_SIM_UDID:-$(ssh tahoe '~/bin/sim-ensure --print')}
+      ssh tahoe "SIM_SLOT=$simslot ~/bin/sim-ensure --wait" >/dev/null || { echo "vm: simulator not ready (sim-ensure --wait failed)" >&2; exit 3; }
+      sim=${VM_SIM_UDID:-$(ssh tahoe "SIM_SLOT=$simslot ~/bin/sim-ensure --print")}
       [ -n "$sim" ] || { echo "vm: sim-ensure gave no simulator UDID" >&2; exit 3; }
       dest="platform=iOS Simulator,id=$sim"
     fi;;
@@ -67,24 +81,37 @@ case "$cmd" in
   test-kit) remote_cmd="set -o pipefail; (cd SevenKit && xcodebuild -scheme SevenKit-Package -derivedDataPath $dd-sevenkit $strictw -destination '$dest' $noclone test) && (cd apps/$app/Kit && xcodebuild -scheme ${scheme}Kit-Package -derivedDataPath $dd-${app}kit $strictw -destination '$dest' $noclone test)";;
   ui)
     if [ "${1:-}" = --device ]; then
-      remote_cmd="bash scripts/guest-device.sh '$dd' test -only-testing:${scheme}SmokeUITests -skip-testing:${scheme}SmokeUITests/LockDeviceTests -skip-testing:${scheme}SmokeUITests/ScreensTourTests"
+      remote_cmd="SEVENS_APP=$app SEVENS_SCHEME=$scheme bash scripts/guest-device.sh '$dd' test -only-testing:${scheme}SmokeUITests -skip-testing:${scheme}SmokeUITests/LockDeviceTests -skip-testing:${scheme}SmokeUITests/ScreensTourTests"
     else
       remote_cmd="$xb -configuration Debug -destination '$dest' -only-testing:${scheme}SmokeUITests -skip-testing:${scheme}SmokeUITests/LockDeviceTests -skip-testing:${scheme}SmokeUITests/ScreensTourTests $noclone test"
     fi;;
   screens)
-    remote_cmd="rm -rf \$HOME/src/screens-$slot.xcresult; $xb -configuration Debug -destination '$dest' -only-testing:${scheme}SmokeUITests/ScreensTourTests -resultBundlePath \$HOME/src/screens-$slot.xcresult $noclone test";;
+    remote_cmd="rm -rf \$HOME/src/screens-$slot$rs.xcresult; $xb -configuration Debug -destination '$dest' -only-testing:${scheme}SmokeUITests/ScreensTourTests -resultBundlePath \$HOME/src/screens-$slot$rs.xcresult $noclone test";;
   lock-device)
     # The very last device step: lock the iPhone (UI-test target only; see LockDeviceTests).
-    remote_cmd="bash scripts/guest-device.sh '$dd' test -only-testing:${scheme}SmokeUITests/LockDeviceTests";;
+    remote_cmd="SEVENS_APP=$app SEVENS_SCHEME=$scheme bash scripts/guest-device.sh '$dd' test -only-testing:${scheme}SmokeUITests/LockDeviceTests";;
   device)
     # Signing needs the GUI session's keychain (runbook: signing over SSH fails),
     # so the build runs in Terminal.app and we follow its log.
-    remote_cmd="bash scripts/guest-device.sh '$dd' install";;
+    remote_cmd="SEVENS_APP=$app SEVENS_SCHEME=$scheme bash scripts/guest-device.sh '$dd' install";;
   sh) remote_cmd="$*";;
   *) sed -n '2,14p' "$0"; exit 2;;
 esac
 
-if [ "$cmd" = version ]; then remote="."; else sync_tree; fi
+# Official builds only: SEVENS_BRAND_DIR names a private brand checkout (TRADEMARKS.md). Its
+# <app>/ overlay is copied onto the Tahoe copy after the sync, never into this checkout, so git
+# here only ever holds the generic icons. The next unbranded sync puts the generic ones back.
+brand_overlay() {
+  [ -n "${SEVENS_BRAND_DIR:-}" ] || return 0
+  local src="$SEVENS_BRAND_DIR/$app" dst="tahoe:$remote/apps/$app"
+  [ -d "$src/Brand.xcassets/AppIcon.appiconset" ] || { echo "vm: no brand icon at $src" >&2; exit 2; }
+  rsync -a --delete "$src/Brand.xcassets/AppIcon.appiconset/" "$dst/Brand/Brand.xcassets/AppIcon.appiconset/"
+  [ ! -f "$src/Brand.xcconfig" ] || rsync -a "$src/Brand.xcconfig" "$dst/Config/Brand.xcconfig"
+  [ ! -d "$src/Watch.xcassets" ] || [ "$app" != fast ] || rsync -a --delete "$src/Watch.xcassets/" "$dst/Watch/Assets.xcassets/"
+  echo "vm: brand overlay from $src (Tahoe copy only)" >&2
+}
+
+if [ "$cmd" = version ]; then remote="."; else sync_tree; brand_overlay; fi
 echo "vm[$slot] $cmd → $log" >&2
 set +e
 ssh tahoe "cd $remote && $remote_cmd" >"$log" 2>&1 &

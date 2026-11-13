@@ -26,21 +26,22 @@ public struct TrialEndedView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.l) {
                 Text(content.title ?? seven("seven.trialEnded.title", "Your free 7 days have ended"))
-                    .font(.title2.weight(.semibold)).foregroundStyle(.primary)
+                    .textRole(.title).foregroundStyle(.primary)
                     .accessibilityAddTraits(.isHeader)
                 section(seven("seven.trialEnded.free", "What stays free"), content.stillFree)
                 section(seven("seven.trialEnded.keeps", "What the unlock keeps"), content.unlockKeeps)
                 VStack(spacing: Tokens.Space.s) {
-                    SevenButton(title: store.unlockButtonTitle, prominent: true, disabled: !store.canPurchase) {
+                    SevenButton(title: store.unlockButtonTitle, brand: true, disabled: !store.canPurchase) {
                         Task { await store.unlock() }
                     }
                     SevenButton(title: seven("seven.notNow", "Not now")) { dismiss() }  // same size and shape as the buy button, which alone is filled (SPEC §13)
                 }
             }
-            .padding(Tokens.Space.m)
+            .sevenSheetPadding()
             .frame(maxWidth: .infinity, alignment: .leading)
             .sevenReadableSheet()
         }
+        .sevenScreenBackground()
         .onAppear { store.markTrialEndedShown() }
         .onChange(of: store.paidFeaturesAvailable) { _, available in
             if available { dismiss() }
@@ -49,7 +50,7 @@ public struct TrialEndedView: View {
 
     private func section(_ heading: String, _ lines: [String]) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s) {
-            Text(heading).font(.headline).foregroundStyle(.primary).accessibilityAddTraits(.isHeader)
+            Text(heading).textRole(.rowTitle, emphasized: true).foregroundStyle(.primary).accessibilityAddTraits(.isHeader)
             SevenListLines(lines: lines)
         }
     }

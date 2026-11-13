@@ -1,4 +1,5 @@
 import SwiftUI
+import SevenKit
 import FastCore
 
 struct ReminderSettingsScreen: View {
@@ -24,13 +25,13 @@ struct ReminderSettingsScreen: View {
                 }
             }
             Section {
-                Text(model.notificationStatus).foregroundStyle(.secondary)
+                Text(model.notificationStatus).foregroundStyle(Tokens.muted)
                 Button(f("Open iPhone notification settings")) {
                     if let url = URL(string: UIApplication.openNotificationSettingsURLString) { UIApplication.shared.open(url) }
                 }
             } footer: { Text(f("Only the reminders you choose. No journal text is shown in notifications. Focus and notification settings may silence delivery.")) }
         }
-        .navigationTitle(f("Reminders"))
+        .sevenScreenBackground().navigationTitle(f("Reminders"))
         .onAppear {
             settings = model.archive.settings
             time = Calendar.current.date(bySettingHour: settings.reminderHour, minute: settings.reminderMinute, second: 0, of: Date())!

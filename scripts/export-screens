@@ -8,6 +8,7 @@ base=$(basename "$root"); [ "$base" = sevens ] && base=main
 slot=${VM_SLOT:-$base}
 app=${SEVENS_APP:-qr}
 [ "$app" = qr ] || slot="$slot-$app"
+[ "${VM_SIM_SLOT:-1}" = 1 ] || slot="$slot-sim$VM_SIM_SLOT"   # a tour run with VM_SIM_SLOT
 out="src/screens-$slot-export"
 ssh tahoe "rm -rf $out && mkdir -p $out && xcrun xcresulttool export attachments --path \$HOME/src/screens-$slot.xcresult --output-path $out" >&2
 mkdir -p "$dest"

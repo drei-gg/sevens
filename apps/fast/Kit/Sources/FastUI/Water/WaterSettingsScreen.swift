@@ -1,4 +1,5 @@
 import SwiftUI
+import SevenKit
 import FastCore
 
 struct WaterSettingsScreen: View {
@@ -19,31 +20,31 @@ struct WaterSettingsScreen: View {
                 if hasGoal {
                     TextField(f("Daily amount"), text: $goal).keyboardType(.decimalPad).accessibilityIdentifier("water.goalAmount")
                 }
-                Text(f("An optional target you choose, not a recommended intake. No streaks or pressure to catch up.")).font(.footnote).foregroundStyle(.secondary)
+                Text(f("An optional target you choose, not a recommended intake. No streaks or pressure to catch up.")).textRole(.caption)
             }
             Section(f("Quick-add glass")) {
                 TextField(f("Amount"), text: $glass).keyboardType(.decimalPad).accessibilityIdentifier("water.glassAmount")
                 Text(f("Amounts use") + " " + FastFormat.unit(.water, settings: units) + ". " + f("Change units in Settings. Watch quick-add remains 250 mL."))
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .textRole(.caption)
             }
             Section(f("Water reminders")) {
                 Toggle(f("Remind me to drink water"), isOn: $water.remindersEnabled).accessibilityIdentifier("water.remindersEnabled")
                 if water.remindersEnabled {
                     Toggle(f("Pause water reminders"), isOn: $water.remindersPaused)
-                    if water.remindersPaused { Text(f("Paused until you resume.")).font(.footnote).foregroundStyle(.secondary) }
+                    if water.remindersPaused { Text(f("Paused until you resume.")).textRole(.caption) }
                     Picker(f("From"), selection: $water.startHour) { ForEach(0..<24, id: \.self) { Text(hour($0)).tag($0) } }
                     Picker(f("Until"), selection: $water.endHour) { ForEach(1...24, id: \.self) { Text(hour($0)).tag($0) } }
                     Picker(f("Every"), selection: $water.intervalHours) { ForEach(1...4, id: \.self) { interval in Text(interval == 1 ? f("1 hour") : String(interval) + " " + f("hours")).tag(interval) } }
-                    if water.startHour >= water.endHour { Text(f("End time must be after start time.")).foregroundStyle(.red) }
+                    if water.startHour >= water.endHour { Label { Text(f("End time must be after start time.")) } icon: { Image(systemName: "exclamationmark.circle").foregroundStyle(Tokens.danger) }.textRole(.caption) }
                 }
                 Text(f("Daily at your chosen hours, from the start time up to but not including the end. Outside this window, water reminders are quiet. They follow local time and continue whether or not a fast is running or a goal is reached."))
-                    .font(.footnote).foregroundStyle(.secondary)
-                Text(model.notificationStatus).font(.footnote).foregroundStyle(.secondary)
+                    .textRole(.caption)
+                Text(model.notificationStatus).textRole(.caption)
                 Button(f("Open iPhone notification settings")) {
                     if let url = URL(string: UIApplication.openNotificationSettingsURLString) { UIApplication.shared.open(url) }
                 }
             }
-        }.navigationTitle(f("Water settings"))
+        }.sevenScreenBackground().navigationTitle(f("Water settings"))
             .onAppear {
                 guard !loaded else { return }; loaded = true
                 units = model.archive.settings; water = units.water

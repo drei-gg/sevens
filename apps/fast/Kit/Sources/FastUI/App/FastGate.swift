@@ -9,7 +9,7 @@ enum FastGate {
     }
     static var before: BeforeYouBuyContent {
         BeforeYouBuyContent(title: f("Your iPhone already has a timer."), paragraphs: [
-            .init(f("Clock can time a fast, Notes can hold a journal, and Health can record your weight. If that's all you need, keep your money.")),
+            .init(f("Clock can time a fast, Notes can hold a journal, and Health can record your weight. If that’s all you need, keep your money.")),
             .init(f("This brings your timers, calendar, patterns, private journal and water tracker with optional reminders together. Try everything for 7 days, no card. Then {price}, once. Nothing renews."),
                   withoutPrice: f("This brings your timers, calendar, patterns, private journal and water tracker with optional reminders together. Try everything for 7 days, no card. Then a one-time purchase. Nothing renews.")),
             .init(f("Your saved records always stay readable, editable and exportable, even after the trial."))

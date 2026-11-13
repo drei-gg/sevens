@@ -1,6 +1,28 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%lld drinks": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld drink"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld drinks"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "1 hour": {
       "localizations": {
         "en": {
@@ -421,12 +443,12 @@
         }
       }
     },
-    "Built with Apple's frameworks and the shared SevenKit package. No third-party libraries or tracking SDKs.": {
+    "Built with Apple’s frameworks and the shared SevenKit package. No third-party libraries or tracking SDKs.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Built with Apple's frameworks and the shared SevenKit package. No third-party libraries or tracking SDKs."
+            "value": "Built with Apple’s frameworks and the shared SevenKit package. No third-party libraries or tracking SDKs."
           }
         }
       }
@@ -511,12 +533,12 @@
         }
       }
     },
-    "Clock can time a fast, Notes can hold a journal, and Health can record your weight. If that's all you need, keep your money.": {
+    "Clock can time a fast, Notes can hold a journal, and Health can record your weight. If that’s all you need, keep your money.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Clock can time a fast, Notes can hold a journal, and Health can record your weight. If that's all you need, keep your money."
+            "value": "Clock can time a fast, Notes can hold a journal, and Health can record your weight. If that’s all you need, keep your money."
           }
         }
       }
@@ -927,6 +949,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ending and saving a fast already in progress"
+          }
+        }
+      }
+    },
+    "Ends at": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ends at"
           }
         }
       }
@@ -1461,6 +1493,16 @@
         }
       }
     },
+    "Last fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last fast"
+          }
+        }
+      }
+    },
     "Last seven days": {
       "localizations": {
         "en": {
@@ -1657,6 +1699,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "New records:"
+          }
+        }
+      }
+    },
+    "Next day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next day"
           }
         }
       }
@@ -1901,6 +1953,16 @@
         }
       }
     },
+    "Other amount": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other amount"
+          }
+        }
+      }
+    },
     "Pause water reminders": {
       "localizations": {
         "en": {
@@ -2067,6 +2129,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Preview first. New records are merged; identical copies are skipped. Conflicting IDs or overlapping fasts stop the whole import. Your current preferences stay as they are."
+          }
+        }
+      }
+    },
+    "Previous day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous day"
           }
         }
       }
@@ -2341,6 +2413,16 @@
         }
       }
     },
+    "Set a daily goal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set a daily goal"
+          }
+        }
+      }
+    },
     "Set a goal": {
       "localizations": {
         "en": {
@@ -2427,6 +2509,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Show weight"
+          }
+        }
+      }
+    },
+    "Shows elapsed time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows elapsed time"
+          }
+        }
+      }
+    },
+    "Shows time remaining": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows time remaining"
           }
         }
       }
@@ -2537,6 +2639,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tags, separated by commas"
+          }
+        }
+      }
+    },
+    "Tap a day to see its drinks. Days follow your current time zone. Changing time zones can move a drink to another date.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a day to see its drinks. Days follow your current time zone. Changing time zones can move a drink to another date."
           }
         }
       }
@@ -3071,12 +3183,12 @@
         }
       }
     },
-    "What's happening in your body, your day, or your thoughts?": {
+    "What’s happening in your body, your day, or your thoughts?": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What's happening in your body, your day, or your thoughts?"
+            "value": "What’s happening in your body, your day, or your thoughts?"
           }
         }
       }
@@ -3157,6 +3269,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your first records will appear here."
+          }
+        }
+      }
+    },
+    "Your glass fills toward it": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your glass fills toward it"
+          }
+        }
+      }
+    },
+    "Your goal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your goal"
           }
         }
       }
@@ -3327,6 +3459,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "mL"
+          }
+        }
+      }
+    },
+    "of": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of"
           }
         }
       }

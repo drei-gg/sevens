@@ -1,4 +1,5 @@
 import SwiftUI
+import SevenKit
 import UniformTypeIdentifiers
 import FastCore
 
@@ -26,18 +27,18 @@ struct BackupScreen: View {
             Section(f("Keep a copy")) {
                 Button(f("Export complete JSON backup")) { Task { await export(csv: false) } }
                 Button(f("Export records as CSV")) { Task { await export(csv: true) } }.disabled(!model.isReady)
-                Text(f("Backups include your private journal and measurements. Choose where to keep them. JSON restores exactly; CSV is for reading in a spreadsheet.")).font(.footnote).foregroundStyle(.secondary)
+                Text(f("Backups include your private journal and measurements. Choose where to keep them. JSON restores exactly; CSV is for reading in a spreadsheet.")).textRole(.caption)
             }
             if model.isReady {
                 Section(f("Bring your records")) {
                     Button(f("Import JSON backup")) { importing = true }
-                    Text(f("Preview first. New records are merged; identical copies are skipped. Conflicting IDs or overlapping fasts stop the whole import. Your current preferences stay as they are.")).font(.footnote).foregroundStyle(.secondary)
+                    Text(f("Preview first. New records are merged; identical copies are skipped. Conflicting IDs or overlapping fasts stop the whole import. Your current preferences stay as they are.")).textRole(.caption)
                 }
                 Section { Button(f("Delete all records"), role: .destructive) { confirmDelete = true } }
             }
-            if let status { Section { Text(status).foregroundStyle(.secondary) } }
+            if let status { Section { Text(status).foregroundStyle(Tokens.muted) } }
         }
-        .navigationTitle(f("Your data"))
+        .sevenScreenBackground().navigationTitle(f("Your data"))
         .disabled(model.busy)
         .fileExporter(isPresented: $exporting, document: document, contentType: contentType, defaultFilename: "fast-tracker-\(Date().formatted(.iso8601.year().month().day().dateSeparator(.dash)))") { result in
             if case .success = result { status = f("Export saved.") }

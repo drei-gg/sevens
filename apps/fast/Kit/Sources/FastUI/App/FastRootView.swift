@@ -24,6 +24,9 @@ public struct FastRootView: View {
                 }
             } else { ProgressView(f("Opening your records")) }
         }
+        .sevenLook()
+        // The ink tint must not reach switches: a white thumb on dark-mode cream ink is 1.2:1.
+        .toggleStyle(SystemSwitchStyle())
         .task(id: model.store.hasStarted) {
             if model.store.hasStarted && model.store.launchSheet == .beforeYouBuy { firstLaunch = true }
         }

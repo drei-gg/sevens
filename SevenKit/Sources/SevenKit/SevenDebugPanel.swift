@@ -11,15 +11,15 @@ public struct SevenDebugPanel: View {
     public var body: some View {
         Section {
             LabeledContent("Source") { Text(store.isUsingLocalSource ? "Local (debug)" : "StoreKit") }
-            LabeledContent("State") { Text(String(describing: store.state)).font(.footnote) }
+            LabeledContent("State") { Text(String(describing: store.state)).textRole(.caption) }
             ForEach(LocalSource.Preset.allCases) { preset in
                 Button(Self.title(preset)) { store.applyDebugPreset(preset) }
                     .accessibilityLabel(Self.title(preset))
             }
         } header: {
-            Text("Debug: entitlement")
+            Text("Debug: entitlement").foregroundStyle(Tokens.muted)
         } footer: {
-            Text("Choosing a preset switches to the local source for this run.")
+            Text("Choosing a preset switches to the local source for this run.").foregroundStyle(Tokens.muted)
         }
     }
 

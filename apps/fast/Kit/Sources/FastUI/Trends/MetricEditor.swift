@@ -31,7 +31,7 @@ struct MetricEditor: View {
                 } footer: { Text(f("Log your own observations. There is no target you have to meet.")) }
                 if existing != nil { Button(f("Delete measurement"), role: .destructive) { delete = true } }
             }
-            .navigationTitle(FastFormat.kind(kind)).navigationBarTitleDisplayMode(.inline)
+            .sevenScreenBackground().navigationTitle(FastFormat.kind(kind)).navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 if let existing { value = Units.display(existing.value, kind: kind, settings: model.archive.settings).formatted(.number.precision(.fractionLength(0...3)).grouping(.never)) }
             }
@@ -71,7 +71,7 @@ struct MetricHistoryScreen: View {
                         + " " + FastFormat.unit(kind, settings: model.archive.settings))
                 }.foregroundStyle(.primary)
             }
-        }.navigationTitle(FastFormat.kind(kind))
+        }.sevenScreenBackground().navigationTitle(FastFormat.kind(kind))
             .sheet(item: $edit) { MetricEditor(kind: kind, existing: $0) }
     }
 }

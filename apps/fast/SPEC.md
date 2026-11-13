@@ -15,7 +15,7 @@ A private fasting tracker with a history worth keeping. Paid for once.
 
 The iPhone's Clock already times things, Notes keeps a journal, and Health records weight. Say that on the first screen. This app brings editable fasting and eating windows, a calendar, long-term patterns, a private journal and a water tracker with optional reminders together. No account, ads, social feed, remotely published articles or subscription.
 
-Native SwiftUI, iOS 17+, Swift 6. Shared SevenKit for purchase, restore, trial and About. Pure Foundation FastCore with portable tests, Apple-only FastUI. System backgrounds, controls, type and accent; brand only in About. String catalogs, Dynamic Type, VoiceOver and Reduce Motion from the start. No third-party dependencies.
+Native SwiftUI, iOS 17+, Swift 6. Shared SevenKit for purchase, restore, trial and About. Pure Foundation FastCore with portable tests, Apple-only FastUI. Native controls in the Sevens' look (polish guide, SevenKit K17): ink as the accent instead of system blue, paper behind every screen, cards for grouped content, and SevenKit's text roles and spacing scale. Every color pair passes 4.5:1, and 7:1 with Increase Contrast. Brand red only on the Unlock button. Fast's own visuals (the Today ring, water fill, charts and calendar rings) use the SevenKit data hues, warm for time and cool for water; controls never do. The Watch app and widgets keep the system look for now. String catalogs, Dynamic Type, VoiceOver and Reduce Motion from the start. No third-party dependencies.
 
 ## Today
 
