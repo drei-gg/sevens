@@ -13,18 +13,18 @@ struct PlansScreen: View {
     var body: some View {
         List {
             Section {
-                Text(f("Plans are reminders, not records. Nothing starts automatically.")).foregroundStyle(.secondary)
+                Text(f("Plans are reminders, not records. Nothing starts automatically.")).foregroundStyle(Tokens.muted)
                 GatedButton(feature: f("Plans"), action: { addPlan = true }) { Label(f("Plan a fast"), systemImage: "calendar.badge.plus") }
             }
             Section(f("Planned fasts")) {
-                if model.archive.plans.isEmpty { Text(f("Leave room for real life. Add dates that work for you.")).foregroundStyle(.secondary) }
+                if model.archive.plans.isEmpty { Text(f("Leave room for real life. Add dates that work for you.")).foregroundStyle(Tokens.muted) }
                 ForEach(model.archive.plans.sorted { $0.start < $1.start }) { plan in
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: Tokens.Space.s) {
                         Button { editPlan = plan } label: {
                             VStack(alignment: .leading) {
-                                Text(plan.start, format: .dateTime.month().day().hour().minute()).font(.headline)
-                                Text(FastFormat.goal(plan.goalMinutes)).foregroundStyle(.secondary)
-                                if !plan.intention.isEmpty { Text(plan.intention).font(.subheadline) }
+                                Text(plan.start, format: .dateTime.month().day().hour().minute()).textRole(.rowTitle, emphasized: true)
+                                Text(FastFormat.goal(plan.goalMinutes)).foregroundStyle(Tokens.muted)
+                                if !plan.intention.isEmpty { Text(plan.intention).textRole(.secondary) }
                             }.foregroundStyle(.primary)
                         }
                         if model.archive.active == nil {
@@ -43,7 +43,7 @@ struct PlansScreen: View {
             }
             NavigationLink(f("Reminder settings")) { ReminderSettingsScreen() }
         }
-        .navigationTitle(f("Plans & presets"))
+        .sevenScreenBackground().navigationTitle(f("Plans & presets"))
         .sheet(isPresented: $addPlan) { PlanEditor() }
         .sheet(item: $editPlan) { PlanEditor(existing: $0) }
         .sheet(isPresented: $addPreset) { PresetEditor() }
@@ -89,7 +89,7 @@ struct PlanEditor: View {
                 TextField(f("Eating window hours"), value: $eating, format: .number).keyboardType(.decimalPad)
                 TextField(f("Intention"), text: $plan.intention, axis: .vertical)
                 if existing != nil { Button(f("Delete plan"), role: .destructive) { delete = true } }
-            }.navigationTitle(f("Plan a fast")).navigationBarTitleDisplayMode(.inline)
+            }.sevenScreenBackground().navigationTitle(f("Plan a fast")).navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button(f("Cancel")) { dismiss() } }
                     ToolbarItem(placement: .confirmationAction) { Button(f("Save")) { Task { await save() } }.disabled(model.busy || !valid) }
@@ -131,7 +131,7 @@ struct PresetEditor: View {
                 Toggle(f("Open ended"), isOn: $openEnded)
                 if !openEnded { TextField(f("Goal hours"), value: $hours, format: .number).keyboardType(.decimalPad) }
                 TextField(f("Eating window hours"), value: $eating, format: .number).keyboardType(.decimalPad)
-            }.navigationTitle(f("Custom preset")).navigationBarTitleDisplayMode(.inline)
+            }.sevenScreenBackground().navigationTitle(f("Custom preset")).navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button(f("Cancel")) { dismiss() } }
                     ToolbarItem(placement: .confirmationAction) { Button(f("Save")) {

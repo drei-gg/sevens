@@ -9,121 +9,222 @@ struct TodayScreen: View {
     @State private var editFast: FastRecord?
     @State private var endFast: FastRecord?
     @State private var showJournal = false
-    @State private var showWater = false
     @State private var remaining = false
     var body: some View {
         ScrollView {
             SevenAdaptiveColumns(accessibilityText: textSize.isAccessibilitySize) {
-                TimelineView(.periodic(from: .now, by: 1)) { context in timer(at: context.date) }
-                VStack(alignment: .leading, spacing: 20) {
-                    if let active = model.archive.active {
-                        GroupBox {
-                            VStack(alignment: .leading, spacing: 16) {
-                                LabeledContent(f("Started"), value: active.start.formatted(date: .abbreviated, time: .shortened))
-                                if let goal = active.goalDate {
-                                    LabeledContent(f("Planned finish"), value: goal.formatted(date: .abbreviated, time: .shortened))
-                                }
-                                Button(f("Edit start or goal")) { editFast = active }.accessibilityIdentifier("fast.editActive")
-                                Button(f("End fast")) { endFast = active }.accessibilityIdentifier("fast.end")
-                            }.frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        if !active.intention.isEmpty {
-                            GroupBox(f("Your intention")) {
-                                Text(active.intention).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                        }
-                    } else {
-                        GroupBox {
-                            VStack(alignment: .leading, spacing: 16) {
-                                GatedButton(feature: f("Start a fast"), action: { showStart = true }) {
-                                    Label(f("Start a fast"), systemImage: "play.fill").frame(maxWidth: .infinity)
-                                }.buttonStyle(.borderedProminent).accessibilityIdentifier("fast.start")
-                                NavigationLink { PlansScreen() } label: { Label(f("Plans & presets"), systemImage: "calendar.badge.clock") }
-                            }.frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        if model.archive.settings.showEatingWindow, let last = model.archive.latestCompleted, let end = last.end {
-                            GroupBox(f("Eating window")) {
-                                TimelineView(.periodic(from: .now, by: 60)) { context in
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        let finish = end.addingTimeInterval(Double(last.eatingMinutes) * 60)
-                                        if context.date < finish {
-                                            LabeledContent(f("Time remaining"), value: FastFormat.duration(finish.timeIntervalSince(context.date)))
-                                            Text(f("A reminder, not a deadline. Start your next fast when it suits you.")).font(.footnote).foregroundStyle(.secondary)
-                                        } else {
-                                            Text(f("Your time is yours. There is no fast scheduled to start automatically.")).foregroundStyle(.secondary)
-                                        }
-                                    }.frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                            }
+                VStack(spacing: Tokens.Space.l) {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in hero(at: context.date) }
+                    actions
+                }
+                VStack(alignment: .leading, spacing: Tokens.Space.m) {
+                    if let active = model.archive.active, !active.intention.isEmpty {
+                        GroupBox(f("Your intention")) {
+                            Text(active.intention).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
-                    GroupBox(f("Notice your day")) {
-                        VStack(alignment: .leading, spacing: 16) {
-                            GatedButton(feature: f("Journal"), action: { showJournal = true }) { Label(f("Check in"), systemImage: "square.and.pencil") }
-                            GatedButton(feature: f("Water"), action: { showWater = true }) {
-                                LabeledContent { Text(waterToday) } label: { Label(f("Log water"), systemImage: "drop") }
-                            }
-                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    WaterCard()
+                    GroupBox {
+                        GatedButton(feature: f("Journal"), action: { showJournal = true }) {
+                            HStack(spacing: Tokens.Space.ms) {
+                                Image(systemName: "square.and.pencil").textRole(.section).foregroundStyle(Tokens.muted)
+                                    .accessibilityHidden(true)
+                                VStack(alignment: .leading, spacing: Tokens.Space.xs) {
+                                    Text(f("Check in")).textRole(.rowTitle, emphasized: true)
+                                    Text(f("Notice your day")).textRole(.secondary)
+                                }
+                                Spacer(minLength: 0)
+                                Image(systemName: "chevron.right").textRole(.caption).accessibilityHidden(true)
+                            }.contentShape(Rectangle())
+                        }.buttonStyle(.plain)
+                        .accessibilityLabel(f("Check in")).accessibilityHint(f("Notice your day"))
+                        .accessibilityIdentifier("journal.checkIn")
                     }
                     NavigationLink { HealthNoteScreen() } label: { Label(f("About fasting & this tracker"), systemImage: "info.circle") }
-                        .font(.footnote)
+                        .foregroundStyle(.tint).textRole(.caption)
                 }
             }.padding().frame(maxWidth: 1200).frame(maxWidth: .infinity)
         }
-        .navigationTitle(f("Today"))
+        .sevenScreenBackground().navigationTitle(f("Today"))
         .toolbar { ToolbarItem(placement: .topBarTrailing) { NavigationLink { SettingsScreen() } label: { Image(systemName: "gearshape").accessibilityLabel(f("Settings")) } } }
         .sheet(isPresented: $showStart) { FastEditor(mode: .start) }
         .sheet(item: $editFast) { FastEditor(mode: .edit($0)) }
         .sheet(item: $endFast) { FastEditor(mode: .finish($0)) }
         .sheet(isPresented: $showJournal) { JournalEditor(fastID: model.archive.active?.id) }
-        .sheet(isPresented: $showWater) { MetricEditor(kind: .water) }
     }
-    @ViewBuilder private func timer(at now: Date) -> some View {
-        VStack(spacing: 16) {
-            if let fast = model.archive.active {
-                let elapsed = fast.duration(at: now)
-                let target = Double(fast.goalMinutes ?? 0) * 60
-                let reached = target > 0 && elapsed >= target
-                if textSize.isAccessibilitySize {
-                    Text(f("Fasting")).font(.headline)
-                    Text(FastFormat.duration(remaining && target > 0 ? max(0, target - elapsed) : elapsed)).font(.title).monospacedDigit()
-                        .accessibilityIdentifier("fast.elapsed")
-                    Text(f("Goal:") + " " + FastFormat.goal(fast.goalMinutes)).font(.subheadline).foregroundStyle(.secondary)
-                } else {
-                ZStack {
-                    Circle().stroke(.quaternary, lineWidth: 10)
-                    Circle().trim(from: 0, to: target > 0 ? min(1, elapsed / target) : 1)
-                        .stroke(.tint, style: StrokeStyle(lineWidth: 10, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                    VStack(spacing: 10) {
-                        Text(reached ? f("Goal reached") : remaining && target > 0 ? f("Remaining") : f("Fasting"))
-                            .font(.headline).foregroundStyle(.secondary)
-                        Text(FastFormat.duration(remaining && target > 0 ? max(0, target - elapsed) : elapsed))
-                            .font(.system(.largeTitle, design: .rounded).weight(.medium)).monospacedDigit().minimumScaleFactor(0.6)
-                            .accessibilityIdentifier("fast.elapsed")
-                        Text(FastFormat.goal(fast.goalMinutes)).font(.subheadline).foregroundStyle(.secondary)
-                    }.padding(22)
-                }.frame(maxWidth: 290).aspectRatio(1, contentMode: .fit)
-                .accessibilityElement(children: .combine)
-                }
-                if fast.goalMinutes != nil {
-                    Button(remaining ? f("Show elapsed time") : f("Show time remaining")) { remaining.toggle() }.font(.subheadline)
-                }
-                if reached { Text(f("The timer keeps running until you end it.")).font(.footnote).foregroundStyle(.secondary) }
-            } else {
-                if textSize.isAccessibilitySize {
-                    Text(f("No fast running")).font(.headline)
-                } else {
-                    Image(systemName: "sun.horizon").font(.system(size: 52, weight: .ultraLight)).foregroundStyle(.secondary).accessibilityHidden(true)
-                    Text(f("At your own pace.")).font(.title2.weight(.medium))
-                    Text(f("A little structure. Room for real life.")).foregroundStyle(.secondary)
-                }
+
+    // MARK: Hero
+
+    /// The ring and what's under it: a running fast, an eating window, or nothing running.
+    @ViewBuilder private func hero(at now: Date) -> some View {
+        if let fast = model.archive.active {
+            let elapsed = fast.duration(at: now)
+            let target = Double(fast.goalMinutes ?? 0) * 60
+            let reached = target > 0 && elapsed >= target
+            let showRemaining = remaining && target > 0 && !reached
+            VStack(spacing: Tokens.Space.l) {
+                ring(progress: target > 0 ? elapsed / target : 1, tint: Tokens.dataWarm,
+                     label: reached ? f("Goal reached") : showRemaining ? f("Remaining") : f("Fasting"),
+                     value: showRemaining ? max(0, target - elapsed) : elapsed,
+                     caption: target > 0 ? f("Goal:") + " " + FastFormat.goal(fast.goalMinutes) : f("Open ended"),
+                     toggles: target > 0 && !reached)
+                timesRow(fast)
+                if reached { Text(f("The timer keeps running until you end it.")).textRole(.caption).multilineTextAlignment(.center) }
             }
-        }.frame(maxWidth: .infinity).padding(.vertical, 18)
+        } else if model.archive.settings.showEatingWindow, let last = model.archive.latestCompleted, let end = last.end,
+                  last.eatingMinutes > 0, now < end.addingTimeInterval(Double(last.eatingMinutes) * 60) {
+            let window = Double(last.eatingMinutes) * 60
+            let finish = end.addingTimeInterval(window)
+            VStack(spacing: Tokens.Space.m) {
+                ring(progress: now.timeIntervalSince(end) / window, tint: Tokens.muted,
+                     label: f("Eating window"), value: finish.timeIntervalSince(now),
+                     caption: f("Ends at") + " " + finish.formatted(date: .omitted, time: .shortened), toggles: false)
+                Text(f("A reminder, not a deadline. Start your next fast when it suits you.")).textRole(.caption)
+                    .multilineTextAlignment(.center)
+            }
+        } else if textSize.isAccessibilitySize {
+            Text(f("No fast running")).textRole(.title)
+        } else {
+            ZStack {
+                Circle().stroke(Tokens.rule, lineWidth: ringWidth).padding(ringWidth / 2)
+                VStack(spacing: Tokens.Space.s) {
+                    if let last = model.archive.latestCompleted, let end = last.end {
+                        Text(f("Last fast")).textRole(.caption, emphasized: true).textCase(.uppercase)
+                        Text(FastFormat.duration(end.timeIntervalSince(last.start))).textRole(.hero).numeric()
+                            .minimumScaleFactor(0.6).lineLimit(1)
+                        Text(end.formatted(.relative(presentation: .named))).textRole(.secondary)
+                    } else {
+                        Image(systemName: "sun.horizon").glyph()
+                        Text(f("At your own pace.")).textRole(.section)
+                        Text(f("A little structure. Room for real life.")).textRole(.secondary)
+                    }
+                }.multilineTextAlignment(.center).padding(Tokens.Space.xl)
+            }
+            .frame(maxWidth: ringSize).aspectRatio(1, contentMode: .fit)
+            .accessibilityElement(children: .combine)
+        }
     }
-    private var waterToday: String {
-        let total = model.archive.metrics.filter { $0.kind == .water && Calendar.current.isDateInToday($0.date) }.reduce(0) { $0 + $1.value }
-        return Units.display(total, kind: .water, settings: model.archive.settings).formatted(.number.precision(.fractionLength(0)))
-            + " " + FastFormat.unit(.water, settings: model.archive.settings)
+
+    private var ringWidth: CGFloat { 18 }
+    private var ringSize: CGFloat { 300 }
+
+    /// A progress ring with a live time in the middle. At accessibility text sizes the ring steps
+    /// aside and the words stack, so nothing scales down to fit.
+    @ViewBuilder private func ring(progress: Double, tint: Color, label: String, value: TimeInterval, caption: String, toggles: Bool) -> some View {
+        let center = VStack(spacing: Tokens.Space.xs) {
+            Text(label).textRole(.caption, emphasized: true).textCase(.uppercase)
+            Text(clock(value)).textRole(.display).numeric().lineLimit(1).minimumScaleFactor(0.5)
+                .accessibilityLabel(FastFormat.duration(value))
+                .accessibilityIdentifier("fast.elapsed")
+            Text(caption).textRole(.secondary)
+        }.multilineTextAlignment(.center)
+        Group {
+            if textSize.isAccessibilitySize {
+                VStack(spacing: Tokens.Space.m) {
+                    center
+                    Capsule().fill(Tokens.rule).frame(height: Tokens.Space.s)
+                        .overlay(alignment: .leading) {
+                            GeometryReader { geometry in
+                                Capsule().fill(tint).frame(width: geometry.size.width * min(1, max(0, progress)))
+                            }
+                        }
+                        .accessibilityHidden(true)
+                }
+            } else {
+                ZStack {
+                    ProgressRing(progress: progress, tint: tint, width: ringWidth)
+                    center.padding(Tokens.Space.xl)
+                }.frame(maxWidth: ringSize).aspectRatio(1, contentMode: .fit)
+            }
+        }
+        .contentShape(Circle())
+        .onTapGesture { if toggles { withAnimation(.easeInOut) { remaining.toggle() } } }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(toggles ? .isButton : [])
+        .accessibilityHint(toggles ? (remaining ? f("Shows elapsed time") : f("Shows time remaining")) : "")
+    }
+
+    /// Started and goal times side by side, each a way into the editor.
+    private func timesRow(_ fast: FastRecord) -> some View {
+        let layout = textSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: Tokens.Space.m)) : AnyLayout(HStackLayout(spacing: Tokens.Space.m))
+        return layout {
+            timeCell(f("Started"), fast.start, identifier: "fast.editActive") { editFast = fast }
+            if let goal = fast.goalDate {
+                timeCell(f("Goal"), goal, identifier: "fast.editGoal") { editFast = fast }
+            }
+        }
+    }
+
+    private func timeCell(_ title: String, _ date: Date, identifier: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: Tokens.Space.xs) {
+                Text(title).textRole(.caption, emphasized: true).textCase(.uppercase)
+                Text(date.formatted(.dateTime.weekday(.abbreviated).hour().minute())).textRole(.rowTitle, emphasized: true).numeric()
+                Text(f("Edit")).textRole(.caption).foregroundStyle(.tint)
+            }
+            .frame(maxWidth: .infinity).padding(.vertical, Tokens.Space.ms)
+            .background(Tokens.card, in: RoundedRectangle(cornerRadius: Tokens.Radius.card))
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title + ", " + date.formatted(date: .abbreviated, time: .shortened))
+        .accessibilityHint(f("Edit start or goal"))
+        .accessibilityIdentifier(identifier)
+    }
+
+    /// One large button for the one thing to do next.
+    @ViewBuilder private var actions: some View {
+        VStack(spacing: Tokens.Space.ms) {
+            if let active = model.archive.active {
+                Button { endFast = active } label: {
+                    Text(f("End fast")).textRole(.rowTitle, emphasized: true).frame(maxWidth: .infinity)
+                }
+                .sevenProminentButton().controlSize(.extraLarge).buttonBorderShape(.capsule)
+                .accessibilityIdentifier("fast.end")
+            } else {
+                GatedButton(feature: f("Start a fast"), action: { showStart = true }) {
+                    Label(f("Start a fast"), systemImage: "play.fill").textRole(.rowTitle, emphasized: true).frame(maxWidth: .infinity)
+                }
+                .sevenProminentButton().controlSize(.extraLarge).buttonBorderShape(.capsule)
+                .accessibilityIdentifier("fast.start")
+                NavigationLink { PlansScreen() } label: { Label(f("Plans & presets"), systemImage: "calendar.badge.clock") }
+                    .foregroundStyle(.tint)
+            }
+        }.frame(maxWidth: 420)
+    }
+
+    /// 1:05:09, the way a timer reads. Hours keep counting past a day.
+    private func clock(_ seconds: TimeInterval) -> String {
+        let total = max(0, Int(seconds))
+        return Duration.seconds(total).formatted(.time(pattern: .hourMinuteSecond(padHourToLength: 1)))
+    }
+}
+
+/// A round progress ring: a faint track, the arc in a data hue with round ends, and a dot where it
+/// stops. Past the goal the arc stays full.
+struct ProgressRing: View {
+    var progress: Double
+    var tint: Color
+    var width: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        let value = min(1, max(0, progress))
+        ZStack {
+            Circle().stroke(Tokens.rule, lineWidth: width)
+            Circle().trim(from: 0, to: value)
+                .stroke(tint, style: StrokeStyle(lineWidth: width, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            GeometryReader { geometry in
+                let radius = min(geometry.size.width, geometry.size.height) / 2
+                let angle = Angle.degrees(value * 360 - 90)
+                Circle().fill(Tokens.card).overlay(Circle().stroke(tint, lineWidth: width / 4))
+                    .frame(width: width * 0.9, height: width * 0.9)
+                    .position(x: geometry.size.width / 2 + radius * cos(angle.radians),
+                              y: geometry.size.height / 2 + radius * sin(angle.radians))
+            }
+        }
+        .padding(width / 2)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.4), value: value)
+        .accessibilityHidden(true)
     }
 }

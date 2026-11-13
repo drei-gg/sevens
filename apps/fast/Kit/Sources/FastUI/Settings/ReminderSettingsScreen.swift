@@ -1,4 +1,5 @@
 import SwiftUI
+import SevenKit
 import FastCore
 
 struct ReminderSettingsScreen: View {
@@ -14,6 +15,7 @@ struct ReminderSettingsScreen: View {
                 Toggle(f("Eating window ending"), isOn: $settings.eatingReminder)
                 Toggle(f("Planned fasts"), isOn: $settings.scheduleReminders)
             }
+            Section { NavigationLink(f("Water reminders")) { WaterSettingsScreen() } }
             Section(f("Weekly start reminder")) {
                 DatePicker(f("Time"), selection: $time, displayedComponents: .hourAndMinute)
                 ForEach(1...7, id: \.self) { day in
@@ -23,13 +25,13 @@ struct ReminderSettingsScreen: View {
                 }
             }
             Section {
-                Text(model.notificationStatus).foregroundStyle(.secondary)
+                Text(model.notificationStatus).foregroundStyle(Tokens.muted)
                 Button(f("Open iPhone notification settings")) {
                     if let url = URL(string: UIApplication.openNotificationSettingsURLString) { UIApplication.shared.open(url) }
                 }
             } footer: { Text(f("Only the reminders you choose. No journal text is shown in notifications. Focus and notification settings may silence delivery.")) }
         }
-        .navigationTitle(f("Reminders"))
+        .sevenScreenBackground().navigationTitle(f("Reminders"))
         .onAppear {
             settings = model.archive.settings
             time = Calendar.current.date(bySettingHour: settings.reminderHour, minute: settings.reminderMinute, second: 0, of: Date())!
@@ -44,6 +46,10 @@ struct ReminderSettingsScreen: View {
             _ = await model.reminders.requestPermission()
         }
         let value = settings
-        if await model.change({ $0.settings = value }) { dismiss() }
+        if await model.change({
+            $0.settings.goalReminder = value.goalReminder; $0.settings.eatingReminder = value.eatingReminder
+            $0.settings.scheduleReminders = value.scheduleReminders; $0.settings.reminderWeekdays = value.reminderWeekdays
+            $0.settings.reminderHour = value.reminderHour; $0.settings.reminderMinute = value.reminderMinute
+        }) { dismiss() }
     }
 }

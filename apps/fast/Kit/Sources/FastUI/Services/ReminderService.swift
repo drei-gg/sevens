@@ -29,6 +29,7 @@ actor ReminderService {
                 let content = UNMutableNotificationContent()
                 content.title = f("Fast Tracker"); content.sound = .default
                 switch event.kind {
+                case .water: content.body = f("A water break, if it suits your day. Log a drink in Fast.")
                 case .goal: content.body = f("Your planned fasting time has elapsed. End your fast when you are ready.")
                 case .eating: content.body = f("Your planned eating window has elapsed. Adjust your day as you need.")
                 case .planned, .weekly: content.body = f("A time you set aside for fasting. Start only if it suits your day.")

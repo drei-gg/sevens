@@ -11,16 +11,16 @@ struct HealthImportScreen: View {
         Form {
             Section {
                 Text(f("Import weight measurements you already keep in Apple Health. Access is optional and requested only when you tap Import. Nothing is written to Health."))
-                Text(f("This is a manual import, not background sync. Existing samples are skipped when you import again. Health does not tell us whether read permission was denied or no measurements exist.")).font(.footnote).foregroundStyle(.secondary)
+                Text(f("This is a manual import, not background sync. Existing samples are skipped when you import again. Health does not tell us whether read permission was denied or no measurements exist.")).textRole(.caption)
                 if HKHealthStore.isHealthDataAvailable() {
                     GatedButton(feature: f("Apple Health import"), action: { Task { await importWeight() } }) { Text(f("Import weight from Apple Health")) }
                         .disabled(importing || model.busy)
                 } else { Text(f("Apple Health is unavailable on this device.")) }
                 if importing { ProgressView() }
-                if let status { Text(status).foregroundStyle(.secondary) }
+                if let status { Text(status).foregroundStyle(Tokens.muted) }
             }
             Section { Text(f("You can review, edit or delete imported measurements in Trends. Manage Health permissions in iPhone Settings.")) }
-        }.navigationTitle(f("Apple Health"))
+        }.sevenScreenBackground().navigationTitle(f("Apple Health"))
     }
     private func importWeight() async {
         guard model.store.paidFeaturesAvailable else { return }

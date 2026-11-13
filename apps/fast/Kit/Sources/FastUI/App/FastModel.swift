@@ -34,9 +34,10 @@ public final class FastModel {
             let defaults = UserDefaults(suiteName: "FastTracker.UITests")!
             if args.contains("-fast.reset") { defaults.removePersistentDomain(forName: "FastTracker.UITests") }
             let source = LocalSource(defaults: defaults)
-            source.apply(args.contains("-fast.expired") ? .expired : .unlocked)
+            source.apply(args.contains("-fast.expired") ? .expired : args.contains("-fast.fresh") ? .notStarted : .unlocked)
             let store = Store(config: config, source: source, defaults: defaults)
-            store.markBeforeYouBuyShown(); store.markTrialEndedShown()
+            // The screens tour passes -fast.launchSheets to see Before you buy and Trial ended at launch.
+            if !args.contains("-fast.launchSheets") { store.markBeforeYouBuyShown(); store.markTrialEndedShown() }
             let file = base.appendingPathComponent("FastTracker/uitest.json")
             if args.contains("-fast.reset") { try? FileManager.default.removeItem(at: file) }
             self.init(store: store, repository: args.contains("-fast.demo")

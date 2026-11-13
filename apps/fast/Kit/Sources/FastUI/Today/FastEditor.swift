@@ -71,14 +71,14 @@ struct FastEditor: View {
                 }
                 Section { TextField(f("Tags, separated by commas"), text: $tags) }
                 Section {
-                    Text(f("An early finish is still a record. This timer does not measure ketosis, autophagy or fat burning.")).font(.footnote).foregroundStyle(.secondary)
+                    Text(f("An early finish is still a record. This timer does not measure ketosis, autophagy or fat burning.")).textRole(.caption)
                 }
                 if isExisting {
                     Section { Button(isCompleted && !isFinishing ? f("Delete fast") : f("Discard fast"), role: .destructive) { confirmDelete = true } }
                 }
             }
             .onAppear { model.message = nil }
-            .navigationTitle(isFinishing ? f("End fast") : isExisting ? f("Edit fast") : isCompleted ? f("Add past fast") : f("Start a fast"))
+            .sevenScreenBackground().navigationTitle(isFinishing ? f("End fast") : isExisting ? f("Edit fast") : isCompleted ? f("Add past fast") : f("Start a fast"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button(f("Cancel")) { dismiss() } }

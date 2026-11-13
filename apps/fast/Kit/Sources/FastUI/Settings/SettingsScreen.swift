@@ -11,16 +11,17 @@ struct SettingsScreen: View {
                 Toggle(f("Show weight"), isOn: setting(\.showWeight))
                 Toggle(f("Show eating window"), isOn: setting(\.showEatingWindow))
                 Toggle(f("Show Live Activity on Lock Screen"), isOn: setting(\.liveActivity))
-                Text(f("iOS limits each Live Activity to eight hours. Your fast keeps running; reopen the app to refresh the Lock Screen timer. The Home Screen widget remains available.")).font(.footnote).foregroundStyle(.secondary)
+                Text(f("iOS limits each Live Activity to eight hours. Your fast keeps running; reopen the app to refresh the Lock Screen timer. The Home Screen widget remains available.")).textRole(.caption)
                 Toggle(f("Weight in pounds"), isOn: setting(\.usePounds))
                 Toggle(f("Water in US fluid ounces"), isOn: setting(\.useFluidOunces))
+                NavigationLink(f("Water tracker")) { WaterScreen() }
                 NavigationLink(f("Reminders")) { ReminderSettingsScreen() }
                 NavigationLink(f("Plans & presets")) { PlansScreen() }
             }
             Section(f("Your data")) {
                 NavigationLink(f("Export, import & delete")) { BackupScreen() }
                 NavigationLink(f("Apple Health")) { HealthImportScreen() }
-                Text(f("Everything is stored on this phone. No account, ads or analytics. Your device backup may include these records.")).font(.footnote).foregroundStyle(.secondary)
+                Text(f("Everything is stored on this phone. No account, ads or analytics. Your device backup may include these records.")).textRole(.caption)
             }
             AboutSection(onShowBeforeYouBuy: { before = true }, notStartedStatus: f("Free trial not started. Your saved records stay accessible."))
             Section(f("About")) {
@@ -30,17 +31,17 @@ struct SettingsScreen: View {
                     List {
                         Text(f("Apple handles purchases and restores through StoreKit. Tracking, journal entries, reminders and measurements stay on this device."))
                         Text(f("Exports go only to the destination you choose. About links open only when tapped."))
-                    }.navigationTitle(f("Network contact"))
+                    }.sevenScreenBackground().navigationTitle(f("Network contact"))
                 }
-                AboutWhatsNewRow(text: f("First development build: editable fasting records, calendar and heatmap, journal, measurements, plans, reminders and portable backups."))
+                AboutWhatsNewRow(text: f("Water tracking now includes quick-add, daily history, an optional personal goal and reminders during hours you choose. Included with your one-time unlock."))
                 AboutLicenseRow(repositoryURL: URL(string: "https://github.com/drei-gg/sevens")!)
-                AboutNoticesRow(notices: [f("Built with Apple's frameworks and the shared SevenKit package. No third-party libraries or tracking SDKs.")])
+                AboutNoticesRow(notices: [f("Built with Apple’s frameworks and the shared SevenKit package. No third-party libraries or tracking SDKs.")])
                 if let email = Bundle.main.object(forInfoDictionaryKey: "SevensSupportEmail") as? String,
                    !email.contains("example.org"), !email.contains("$(") { AboutSupportRow(address: email) }
             }
         }
         .disabled(model.busy)
-        .navigationTitle(f("Settings"))
+        .sevenScreenBackground().navigationTitle(f("Settings"))
         .sheet(isPresented: $before) { BeforeYouBuyView(content: FastGate.before) { _ in before = false } }
     }
     private func setting(_ key: WritableKeyPath<TrackerSettings, Bool>) -> Binding<Bool> {
@@ -66,6 +67,6 @@ struct HealthNoteScreen: View {
             Section(f("Read the source")) {
                 Link(f("Johns Hopkins: Intermittent fasting"), destination: URL(string: "https://www.hopkinsmedicine.org/health/expert-qa/intermittent-fasting-what-is-it-and-how-does-it-work")!)
             }
-        }.navigationTitle(f("About fasting"))
+        }.sevenScreenBackground().navigationTitle(f("About fasting"))
     }
 }
