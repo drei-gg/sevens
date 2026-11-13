@@ -19,7 +19,7 @@ public actor ArchiveStore {
             do {
                 if let file, FileManager.default.fileExists(atPath: file.path) {
                     let size = try file.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-                    guard size <= ArchiveCodec.maxBytes else { throw TrackerError.tooLarge }
+                    guard size <= ArchiveCodec.maxBytes else { throw TrackerError.TooLarge }
                     archive = try ArchiveCodec.decode(Data(contentsOf: file), now: now)
                 }
                 loaded = true
@@ -42,7 +42,7 @@ public actor ArchiveStore {
         guard next != archive else { return archive }
         next.companionRevision = UUID()
         let bytes = try ArchiveCodec.encode(next)
-        guard bytes.count <= ArchiveCodec.maxBytes else { throw TrackerError.tooLarge }
+        guard bytes.count <= ArchiveCodec.maxBytes else { throw TrackerError.TooLarge }
         if let file { try writer(bytes, file) }
         archive = next
         return next

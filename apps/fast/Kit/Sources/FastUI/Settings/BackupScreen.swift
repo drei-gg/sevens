@@ -49,7 +49,7 @@ struct BackupScreen: View {
                 let url = try result.get(); let access = url.startAccessingSecurityScopedResource()
                 defer { if access { url.stopAccessingSecurityScopedResource() } }
                 let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-                guard size <= ArchiveCodec.maxBytes else { throw TrackerError.tooLarge }
+                guard size <= ArchiveCodec.maxBytes else { throw TrackerError.TooLarge }
                 let data = try Data(contentsOf: url)
                 let incoming = try ArchiveCodec.decode(data, now: Date())
                 preview = try ArchiveCodec.merge(incoming, into: model.archive, now: Date())

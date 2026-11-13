@@ -55,10 +55,10 @@ import Testing
 @Test func watchDoesNotAcknowledgeFailedDiskWrite() async throws {
     let now = Date(timeIntervalSince1970: 1_800_000_000)
     let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    let store = ArchiveStore(file: url, writer: { _, _ in throw TrackerError.readOnly })
+    let store = ArchiveStore(file: url, writer: { _, _ in throw TrackerError.ReadOnly })
     let original = try await store.read(now: now)
     let request = FastWatchRequest(sentAt: now, action: .water, revision: original.companionRevision)
-    await #expect(throws: TrackerError.readOnly) {
+    await #expect(throws: TrackerError.ReadOnly) {
         try await store.transact(now: now) { try $0.applyWatch(request, canCreateRecords: true, now: now) }
     }
     #expect(try await store.read(now: now) == original)
@@ -92,7 +92,7 @@ import Testing
     let request = FastWatchRequest(sentAt: now, action: .water, revision: archive.companionRevision)
     try archive.applyWatch(request, canCreateRecords: true, now: now)
     try ArchiveCodec.encode(archive).write(to: url)
-    let relaunched = ArchiveStore(file: url, writer: { _, _ in throw TrackerError.readOnly })
+    let relaunched = ArchiveStore(file: url, writer: { _, _ in throw TrackerError.ReadOnly })
     let reply = try await relaunched.transact(now: now) { try $0.applyWatch(request, canCreateRecords: true, now: now) }
     #expect(reply.metrics.count == 1)
 }

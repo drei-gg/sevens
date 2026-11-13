@@ -39,7 +39,7 @@ actor ReminderService {
                     guard date > Date() else { continue }
                     trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, date.timeIntervalSinceNow), repeats: false)
                 } else {
-                    var parts = DateComponents(); parts.weekday = event.weekday; parts.hour = event.hour; parts.minute = event.minute
+                    var parts = DateComponents(); parts.weekday = event.weekday.map(Int.init); parts.hour = event.hour.map(Int.init); parts.minute = event.minute.map(Int.init)
                     trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: true)
                 }
                 try await center.add(UNNotificationRequest(identifier: event.id, content: content, trigger: trigger))

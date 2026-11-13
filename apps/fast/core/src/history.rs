@@ -41,7 +41,7 @@ fn day_with(date: SystemTime, archive: &FastArchive, tz: &jiff::tz::TimeZone, no
         archive.fasts.iter().filter(|f| history_overlap(f.start, f.end.unwrap_or(now), start, end) > 0.0).collect();
     Some(DaySummary {
         date: start,
-        seconds: touching.iter().map(|f| history_overlap(f.start, f.end.unwrap_or(now), start, end)).sum(),
+        seconds: touching.iter().map(|f| history_overlap(f.start, f.end.unwrap_or(now), start, end)).fold(0.0, |a, b| a + b),
         fast_ids: touching.iter().map(|f| f.id).collect(),
         journal_count: archive.journal.iter().filter(|j| j.date >= start && j.date < end).count() as i32,
         is_rest_day: archive.rest_days.iter().any(|r| time::same_day(r.date, date, tz)),
@@ -74,11 +74,11 @@ pub fn history_days(start: SystemTime, end: SystemTime, archive: &FastArchive, c
 #[uniffi::export]
 pub fn history_summary(start: SystemTime, end: SystemTime, archive: &FastArchive, now: SystemTime) -> PeriodSummary {
     let completed: Vec<&FastRecord> = archive.fasts.iter().filter(|f| f.end.map(|e| e >= start && e < end).unwrap_or(false)).collect();
-    let duration: f64 = completed.iter().map(|f| fast_duration(f, now)).sum();
+    let duration: f64 = completed.iter().map(|f| fast_duration(f, now)).fold(0.0, |a, b| a + b);
     let goals_met = completed.iter().filter(|f| fast_met_goal(f) == Some(true)).count() as i32;
     let goals_count = completed.iter().filter(|f| f.goal_minutes.is_some()).count() as i32;
     PeriodSummary {
-        seconds: archive.fasts.iter().map(|f| history_overlap(f.start, f.end.unwrap_or(now), start, end)).sum(),
+        seconds: archive.fasts.iter().map(|f| history_overlap(f.start, f.end.unwrap_or(now), start, end)).fold(0.0, |a, b| a + b),
         completed_count: completed.len() as i32,
         average_duration: if completed.is_empty() { None } else { Some(duration / completed.len() as f64) },
         goals_met,

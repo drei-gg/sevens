@@ -260,6 +260,19 @@ pub(crate) fn valid_range(kind: MetricKind) -> (f64, f64) {
     }
 }
 
+/// The accepted range of a measurement, in canonical units.
+#[derive(Debug, Clone, Copy, PartialEq, uniffi::Record)]
+pub struct MetricRange {
+    pub low: f64,
+    pub high: f64,
+}
+
+#[uniffi::export]
+pub fn metric_range(kind: MetricKind) -> MetricRange {
+    let (low, high) = valid_range(kind);
+    MetricRange { low, high }
+}
+
 #[uniffi::export]
 pub fn metric_in_range(kind: MetricKind, value: f64) -> bool {
     let (low, high) = valid_range(kind);

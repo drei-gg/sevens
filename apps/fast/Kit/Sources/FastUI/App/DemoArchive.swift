@@ -23,7 +23,7 @@ enum DemoArchive {
             if offset % 5 == 0 { archive.metrics.append(MetricEntry(date: end, kind: .weight, value: 72 + Double(offset) / 100)) }
         }
         archive.plans = [PlannedFast(start: now.addingTimeInterval(86_400), intention: "An ordinary day, at my own pace.")]
-        archive.restDays = [RestDay(date: calendar.date(byAdding: .day, value: -7, to: now)!)]
+        archive.restDays = [RestDay.on(calendar.date(byAdding: .day, value: -7, to: now)!)]
         return archive
     }
 }

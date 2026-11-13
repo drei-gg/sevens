@@ -83,72 +83,49 @@ struct LinkedDayRings: View {
     static let top: CGFloat = Tokens.Space.xs
 
     var body: some View {
+        // The strokes come from the core (`weekStrokes`), the same spec Android draws.
+        let strokes = weekStrokes(days: days)
         Canvas { context, size in
             let column = size.width / CGFloat(max(days.count, 1))
             let radius = (Self.diameter - Self.line) / 2
             let centerY = Self.top + Self.diameter / 2
             let topY = centerY - radius
-            func center(_ day: Int) -> CGPoint { CGPoint(x: column * (CGFloat(day) + 0.5), y: centerY) }
+            func center(_ day: UInt32) -> CGPoint { CGPoint(x: column * (CGFloat(day) + 0.5), y: centerY) }
             func angle(_ position: Double) -> Angle { .degrees(position * 360 - 90) }
-            func point(_ day: Int, _ position: Double) -> CGPoint {
+            func point(_ day: UInt32, _ position: Double) -> CGPoint {
                 let c = center(day), a = angle(position).radians
                 return CGPoint(x: c.x + radius * cos(a), y: c.y + radius * sin(a))
             }
-            func arc(_ day: Int, _ piece: DayArc) -> Path {
-                var path = Path()
-                path.addArc(center: center(day), radius: radius, startAngle: angle(piece.from), endAngle: angle(piece.to), clockwise: false)
-                return path
-            }
-
             for day in days.indices {
-                let c = center(day)
+                let c = center(UInt32(day))
                 context.stroke(Path(ellipseIn: CGRect(x: c.x - radius, y: c.y - radius, width: radius * 2, height: radius * 2)),
                                with: .color(Tokens.rule), lineWidth: Self.line)
             }
-
-            // Fasts in the order they first appear in the week, so an earlier fast is drawn before
-            // the one that follows it through the same midnight.
-            var order: [UUID] = []
-            for pieces in days { for piece in pieces where !order.contains(piece.fastID) { order.append(piece.fastID) } }
-
             context.drawLayer { layer in
-                for id in order {
-                    var path = Path()
-                    var started = false
-                    var kind = DayArc.Kind.actual
-                    var last: (day: Int, piece: DayArc)?
-                    for day in days.indices {
-                        guard let piece = days[day].first(where: { $0.fastID == id }) else { continue }
-                        kind = piece.kind
-                        if !started {
-                            if piece.fromPreviousDay {
-                                // Carried over from last week: come in from the row's leading edge.
-                                path.move(to: CGPoint(x: 0, y: topY))
-                                path.addLine(to: CGPoint(x: center(day).x, y: topY))
-                            } else {
-                                path.move(to: point(day, piece.from))
-                            }
-                            started = true
-                        }
-                        path.addArc(center: center(day), radius: radius, startAngle: angle(piece.from), endAngle: angle(piece.to), clockwise: false)
-                        if piece.intoNextDay {
-                            path.addLine(to: CGPoint(x: day + 1 < days.count ? center(day + 1).x : size.width, y: topY))
-                        }
-                        // The handover gap: another fast came in through this day's top and this one leaves through it.
-                        if piece.intoNextDay, !piece.fromPreviousDay,
-                           days[day].contains(where: { $0.fastID != id && $0.fromPreviousDay && !$0.intoNextDay }) {
-                            var eraser = layer
-                            eraser.blendMode = .destinationOut
-                            eraser.stroke(arc(day, piece), with: .color(.black), style: StrokeStyle(lineWidth: Self.line + 4, lineCap: .butt))
-                        }
-                        last = (day, piece)
+                for stroke in strokes {
+                    for gap in stroke.gaps {
+                        var arc = Path()
+                        arc.addArc(center: center(gap.day), radius: radius, startAngle: angle(gap.from), endAngle: angle(gap.to), clockwise: false)
+                        var eraser = layer
+                        eraser.blendMode = .destinationOut
+                        eraser.stroke(arc, with: .color(.black), style: StrokeStyle(lineWidth: Self.line + 4, lineCap: .butt))
                     }
-                    let style = kind == .planned
+                    var path = Path()
+                    for step in stroke.steps {
+                        switch step {
+                        case let .startOnRing(day, position): path.move(to: point(day, position))
+                        case .startAtLeadingEdge: path.move(to: CGPoint(x: 0, y: topY))
+                        case let .lineToTop(day): path.addLine(to: CGPoint(x: day.map { center($0).x } ?? size.width, y: topY))
+                        case let .arc(day, from, to):
+                            path.addArc(center: center(day), radius: radius, startAngle: angle(from), endAngle: angle(to), clockwise: false)
+                        }
+                    }
+                    let style = stroke.kind == .planned
                         ? StrokeStyle(lineWidth: Self.line / 2, lineCap: .round, dash: [3, 3])
                         : StrokeStyle(lineWidth: Self.line, lineCap: .round, lineJoin: .round)
                     layer.stroke(path, with: .color(Tokens.dataWarm), style: style)
-                    if kind == .running, let last, !last.piece.intoNextDay {
-                        let end = point(last.day, last.piece.to)
+                    if let day = stroke.endDotDay, let position = stroke.endDotPosition {
+                        let end = point(day, position)
                         let dot = Path(ellipseIn: CGRect(x: end.x - Self.line * 1.2, y: end.y - Self.line * 1.2,
                                                          width: Self.line * 2.4, height: Self.line * 2.4))
                         layer.fill(dot, with: .color(Tokens.card))

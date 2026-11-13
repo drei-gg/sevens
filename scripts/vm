@@ -49,6 +49,15 @@ if ! flock -n 9; then echo "vm: waiting for the $target lock (another $target ru
 
 ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe true || { echo "vm: tahoe is not reachable" >&2; exit 3; }
 
+# Apps with a Rust core (apps/<app>/core) need its XCFramework and Swift bindings in the Kit before
+# Xcode builds; rebuild them whenever the crate changed since the last build.
+if [ -f "$root/apps/$app/core/Cargo.toml" ]; then
+  stamp="$root/apps/$app/Kit/Generated/.rust-core-built"
+  if [ ! -f "$stamp" ] || [ -n "$(find "$root/apps/$app/core/src" "$root/apps/$app/core/Cargo.toml" "$root/apps/$app/core/Cargo.lock" "$root/apps/$app/core/uniffi.toml" -newer "$stamp" 2>/dev/null | head -1)" ]; then
+    "$root/scripts/rust-core" "$app" apple >&2 && touch "$stamp"
+  fi
+fi
+
 # Standing rule (Drei, 10 Nov 2026, corrected): one shared simulator. Boot it only when work
 # needs it, keep it up while work continues; a guest timer shuts it down after 15 idle minutes.
 # Commands that run an app or tests on it first call the guest's ~/bin/sim-ensure --wait and

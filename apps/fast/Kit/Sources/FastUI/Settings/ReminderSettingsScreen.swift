@@ -19,8 +19,8 @@ struct ReminderSettingsScreen: View {
             Section(f("Weekly start reminder")) {
                 DatePicker(f("Time"), selection: $time, displayedComponents: .hourAndMinute)
                 ForEach(1...7, id: \.self) { day in
-                    Toggle(Calendar.current.weekdaySymbols[day-1], isOn: Binding(get: { settings.reminderWeekdays.contains(day) }, set: { enabled in
-                        settings.reminderWeekdays.removeAll { $0 == day }; if enabled { settings.reminderWeekdays.append(day) }
+                    Toggle(Calendar.current.weekdaySymbols[day-1], isOn: Binding(get: { settings.reminderWeekdays.contains(Int32(day)) }, set: { enabled in
+                        settings.reminderWeekdays.removeAll { $0 == Int32(day) }; if enabled { settings.reminderWeekdays.append(Int32(day)) }
                     }))
                 }
             }
@@ -34,14 +34,14 @@ struct ReminderSettingsScreen: View {
         .sevenScreenBackground().navigationTitle(f("Reminders"))
         .onAppear {
             settings = model.archive.settings
-            time = Calendar.current.date(bySettingHour: settings.reminderHour, minute: settings.reminderMinute, second: 0, of: Date())!
+            time = Calendar.current.date(bySettingHour: Int(settings.reminderHour), minute: Int(settings.reminderMinute), second: 0, of: Date())!
         }
         .toolbar { Button(f("Save")) { Task { await save() } }.disabled(saving || model.busy) }
     }
     private func save() async {
         saving = true; defer { saving = false }
-        settings.reminderHour = Calendar.current.component(.hour, from: time)
-        settings.reminderMinute = Calendar.current.component(.minute, from: time)
+        settings.reminderHour = Int32(Calendar.current.component(.hour, from: time))
+        settings.reminderMinute = Int32(Calendar.current.component(.minute, from: time))
         if settings.goalReminder || settings.eatingReminder || settings.scheduleReminders || !settings.reminderWeekdays.isEmpty {
             _ = await model.reminders.requestPermission()
         }

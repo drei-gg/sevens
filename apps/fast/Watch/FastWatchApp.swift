@@ -1,5 +1,5 @@
 import SwiftUI
-import FastCore
+import FastWire
 import SevenCompanion
 
 @main

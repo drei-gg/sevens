@@ -51,11 +51,11 @@ struct RatingPicker: View {
     let title: String
     let low: String
     let high: String
-    @Binding var value: Int?
+    @Binding var value: Int32?
     var body: some View {
         Picker(title, selection: $value) {
-            Text(f("Not recorded")).tag(nil as Int?)
-            ForEach(1...5, id: \.self) { number in Text("\(number)" + (number == 1 ? " · " + low : number == 5 ? " · " + high : "")).tag(Optional(number)) }
+            Text(f("Not recorded")).tag(nil as Int32?)
+            ForEach(Int32(1)...5, id: \.self) { number in Text("\(number)" + (number == 1 ? " · " + low : number == 5 ? " · " + high : "")).tag(Optional(number)) }
         }
     }
 }

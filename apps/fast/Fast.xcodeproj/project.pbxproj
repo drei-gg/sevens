@@ -152,7 +152,7 @@
 		};
 		"82E9EFF67EEE07E89E6D5962" = {
 			"isa" = "XCSwiftPackageProductDependency";
-			"productName" = "FastCore";
+			"productName" = "FastWire";
 		};
 		"5C3818A1FC1FC3619E76F423" = {
 			"isa" = "PBXTargetDependency";
@@ -564,7 +564,7 @@
 		};
 		"4ABB415FC52F9246453A3AC4" = {
 			"isa" = "XCSwiftPackageProductDependency";
-			"productName" = "FastCore";
+			"productName" = "FastWire";
 		};
 		"14DB0428D36705E3937D36F7" = {
 			"isa" = "PBXBuildFile";

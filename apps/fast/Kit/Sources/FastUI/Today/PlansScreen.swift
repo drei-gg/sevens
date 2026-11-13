@@ -58,7 +58,7 @@ struct PlansScreen: View {
     private func start(_ plan: PlannedFast) async {
         guard model.store.paidFeaturesAvailable else { return }
         let now = Date()
-        let fast = FastRecord(start: now, goalMinutes: plan.goalMinutes, eatingMinutes: plan.eatingMinutes, intention: plan.intention)
+        let fast = FastRecord(start: now, goalMinutes: plan.goalMinutes.map(Int.init), eatingMinutes: Int(plan.eatingMinutes), intention: plan.intention)
         _ = await model.change { archive in try archive.save(fast, now: now); archive.plans.removeAll { $0.id == plan.id } }
         startPlan = nil
     }
@@ -102,7 +102,7 @@ struct PlanEditor: View {
     private var valid: Bool { hours.isFinite && eating.isFinite && (openEnded || (1.0/60...8760).contains(hours)) && (1.0/60...168).contains(eating) }
     private func save() async {
         guard model.allowNewRecord(existing: existing != nil) else { return }
-        plan.goalMinutes = openEnded ? nil : Int((hours * 60).rounded()); plan.eatingMinutes = Int((eating * 60).rounded())
+        plan.goalMinutes = openEnded ? nil : Int32((hours * 60).rounded()); plan.eatingMinutes = Int32((eating * 60).rounded())
         let value = plan
         if await model.change({ $0.plans.removeAll { $0.id == value.id }; $0.plans.append(value) }) { dismiss() }
     }

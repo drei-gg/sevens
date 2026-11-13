@@ -1,7 +1,7 @@
 import SwiftUI
 import WidgetKit
 import ActivityKit
-import FastCore
+import FastWire
 import FastSurfaces
 
 struct TimerEntry: TimelineEntry { let date: Date; let snapshot: TimerSnapshot }

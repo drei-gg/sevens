@@ -94,8 +94,8 @@ struct FastEditor: View {
     private var validNumbers: Bool { goalHours.isFinite && eatingHours.isFinite && (!hasGoal || (1.0/60...8_760).contains(goalHours)) && (1.0/60...168).contains(eatingHours) }
     private func apply(_ preset: FastPreset) { hasGoal = preset.goalMinutes != nil; goalHours = Double(preset.goalMinutes ?? 960)/60; eatingHours = Double(preset.eatingMinutes)/60 }
     private func save() async {
-        record.goalMinutes = hasGoal ? Int((goalHours * 60).rounded()) : nil
-        record.eatingMinutes = Int((eatingHours * 60).rounded()); record.tags = FastFormat.tags(tags)
+        record.goalMinutes = hasGoal ? Int32((goalHours * 60).rounded()) : nil
+        record.eatingMinutes = Int32((eatingHours * 60).rounded()); record.tags = FastFormat.tags(tags)
         // Start time is chosen explicitly, including backdating; never reset it during save.
         if await model.saveFast(record) { dismiss() }
     }

@@ -14,8 +14,10 @@ Time zones come from jiff's bundled IANA database on every platform, so a day's 
 scripts/rust-core fast test       # Linux: Swift-parity suite + golden files
 scripts/rust-core fast bindings   # Kotlin + Swift sources into generated/
 scripts/rust-core fast android    # .so for four ABIs into generated/jniLibs
-scripts/rust-core fast apple      # FastCoreFFI.xcframework, built in the macOS VM
+scripts/rust-core fast apple      # fast_coreFFI.xcframework, built in the macOS VM
 ```
+
+**Where each app picks it up.** Android: `android/core` compiles `generated/kotlin` with a thin façade (`Fast.kt`); the app packages `generated/jniLibs`; Gradle runs the script. iOS: the script puts the bindings in `Kit/Sources/FastCore/Generated/` and the library in `Kit/Generated/fast_coreFFI.xcframework`; `FastCore` adds a thin façade (`Facade.swift`) that keeps the Swift names FastUI uses. The Watch and widgets link only `FastWire`, plain Codable wire types, so no Rust reaches watchOS.
 
 Needs Rust (stable), `rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android`, `cargo install cargo-ndk`, an Android NDK, and in the VM `rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios`. `generated/` is a build output and is not committed.
 
@@ -32,4 +34,4 @@ Platform tests keep covering what stays native (store atomicity, corrupt-file ha
 2. Port the iOS core module by module; keep Swift's JSON keys and defaults (`serde` renames), its validation order and its error cases.
 3. Port the iOS tests first-class into `tests/swift_parity.rs` and add golden files the shipped app wrote. Green before any platform switches over.
 4. Move geometry that both apps draw into spec functions (data in, strokes/layers out).
-5. `scripts/rust-core <app> all`, then point each app at the bindings and delete its own copy of the logic.
+5. `scripts/rust-core <app> all`, then point each app at the bindings through a thin façade that only converts (units, calendars, error sentences) and delete its own copy of the logic. Move the platform's logic tests to the crate; keep platform tests for what stays native.

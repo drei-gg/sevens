@@ -17,6 +17,11 @@
 - Paired Watch timer, start/end and water actions with confirmed saves and duplicate protection.
 - Records stay available to the Watch while the phone is locked (protected until first unlock after restart).
 
+### One core for both phones — 13 November 2026
+
+- Fast's rules, calculations, backup format and the shapes both apps draw (the water glass and the calendar's day rings) now come from one shared core, so the iPhone and Android apps behave the same. Existing records and backups open unchanged.
+- Past the goal, the water glass keeps counting: each further goal's worth rises in the other tone, so every drink moves the water.
+
 ### Looks like a fasting app — 13 November 2026
 
 - Today is built around one ring: the running time in large rounded digits, a warm arc toward the goal, Started and Goal tiles that open the editor, and one large End fast or Start a fast button. Tap the ring to switch between elapsed and remaining. After a fast, the ring counts down the eating window; with nothing running it shows your last fast.

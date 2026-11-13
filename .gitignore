@@ -30,3 +30,5 @@ local.properties
 # Rust cores: build outputs
 apps/*/core/target/
 apps/*/core/generated/
+apps/*/Kit/Generated/
+apps/*/Kit/Sources/*/Generated/

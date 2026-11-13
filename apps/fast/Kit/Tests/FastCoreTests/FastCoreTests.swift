@@ -29,19 +29,19 @@ private func calendar(_ zone: String = "UTC") -> Calendar {
     let first = FastRecord(start: now.addingTimeInterval(-3_600), end: now)
     try archive.save(first, now: now)
     let before = archive
-    #expect(throws: TrackerError.overlap) {
+    #expect(throws: TrackerError.Overlap) {
         try archive.save(FastRecord(start: now.addingTimeInterval(-1_800), end: now), now: now)
     }
     #expect(archive == before)
-    #expect(throws: TrackerError.futureRecord) { try archive.save(FastRecord(start: now.addingTimeInterval(1)), now: now) }
-    #expect(throws: TrackerError.invalidTime) { try archive.save(FastRecord(start: now, end: now), now: now) }
+    #expect(throws: TrackerError.FutureRecord) { try archive.save(FastRecord(start: now.addingTimeInterval(1)), now: now) }
+    #expect(throws: TrackerError.InvalidTime) { try archive.save(FastRecord(start: now, end: now), now: now) }
 }
 
 @Test func activeSessionsCannotOverlapEvenWithHistoricalInsertion() throws {
     var archive = FastArchive()
     try archive.save(FastRecord(start: now.addingTimeInterval(-3_600)), now: now)
-    #expect(throws: TrackerError.multipleActive) { try archive.save(FastRecord(start: now), now: now) }
-    #expect(throws: TrackerError.overlap) {
+    #expect(throws: TrackerError.MultipleActive) { try archive.save(FastRecord(start: now), now: now) }
+    #expect(throws: TrackerError.Overlap) {
         try archive.save(FastRecord(start: now.addingTimeInterval(-7_200), end: now), now: now)
     }
 }
@@ -94,7 +94,7 @@ func daylightSavingDaysUseActualElapsedHours(start: String, end: String, hours: 
     archive.journal = [JournalEntry(date: now, fastID: fast.id, text: "Hello\nworld", mood: 3, energy: 2, hunger: 4)]
     archive.metrics = [MetricEntry(date: now, kind: .weight, value: 72.3), MetricEntry(date: now, kind: .water, value: 250)]
     archive.plans = [PlannedFast(start: now.addingTimeInterval(86_400))]
-    archive.restDays = [RestDay(date: now)]
+    archive.restDays = [RestDay.on(now)]
     archive.presets = [FastPreset(name: "My rhythm", goalMinutes: 780, eatingMinutes: 660)]
     let decoded = try ArchiveCodec.decode(ArchiveCodec.encode(archive), now: now)
     #expect(abs(decoded.fasts[0].start.timeIntervalSince(fast.start)) < 0.001)
@@ -109,23 +109,23 @@ func daylightSavingDaysUseActualElapsedHours(start: String, end: String, hours: 
     archive.fasts = [FastRecord(start: now.addingTimeInterval(-3_600), end: now)]
     #expect(try ArchiveCodec.merge(archive, into: archive, now: now).totalAdded == 0)
     var conflict = archive; conflict.fasts[0].reflection = "Different"
-    #expect(throws: TrackerError.conflict) { try ArchiveCodec.merge(conflict, into: archive, now: now) }
+    #expect(throws: TrackerError.Conflict) { try ArchiveCodec.merge(conflict, into: archive, now: now) }
     var overlap = archive; overlap.fasts[0].id = UUID()
-    #expect(throws: TrackerError.overlap) { try ArchiveCodec.merge(overlap, into: archive, now: now) }
+    #expect(throws: TrackerError.Overlap) { try ArchiveCodec.merge(overlap, into: archive, now: now) }
 }
 
 @Test func malformedAndFutureFilesAreNotSilentlyEmptied() {
-    #expect(throws: TrackerError.unreadable) { try ArchiveCodec.decode(Data("broken".utf8), now: now) }
-    #expect(throws: TrackerError.unsupportedSchema) { try ArchiveCodec.decode(Data("{\"schemaVersion\":2}".utf8), now: now) }
+    #expect(throws: TrackerError.Unreadable) { try ArchiveCodec.decode(Data("broken".utf8), now: now) }
+    #expect(throws: TrackerError.UnsupportedSchema) { try ArchiveCodec.decode(Data("{\"schemaVersion\":2}".utf8), now: now) }
 }
 
 @Test func invalidLinksRatingsAndMetricsFailValidation() {
     var archive = FastArchive(); archive.journal = [JournalEntry(date: now, fastID: UUID())]
-    #expect(throws: TrackerError.danglingJournal) { try archive.validate(now: now) }
+    #expect(throws: TrackerError.DanglingJournal) { try archive.validate(now: now) }
     archive.journal = [JournalEntry(date: now, mood: 6)]
-    #expect(throws: TrackerError.invalidEntry) { try archive.validate(now: now) }
+    #expect(throws: TrackerError.InvalidEntry) { try archive.validate(now: now) }
     archive.journal = []; archive.metrics = [MetricEntry(date: now, kind: .water, value: -1)]
-    #expect(throws: TrackerError.invalidEntry) { try archive.validate(now: now) }
+    #expect(throws: TrackerError.InvalidEntry) { try archive.validate(now: now) }
 }
 
 @Test func csvIncludesAllRecordsQuotesAndNeutralizesFormulas() {
@@ -166,8 +166,8 @@ func daylightSavingDaysUseActualElapsedHours(start: String, end: String, hours: 
     #expect(try await ArchiveStore(file: file).read(now: now).active == record)
     let broken = Data("broken".utf8); try broken.write(to: file)
     let damaged = ArchiveStore(file: file)
-    await #expect(throws: TrackerError.unreadable) { try await damaged.read(now: now) }
-    await #expect(throws: TrackerError.unreadable) { try await damaged.transact(now: now) { $0.fasts = [] } }
+    await #expect(throws: TrackerError.Unreadable) { try await damaged.read(now: now) }
+    await #expect(throws: TrackerError.Unreadable) { try await damaged.transact(now: now) { $0.fasts = [] } }
     #expect(try Data(contentsOf: file) == broken)
 }
 
@@ -186,17 +186,8 @@ func daylightSavingDaysUseActualElapsedHours(start: String, end: String, hours: 
     var incoming = FastArchive()
     incoming.metrics = [MetricEntry(date: now, kind: .weight, value: 70, externalID: "health.sample")]
     incoming.journal = [JournalEntry(date: now, text: "Must not get imported on failure")]
-    #expect(throws: TrackerError.duplicateID) { try ArchiveCodec.merge(incoming, into: archive, now: now) }
+    #expect(throws: TrackerError.DuplicateId) { try ArchiveCodec.merge(incoming, into: archive, now: now) }
     #expect(archive.journal.isEmpty)
-}
-
-@Test func olderVersionOneSettingsGetNewDefaults() throws {
-    let json = Data("{\"usePounds\":true}".utf8)
-    let settings = try JSONDecoder().decode(TrackerSettings.self, from: json)
-    #expect(settings.usePounds)
-    #expect(!settings.liveActivity)
-    #expect(settings.showEatingWindow)
-    #expect(settings.reminderWeekdays.isEmpty)
 }
 
 @Test func widgetSnapshotContainsNoPersonalNotesOrMeasurements() throws {

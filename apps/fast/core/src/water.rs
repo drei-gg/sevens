@@ -53,7 +53,7 @@ pub fn water_entries(metrics: &[MetricEntry], day: SystemTime, calendar: &Calend
 pub fn water_total(metrics: &[MetricEntry], day: SystemTime, calendar: &CalendarSpec) -> f64 {
     let tz = time::zone(calendar);
     let Some((start, end)) = time::day_interval(day, &tz) else { return 0.0 };
-    metrics.iter().filter(|m| m.kind == MetricKind::Water && m.date >= start && m.date < end).map(|m| m.value).sum()
+    metrics.iter().filter(|m| m.kind == MetricKind::Water && m.date >= start && m.date < end).map(|m| m.value).fold(0.0, |a, b| a + b)
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]

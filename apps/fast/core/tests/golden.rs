@@ -42,3 +42,15 @@ fn whole_milliseconds_round_trip_exactly() {
         assert_eq!(back.fasts[0].start, t, "{ms}");
     }
 }
+
+#[test]
+fn nothing_logged_is_positive_zero() {
+    // Rust's f64 sum of nothing is -0.0, which Swift prints as "-0". Swift's reduce(0) gave +0.
+    let calendar = CalendarSpec { time_zone_id: "UTC".into(), first_weekday: 1 };
+    let total = water_total(&[], UNIX_EPOCH, &calendar);
+    assert!(total == 0.0 && total.is_sign_positive());
+    let day = history_day(UNIX_EPOCH, &new_archive(), &calendar, UNIX_EPOCH).unwrap();
+    assert!(day.seconds.is_sign_positive());
+    let summary = history_summary(UNIX_EPOCH, UNIX_EPOCH, &new_archive(), UNIX_EPOCH);
+    assert!(summary.seconds.is_sign_positive());
+}

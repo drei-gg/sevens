@@ -87,7 +87,7 @@ struct WaterLevel: View {
             Circle().fill(Tokens.card)
             if let level, level > 0 {
                 TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { timeline in
-                    let state = reduceMotion ? LiquidSimulation() : motion.advance(to: timeline.date)
+                    let state = reduceMotion ? LiquidState(angle: 0, ripple: 0, phase: 0) : motion.advance(to: timeline.date)
                     Canvas { context, size in
                         Self.draw(level: level, state: state, in: &context, size: size)
                     }
@@ -113,73 +113,39 @@ struct WaterLevel: View {
         if scenePhase == .active, !reduceMotion, level != nil { motion.start() } else { motion.stop() }
     }
 
-    /// Below the goal, the water with its crest. Past it, a full glass in one tone and the current
-    /// lap rising over it in the other, both on the same gravity and wave.
-    private static func draw(level: Double, state: LiquidSimulation, in context: inout GraphicsContext, size: CGSize) {
-        let rect = CGRect(origin: .zero, size: size)
-        let lap = level < 1 ? 0 : Int(level.rounded(.down))
-        let rise = min(1, max(0, level - Double(lap)))
-        guard lap > 0 else {
-            // A light crest just above the surface, as on the fuel card.
-            context.fill(LiquidShape.path(in: rect, fraction: rise, state: state, layer: 0, surfaceLift: 5),
-                         with: .color(.white.opacity(0.55)))
-            context.fill(LiquidShape.path(in: rect, fraction: rise, state: state),
-                         with: .color(Tokens.dataCool.opacity(0.85)))
-            return
-        }
-        // The light tone is painted on card so it still reads light over the deep tone.
-        func fill(_ path: Path, light: Bool) {
-            if light {
+    /// The core decides the layers (laps past the goal alternate tones) and each surface's outline;
+    /// this only paints them. The light tone is laid on card so it reads light over the deep one.
+    private static func draw(level: Double, state: LiquidState, in context: inout GraphicsContext, size: CGSize) {
+        for layer in waterLayers(level: level) {
+            let path = Path(liquidOutline(width: size.width, height: size.height, fraction: layer.fraction, state: state,
+                                          wave: layer.wave, lift: layer.lifted ? 5 : 0), size: size)
+            switch layer.tone {
+            case .crest: context.fill(path, with: .color(.white.opacity(0.55)))
+            case .shallow: context.fill(path, with: .color(Tokens.dataCool.opacity(0.85)))
+            case .light:
                 context.fill(path, with: .color(Tokens.card))
                 context.fill(path, with: .color(Tokens.dataCool.opacity(0.45)))
-            } else {
-                context.fill(path, with: .color(Tokens.dataCool))
+            case .deep: context.fill(path, with: .color(Tokens.dataCool))
             }
-        }
-        let underIsLight = lap % 2 == 1
-        fill(LiquidShape.path(in: rect, fraction: 1, state: state), light: underIsLight)
-        if rise > 0 {
-            fill(LiquidShape.path(in: rect, fraction: rise, state: state, layer: 2), light: !underIsLight)
         }
     }
 }
 
-/// The water's outline in a round glass: StarMiles' `FuelLiquidGeometry.liquidPath`, with the
-/// surface placed by the circle's area (`LiquidGeometry.circleSurfaceOffset`) instead of the card's.
-enum LiquidShape {
-    static func path(in rect: CGRect, fraction: Double, state: LiquidSimulation, layer: Int = 1, surfaceLift: CGFloat = 0) -> Path {
-        var path = Path()
-        guard !rect.isEmpty, fraction > 0 else { return path }
-        if fraction >= 1 { path.addRect(rect); return path }
-        let radius = max(rect.width, rect.height)
-        let surface = CGFloat(LiquidGeometry.circleSurfaceOffset(fraction: fraction)) * min(rect.width, rect.height) / 2
-        let damping = CGFloat(sin(.pi * fraction))
-        let cosine = CGFloat(cos(state.angle)), sine = CGFloat(sin(state.angle))
-        let phase = CGFloat(state.phase) + CGFloat(layer)
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        func rotate(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-            CGPoint(x: center.x + x * cosine - y * sine, y: center.y + x * sine + y * cosine)
+extension Path {
+    /// A water layer's outline from the core, in points.
+    init(_ outline: LiquidOutline, size: CGSize) {
+        self.init()
+        func point(_ p: Point) -> CGPoint { CGPoint(x: p.x, y: p.y) }
+        switch outline {
+        case .empty: break
+        case .full: addRect(CGRect(origin: .zero, size: size))
+        case let .shape(start, surfaceStart, curves, end):
+            move(to: point(start))
+            addLine(to: point(surfaceStart))
+            for curve in curves { addCurve(to: point(curve.to), control1: point(curve.control1), control2: point(curve.control2)) }
+            addLine(to: point(end))
+            closeSubpath()
         }
-        let amplitude = (2 + CGFloat(state.ripple)) * damping * (layer == 0 ? 0.65 : 1)
-        let baseline = surface - surfaceLift * damping
-        let frequency = CGFloat.pi / radius
-        func wave(_ x: CGFloat) -> CGFloat { baseline + sin((x + radius) * frequency + phase) * amplitude }
-        func slope(_ x: CGFloat) -> CGFloat { cos((x + radius) * frequency + phase) * amplitude * frequency }
-        path.move(to: rotate(-radius, radius))
-        path.addLine(to: rotate(-radius, wave(-radius)))
-        // Cubic Hermite segments follow the sine and its tangent, so slow sub-pixel motion stays smooth.
-        let segments = 16
-        let width = 2 * radius / CGFloat(segments)
-        for index in 0..<segments {
-            let x = -radius + CGFloat(index) * width
-            let next = x + width
-            path.addCurve(to: rotate(next, wave(next)),
-                          control1: rotate(x + width / 3, wave(x) + slope(x) * width / 3),
-                          control2: rotate(next - width / 3, wave(next) - slope(next) * width / 3))
-        }
-        path.addLine(to: rotate(radius, radius))
-        path.closeSubpath()
-        return path
     }
 }
 
@@ -187,17 +153,17 @@ enum LiquidShape {
 /// screen. StarMiles read sensors_plus, which reports iOS acceleration as −9.81 × CoreMotion's g,
 /// so samples are converted to keep its tuning. No permission is needed for these sensors.
 @MainActor final class LiquidMotion {
-    private var simulation = LiquidSimulation()
+    private let simulation = LiquidSimulation()
     private var last: Date?
     private var manager: CMMotionManager?
     /// The phone is on its side (a compact height); the simulation reads gravity a quarter-turn round.
     var landscape = false
 
     /// Steps the water to `date` and returns where it is.
-    func advance(to date: Date) -> LiquidSimulation {
-        if let last { simulation.step(date.timeIntervalSince(last)) }
+    func advance(to date: Date) -> LiquidState {
+        if let last { simulation.step(seconds: date.timeIntervalSince(last)) }
         last = date
-        return simulation
+        return simulation.state()
     }
 
     func start() {

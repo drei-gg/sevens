@@ -139,7 +139,7 @@ struct HistoryScreen: View {
         _ = await model.change { archive in
             if archive.restDays.contains(where: { cal.isDate($0.date, inSameDayAs: date) }) {
                 archive.restDays.removeAll { cal.isDate($0.date, inSameDayAs: date) }
-            } else { archive.restDays.append(RestDay(date: date)) }
+            } else { archive.restDays.append(RestDay.on(date)) }
         }
     }
 }
