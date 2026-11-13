@@ -7,6 +7,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.MonitorWeight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -19,6 +21,7 @@ import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import gg.seven.fast.core.*
+import gg.seven.kit.*
 import gg.seven.kit.SevenTheme
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -59,40 +62,37 @@ internal fun HealthImportPanel(m: FastModel) {
             if (granted.containsAll(permissions)) read()
             else error = "Weight permission was not granted. Manual logging still works."
         }
-    Panel("Health Connect · weight only") {
-        Text(healthExplanation, style = MaterialTheme.typography.bodySmall)
-        Text(
-            "Manual import of available records from the last 30 days. Existing samples are skipped, so importing again does not duplicate them."
-        )
-        if (!supported)
-            Text(
-                "Health Connect is not available on this device. You can still log measurements manually."
-            )
-        OutlinedButton(
+    SevenGroup(
+        header = "Health Connect · weight only",
+        footer =
+            listOfNotNull(
+                    "Manual import of available records from the last 30 days. Existing samples are skipped, so importing again does not duplicate them.",
+                    healthExplanation,
+                    "Health Connect is not available on this device. You can still log measurements manually."
+                        .takeIf { !supported },
+                    "Start the trial or unlock to import new measurements.".takeIf { !m.canCreate },
+                    error,
+                )
+                .joinToString("\n\n"),
+    ) {
+        ActionRow(
+            if (working) "Reading weights…" else "Import weight from Health Connect",
             enabled = supported && !working && m.canCreate,
-            onClick = {
-                scope.launch {
-                    try {
-                        val granted =
-                            HealthConnectClient.getOrCreate(context)
-                                .permissionController
-                                .getGrantedPermissions()
-                        if (granted.containsAll(permissions)) read()
-                        else request.launch(permissions)
-                    } catch (e: Exception) {
-                        error = "Could not open Health Connect: ${e.message}"
-                    }
-                }
-            },
+            leading = { Icon(Icons.Outlined.MonitorWeight, null) },
         ) {
-            Text(if (working) "Reading weights…" else "Import weight from Health Connect")
+            scope.launch {
+                try {
+                    val granted =
+                        HealthConnectClient.getOrCreate(context)
+                            .permissionController
+                            .getGrantedPermissions()
+                    if (granted.containsAll(permissions)) read()
+                    else request.launch(permissions)
+                } catch (e: Exception) {
+                    error = "Could not open Health Connect: ${e.message}"
+                }
+            }
         }
-        if (!m.canCreate)
-            Text(
-                "Start the trial or unlock to import new measurements.",
-                style = MaterialTheme.typography.bodySmall,
-            )
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     }
     preview?.let { incoming ->
         val known = m.archive.value?.metrics?.mapNotNull { it.externalID }?.toSet().orEmpty()

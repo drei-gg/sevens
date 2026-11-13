@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import gg.seven.fast.core.*
+import gg.seven.kit.*
 import gg.seven.kit.SevenColors
 import java.time.LocalDate
 import java.time.ZoneId
@@ -278,25 +279,37 @@ private fun TimerHero(a: FastArchive, now: Double) {
 @Composable
 internal fun PlansScreen(m: FastModel, a: FastArchive, open: OpenEditor) {
     Page {
-        Text("Plans never start a fast automatically.")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { open("plan", null) }) { Text("Add plan") }
-            OutlinedButton(onClick = { open("preset", null) }) { Text("Save custom timer") }
-        }
-        if (a.plans.isEmpty())
-            Empty("Room for a plan", "Pick a date and time. Change your mind whenever you need.")
-        a.plans
-            .sortedBy { it.start }
-            .forEach { plan ->
-                Panel(stamp(plan.start)) {
-                    Text(plan.intention.ifBlank { "Planned fast" })
-                    TextButton(onClick = { open("plan", plan.id) }) { Text("Edit plan") }
-                }
+        SevenGroup(footer = "Plans are reminders, not records. Nothing starts automatically.") {
+            ActionRow("Plan a fast", leading = { Icon(Icons.Outlined.EventAvailable, null) }) {
+                open("plan", null)
             }
-        Section("Saved timers")
-        a.presets.forEach { preset ->
-            Panel(preset.name) {
-                TextButton(onClick = { open("preset", preset.id) }) { Text("Edit timer") }
+        }
+        SevenGroup(header = "Planned fasts") {
+            if (a.plans.isEmpty())
+                ValueRow("Room for a plan", supporting = "Pick a date and time. Change your mind whenever you need.")
+            a.plans
+                .sortedBy { it.start }
+                .forEach { plan ->
+                    ValueRow(
+                        stamp(plan.start),
+                        plan.goalMinutes?.let { duration(it * 60_000.0) } ?: "Open ended",
+                        supporting = plan.intention.ifBlank { null },
+                        chevron = true,
+                        onClick = { open("plan", plan.id) },
+                    )
+                }
+        }
+        SevenGroup(header = "Your presets") {
+            a.presets.forEach { preset ->
+                ValueRow(
+                    preset.name,
+                    preset.goalMinutes?.let { duration(it * 60_000.0) } ?: "Open ended",
+                    chevron = true,
+                    onClick = { open("preset", preset.id) },
+                )
+            }
+            ActionRow("Save a custom preset", leading = { Icon(Icons.Outlined.Add, null) }) {
+                open("preset", null)
             }
         }
     }

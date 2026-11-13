@@ -9,6 +9,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -19,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.fast.core.*
+import gg.seven.kit.*
 
 @Composable
 internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit) {
@@ -67,77 +70,67 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit)
                     "After saving the original, recover from a valid backup in a separate installation or contact support. This app will not overwrite the unreadable file."
                 )
             }
-        Panel("Paid once. Yours to keep.") {
-            Text(m.access.label(purchase, now.toLong()))
-            Button(onClick = onUnlock) { Text("Trial, unlock & restore") }
+        SevenGroup(header = "Paid once. Yours to keep.") {
+            ValueRow(
+                "Fast",
+                m.access.label(purchase, now.toLong()),
+                chevron = true,
+                onClick = onUnlock,
+            )
         }
         if (a != null) {
-            Panel("Your data") {
-                Text(
-                    "Stored on this device. Android may include it in device backups. No account, developer analytics or app server."
-                )
-                OutlinedButton(
-                    onClick = { exportJson.launch("fast-backup.json") },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Export JSON backup")
+            SevenGroup(
+                header = "Your data",
+                footer =
+                    "Stored on this device. Android may include it in device backups. No account, developer analytics or app server. Backups contain private journal and measurement records; choose where to save them.",
+            ) {
+                ActionRow("Export JSON backup", leading = { Icon(Icons.Outlined.Save, null) }) {
+                    exportJson.launch("fast-backup.json")
                 }
-                OutlinedButton(
-                    onClick = { exportCsv.launch("fast-records.csv") },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Export CSV tables")
+                ActionRow("Export CSV tables", leading = { Icon(Icons.Outlined.TableChart, null) }) {
+                    exportCsv.launch("fast-records.csv")
                 }
-                OutlinedButton(
-                    onClick = {
-                        importJson.launch(
-                            arrayOf("application/json", "text/plain", "application/octet-stream")
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Import & merge backup")
+                ActionRow("Import & merge backup", leading = { Icon(Icons.Outlined.FileOpen, null) }) {
+                    importJson.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
                 }
-                Text(
-                    "Backups contain private journal and measurement records. Choose where to save them.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
             }
             HealthImportPanel(m)
-            Panel("Make it yours") {
-                ToggleRow("Weight in pounds", a.settings.usePounds) {
+            SevenGroup(header = "Make it yours") {
+                SwitchRow("Weight in pounds", a.settings.usePounds) {
                     saveSettings(a.settings.copy(usePounds = it))
                 }
-                ToggleRow("Water in US fluid ounces", a.settings.useFluidOunces) {
+                SwitchRow("Water in US fluid ounces", a.settings.useFluidOunces) {
                     saveSettings(a.settings.copy(useFluidOunces = it))
                 }
-                ToggleRow("Show weight", a.settings.showWeight) {
+                SwitchRow("Show weight", a.settings.showWeight) {
                     saveSettings(a.settings.copy(showWeight = it))
                 }
-                ToggleRow("Show eating window", a.settings.showEatingWindow) {
+                SwitchRow("Show eating window", a.settings.showEatingWindow) {
                     saveSettings(a.settings.copy(showEatingWindow = it))
                 }
             }
-            Panel("Reminders you choose") {
-                Text(
-                    "Optional local notifications. Android battery settings may delay delivery. Reminders never start or finish a fast."
-                )
-                ToggleRow("Show current timer notification", a.settings.liveActivity) {
+            SevenGroup(
+                header = "Reminders you choose",
+                footer =
+                    "Optional local notifications. Android battery settings may delay delivery. Reminders never start or finish a fast.",
+            ) {
+                SwitchRow("Show current timer notification", a.settings.liveActivity) {
                     saveSettings(a.settings.copy(liveActivity = it), it)
                 }
-                ToggleRow("Chosen fasting time reached", a.settings.goalReminder) {
+                SwitchRow("Chosen fasting time reached", a.settings.goalReminder) {
                     saveSettings(a.settings.copy(goalReminder = it), it)
                 }
-                ToggleRow("Eating window elapsed", a.settings.eatingReminder) {
+                SwitchRow("Eating window elapsed", a.settings.eatingReminder) {
                     saveSettings(a.settings.copy(eatingReminder = it), it)
                 }
-                ToggleRow("Dated plans", a.settings.scheduleReminders) {
+                SwitchRow("Dated plans", a.settings.scheduleReminders) {
                     saveSettings(a.settings.copy(scheduleReminders = it), it)
                 }
-                Text("Weekly start reminder", style = MaterialTheme.typography.titleMedium)
+            }
+            SevenGroup(header = "Weekly start reminder") {
                 listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
                     .forEachIndexed { i, label ->
-                        ToggleRow(label, i + 1 in a.settings.reminderWeekdays) { enabled ->
+                        SwitchRow(label, i + 1 in a.settings.reminderWeekdays) { enabled ->
                             saveSettings(
                                 a.settings.copy(
                                     reminderWeekdays =
@@ -153,38 +146,35 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit)
                     java.time.LocalDate.now()
                         .atTime(a.settings.reminderHour, a.settings.reminderMinute)
                         .atZone(java.time.ZoneId.systemDefault())
-                NativeDateTime(
-                    "Weekly reminder time",
-                    today.toInstant().toEpochMilli().toDouble(),
-                ) { value ->
+                DateTimeRow("Time", today.toInstant().toEpochMilli().toDouble(), withDate = false) { value ->
                     val local = value.instant().atZone(java.time.ZoneId.systemDefault())
                     saveSettings(
                         a.settings.copy(reminderHour = local.hour, reminderMinute = local.minute)
                     )
                 }
-                Text(
+            }
+            SevenGroup(
+                footer =
                     if (NotificationManagerCompat.from(context).areNotificationsEnabled())
-                        "Android notifications are allowed"
-                    else "Android notifications are off"
-                )
-                OutlinedButton(
+                        "Android notifications are allowed."
+                    else "Android notifications are off."
+            ) {
+                ValueRow(
+                    "Android notification settings",
+                    chevron = true,
                     onClick = {
                         context.startActivity(
                             Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                                 .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                         )
-                    }
-                ) {
-                    Text("Android notification settings")
-                }
+                    },
+                )
             }
         }
-        Panel("About fasting") {
+        SevenGroup(header = "About fasting") {
             Text(
-                "This is a record, not a treatment plan. Longer is not presented as better. Timer stages do not detect ketosis, fat burning or autophagy."
-            )
-            Text(
-                "Fasting is not appropriate for everyone, particularly minors, pregnancy or breastfeeding, a history of eating disorders, and some conditions or medicines. Ask a clinician where appropriate."
+                "This is a record, not a treatment plan. Longer is not presented as better. Timer stages do not detect ketosis, fat burning or autophagy.\n\nFasting is not appropriate for everyone, particularly minors, pregnancy or breastfeeding, a history of eating disorders, and some conditions or medicines. Ask a clinician where appropriate.",
+                Modifier.padding(Space.m),
             )
         }
         Panel("About ${stringResource(R.string.app_name)}") {
@@ -199,7 +189,7 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit)
                 "Sevens · GPL-3.0\nKotlin & kotlinx.serialization · Apache-2.0\nKizitonwose Calendar · MIT\nVico charts · Apache-2.0\nAndroidX & Jetpack Compose · Apache-2.0\nGoogle Play Billing (store edition only) · Android SDK terms",
                 style = MaterialTheme.typography.bodySmall,
             )
-            OutlinedButton(onClick = { notices = true }) { Text("Read open-source licenses") }
+            TextButton(onClick = { notices = true }) { Text("Read open-source licenses") }
             if (BuildConfig.FLAVOR == "store")
                 Text(
                     "Google Play handles purchases and may contact Google for billing-related diagnostics. Your tracking and journal records are never passed to billing.",

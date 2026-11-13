@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -25,22 +26,42 @@ import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.fast.core.*
 import gg.seven.kit.SevenColors
+import gg.seven.kit.SevenFormat
+import gg.seven.kit.Space
+import gg.seven.kit.EmptyState
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-internal fun Double.number(digits: Int = 1) =
-    String.format(Locale.getDefault(), "%.${digits}f", this)
+internal fun Double.number(digits: Int = 1): String =
+    java.text.NumberFormat.getNumberInstance(Locale.getDefault())
+        .apply {
+            maximumFractionDigits = digits
+            minimumFractionDigits = 0
+        }
+        .format(this)
 
-internal fun stamp(value: Double) =
-    value
-        .instant()
-        .atZone(ZoneId.systemDefault())
-        .format(DateTimeFormatter.ofPattern("MMM d, yyyy · HH:mm"))
+/** Set from the device setting at the root, so every stamp honours 12/24-hour time. */
+internal var use24Hour = false
 
+internal fun stamp(value: Double): String {
+    val at = value.instant().atZone(ZoneId.systemDefault())
+    return "${SevenFormat.date(at)} at ${SevenFormat.time(at, use24Hour)}"
+}
+
+internal fun clock(value: Double): String =
+    SevenFormat.time(value.instant().atZone(ZoneId.systemDefault()), use24Hour)
+
+/** "16 hr", "16 hr 30 min", "45 min": the iOS duration wording. */
 internal fun duration(value: Double): String {
     val mins = (value / 60_000).toLong().coerceAtLeast(0)
-    return "${mins / 60}h ${mins % 60}m"
+    val h = mins / 60
+    val m = mins % 60
+    return when {
+        h == 0L -> "$m min"
+        m == 0L -> "$h hr"
+        else -> "$h hr $m min"
+    }
 }
 
 internal typealias OpenEditor = (String, String?) -> Unit
@@ -62,6 +83,7 @@ fun FastApp(m: FastModel) {
     var editId by rememberSaveable { mutableStateOf<String?>(null) }
     var unlock by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
+    use24Hour = android.text.format.DateFormat.is24HourFormat(context)
     val prefs = remember { context.getSharedPreferences("welcome", 0) }
     var welcome by rememberSaveable { mutableStateOf(!prefs.getBoolean("seen", false)) }
     val snackbar = remember { SnackbarHostState() }
@@ -87,6 +109,12 @@ fun FastApp(m: FastModel) {
         page = if (page in listOf("Water trends", "All water entries")) "Water" else null
     }
     BackHandler(page != null && editor == null) { back() }
+    val titleState = rememberTopAppBarState()
+    val titleScroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(titleState)
+    LaunchedEffect(page, tab) {
+        titleState.heightOffset = 0f
+        titleState.contentOffset = 0f
+    }
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         val wide = maxWidth >= 700.dp && LocalDensity.current.fontScale < 1.5f
         val tabs =
@@ -121,11 +149,13 @@ fun FastApp(m: FastModel) {
                     }
                 }
             Scaffold(
-                modifier = Modifier.weight(1f),
                 containerColor = MaterialTheme.colorScheme.background,
+                modifier = Modifier.weight(1f).nestedScroll(titleScroll.nestedScrollConnection),
                 topBar = {
-                    TopAppBar(
-                        title = { Text(page ?: tab) },
+                    LargeTopAppBar(
+                        title = { Text(page ?: tab, maxLines = 1) },
+                        scrollBehavior = titleScroll,
+                        expandedHeight = 104.dp,
                         navigationIcon = {
                             if (page != null)
                                 IconButton(onClick = { back() }) {
@@ -144,7 +174,8 @@ fun FastApp(m: FastModel) {
                         },
                         colors =
                             TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.background
+                                containerColor = MaterialTheme.colorScheme.background,
+                                scrolledContainerColor = MaterialTheme.colorScheme.background,
                             ),
                     )
                 },
@@ -341,23 +372,26 @@ fun FastApp(m: FastModel) {
 @Composable
 internal fun Page(content: @Composable ColumnScope.() -> Unit) {
     Column(
-        Modifier.widthIn(max = 960.dp)
+        Modifier.widthIn(max = 720.dp)
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+            .padding(horizontal = Space.m)
+            .padding(top = Space.s, bottom = Space.xl),
+        verticalArrangement = Arrangement.spacedBy(Space.m),
         content = content,
     )
 }
 
+/** A card of our own content on paper (iOS: a rounded `card` block). */
 @Composable
 internal fun Panel(title: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    Card(
+    Surface(
         Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
     ) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            title?.let { Text(it, style = MaterialTheme.typography.titleLarge) }
+        Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.ms)) {
+            title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
             content()
         }
     }
@@ -365,16 +399,22 @@ internal fun Panel(title: String? = null, content: @Composable ColumnScope.() ->
 
 @Composable
 internal fun Empty(title: String, detail: String) {
-    Panel {
-        Text(title, style = MaterialTheme.typography.titleLarge)
-        Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Surface(
+        Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        EmptyState(title, detail)
     }
 }
 
+/** A section header above a group: muted, aligned to the row text (iOS grouped header). */
 @Composable
 internal fun Section(title: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        HorizontalDivider()
-        Text(title, style = MaterialTheme.typography.titleLarge)
-    }
+    Text(
+        title,
+        Modifier.padding(start = Space.m, end = Space.m, top = Space.s),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }

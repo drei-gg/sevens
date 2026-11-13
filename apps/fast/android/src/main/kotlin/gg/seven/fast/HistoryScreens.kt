@@ -11,6 +11,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.outlined.*
@@ -33,7 +35,7 @@ import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarS
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import gg.seven.fast.core.*
-import gg.seven.kit.SevenColors
+import gg.seven.kit.*
 import java.time.*
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
@@ -66,16 +68,11 @@ internal fun HistoryScreen(m: FastModel, a: FastArchive, now: Double, open: Open
             }
     LazyColumn(
         Modifier.widthIn(max = 960.dp).fillMaxSize(),
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(start = Space.m, end = Space.m, top = Space.s, bottom = Space.xl),
+        verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
-        item {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("Calendar", "Heatmap", "List").forEach {
-                    FilterChip(selected = mode == it, onClick = { mode = it }, label = { Text(it) })
-                }
-            }
-        }
+        item { SearchField(query, "Search intentions, reflections & tags") { query = it } }
+        item { Segmented(listOf("Calendar", "Heatmap", "List").map { it to it }, mode) { mode = it } }
         item {
             Text(
                 "Days follow your current timezone: ${zone.id}.",
@@ -186,24 +183,28 @@ internal fun HistoryScreen(m: FastModel, a: FastArchive, now: Double, open: Open
                     }
             }
         item {
-            OutlinedTextField(
-                query,
-                { query = it },
-                label = { Text("Search intentions, reflections & tags") },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("All", "Goal reached", "Shorter").forEach { value ->
-                    FilterChip(
-                        selected = filter == value,
-                        onClick = { filter = value },
-                        label = { Text(value) },
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(Space.m)) {
+                SevenGroup {
+                    MenuRow(
+                        "Filter",
+                        filter,
+                        listOf(
+                            "All" to "All fasts",
+                            "Goal reached" to "Goal reached",
+                            "Shorter" to "Shorter than planned",
+                        ),
+                    ) {
+                        filter = it
+                    }
                 }
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { open("past", null) }) { Text("Add past fast") }
-                OutlinedButton(onClick = { open("rest", null) }) { Text("Mark rest day") }
+                SevenGroup {
+                    ActionRow("Add past fast", leading = { Icon(Icons.Outlined.Add, null) }) {
+                        open("past", null)
+                    }
+                    ActionRow("Mark a rest day", leading = { Icon(Icons.Outlined.Bedtime, null) }) {
+                        open("rest", null)
+                    }
+                }
             }
         }
         if (records.isEmpty())
@@ -213,30 +214,40 @@ internal fun HistoryScreen(m: FastModel, a: FastArchive, now: Double, open: Open
                     "Your records will be here. Add a forgotten fast whenever you need.",
                 )
             }
-        items(records, key = { it.id }) { fast ->
-            Card(
-                onClick = { open("detail", fast.id) },
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                Column(
-                    Modifier.fillMaxWidth().padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(duration(fast.duration(now)), style = MaterialTheme.typography.titleLarge)
-                    Text("${stamp(fast.start)} → ${fast.end?.let(::stamp) ?: "Running"}")
-                    if (fast.intention.isNotBlank()) Text(fast.intention)
-                    Text(
-                        when (fast.metGoal) {
-                            true -> "Chosen time reached"
-                            false -> "Shorter than planned · still a valid record"
-                            null ->
-                                "${if (fast.end == null) "In progress" else "Open-ended record"}"
-                        },
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        if (records.isNotEmpty())
+            item {
+                SevenGroup {
+                    records.forEach { fast ->
+                        SevenRow(
+                            duration(fast.duration(now)),
+                            supporting =
+                                listOfNotNull(
+                                        "${stamp(fast.start)} – ${fast.end?.let(::stamp) ?: "now"}",
+                                        fast.intention.takeIf { it.isNotBlank() },
+                                        when (fast.metGoal) {
+                                            false -> "Shorter than planned · still a valid record"
+                                            null -> if (fast.end == null) "In progress" else null
+                                            true -> null
+                                        },
+                                    )
+                                    .joinToString("\n"),
+                            onClick = { open("detail", fast.id) },
+                        ) {
+                            if (fast.metGoal == true)
+                                Icon(
+                                    Icons.Outlined.CheckCircle,
+                                    "Chosen time reached",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            Icon(
+                                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
-        }
     }
 }
 
@@ -249,30 +260,23 @@ internal fun JournalScreen(a: FastArchive, open: OpenEditor) {
             .sortedByDescending { it.date }
     LazyColumn(
         Modifier.widthIn(max = 960.dp).fillMaxSize(),
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(start = Space.m, end = Space.m, top = Space.s, bottom = Space.xl),
+        verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
-        item { Text("A record of how it felt.", style = MaterialTheme.typography.headlineSmall) }
+        item { SearchField(query, "Search observations & tags") { query = it } }
         item {
-            Text(
-                "Set an intention. Notice what happens. Keep what you learn.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        item {
-            Button(onClick = { open("journal", null) }) {
-                Icon(Icons.Outlined.EditNote, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Add journal entry")
+            Panel {
+                Text("A record of how it felt.", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "Set an intention. Notice what happens. Keep what you learn.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(onClick = { open("journal", null) }) {
+                    Icon(Icons.Outlined.EditNote, null)
+                    Spacer(Modifier.width(Space.s))
+                    Text("Add journal entry")
+                }
             }
-        }
-        item {
-            OutlinedTextField(
-                query,
-                { query = it },
-                label = { Text("Search your journal") },
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
         if (entries.isEmpty())
             item {
@@ -281,32 +285,51 @@ internal fun JournalScreen(a: FastArchive, open: OpenEditor) {
                     "A thought, an observation, or a reflection. Mood, energy and hunger are always optional.",
                 )
             }
-        items(entries, key = { it.id }) { entry ->
-            Card(
-                onClick = { open("journal", entry.id) },
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                Column(
-                    Modifier.fillMaxWidth().padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Text(stamp(entry.date), style = MaterialTheme.typography.labelLarge)
-                    Text(entry.text.ifBlank { "Check-in" })
-                    val ratings =
-                        listOfNotNull(
-                            entry.mood?.let { "Mood $it/5" },
-                            entry.energy?.let { "Energy $it/5" },
-                            entry.hunger?.let { "Hunger $it/5" },
-                        )
-                    if (ratings.isNotEmpty())
-                        Text(
-                            ratings.joinToString(" · "),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    if (entry.tags.isNotEmpty()) Text(entry.tags.joinToString(" · "))
+        if (entries.isNotEmpty())
+            item {
+                SevenGroup {
+                    entries.forEach { entry ->
+                        val ratings =
+                            listOfNotNull(
+                                entry.mood?.let { "Mood $it/5" },
+                                entry.energy?.let { "Energy $it/5" },
+                                entry.hunger?.let { "Hunger $it/5" },
+                            )
+                        Row(
+                            Modifier.fillMaxWidth()
+                                .clickable { open("journal", entry.id) }
+                                .padding(horizontal = Space.m, vertical = Space.ms),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                                Text(
+                                    stamp(entry.date),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(entry.text.ifBlank { "Check-in" }, maxLines = 3)
+                                if (entry.tags.isNotEmpty())
+                                    Text(
+                                        entry.tags.joinToString(" · "),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                if (ratings.isNotEmpty())
+                                    Text(
+                                        ratings.joinToString(" · "),
+                                        style = MaterialTheme.typography.bodySmall.numeric(),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                            }
+                            Icon(
+                                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
-        }
     }
 }
 
@@ -411,20 +434,9 @@ internal fun PeriodPicker(
     end: LocalDate,
     onEnd: (LocalDate) -> Unit,
 ) {
-    Column {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(7 to "Week", 30 to "Month", 90 to "Quarter", 365 to "Year").forEach { (n, label)
-                ->
-                FilterChip(days == n, onClick = { onDays(n) }, label = { Text(label) })
-            }
-        }
-        NativeDateTime(
-            "Period ending",
-            end.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli().toDouble(),
-            false,
-        ) {
-            onEnd(it.instant().atZone(ZoneId.systemDefault()).toLocalDate())
-        }
+    Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
+        Segmented(listOf(7 to "Week", 30 to "Month", 90 to "Quarter", 365 to "Year"), days, onSelect = onDays)
+        SevenGroup { DateRow("Ending", end, onChange = onEnd) }
     }
 }
 
@@ -796,43 +808,39 @@ private fun HistoryCalendar(
         )
     val scope = rememberCoroutineScope()
     Panel {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(
+        val shown = state.firstVisibleMonth.yearMonth
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(
                 onClick = {
-                    scope.launch {
-                        state.scrollToMonth(
-                            state.firstVisibleMonth.yearMonth
-                                .minusMonths(1)
-                                .coerceAtLeast(state.startMonth)
-                        )
-                    }
+                    scope.launch { state.animateScrollToMonth(shown.minusMonths(1).coerceAtLeast(state.startMonth)) }
                 }
             ) {
-                Text("Previous month")
+                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, "Previous month")
             }
-            TextButton(
+            Text(
+                shown.format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy")),
+                Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            IconButton(
                 onClick = {
-                    scope.launch {
-                        state.scrollToMonth(
-                            state.firstVisibleMonth.yearMonth
-                                .plusMonths(1)
-                                .coerceAtMost(state.endMonth)
-                        )
-                    }
+                    scope.launch { state.animateScrollToMonth(shown.plusMonths(1).coerceAtMost(state.endMonth)) }
                 }
             ) {
-                Text("Next month")
+                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, "Next month")
             }
         }
-        NativeDateTime(
-            "Jump to day",
-            selectedDay.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli().toDouble(),
-            false,
-        ) {
-            val day = it.instant().atZone(ZoneId.systemDefault()).toLocalDate()
-            select(day)
-            scope.launch { state.scrollToMonth(YearMonth.from(day)) }
-        }
+        if (LocalDensity.current.fontScale >= 1.5f || YearMonth.from(selectedDay) != shown)
+            NativeDateTime(
+                "Jump to day",
+                selectedDay.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli().toDouble(),
+                false,
+            ) {
+                val day = it.instant().atZone(ZoneId.systemDefault()).toLocalDate()
+                select(day)
+                scope.launch { state.scrollToMonth(YearMonth.from(day)) }
+            }
         // Seven 48dp targets stay usable in narrow windows; horizontal scroll preserves targets at
         // large text.
         if (LocalDensity.current.fontScale < 1.5f)
@@ -843,14 +851,7 @@ private fun HistoryCalendar(
                         state = state,
                         modifier = Modifier.width(width),
                         monthHeader = { month ->
-                            Text(
-                                month.yearMonth.format(
-                                    java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy")
-                                ),
-                                style = MaterialTheme.typography.titleLarge,
-                                modifier = Modifier.padding(vertical = 12.dp),
-                            )
-                            Row {
+                            Row(Modifier.padding(bottom = Space.s)) {
                                 month.weekDays.first().forEach { day ->
                                     Text(
                                         day.date.dayOfWeek.getDisplayName(
@@ -859,6 +860,8 @@ private fun HistoryCalendar(
                                         ),
                                         Modifier.weight(1f),
                                         style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                     )
                                 }
                             }
@@ -956,55 +959,40 @@ internal fun FastDetailScreen(a: FastArchive, id: String?, now: Double, open: Op
                 Spacer(Modifier.width(8.dp))
                 Text("Edit fast")
             }
-            Panel {
-                Text("Started · ${stamp(fast.start)}")
-                fast.end?.let { Text("Finished · ${stamp(it)}") }
-                Text("Goal · ${fast.goalMinutes?.let {duration(it*60_000.0)} ?: "Open ended"}")
-                Text(
-                    "Recorded timezone · ${fast.timeZoneID}",
-                    style = MaterialTheme.typography.bodySmall,
-                )
+            SevenGroup {
+                ValueRow("Started", stamp(fast.start))
+                fast.end?.let { ValueRow("Finished", stamp(it)) }
+                ValueRow("Goal", fast.goalMinutes?.let { duration(it * 60_000.0) } ?: "Open ended")
+                ValueRow("Recorded time zone", fast.timeZoneID)
+                if (fast.tags.isNotEmpty()) ValueRow("Tags", fast.tags.joinToString(" · "))
             }
             if (fast.intention.isNotBlank())
-                Panel("Intention") {
+                SevenGroup(header = "Intention") {
                     androidx.compose.foundation.text.selection.SelectionContainer {
-                        Text(fast.intention)
+                        Text(fast.intention, Modifier.fillMaxWidth().padding(Space.m))
                     }
                 }
             if (fast.reflection.isNotBlank())
-                Panel("Reflection") {
+                SevenGroup(header = "Reflection") {
                     androidx.compose.foundation.text.selection.SelectionContainer {
-                        Text(fast.reflection)
+                        Text(fast.reflection, Modifier.fillMaxWidth().padding(Space.m))
                     }
                 }
-            if (fast.tags.isNotEmpty()) Text(fast.tags.joinToString(" · "))
-            Section("Observations")
-            a.journal
-                .filter { it.fastID == id }
-                .sortedBy { it.date }
-                .forEach { entry ->
-                    Card(
-                        onClick = { open("journal", entry.id) },
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            ),
-                    ) {
-                        ListItem(
-                            headlineContent = { Text(entry.text.ifBlank { "A quiet check-in" }) },
-                            supportingContent = { Text(stamp(entry.date)) },
-                            leadingContent = { Icon(Icons.Outlined.EditNote, null) },
-                            colors =
-                                ListItemDefaults.colors(
-                                    containerColor = MaterialTheme.colorScheme.surface
-                                ),
+            SevenGroup(header = "Observations") {
+                a.journal
+                    .filter { it.fastID == id }
+                    .sortedBy { it.date }
+                    .forEach { entry ->
+                        ValueRow(
+                            entry.text.ifBlank { "A quiet check-in" },
+                            supporting = stamp(entry.date),
+                            chevron = true,
+                            onClick = { open("journal", entry.id) },
                         )
                     }
+                ActionRow("Add a check-in", leading = { Icon(Icons.Outlined.EditNote, null) }) {
+                    open("journal", null)
                 }
-            OutlinedButton(onClick = { open("journal", null) }) {
-                Icon(Icons.Outlined.EditNote, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Add a check-in")
             }
         }
     }

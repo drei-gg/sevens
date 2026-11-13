@@ -134,7 +134,7 @@ internal fun WaterLevel(level: Double?, modifier: Modifier = Modifier) {
     }
     val fill by
         animateFloatAsState(
-            (level ?: 0.0).coerceIn(0.0, 2.0).toFloat(),
+            (level ?: 0.0).coerceAtLeast(0.0).toFloat(),
             tween(if (motionEnabled) 400 else 0),
             label = "Water amount",
         )
@@ -160,18 +160,28 @@ internal fun WaterLevel(level: Double?, modifier: Modifier = Modifier) {
             val circle = Path().apply { addOval(Rect(Offset.Zero, size)) }
             clipPath(circle) {
                 if (level != null && fill > 0) {
-                    val base = min(1f, fill).toDouble()
-                    val over = (fill - 1).coerceIn(0f, 1f).toDouble()
-                    drawPath(
-                        liquidPath(size, base, simulation, 0, 5.dp.toPx(), density),
-                        Color.White.copy(alpha = .55f),
-                    )
-                    drawPath(
-                        liquidPath(size, base, simulation, 1, 0f, density),
-                        water.copy(alpha = if (over > 0) .45f else .85f),
-                    )
-                    if (over > 0)
-                        drawPath(liquidPath(size, over, simulation, 2, 0f, density), water)
+                    // Laps past the goal alternate tones: deep over light from 1x, light over deep
+                    // from 2x, and so on (iOS WaterLevel.draw). The light tone sits on the card
+                    // colour so it still reads light over the deep one.
+                    val lap = if (fill < 1f) 0 else floor(fill).toInt()
+                    val rise = (fill - lap).coerceIn(0f, 1f).toDouble()
+                    fun fillLayer(path: Path, light: Boolean) {
+                        if (light) {
+                            drawPath(path, surface)
+                            drawPath(path, water.copy(alpha = .45f))
+                        } else drawPath(path, water)
+                    }
+                    if (lap == 0) {
+                        drawPath(
+                            liquidPath(size, rise, simulation, 0, 5.dp.toPx(), density),
+                            Color.White.copy(alpha = .55f),
+                        )
+                        drawPath(liquidPath(size, rise, simulation, 1, 0f, density), water.copy(alpha = .85f))
+                    } else {
+                        val underIsLight = lap % 2 == 1
+                        fillLayer(liquidPath(size, 1.0, simulation, 1, 0f, density), underIsLight)
+                        if (rise > 0) fillLayer(liquidPath(size, rise, simulation, 2, 0f, density), !underIsLight)
+                    }
                 }
             }
             drawCircle(water, style = Stroke(3.dp.toPx()))

@@ -72,6 +72,7 @@ private val Dark =
 fun SevenTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = if (isSystemInDarkTheme()) Dark else Light,
+        shapes = Shapes(),
         typography =
             Typography(
                 displayLarge =
@@ -82,8 +83,18 @@ fun SevenTheme(content: @Composable () -> Unit) {
                     ),
                 headlineLarge =
                     TextStyle(fontSize = 32.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold),
+                // §4.1: title = headlineMedium bold (the large app-bar title), section = titleLarge bold.
+                headlineMedium =
+                    TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold),
                 titleLarge =
                     TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold),
+                titleMedium =
+                    TextStyle(
+                        fontSize = 16.sp,
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.15.sp,
+                    ),
             ),
         content = content,
     )

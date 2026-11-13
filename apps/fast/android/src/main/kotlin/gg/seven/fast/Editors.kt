@@ -29,9 +29,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.fast.core.*
+import gg.seven.kit.*
 import java.time.*
 import kotlin.math.roundToInt
 
+/** A single date/time row in its own group, for screens outside a form. */
 @Composable
 internal fun NativeDateTime(
     label: String,
@@ -39,52 +41,14 @@ internal fun NativeDateTime(
     withTime: Boolean = true,
     onChange: (Double) -> Unit,
 ) {
-    val context = LocalContext.current
-    val date = value.instant().atZone(ZoneId.systemDefault())
-    OutlinedButton(
-        onClick = {
-            DatePickerDialog(
-                    context,
-                    { _, year, month, day ->
-                        val selected = LocalDate.of(year, month + 1, day)
-                        if (withTime)
-                            TimePickerDialog(
-                                    context,
-                                    { _, h, m ->
-                                        onChange(
-                                            selected
-                                                .atTime(h, m)
-                                                .atZone(ZoneId.systemDefault())
-                                                .toInstant()
-                                                .toEpochMilli()
-                                                .toDouble()
-                                        )
-                                    },
-                                    date.hour,
-                                    date.minute,
-                                    DateFormat.is24HourFormat(context),
-                                )
-                                .show()
-                        else
-                            onChange(
-                                selected
-                                    .atStartOfDay(ZoneId.systemDefault())
-                                    .toInstant()
-                                    .toEpochMilli()
-                                    .toDouble()
-                            )
-                    },
-                    date.year,
-                    date.monthValue - 1,
-                    date.dayOfMonth,
-                )
-                .show()
-        },
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text("$label · ${if (withTime) stamp(value) else date.toLocalDate()}")
-    }
+    SevenGroup { DateTimeRow(label, value, withTime = withTime, onChange = onChange) }
 }
+
+/** A form value: no trailing ".0", "." as the separator so parsing stays locale-proof. */
+internal fun plain(value: Double): String =
+    java.math.BigDecimal.valueOf(value).stripTrailingZeros().toPlainString()
+
+internal fun String.decimal(): Double? = trim().replace(',', '.').toDoubleOrNull()
 
 @Composable
 internal fun EditorDialog(
@@ -125,13 +89,12 @@ internal fun EditorDialog(
     }
     var goal by rememberSaveable {
         mutableStateOf(
-            ((f?.goalMinutes ?: plan?.goalMinutes ?: preset?.goalMinutes ?: 960) / 60.0).toString()
+            plain((f?.goalMinutes ?: plan?.goalMinutes ?: preset?.goalMinutes ?: 960) / 60.0)
         )
     }
     var eating by rememberSaveable {
         mutableStateOf(
-            ((f?.eatingMinutes ?: plan?.eatingMinutes ?: preset?.eatingMinutes ?: 480) / 60.0)
-                .toString()
+            plain((f?.eatingMinutes ?: plan?.eatingMinutes ?: preset?.eatingMinutes ?: 480) / 60.0)
         )
     }
     var intention by rememberSaveable { mutableStateOf(f?.intention ?: plan?.intention ?: "") }
@@ -152,14 +115,15 @@ internal fun EditorDialog(
     val kind = MetricKind.valueOf(kindText)
     var value by rememberSaveable {
         mutableStateOf(
-            metric?.let { Units.display(it.value, it.kind, a.settings).toString() }
+            metric?.let { plain(Units.display(it.value, it.kind, a.settings)) }
                 ?: if (type == "water")
-                    Units.display(
+                    plain(
+                        Units.display(
                             a.settings.water.quickAddMilliliters,
                             MetricKind.water,
                             a.settings,
                         )
-                        .toString()
+                    )
                 else ""
         )
     }
@@ -172,12 +136,12 @@ internal fun EditorDialog(
             "past" -> "Add past fast"
             "end" -> "End fast"
             "fast" -> "Edit fast"
-            "journal" -> "Journal entry"
+            "journal" -> if (j == null) "Check in" else "Journal entry"
             "water" -> "Water entry"
             "metric" -> "Measurement"
             "plan" -> "Plan a fast"
             "rest" -> "Rest day"
-            "preset" -> "Saved timer"
+            "preset" -> "Custom preset"
             else -> "Water settings"
         }
     if (type == "waterSettings") {
@@ -192,17 +156,17 @@ internal fun EditorDialog(
             val newGoal =
                 if (type in listOf("start", "past", "end", "fast", "plan", "preset")) {
                     if (openEnded) null
-                    else ((goal.toDoubleOrNull() ?: error("Enter goal hours")) * 60).roundToInt()
+                    else ((goal.decimal() ?: error("Enter goal hours")) * 60).roundToInt()
                 } else null
             val eat =
                 if (type in listOf("start", "past", "end", "fast", "plan", "preset"))
-                    ((eating.toDoubleOrNull() ?: error("Enter eating window hours")) * 60)
+                    ((eating.decimal() ?: error("Enter eating window hours")) * 60)
                         .roundToInt()
                 else 480
             val newMetric =
                 if (type in listOf("metric", "water"))
                     Units.canonical(
-                        value.toDoubleOrNull() ?: error("Enter an amount"),
+                        value.decimal() ?: error("Enter an amount"),
                         kind,
                         a.settings,
                     )
@@ -292,141 +256,154 @@ internal fun EditorDialog(
             localError = e.message
         }
     }
-    EditorSheet(
+    val draft =
+        listOf(start, end, openEnded, goal, eating, intention, reflection, text, tags, linkedFast, mood, energy, hunger, kindText, value)
+            .joinToString("\u0000")
+    val pristine = rememberSaveable { draft }
+    val fastLike = type in listOf("start", "past", "end", "fast", "plan", "preset")
+    val hasEnd = type == "past" || type == "end" || f?.end != null
+    val goalMinutes = if (openEnded) null else goal.decimal()?.times(60)?.roundToInt()
+    val eatingMinutes = eating.decimal()?.times(60)?.roundToInt()
+    FormSheet(
         title,
-        { if (!busy) discard = true },
+        { if (!busy) if (draft == pristine) dismiss() else discard = true },
         ::save,
-        busy,
-        saveLabel = if (type == "end") "Save completed fast" else "Save",
+        busy = busy,
+        saveLabel = if (type == "end") "Save" else "Save",
     ) {
-        if (type != "preset")
-            NativeDateTime(
-                if (type in listOf("start", "past", "end", "fast", "plan")) "Start" else "Date",
-                start,
-                type != "rest",
-            ) {
-                start = it
-            }
-        if (type == "past" || type == "end" || f?.end != null)
-            NativeDateTime("End", end) { end = it }
-        if (type in listOf("start", "past", "end", "fast", "plan", "preset")) {
-            if (type in listOf("start", "past", "plan"))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    (FastPreset.defaults + a.presets).forEach { p ->
-                        FilterChip(
-                            selected =
-                                (if (openEnded) null
-                                else goal.toDoubleOrNull()?.times(60)?.roundToInt()) ==
-                                    p.goalMinutes &&
-                                    eating.toDoubleOrNull()?.times(60)?.roundToInt() ==
-                                        p.eatingMinutes,
-                            onClick = {
-                                openEnded = p.goalMinutes == null
-                                goal = ((p.goalMinutes ?: 960) / 60.0).toString()
-                                eating = (p.eatingMinutes / 60.0).toString()
-                            },
-                            label = { Text(p.name) },
-                        )
-                    }
-                }
-            ToggleRow("Set a goal", !openEnded) { openEnded = !it }
-            if (!openEnded) NumberField("Goal hours", goal) { goal = it }
-            NumberField("Eating window hours", eating) { eating = it }
-            Text(
-                "Recording limits are not recommendations.",
-                style = MaterialTheme.typography.bodySmall,
-            )
-            if (type != "preset")
-                OutlinedTextField(
-                    intention,
-                    { intention = it },
-                    label = { Text("Intention (optional)") },
-                    modifier = Modifier.fillMaxWidth(),
+        if (type in listOf("start", "past", "plan"))
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                Text(
+                    "Choose a rhythm",
+                    Modifier.padding(horizontal = Space.m),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-        }
-        if (type == "past" || type == "end" || f?.end != null)
-            OutlinedTextField(
-                reflection,
-                { reflection = it },
-                label = { Text("Reflection (optional)") },
-                minLines = 2,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        if (type in listOf("journal", "rest", "preset"))
-            OutlinedTextField(
-                text,
-                { text = it },
-                label = {
-                    Text(
-                        if (type == "preset") "Timer name"
-                        else if (type == "rest") "Note (optional)" else "Observation or reflection"
-                    )
-                },
-                minLines = if (type == "journal") 4 else 1,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        if (type == "journal") {
-            ChoiceField(
-                "Linked fast",
-                linkedFast.orEmpty(),
-                listOf("" to "An ordinary day") +
-                    a.fasts.sortedByDescending { it.start }.map { it.id to stamp(it.start) },
-            ) {
-                linkedFast = it.ifEmpty { null }
+                val presets = FastPreset.defaults + a.presets
+                CapsuleChoices(
+                    presets.map { it to it.name },
+                    presets.firstOrNull {
+                        it.goalMinutes == goalMinutes && it.eatingMinutes == eatingMinutes
+                    },
+                ) { p ->
+                    openEnded = p.goalMinutes == null
+                    goal = plain((p.goalMinutes ?: 960) / 60.0)
+                    eating = plain(p.eatingMinutes / 60.0)
+                }
             }
-            RatingChoice("Mood", "Low", "Good", mood) { mood = it }
-            RatingChoice("Energy", "Low", "High", energy) { energy = it }
-            RatingChoice("Hunger", "None", "Strong", hunger) { hunger = it }
-            Text(
-                "These are your observations, not a score to improve.",
-                style = MaterialTheme.typography.bodySmall,
-            )
+        if (type != "preset")
+            SevenGroup(header = if (fastLike) "Times" else null) {
+                DateTimeRow(
+                    when {
+                        type == "plan" -> "Planned start"
+                        fastLike -> "Started"
+                        type == "rest" -> "Day"
+                        else -> "When"
+                    },
+                    start,
+                    withTime = type != "rest",
+                ) {
+                    start = it
+                }
+                if (hasEnd) DateTimeRow("Finished", end) { end = it }
+                if (hasEnd) ValueRow("Duration", duration(end - start))
+                if (type == "journal")
+                    MenuRow(
+                        "Linked fast",
+                        linkedFast.orEmpty(),
+                        listOf("" to "An ordinary day") +
+                            a.fasts.sortedByDescending { it.start }.map { it.id to stamp(it.start) },
+                    ) {
+                        linkedFast = it.ifEmpty { null }
+                    }
+            }
+        if (type == "preset") SevenGroup { TextRow(text, "Preset name") { text = it } }
+        if (fastLike)
+            SevenGroup(footer = "Recording limits are not recommendations.") {
+                SwitchRow("Set a goal", !openEnded) { openEnded = !it }
+                if (!openEnded) NumberRow("Goal hours", goal, unit = "hr") { goal = it }
+                NumberRow("Eating window hours", eating, unit = "hr") { eating = it }
+            }
+        if (fastLike && type != "preset")
+            SevenGroup(header = "Intention") {
+                TextRow(intention, "What would you like to make room for?", minLines = 2) {
+                    intention = it
+                }
+            }
+        if (hasEnd)
+            SevenGroup(header = "Reflection") {
+                TextRow(reflection, "What did you notice? What would you change?", minLines = 2) {
+                    reflection = it
+                }
+            }
+        if (type == "rest") SevenGroup(header = "Note") { TextRow(text, "Optional") { text = it } }
+        if (type == "journal") {
+            SevenGroup(header = "Observation") {
+                TextRow(text, "What’s happening in your body, your day, or your thoughts?", minLines = 5) {
+                    text = it
+                }
+            }
+            SevenGroup(
+                header = "Optional check-in",
+                footer = "These are your observations, not a score to improve.",
+            ) {
+                RatingRow("Mood", "Low", "Good", mood) { mood = it }
+                RatingRow("Energy", "Low", "High", energy) { energy = it }
+                RatingRow("Hunger", "None", "Strong", hunger) { hunger = it }
+            }
         }
         if (type in listOf("start", "past", "end", "fast", "journal"))
-            OutlinedTextField(
-                tags,
-                { tags = it },
-                label = { Text("Tags, separated by commas") },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            SevenGroup { TextRow(tags, "Tags, separated by commas") { tags = it } }
         if (type in listOf("metric", "water")) {
-            if (metric == null && type != "water")
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MetricKind.entries
-                        .filter { a.settings.showWeight || it != MetricKind.weight }
-                        .forEach { k ->
-                            FilterChip(
-                                selected = kind == k,
-                                onClick = {
-                                    kindText = k.name
-                                    value = ""
-                                },
-                                label = { Text(k.name.replaceFirstChar { it.uppercase() }) },
-                            )
-                        }
+            if (metric == null && type != "water") {
+                val kinds = MetricKind.entries.filter { a.settings.showWeight || it != MetricKind.weight }
+                if (kinds.size > 1)
+                    Segmented(
+                        kinds.map { it to it.name.replaceFirstChar { c -> c.uppercase() } },
+                        kind,
+                    ) {
+                        kindText = it.name
+                        value = ""
+                    }
+            }
+            SevenGroup(
+                footer =
+                    if (kind == MetricKind.water)
+                        "Log your own observations. There is no target you have to meet."
+                    else null
+            ) {
+                NumberRow(Units.label(kind, a.settings), value) { value = it }
+            }
+            if (kind == MetricKind.water && metric == null) {
+                val amounts =
+                    if (a.settings.useFluidOunces) listOf(8, 12, 16) else listOf(150, 250, 500)
+                CapsuleChoices(
+                    amounts.map { it to "$it ${Units.label(kind, a.settings)}" },
+                    amounts.firstOrNull { value.decimal() == it.toDouble() },
+                ) {
+                    value = it.toString()
                 }
-            NumberField("Amount · ${Units.label(kind, a.settings)}", value) { value = it }
-            if (kind == MetricKind.water && metric == null)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    (if (a.settings.useFluidOunces) listOf(8, 12, 16) else listOf(150, 250, 500))
-                        .forEach { amount ->
-                            FilterChip(
-                                selected = value.toDoubleOrNull() == amount.toDouble(),
-                                onClick = { value = amount.toString() },
-                                label = { Text("$amount ${Units.label(kind, a.settings)}") },
-                            )
-                        }
-                }
+            }
         }
         localError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         val operationError by m.message.collectAsStateWithLifecycle()
         operationError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (type == "past" || type == "start")
+            Text(
+                "An early finish is still a record. This timer does not measure ketosis, autophagy or fat burning.",
+                Modifier.padding(horizontal = Space.m),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         if (id != null)
-            TextButton(onClick = { delete = true }, enabled = !busy) {
-                Text(
+            SevenGroup {
+                ActionRow(
                     if (f?.end == null && f != null) "Discard fast" else "Delete",
-                    color = MaterialTheme.colorScheme.error,
-                )
+                    destructive = true,
+                    enabled = !busy,
+                ) {
+                    delete = true
+                }
             }
     }
     if (discard)
@@ -488,35 +465,15 @@ internal fun EditorDialog(
 }
 
 @Composable
-internal fun NumberField(label: String, value: String, change: (String) -> Unit) {
-    OutlinedTextField(
-        value,
-        change,
-        label = { Text(label) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
-
-@Composable
 internal fun ToggleRow(label: String, enabled: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth()
-            .toggleable(value = enabled, role = Role.Switch, onValueChange = onChange),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(label, Modifier.weight(1f))
-        Switch(checked = enabled, onCheckedChange = null)
-    }
+    SwitchRow(label, enabled, onCheckedChange = onChange)
 }
 
 @Composable
 private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Unit) {
     val s = a.settings.water
     val unit = Units.label(MetricKind.water, a.settings)
-    fun display(value: Double) = Units.display(value, MetricKind.water, a.settings).toString()
+    fun display(value: Double) = plain(Units.display(value, MetricKind.water, a.settings))
     var useGoal by rememberSaveable { mutableStateOf(s.goalMilliliters != null) }
     var goal by rememberSaveable { mutableStateOf(s.goalMilliliters?.let(::display).orEmpty()) }
     var glass by rememberSaveable { mutableStateOf(display(s.quickAddMilliliters)) }
@@ -535,7 +492,8 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
     val busy by m.busy.collectAsStateWithLifecycle()
     fun save() {
         try {
-            fun amount(raw: String) = Units.canonical(raw.toDouble(), MetricKind.water, a.settings)
+            fun amount(raw: String) =
+                Units.canonical(raw.decimal() ?: error("Enter an amount"), MetricKind.water, a.settings)
             val settings =
                 WaterSettings(
                     if (!useGoal) null
@@ -562,153 +520,66 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
             error = e.message ?: "Check the amounts and hours"
         }
     }
-    EditorSheet("Water settings", dismiss, ::save, busy) {
-        Section("Your daily goal")
-        ToggleRow("Use a personal goal", useGoal) { useGoal = it }
-        if (useGoal) NumberField("Daily amount · $unit", goal) { goal = it }
-        Text(
-            "An optional target you choose, not a recommended intake. No streaks or pressure to catch up.",
-            style = MaterialTheme.typography.bodySmall,
-        )
-        Section("Quick-add glass")
-        NumberField("Amount · $unit", glass) { glass = it }
-        Text("Change units in Settings.", style = MaterialTheme.typography.bodySmall)
-        Section("Water reminders")
-        ToggleRow("Remind me to drink water", reminders) { reminders = it }
-        if (reminders) {
-            ToggleRow("Paused until you resume", paused) { paused = it }
-            fun hour(n: Int) = if (n == 24) "Midnight" else "%02d:00".format(n)
-            ChoiceField("From", start, (0..23).map { it.toString() to hour(it) }) { start = it }
-            ChoiceField("Until", end, (1..24).map { it.toString() to hour(it) }) { end = it }
-            ChoiceField(
-                "Every",
-                interval,
-                (1..4).map { it.toString() to if (it == 1) "1 hour" else "$it hours" },
-            ) {
-                interval = it
-            }
-            if (start.toInt() >= end.toInt())
-                Text("End time must be after start time.", color = MaterialTheme.colorScheme.error)
+    FormSheet("Water settings", dismiss, ::save, busy = busy) {
+        SevenGroup(
+            header = "Your daily goal",
+            footer =
+                "An optional target you choose, not a recommended intake. No streaks or pressure to catch up.",
+        ) {
+            SwitchRow("Use a personal goal", useGoal) { useGoal = it }
+            if (useGoal) NumberRow("Daily amount", goal, unit = unit) { goal = it }
         }
-        Text(
-            "Daily at your chosen hours, up to but not including the end. Android may delay delivery. Logging water does not silence your schedule.",
-            style = MaterialTheme.typography.bodySmall,
-        )
+        SevenGroup(
+            header = "Quick-add glass",
+            footer = "Amounts use $unit. Change units in Settings.",
+        ) {
+            NumberRow("Glass", glass, unit = unit) { glass = it }
+        }
+        fun hour(n: Int) =
+            if (n == 24) "Midnight"
+            else SevenFormat.time(java.time.LocalDate.now().atTime(n, 0).atZone(ZoneId.systemDefault()), use24Hour)
+        SevenGroup(
+            header = "Water reminders",
+            footer =
+                "Daily at your chosen hours, up to but not including the end. Android may delay delivery. Logging water does not silence your schedule.",
+        ) {
+            SwitchRow("Remind me to drink water", reminders) { reminders = it }
+            if (reminders) {
+                SwitchRow("Paused until you resume", paused) { paused = it }
+                MenuRow("From", start, (0..23).map { it.toString() to hour(it) }) { start = it }
+                MenuRow("Until", end, (1..24).map { it.toString() to hour(it) }) { end = it }
+                MenuRow(
+                    "Every",
+                    interval,
+                    (1..4).map { it.toString() to if (it == 1) "1 hour" else "$it hours" },
+                ) {
+                    interval = it
+                }
+            }
+        }
+        if (reminders && start.toInt() >= end.toInt())
+            Text("End time must be after start time.", color = MaterialTheme.colorScheme.error)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         val operationError by m.message.collectAsStateWithLifecycle()
         operationError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     }
 }
 
-/** Native sheet with fixed actions: the form scrolls; Save and Cancel never disappear below it. */
 @Composable
-internal fun EditorSheet(
-    title: String,
-    dismiss: () -> Unit,
-    save: () -> Unit,
-    busy: Boolean,
-    saveLabel: String = "Save",
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val latestDismiss by rememberUpdatedState(dismiss)
-    val state =
-        rememberModalBottomSheetState(
-            skipPartiallyExpanded = true,
-            confirmValueChange = {
-                if (it == SheetValue.Hidden) {
-                    latestDismiss()
-                    false
-                } else true
-            },
-        )
-    ModalBottomSheet(
-        onDismissRequest = { if (!busy) dismiss() },
-        sheetState = state,
-        sheetMaxWidth = 640.dp,
-        containerColor = MaterialTheme.colorScheme.background,
-    ) {
-        Column(Modifier.fillMaxWidth().fillMaxHeight(.94f).imePadding()) {
-            Text(
-                title,
-                Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                style = MaterialTheme.typography.headlineSmall,
-            )
-            HorizontalDivider()
-            Column(
-                Modifier.weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-                content = content,
-            )
-            HorizontalDivider()
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = dismiss, enabled = !busy) { Text("Cancel") }
-                Spacer(Modifier.weight(1f))
-                Button(
-                    onClick = save,
-                    enabled = !busy,
-                    modifier = Modifier.testTag("editor-save"),
-                ) {
-                    Text(saveLabel)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-internal fun ChoiceField(
-    label: String,
-    selected: String,
-    choices: List<Pair<String, String>>,
-    change: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = choices.firstOrNull { it.first == selected }?.second.orEmpty(),
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier =
-                Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-        )
-        ExposedDropdownMenu(expanded, onDismissRequest = { expanded = false }) {
-            choices.forEach { (value, text) ->
-                DropdownMenuItem(
-                    text = { Text(text) },
-                    onClick = {
-                        change(value)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RatingChoice(
+private fun RatingRow(
     title: String,
     low: String,
     high: String,
     value: String,
     change: (String) -> Unit,
 ) {
-    ChoiceField(
+    MenuRow(
         title,
         value,
         listOf("" to "Not recorded") +
             (1..5).map {
-                it.toString() to "$it${if(it == 1) " · $low" else if(it == 5) " · $high" else ""}"
+                it.toString() to "$it${if (it == 1) " · $low" else if (it == 5) " · $high" else ""}"
             },
-        change,
+        onSelect = change,
     )
 }
