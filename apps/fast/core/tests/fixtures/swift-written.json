@@ -1,0 +1,92 @@
+{
+  "companionReceipts" : [
+
+  ],
+  "companionRevision" : "5B27FE8E-A281-4BD4-9FC2-54840D5C9BC3",
+  "fasts" : [
+    {
+      "eatingMinutes" : 480,
+      "end" : 1794571100000,
+      "goalMinutes" : 300,
+      "id" : "00000000-0000-0000-0000-000000000101",
+      "intention" : "A cross-platform record",
+      "reflection" : "Keep every field",
+      "start" : 1794551199876.544,
+      "tags" : [
+        "fixture"
+      ],
+      "timeZoneID" : "Etc\/UTC"
+    }
+  ],
+  "journal" : [
+    {
+      "date" : 1794570200000,
+      "energy" : 3,
+      "fastID" : "00000000-0000-0000-0000-000000000101",
+      "hunger" : 2,
+      "id" : "00000000-0000-0000-0000-000000000102",
+      "mood" : 4,
+      "tags" : [
+        "quiet"
+      ],
+      "text" : "A private observation"
+    }
+  ],
+  "metrics" : [
+    {
+      "date" : 1794570200000,
+      "id" : "00000000-0000-0000-0000-000000000103",
+      "kind" : "water",
+      "value" : 275.5
+    }
+  ],
+  "plans" : [
+    {
+      "eatingMinutes" : 480,
+      "goalMinutes" : 960,
+      "id" : "F1AD1D6A-6A94-4728-93A8-CB07B0F72E17",
+      "intention" : "",
+      "start" : 1794657600000
+    }
+  ],
+  "presets" : [
+    {
+      "eatingMinutes" : 720,
+      "goalMinutes" : 720,
+      "id" : "924445B0-9627-4515-8113-A8CE71CDD5C1",
+      "name" : "My time"
+    }
+  ],
+  "restDays" : [
+    {
+      "date" : 1794484800000,
+      "id" : "C6FF6F5E-A518-4EF7-A8BB-7E46369694E7",
+      "note" : "Rest"
+    }
+  ],
+  "schemaVersion" : 1,
+  "settings" : {
+    "eatingReminder" : false,
+    "goalReminder" : false,
+    "liveActivity" : false,
+    "reminderHour" : 20,
+    "reminderMinute" : 0,
+    "reminderWeekdays" : [
+
+    ],
+    "scheduleReminders" : false,
+    "showEatingWindow" : true,
+    "showWeight" : true,
+    "useFluidOunces" : false,
+    "usePounds" : false,
+    "water" : {
+      "endHour" : 21,
+      "goalMilliliters" : 1800,
+      "intervalHours" : 2,
+      "quickAddMilliliters" : 300,
+      "remindersEnabled" : false,
+      "remindersPaused" : true,
+      "startHour" : 9
+    }
+  }
+}

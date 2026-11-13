@@ -26,3 +26,7 @@ local.properties
 *.keystore
 *.p12
 *.pfx
+
+# Rust cores: build outputs
+apps/*/core/target/
+apps/*/core/generated/

@@ -1,0 +1,88 @@
+{
+    "schemaVersion": 1,
+    "fasts": [
+        {
+            "id": "00000000-0000-0000-0000-000000000101",
+            "start": 1.794551199876544E12,
+            "end": 1.7945711E12,
+            "goalMinutes": 300,
+            "eatingMinutes": 480,
+            "timeZoneID": "Etc/UTC",
+            "intention": "A cross-platform record",
+            "reflection": "Keep every field",
+            "tags": [
+                "fixture"
+            ]
+        }
+    ],
+    "journal": [
+        {
+            "id": "00000000-0000-0000-0000-000000000102",
+            "date": 1.7945702E12,
+            "fastID": "00000000-0000-0000-0000-000000000101",
+            "text": "A private observation",
+            "mood": 4,
+            "energy": 3,
+            "hunger": 2,
+            "tags": [
+                "quiet"
+            ]
+        }
+    ],
+    "metrics": [
+        {
+            "id": "00000000-0000-0000-0000-000000000103",
+            "date": 1.7945702E12,
+            "kind": "water",
+            "value": 275.5
+        }
+    ],
+    "plans": [
+        {
+            "id": "F1AD1D6A-6A94-4728-93A8-CB07B0F72E17",
+            "start": 1.7946576E12,
+            "goalMinutes": 960,
+            "eatingMinutes": 480,
+            "intention": ""
+        }
+    ],
+    "restDays": [
+        {
+            "id": "C6FF6F5E-A518-4EF7-A8BB-7E46369694E7",
+            "date": 1.7944848E12,
+            "note": "Rest"
+        }
+    ],
+    "presets": [
+        {
+            "id": "924445B0-9627-4515-8113-A8CE71CDD5C1",
+            "name": "My time",
+            "goalMinutes": 720,
+            "eatingMinutes": 720
+        }
+    ],
+    "settings": {
+        "water": {
+            "goalMilliliters": 1800.0,
+            "quickAddMilliliters": 300.0,
+            "remindersEnabled": false,
+            "remindersPaused": true,
+            "startHour": 9,
+            "endHour": 21,
+            "intervalHours": 2
+        },
+        "usePounds": false,
+        "useFluidOunces": false,
+        "showWeight": true,
+        "showEatingWindow": true,
+        "liveActivity": false,
+        "goalReminder": false,
+        "eatingReminder": false,
+        "scheduleReminders": false,
+        "reminderWeekdays": [],
+        "reminderHour": 20,
+        "reminderMinute": 0
+    },
+    "companionRevision": "5B27FE8E-A281-4BD4-9FC2-54840D5C9BC3",
+    "companionReceipts": []
+}
