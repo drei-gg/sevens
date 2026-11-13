@@ -60,7 +60,7 @@ internal fun EditorDialog(
     initialFastId: java.util.UUID? = null,
     dismiss: () -> Unit,
 ) {
-    val busy by m.busy.collectAsStateWithLifecycle()
+    val busy by m.working.collectAsStateWithLifecycle()
     val f = a.fasts.find { it.id == id }
     val j = a.journal.find { it.id == id }
     val metric = a.metrics.find { it.id == id }
@@ -485,7 +485,7 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
                 m.message.value =
                     "Notifications are off. Tracking still works; enable notifications in Android Settings when you want reminders."
         }
-    val busy by m.busy.collectAsStateWithLifecycle()
+    val busy by m.working.collectAsStateWithLifecycle()
     fun save() {
         try {
             fun amount(raw: String) =

@@ -410,7 +410,7 @@ private fun WaterTodayCard(
     onUnlock: () -> Unit,
 ) {
     var undoId by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
-    val busy by m.busy.collectAsState()
+    val busy by m.working.collectAsState()
     Panel {
         Row(
             Modifier.fillMaxWidth().clickable { onPage("Water") },

@@ -22,9 +22,9 @@ extension FastModel {
             let request = try FastWatchCodec.decode(FastWatchRequest.self, from: data)
             reply.requestID = request.id
             guard request.version == 1 else { throw FastWatchFailure.unsupported }
-            guard isReady, store.hasStarted, !busy else { throw FastWatchFailure.unavailable }
-            busy = true
-            defer { busy = false }
+            guard isReady, store.hasStarted, !inFlight else { throw FastWatchFailure.unavailable }
+            let reveal = beginWrite()
+            defer { endWrite(reveal) }
             await store.refresh()
             if request.action != .refresh {
                 let permitted = store.paidFeaturesAvailable

@@ -17,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -74,7 +73,7 @@ fun FastApp(m: FastModel) {
     val failure by m.loadFailure.collectAsStateWithLifecycle()
     val now by m.now.collectAsStateWithLifecycle()
     val purchase by m.purchase.collectAsStateWithLifecycle()
-    val busy by m.busy.collectAsStateWithLifecycle()
+    val busy by m.working.collectAsStateWithLifecycle()
     val message by m.message.collectAsStateWithLifecycle()
     val incoming by m.importPreview.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf("Today") }
@@ -89,6 +88,16 @@ fun FastApp(m: FastModel) {
     val prefs = remember { context.getSharedPreferences("welcome", 0) }
     var welcome by rememberSaveable { mutableStateOf(!prefs.getBoolean("seen", false)) }
     val snackbar = remember { SnackbarHostState() }
+    val undoable by m.undoable.collectAsStateWithLifecycle()
+    LaunchedEffect(undoable) {
+        undoable?.let {
+            // Cleared only after it's shown: clearing first would restart this effect and
+            // cancel the snackbar.
+            val result = snackbar.showSnackbar(it.text, actionLabel = "Undo", duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) it.undo()
+            if (m.undoable.value === it) m.undoable.value = null
+        }
+    }
     LaunchedEffect(message) {
         message?.let {
             snackbar.showSnackbar(it)
@@ -111,12 +120,6 @@ fun FastApp(m: FastModel) {
         page = if (page in listOf("Water trends", "All water entries")) "Water" else null
     }
     BackHandler(page != null && editor == null) { back() }
-    val titleState = rememberTopAppBarState()
-    val titleScroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(titleState)
-    LaunchedEffect(page, tab) {
-        titleState.heightOffset = 0f
-        titleState.contentOffset = 0f
-    }
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         val wide = maxWidth >= 700.dp && LocalDensity.current.fontScale < 1.5f
         val tabs =
@@ -152,12 +155,10 @@ fun FastApp(m: FastModel) {
                 }
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
-                modifier = Modifier.weight(1f).nestedScroll(titleScroll.nestedScrollConnection),
+                modifier = Modifier.weight(1f),
                 topBar = {
-                    LargeTopAppBar(
+                    TopAppBar(
                         title = { Text(page ?: tab, maxLines = 1) },
-                        scrollBehavior = titleScroll,
-                        expandedHeight = 104.dp,
                         navigationIcon = {
                             if (page != null)
                                 IconButton(onClick = { back() }) {

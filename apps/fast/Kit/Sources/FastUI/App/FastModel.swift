@@ -9,7 +9,22 @@ public final class FastModel {
     public let store: Store
     public internal(set) var archive = FastArchive()
     public private(set) var isReady = false
+    /// Shown in the UI: only once a write has run for 400 ms, so a quick save never blinks the screen.
     public internal(set) var busy = false
+    /// Guards against overlapping writes; never shown.
+    @ObservationIgnored var inFlight = false
+    /// Marks a write as in flight and reveals `busy` if it is still running after 400 ms.
+    func beginWrite() -> Task<Void, Never> {
+        inFlight = true
+        return Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            if !Task.isCancelled, self?.inFlight == true { self?.busy = true }
+        }
+    }
+    func endWrite(_ reveal: Task<Void, Never>) {
+        reveal.cancel(); inFlight = false
+        if busy { busy = false }  // an unchanged assignment still notifies observers
+    }
     public var message: String?
     public var loadFailure: String?
     public var notificationStatus = ""
@@ -67,9 +82,9 @@ public final class FastModel {
     }
     @discardableResult
     func change(_ action: @escaping @Sendable (inout FastArchive) throws -> Void) async -> Bool {
-        guard isReady, !busy else { return false }
-        busy = true
-        defer { busy = false }
+        guard isReady, !inFlight else { return false }
+        let reveal = beginWrite()
+        defer { endWrite(reveal) }
         do {
             archive = try await repository.transact(action)
             await updateServices()
@@ -90,8 +105,9 @@ public final class FastModel {
         return await change { $0.metrics.removeAll { $0.id == entry.id }; $0.metrics.append(entry) }
     }
     func importBackup(_ data: Data) async -> Bool {
-        guard !busy, isReady else { return false }; busy = true
-        defer { busy = false }
+        guard !inFlight, isReady else { return false }
+        let reveal = beginWrite()
+        defer { endWrite(reveal) }
         do { archive = try await repository.importData(data); await updateServices(); return true }
         catch { message = FastFormat.error(error); return false }
     }

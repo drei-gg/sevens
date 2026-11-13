@@ -37,7 +37,7 @@ struct PlansScreen: View {
                 ForEach(model.archive.presets) { preset in
                     Button { editPreset = preset } label: {
                         LabeledContent(preset.name, value: FastFormat.goal(preset.goalMinutes)).foregroundStyle(.primary)
-                    }.swipeActions { Button(f("Delete"), role: .destructive) { removePreset = preset } }
+                    }.swipeActions { Button(f("Delete"), role: .destructive) { removePreset = preset }.tint(nil) }
                 }
                 GatedButton(feature: f("Presets"), action: { addPreset = true }) { Label(f("Save a custom preset"), systemImage: "plus") }
             }

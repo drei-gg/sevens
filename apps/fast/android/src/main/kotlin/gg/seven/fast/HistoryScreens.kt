@@ -606,7 +606,6 @@ internal fun WaterScreen(
 ) {
     var dayText by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
     var undoId by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
-    var deleting by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
     val day = LocalDate.parse(dayText)
     val zone = ZoneId.systemDefault()
     val today = LocalDate.now()
@@ -614,7 +613,7 @@ internal fun WaterScreen(
         a.metrics
             .filter { it.kind == MetricKind.WATER && History.onDay(it.date, day, zone) }
             .sortedByDescending { it.date }
-    val busy by m.busy.collectAsState()
+    val busy by m.working.collectAsState()
     fun entryDate() =
         day.atTime(LocalTime.now())
             .atZone(zone)
@@ -706,10 +705,17 @@ internal fun WaterScreen(
             key(entry.id) {
                 val swipe = rememberSwipeToDismissBoxState()
                 LaunchedEffect(swipe.currentValue) {
-                    if (swipe.currentValue == SwipeToDismissBoxValue.EndToStart) {
-                        deleting = entry.id
-                        swipe.reset()
-                    }
+                    // A drink is easy to put back, so a swipe deletes it with Undo, no question.
+                    if (swipe.currentValue == SwipeToDismissBoxValue.EndToStart)
+                        m.mutate(
+                            { it.copy(metrics = it.metrics.filterNot { e -> e.id == entry.id }) },
+                            onSaved = {
+                                m.undoable.value =
+                                    FastModel.Undoable("Drink deleted") {
+                                        m.mutate({ it.copy(metrics = it.metrics + entry) })
+                                    }
+                            },
+                        )
                 }
                 SwipeToDismissBox(
                     state = swipe,
@@ -773,25 +779,6 @@ internal fun WaterScreen(
             Icon(Icons.AutoMirrored.Outlined.ArrowForward, null)
         }
     }
-    if (deleting != null)
-        AlertDialog(
-            onDismissRequest = { deleting = null },
-            title = { Text("Delete this drink?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val id = deleting
-                        m.mutate(
-                            { it.copy(metrics = it.metrics.filterNot { e -> e.id == id }) },
-                            onSaved = { deleting = null },
-                        )
-                    }
-                ) {
-                    Text("Delete drink")
-                }
-            },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Keep") } },
-        )
 }
 
 @Composable

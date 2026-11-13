@@ -693,16 +693,6 @@
         }
       }
     },
-    "Delete drink": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete drink"
-          }
-        }
-      }
-    },
     "Delete entry": {
       "localizations": {
         "en": {
@@ -749,16 +739,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete plan"
-          }
-        }
-      }
-    },
-    "Delete this drink?": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete this drink?"
           }
         }
       }

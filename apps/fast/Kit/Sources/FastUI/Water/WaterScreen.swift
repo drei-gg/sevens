@@ -128,7 +128,6 @@ struct WaterScreen: View {
     @Environment(FastModel.self) private var model
     @State private var day = Date()
     @State private var edit: MetricEntry?
-    @State private var deleting: MetricEntry?
     @State private var selected: Date?
     var body: some View {
         let settings = model.archive.settings
@@ -166,8 +165,12 @@ struct WaterScreen: View {
                     .buttonStyle(.plain)
                     .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("water.entry")
-                    .swipeActions(allowsFullSwipe: false) {
-                        Button(f("Delete"), role: .destructive) { deleting = entry }
+                    // A drink is easy to log again, so a swipe deletes it with no question.
+                    .swipeActions(allowsFullSwipe: true) {
+                        // System red: the app-wide ink tint would make it cream on cream in dark mode.
+                        Button(f("Delete"), role: .destructive) {
+                            Task { await model.change({ $0.metrics.removeAll { $0.id == entry.id } }) }
+                        }.tint(nil)
                     }
                 }
             }
@@ -204,13 +207,6 @@ struct WaterScreen: View {
                 }
             }
             .sheet(item: $edit) { MetricEditor(kind: .water, existing: $0) }
-            .confirmationDialog(f("Delete this drink?"), isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
-                if let entry = deleting {
-                    Button(f("Delete drink"), role: .destructive) {
-                        Task { if await model.change({ $0.metrics.removeAll { $0.id == entry.id } }) { deleting = nil } }
-                    }
-                }
-            }
     }
 
     /// ‹ Today ›, with the date picker in the middle for jumping further back.

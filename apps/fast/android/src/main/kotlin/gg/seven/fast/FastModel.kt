@@ -84,7 +84,16 @@ class FastModel(application: Application) : AndroidViewModel(application) {
     val purchase = purchaseSource.state
     val access = app.access
     val message = MutableStateFlow<String?>(null)
+
+    /** A short note with Undo, for changes that are easy to take back (a deleted drink). */
+    data class Undoable(val text: String, val undo: () -> Unit)
+
+    val undoable = MutableStateFlow<Undoable?>(null)
+    /** Guards against overlapping writes; never shown. */
     val busy = MutableStateFlow(false)
+
+    /** Shown in the UI: only once a write has run for 400 ms, so a quick save never blinks the screen. */
+    val working = MutableStateFlow(false)
     val importPreview = MutableStateFlow<FastArchive?>(null)
     val now = MutableStateFlow(nowMillis())
 
@@ -122,12 +131,19 @@ class FastModel(application: Application) : AndroidViewModel(application) {
     private fun act(block: suspend () -> Unit) {
         if (busy.value) return
         busy.value = true
+        val reveal =
+            viewModelScope.launch {
+                kotlinx.coroutines.delay(400)
+                working.value = true
+            }
         viewModelScope.launch {
             try {
                 block()
             } catch (e: Exception) {
                 message.value = e.explanation
             } finally {
+                reveal.cancel()
+                working.value = false
                 busy.value = false
             }
         }
