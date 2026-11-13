@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Build one Android app through the shared convention. Nothing is uploaded.
+# usage: scripts/android fast generic|personal|store debug|release [Gradle -P options]
+set -euo pipefail
+root=$(cd "$(dirname "$0")/.." && pwd)
+app=${1:?app required}; distribution=${2:?generic, personal or store required}; mode=${3:?debug or release required}; shift 3
+[[ "$app" =~ ^[a-z][a-z0-9_]*$ ]] && [ -f "$root/apps/$app/android/build.gradle.kts" ] || { echo 'Unknown Android app' >&2; exit 2; }
+case "$distribution" in generic|personal|store) ;; *) echo 'Unknown distribution' >&2; exit 2;; esac
+case "$mode" in debug|release) ;; *) echo 'Unknown build mode' >&2; exit 2;; esac
+if [ "$distribution" = store ] && [ "$mode" != release ]; then echo 'Store uses release only' >&2; exit 2; fi
+variant="${distribution^}${mode^}"
+action=assemble
+[ "$distribution" != store ] || action=bundle
+exec "$root/android/gradlew" -p "$root/android" ":$app:$action$variant" ":$app:lint$variant" "$@"

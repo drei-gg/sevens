@@ -1,0 +1,19 @@
+name: Android baseline
+on:
+  push:
+    paths: ['android/**', 'apps/*/android/**', 'scripts/android', 'scripts/check-android-variants', '.github/workflows/android.yml']
+  pull_request:
+    paths: ['android/**', 'apps/*/android/**', 'scripts/android', 'scripts/check-android-variants', '.github/workflows/android.yml']
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - run: android/gradlew -p android :core:test :fast:lintGenericDebug :fast:assembleGenericDebug :fast:assembleGenericRelease
+      - run: scripts/check-android-variants

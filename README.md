@@ -12,7 +12,7 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 
 - Paid for once. A free 7-day trial with no card, then $7 to unlock. Nothing auto-bills, ever.
 - The first screen says what the phone already does built in. If that's enough, keep your seven dollars.
-- No third-party SDKs: no analytics, ads, or crash reporters. We collect nothing.
+- No developer analytics, ads, or crash reporters. Platform purchase integrations (StoreKit / Google Play Billing) are the narrow exception; see [the platform permission](LICENSE-PLATFORM-EXCEPTION.md) and [dependency/network notices](THIRD-PARTY.md). Tracking records are not sent to billing.
 - No backend of ours unless a feature truly needs one, you agree to it, and we say exactly what's sent.
 - Native: SwiftUI on iOS, Kotlin and Compose on Android.
 - Built on open-source work where the problem is already solved. Every library is pinned, read before it ships, and credited in the app's notices. Nothing that collects data or phones home.
@@ -49,3 +49,7 @@ Open `apps/fast/Fast.xcodeproj` on a Mac. Public builds are unbranded; the schem
 Fast Tracker uses the shared adaptive components in Today and History. Its phone is authoritative; its Watch caches only timer and water metadata.
 
 Fast embeds `FastWatch` (watchOS 10+). Not yet tested: the Watch app has not run on a Watch or a Watch simulator. Xcode needs the watchOS platform installed even when building the containing iPhone app; install it through Components or `xcodebuild -downloadPlatform watchOS`. A generic watchOS build needs no booted Watch simulator. Records are protected until the phone's first unlock after restart, so the Watch can save while the phone is locked. Physical pairing, background launches, disconnect/retry and protected-data behavior still require device acceptance. The shared VM's one-simulator rule remains in force.
+
+## Build Fast on Android
+
+The [Android baseline](android/README.md) defines Kotlin/Compose architecture, dependency selection, generic/personal/store flavors, private brand overlays, optional personal unlock, release signing and publishing boundaries. Start with `scripts/android fast generic debug` using JDK 21 and Android SDK 36. The Kotlin app lives in `apps/fast/android`; the pure FastCore port and shared app kit are under `android/`.
