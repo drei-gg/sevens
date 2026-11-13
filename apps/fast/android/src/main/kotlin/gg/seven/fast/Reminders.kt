@@ -66,7 +66,7 @@ object ReminderScheduler {
                 // Inexact Android alarms may be delayed. Never deliver a late water prompt outside
                 // its chosen window.
                 if (
-                    event.kind == "water" &&
+                    event.kind == ReminderKind.WATER &&
                         (now - event.at > 30 * 60_000 ||
                             now.instant().atZone(zone).hour !in
                                 archive.settings.water.startHour until
@@ -76,10 +76,10 @@ object ReminderScheduler {
                 if (now - event.at > 86_400_000) return@forEach
                 val text =
                     when (event.kind) {
-                        "goal" ->
+                        ReminderKind.GOAL ->
                             "Your chosen fasting time has elapsed. Finish whenever you choose."
-                        "eating" -> "Your chosen eating window has elapsed."
-                        "water" -> "Your optional water reminder."
+                        ReminderKind.EATING -> "Your chosen eating window has elapsed."
+                        ReminderKind.WATER -> "Your optional water reminder."
                         else -> "Your planned fasting time is here. Nothing starts automatically."
                     }
                 val intent =

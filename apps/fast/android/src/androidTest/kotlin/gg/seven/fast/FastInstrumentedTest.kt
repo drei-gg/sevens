@@ -23,7 +23,7 @@ class FastInstrumentedTest {
         try {
             val first = ArchiveRepository(context, AtomicFile(path))
             first.load()
-            val fast = FastRecord(start = nowMillis() - 10_000)
+            val fast = fastRecord(start = nowMillis() - 10_000)
             first.update { it.save(fast, nowMillis()) }
             val fresh = ArchiveRepository(context, AtomicFile(path))
             fresh.load()
@@ -44,7 +44,7 @@ class FastInstrumentedTest {
             assertNotNull(repo.failure.value)
             assertNull(repo.state.value)
             try {
-                repo.update { FastArchive() }
+                repo.update { FastArchive.empty() }
                 fail("must reject")
             } catch (_: IllegalStateException) {}
             assertArrayEquals(bytes, repo.rawBytes())
@@ -63,7 +63,7 @@ class FastInstrumentedTest {
                 it.copy(
                     metrics =
                         listOf(
-                            MetricEntry(date = nowMillis(), kind = MetricKind.water, value = 250.0)
+                            metricEntry(date = nowMillis(), kind = MetricKind.WATER, value = 250.0)
                         )
                 )
             }

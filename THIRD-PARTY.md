@@ -29,12 +29,12 @@ Their own dependencies are pinned in `apps/fast/core/Cargo.lock`.
 
 ## Android Fast and shared kit
 
-Versions are pinned in `android/buildSrc/build.gradle.kts` and module build files. AndroidX transitive versions are selected by the pinned Compose BOM; resolved dependency locks accompany the build. iOS Fast has no third-party dependencies to reuse. Native Apple facilities map to the Android platform or AndroidX; the fasting domain rules and JSON schema are Kotlin ports of FastCore.
+Versions are pinned in `android/buildSrc/build.gradle.kts` and module build files. AndroidX transitive versions are selected by the pinned Compose BOM; resolved dependency locks accompany the build. iOS Fast has no third-party dependencies to reuse. Native Apple facilities map to the Android platform or AndroidX; the fasting rules and JSON schema come from the shared Rust core (apps/fast/core), reached through UniFFI's generated Kotlin and JNA.
 
 | Dependency | Version | License / source | Purpose |
 | --- | --- | --- | --- |
 | Kotlin / standard library / compiler plugins | 2.2.21 | Apache-2.0, https://github.com/JetBrains/kotlin | Language and Compose compilation |
-| kotlinx.serialization | 1.9.0 | Apache-2.0, https://github.com/Kotlin/kotlinx.serialization | Schema-compatible JSON; no handwritten parser |
+| JNA | 5.17.0 | Apache-2.0 (dual-licensed with LGPL-2.1), https://github.com/java-native-access/jna | Calls into the Rust core from Kotlin (UniFFI's runtime) |
 | kotlinx.coroutines | resolved AndroidX dependency | Apache-2.0, https://github.com/Kotlin/kotlinx.coroutines | Lifecycle, state flows and serialized storage work |
 | AndroidX Compose | BOM 2025.12.01 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Native Material controls, adaptive layouts, accessibility |
 | AndroidX Activity / Lifecycle / Core | 1.12.2 / 2.9.4 / 1.17.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Lifecycle, document pickers, AtomicFile and notifications |

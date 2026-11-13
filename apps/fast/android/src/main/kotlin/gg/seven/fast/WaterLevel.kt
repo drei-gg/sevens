@@ -37,8 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
-import gg.seven.fast.core.LiquidGeometry
-import gg.seven.fast.core.LiquidSimulation
+import gg.seven.fast.core.*
 import gg.seven.kit.SevenColors
 import kotlin.math.*
 import kotlinx.coroutines.isActive
@@ -105,7 +104,7 @@ internal fun WaterLevel(level: Double?, modifier: Modifier = Modifier) {
                                 Surface.ROTATION_270 -> y to -x
                                 else -> x to y
                             }
-                        simulation.accelerometer(xy.first, xy.second)
+                        simulation.accelerometer(xy.first, xy.second, false)
                     }
                 }
             }
@@ -160,27 +159,32 @@ internal fun WaterLevel(level: Double?, modifier: Modifier = Modifier) {
             val circle = Path().apply { addOval(Rect(Offset.Zero, size)) }
             clipPath(circle) {
                 if (level != null && fill > 0) {
-                    // Laps past the goal alternate tones: deep over light from 1x, light over deep
-                    // from 2x, and so on (iOS WaterLevel.draw). The light tone sits on the card
-                    // colour so it still reads light over the deep one.
-                    val lap = if (fill < 1f) 0 else floor(fill).toInt()
-                    val rise = (fill - lap).coerceIn(0f, 1f).toDouble()
-                    fun fillLayer(path: Path, light: Boolean) {
-                        if (light) {
-                            drawPath(path, surface)
-                            drawPath(path, water.copy(alpha = .45f))
-                        } else drawPath(path, water)
-                    }
-                    if (lap == 0) {
-                        drawPath(
-                            liquidPath(size, rise, simulation, 0, 5.dp.toPx(), density),
-                            Color.White.copy(alpha = .55f),
-                        )
-                        drawPath(liquidPath(size, rise, simulation, 1, 0f, density), water.copy(alpha = .85f))
-                    } else {
-                        val underIsLight = lap % 2 == 1
-                        fillLayer(liquidPath(size, 1.0, simulation, 1, 0f, density), underIsLight)
-                        if (rise > 0) fillLayer(liquidPath(size, rise, simulation, 2, 0f, density), !underIsLight)
+                    // The core decides the layers (laps past the goal alternate tones) and each
+                    // surface's outline in dp; this only paints them.
+                    val state = simulation.state()
+                    waterLayers(fill.toDouble()).forEach { layer ->
+                        val path =
+                            outlinePath(
+                                liquidOutline(
+                                    (size.width / density).toDouble(),
+                                    (size.height / density).toDouble(),
+                                    layer.fraction,
+                                    state,
+                                    layer.wave,
+                                    if (layer.lifted) 5.0 else 0.0,
+                                ),
+                                size,
+                                density,
+                            )
+                        when (layer.tone) {
+                            WaterTone.CREST -> drawPath(path, Color.White.copy(alpha = .55f))
+                            WaterTone.SHALLOW -> drawPath(path, water.copy(alpha = .85f))
+                            WaterTone.LIGHT -> {
+                                drawPath(path, surface)
+                                drawPath(path, water.copy(alpha = .45f))
+                            }
+                            WaterTone.DEEP -> drawPath(path, water)
+                        }
                     }
                 }
             }
@@ -191,51 +195,22 @@ internal fun WaterLevel(level: Double?, modifier: Modifier = Modifier) {
     }
 }
 
-private fun liquidPath(
-    size: Size,
-    fraction: Double,
-    state: LiquidSimulation,
-    layer: Int,
-    lift: Float,
-    density: Float,
-): Path {
+private fun outlinePath(outline: LiquidOutline, size: Size, density: Float): Path {
     val path = Path()
-    if (fraction <= 0) return path
-    if (fraction >= 1) {
-        path.addRect(Rect(Offset.Zero, size))
-        return path
+    fun Point.offset() = Offset((x * density).toFloat(), (y * density).toFloat())
+    when (outline) {
+        is LiquidOutline.Empty -> Unit
+        is LiquidOutline.Full -> path.addRect(Rect(Offset.Zero, size))
+        is LiquidOutline.Shape -> {
+            outline.start.offset().let { path.moveTo(it.x, it.y) }
+            outline.surfaceStart.offset().let { path.lineTo(it.x, it.y) }
+            outline.curves.forEach { c ->
+                val (one, two, to) = Triple(c.control1.offset(), c.control2.offset(), c.to.offset())
+                path.cubicTo(one.x, one.y, two.x, two.y, to.x, to.y)
+            }
+            outline.end.offset().let { path.lineTo(it.x, it.y) }
+            path.close()
+        }
     }
-    val radius = max(size.width, size.height).toDouble()
-    val surface = LiquidGeometry.circleSurfaceOffset(fraction) * min(size.width, size.height) / 2
-    val damping = sin(PI * fraction)
-    val cosine = cos(state.angle)
-    val sine = sin(state.angle)
-    val phase = state.phase + layer
-    val amplitude = (2 + state.ripple) * density * damping * (if (layer == 0) .65 else 1.0)
-    val baseline = surface - lift * damping
-    val frequency = PI / radius
-    fun point(x: Double, y: Double) =
-        Offset(
-            (size.width / 2 + x * cosine - y * sine).toFloat(),
-            (size.height / 2 + x * sine + y * cosine).toFloat(),
-        )
-    fun wave(x: Double) = baseline + sin((x + radius) * frequency + phase) * amplitude
-    fun slope(x: Double) = cos((x + radius) * frequency + phase) * amplitude * frequency
-    val bottom = point(-radius, radius)
-    path.moveTo(bottom.x, bottom.y)
-    val first = point(-radius, wave(-radius))
-    path.lineTo(first.x, first.y)
-    val width = 2 * radius / 16
-    repeat(16) { i ->
-        val x = -radius + i * width
-        val next = x + width
-        val c1 = point(x + width / 3, wave(x) + slope(x) * width / 3)
-        val c2 = point(next - width / 3, wave(next) - slope(next) * width / 3)
-        val end = point(next, wave(next))
-        path.cubicTo(c1.x, c1.y, c2.x, c2.y, end.x, end.y)
-    }
-    val last = point(radius, radius)
-    path.lineTo(last.x, last.y)
-    path.close()
     return path
 }

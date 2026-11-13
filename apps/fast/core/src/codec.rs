@@ -118,7 +118,12 @@ fn ryu_like(value: f64) -> String {
 
 /// Reads and validates a backup or the app's own file. Newer schemas are refused, not guessed at.
 #[uniffi::export]
-pub fn archive_decode(data: &[u8], now: SystemTime) -> Result<FastArchive, TrackerError> {
+pub fn archive_decode(data: Vec<u8>, now: SystemTime) -> Result<FastArchive, TrackerError> {
+    archive_decode_slice(&data, now)
+}
+
+/// [`archive_decode`] without taking ownership, for Rust callers.
+pub fn archive_decode_slice(data: &[u8], now: SystemTime) -> Result<FastArchive, TrackerError> {
     if data.len() as u64 > MAX_ARCHIVE_BYTES {
         return Err(TrackerError::TooLarge);
     }

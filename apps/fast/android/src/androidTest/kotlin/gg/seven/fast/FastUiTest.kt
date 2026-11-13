@@ -22,7 +22,7 @@ class FastUiTest {
         val app = ui.activity.application as FastApplication
         app.getSharedPreferences("seven-trial", 0).edit().clear().commit()
         app.access.startTrial()
-        runBlocking { app.repository.update { FastArchive() } }
+        runBlocking { app.repository.update { FastArchive.empty() } }
         ui.waitForIdle()
     }
 
@@ -71,8 +71,8 @@ class FastUiTest {
     @Test
     fun expiredTrialAllowsEndingAndEditingButRejectsNewRecords() {
         val app = ui.activity.application as FastApplication
-        val f = FastRecord(start = nowMillis() - 3_600_000)
-        runBlocking { app.repository.update { FastArchive(fasts = listOf(f)) } }
+        val f = fastRecord(start = nowMillis() - 3_600_000)
+        runBlocking { app.repository.update { FastArchive.empty().copy(fasts = listOf(f)) } }
         app.getSharedPreferences("seven-trial", 0)
             .edit()
             .putLong("start", System.currentTimeMillis() - 8 * 86_400_000L)
@@ -153,7 +153,7 @@ class FastUiTest {
         val saved = app.repository.state.value!!.metrics.single()
         Assert.assertEquals(
             java.time.LocalDate.now().minusDays(1),
-            saved.date.instant().atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
+            saved.date.atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
         )
         ui.onNodeWithText("Undo last glass").performScrollTo().performClick()
         ui.waitUntil(10_000) { app.repository.state.value!!.metrics.isEmpty() }

@@ -55,9 +55,9 @@ internal fun EditorDialog(
     m: FastModel,
     a: FastArchive,
     type: String,
-    id: String?,
+    id: java.util.UUID?,
     initialDate: Double? = null,
-    initialFastId: String? = null,
+    initialFastId: java.util.UUID? = null,
     dismiss: () -> Unit,
 ) {
     val busy by m.busy.collectAsStateWithLifecycle()
@@ -70,16 +70,12 @@ internal fun EditorDialog(
     val baseNow = remember { initialDate ?: nowMillis() }
     var start by rememberSaveable {
         mutableDoubleStateOf(
-            f?.start
-                ?: j?.date
-                ?: metric?.date
-                ?: plan?.start
-                ?: rest?.date
+            (f?.start ?: j?.date ?: metric?.date ?: plan?.start ?: rest?.date)?.millis()
                 ?: if (type == "past") baseNow - 16 * 3_600_000
                 else if (type == "plan") baseNow + 86_400_000 else baseNow
         )
     }
-    var end by rememberSaveable { mutableDoubleStateOf(f?.end ?: baseNow) }
+    var end by rememberSaveable { mutableDoubleStateOf(f?.end?.millis() ?: baseNow) }
     var openEnded by rememberSaveable {
         mutableStateOf(
             if (f != null) f.goalMinutes == null
@@ -104,15 +100,15 @@ internal fun EditorDialog(
         mutableStateOf((f?.tags ?: j?.tags).orEmpty().joinToString(", "))
     }
     var linkedFast by rememberSaveable {
-        mutableStateOf(if (j == null) initialFastId ?: a.active?.id else j.fastID)
+        mutableStateOf((if (j == null) initialFastId ?: a.active?.id else j.fastId)?.toString())
     }
     var mood by rememberSaveable { mutableStateOf(j?.mood?.toString().orEmpty()) }
     var energy by rememberSaveable { mutableStateOf(j?.energy?.toString().orEmpty()) }
     var hunger by rememberSaveable { mutableStateOf(j?.hunger?.toString().orEmpty()) }
     var kindText by rememberSaveable {
-        mutableStateOf(metric?.kind?.name ?: if (type == "water") "water" else "weight")
+        mutableStateOf(metric?.kind?.key ?: if (type == "water") "water" else "weight")
     }
-    val kind = MetricKind.valueOf(kindText)
+    val kind = metricKind(kindText)
     var value by rememberSaveable {
         mutableStateOf(
             metric?.let { plain(Units.display(it.value, it.kind, a.settings)) }
@@ -120,7 +116,7 @@ internal fun EditorDialog(
                     plain(
                         Units.display(
                             a.settings.water.quickAddMilliliters,
-                            MetricKind.water,
+                            MetricKind.WATER,
                             a.settings,
                         )
                     )
@@ -183,7 +179,7 @@ internal fun EditorDialog(
                         "end",
                         "fast" ->
                             current.save(
-                                FastRecord(
+                                fastRecord(
                                     id = f?.id ?: newId(),
                                     start = start,
                                     end =
@@ -191,7 +187,7 @@ internal fun EditorDialog(
                                         else null,
                                     goalMinutes = newGoal,
                                     eatingMinutes = eat,
-                                    timeZoneID = f?.timeZoneID ?: ZoneId.systemDefault().id,
+                                    timeZoneId = f?.timeZoneId ?: ZoneId.systemDefault().id,
                                     intention = intention,
                                     reflection = reflection,
                                     tags = parsedTags,
@@ -202,8 +198,8 @@ internal fun EditorDialog(
                             val entry =
                                 JournalEntry(
                                     j?.id ?: newId(),
-                                    start,
-                                    linkedFast,
+                                    start.instant(),
+                                    linkedFast?.let(java.util.UUID::fromString),
                                     text,
                                     newMood,
                                     newEnergy,
@@ -219,10 +215,10 @@ internal fun EditorDialog(
                             val entry =
                                 MetricEntry(
                                     metric?.id ?: newId(),
-                                    start,
+                                    start.instant(),
                                     kind,
                                     newMetric,
-                                    metric?.externalID,
+                                    metric?.externalId,
                                 )
                             current.copy(
                                 metrics = current.metrics.filterNot { it.id == entry.id } + entry
@@ -230,13 +226,13 @@ internal fun EditorDialog(
                         }
                         "plan" -> {
                             val entry =
-                                PlannedFast(plan?.id ?: newId(), start, newGoal, eat, intention)
+                                PlannedFast(plan?.id ?: newId(), start.instant(), newGoal, eat, intention)
                             current.copy(
                                 plans = current.plans.filterNot { it.id == entry.id } + entry
                             )
                         }
                         "rest" -> {
-                            val entry = RestDay(rest?.id ?: newId(), start, text)
+                            val entry = RestDay(rest?.id ?: newId(), start.instant(), text)
                             current.copy(
                                 restDays = current.restDays.filterNot { it.id == entry.id } + entry
                             )
@@ -253,7 +249,7 @@ internal fun EditorDialog(
                 dismiss,
             )
         } catch (e: Exception) {
-            localError = e.message
+            localError = e.explanation
         }
     }
     val draft =
@@ -312,7 +308,7 @@ internal fun EditorDialog(
                         "Linked fast",
                         linkedFast.orEmpty(),
                         listOf("" to "An ordinary day") +
-                            a.fasts.sortedByDescending { it.start }.map { it.id to stamp(it.start) },
+                            a.fasts.sortedByDescending { it.start }.map { it.id.toString() to stamp(it.start) },
                     ) {
                         linkedFast = it.ifEmpty { null }
                     }
@@ -356,25 +352,25 @@ internal fun EditorDialog(
             SevenGroup { TextRow(tags, "Tags, separated by commas") { tags = it } }
         if (type in listOf("metric", "water")) {
             if (metric == null && type != "water") {
-                val kinds = MetricKind.entries.filter { a.settings.showWeight || it != MetricKind.weight }
+                val kinds = MetricKind.entries.filter { a.settings.showWeight || it != MetricKind.WEIGHT }
                 if (kinds.size > 1)
                     Segmented(
-                        kinds.map { it to it.name.replaceFirstChar { c -> c.uppercase() } },
+                        kinds.map { it to it.key.replaceFirstChar { c -> c.uppercase() } },
                         kind,
                     ) {
-                        kindText = it.name
+                        kindText = it.key
                         value = ""
                     }
             }
             SevenGroup(
                 footer =
-                    if (kind == MetricKind.water)
+                    if (kind == MetricKind.WATER)
                         "Log your own observations. There is no target you have to meet."
                     else null
             ) {
                 NumberRow(Units.label(kind, a.settings), value) { value = it }
             }
-            if (kind == MetricKind.water && metric == null) {
+            if (kind == MetricKind.WATER && metric == null) {
                 val amounts =
                     if (a.settings.useFluidOunces) listOf(8, 12, 16) else listOf(150, 250, 500)
                 CapsuleChoices(
@@ -472,8 +468,8 @@ internal fun ToggleRow(label: String, enabled: Boolean, onChange: (Boolean) -> U
 @Composable
 private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Unit) {
     val s = a.settings.water
-    val unit = Units.label(MetricKind.water, a.settings)
-    fun display(value: Double) = plain(Units.display(value, MetricKind.water, a.settings))
+    val unit = Units.label(MetricKind.WATER, a.settings)
+    fun display(value: Double) = plain(Units.display(value, MetricKind.WATER, a.settings))
     var useGoal by rememberSaveable { mutableStateOf(s.goalMilliliters != null) }
     var goal by rememberSaveable { mutableStateOf(s.goalMilliliters?.let(::display).orEmpty()) }
     var glass by rememberSaveable { mutableStateOf(display(s.quickAddMilliliters)) }
@@ -493,7 +489,7 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
     fun save() {
         try {
             fun amount(raw: String) =
-                Units.canonical(raw.decimal() ?: error("Enter an amount"), MetricKind.water, a.settings)
+                Units.canonical(raw.decimal() ?: error("Enter an amount"), MetricKind.WATER, a.settings)
             val settings =
                 WaterSettings(
                     if (!useGoal) null
@@ -517,7 +513,7 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
                 },
             )
         } catch (e: Exception) {
-            error = e.message ?: "Check the amounts and hours"
+            error = e.explanation
         }
     }
     FormSheet("Water settings", dismiss, ::save, busy = busy) {

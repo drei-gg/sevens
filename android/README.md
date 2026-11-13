@@ -78,7 +78,7 @@ android/gradlew -p android :core:test :fast:assembleGenericDebug --write-locks
 scripts/check-android-variants
 ```
 
-The `seven.android-app` Gradle convention supplies flavors, signing gates, version flags, SDK levels, shrinker and lint defaults for future app modules. `sevenkit` supplies theme/access contracts. `billing` supplies the isolated Play implementation. `core` is currently **FastCore**, not a universal app domain module; other apps should add their own domain module.
+The `seven.android-app` Gradle convention supplies flavors, signing gates, version flags, SDK levels, shrinker and lint defaults for future app modules. `sevenkit` supplies theme/access contracts. `billing` supplies the isolated Play implementation. `core` is Fast's Rust core seen from Kotlin: UniFFI bindings generated from `apps/fast/core` at build time plus a small façade (`Fast.kt`). Building it needs Rust, the Android targets and cargo-ndk (`apps/fast/core/README.md`). Other apps add their own crate and binding module the same way.
 
 Fast uses AndroidX `AtomicFile` with serialized IO; a failed write does not publish state. A corrupt/newer archive remains intact and blocks edits. JSON import validates and previews a stable-ID merge, keeping local settings. CSV includes every record type. Reminders use Android's inexact, idle-capable alarms and reconcile after boot, clock/timezone changes, app updates and edits; delayed water reminders outside the chosen window are dropped. Permission denial does not affect tracking.
 

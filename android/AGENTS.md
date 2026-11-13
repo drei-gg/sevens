@@ -1,6 +1,6 @@
 # Sevens Android contract
 
-- iOS is the product reference. Inspect the corresponding Swift implementation before porting behavior or changing a cross-platform rule. Kotlin keeps the same archive semantics, validation and calculations. Record intentional platform differences.
+- iOS is the product reference for screens and behaviour. An app's rules, calculations, archive format and shared drawing geometry live once, in its Rust core (`apps/<app>/core`, bound with UniFFI; see its README). Never re-implement them in Kotlin or Swift: change the crate and its tests, then both apps follow. Kotlin keeps only platform work (storage, notifications, Health, purchases, UI). Record intentional platform differences.
 - Library first: check the iOS dependency choice and its Android counterpart, then reputable license-compatible Android libraries. Do not hand-roll a parser, calendar, chart, storage primitive or standard control that a suitable maintained library supplies. Keep dependency versions and locks explicit; include licenses and notices.
 - Use native Material controls where they fit. Custom visuals or controls need a concrete UX benefit. Preserve font scaling, semantics, minimum touch targets, system insets, dark mode and drafts across configuration changes.
 - All app modules use `seven.android-app`. Keep generic resources neutral. Private brand overlays are build inputs outside this repository; never copy them into public source.

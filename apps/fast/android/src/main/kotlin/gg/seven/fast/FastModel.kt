@@ -35,7 +35,7 @@ class ArchiveRepository(
                 try {
                     state.value =
                         if (!file.baseFile.exists() && !File(file.baseFile.path + ".bak").exists())
-                            FastArchive()
+                            FastArchive.empty()
                         else
                             file.openRead().use {
                                 ArchiveCodec.decode(
@@ -45,7 +45,7 @@ class ArchiveRepository(
                             }
                 } catch (e: Exception) {
                     failure.value =
-                        "Tracking file could not be opened: ${e.message}. The original file is preserved. Export it before recovery."
+                        "Tracking file could not be opened. ${e.explanation} The original file is preserved. Export it before recovery."
                 }
             }
         }
@@ -126,7 +126,7 @@ class FastModel(application: Application) : AndroidViewModel(application) {
             try {
                 block()
             } catch (e: Exception) {
-                message.value = e.message ?: "Could not save. Try again."
+                message.value = e.explanation
             } finally {
                 busy.value = false
             }
@@ -138,7 +138,7 @@ class FastModel(application: Application) : AndroidViewModel(application) {
             repository.update { current ->
                 val next = change(current)
                 if (!canCreate) {
-                    fun <T> additions(before: List<T>, after: List<T>, id: (T) -> String): Boolean {
+                    fun <T> additions(before: List<T>, after: List<T>, id: (T) -> java.util.UUID): Boolean {
                         val known = before.mapTo(HashSet(), id)
                         return after.any { id(it) !in known }
                     }
@@ -164,7 +164,7 @@ class FastModel(application: Application) : AndroidViewModel(application) {
                 access.startTrial()
                 now.value = nowMillis()
             }
-            .onFailure { message.value = it.message }
+            .onFailure { message.value = it.explanation }
     }
 
     fun export(uri: Uri, csv: Boolean = false) = act {

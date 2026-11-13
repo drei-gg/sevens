@@ -63,7 +63,7 @@ internal fun HistoryScreen(m: FastModel, a: FastArchive, now: Double, open: Open
             }
             .filter {
                 mode == "List" ||
-                    History.hours(listOf(it), day, zone, now) > 0 ||
+                    History.hours(a.copy(fasts = listOf(it)), day, zone, now) > 0 ||
                     History.onDay(it.start, day, zone)
             }
     LazyColumn(
@@ -124,7 +124,7 @@ internal fun HistoryScreen(m: FastModel, a: FastArchive, now: Double, open: Open
                         dayContent = { cell, _ ->
                             val date = cell.date
                             val included = date in first..end
-                            val hours = History.hours(a.fasts, date, zone, now)
+                            val hours = History.hours(a, date, zone, now)
                             val color =
                                 if (hours == 0.0 || !included)
                                     MaterialTheme.colorScheme.surfaceVariant
@@ -159,7 +159,7 @@ internal fun HistoryScreen(m: FastModel, a: FastArchive, now: Double, open: Open
             }
         if (mode != "List")
             item {
-                Section("$day · ${History.hours(a.fasts, day, zone, now).number()} hours")
+                Section("$day · ${History.hours(a, day, zone, now).number()} hours")
                 a.journal
                     .filter { History.onDay(it.date, day, zone) }
                     .forEach { entry ->
@@ -375,16 +375,16 @@ internal fun TrendsScreen(a: FastArchive, now: Double, open: OpenEditor) {
         val metrics =
             a.metrics
                 .filter {
-                    it.kind != MetricKind.water &&
-                        (a.settings.showWeight || it.kind != MetricKind.weight) &&
-                        it.date.instant().atZone(zone).toLocalDate() in start..end
+                    it.kind != MetricKind.WATER &&
+                        (a.settings.showWeight || it.kind != MetricKind.WEIGHT) &&
+                        it.date.atZone(zone).toLocalDate() in start..end
                 }
                 .sortedByDescending { it.date }
-        listOf(MetricKind.weight, MetricKind.waist, MetricKind.sleep)
-            .filter { a.settings.showWeight || it != MetricKind.weight }
+        listOf(MetricKind.WEIGHT, MetricKind.WAIST, MetricKind.SLEEP)
+            .filter { a.settings.showWeight || it != MetricKind.WEIGHT }
             .forEach { kind ->
                 val samples = metrics.filter { it.kind == kind }.sortedBy { it.date }
-                Panel(kind.name.replaceFirstChar { it.uppercase() }) {
+                Panel(kind.key.replaceFirstChar { it.uppercase() }) {
                     if (samples.isEmpty())
                         Text(
                             "Nothing logged in this period.",
@@ -407,7 +407,7 @@ internal fun TrendsScreen(a: FastArchive, now: Double, open: OpenEditor) {
                 }
             }
         val observations =
-            a.journal.filter { it.date.instant().atZone(zone).toLocalDate() in start..end }
+            a.journal.filter { it.date.atZone(zone).toLocalDate() in start..end }
         Panel("Your check-ins") {
             Text("${observations.size} observations")
             listOf(
@@ -447,7 +447,7 @@ private fun DailyBars(a: FastArchive, end: LocalDate, count: Int, now: Double) {
             remember(a.fasts, end, count, now.toLong() / 60_000) {
                 (count - 1 downTo 0).map { offset ->
                     val day = end.minusDays(offset.toLong())
-                    day to History.hours(a.fasts, day, ZoneId.systemDefault(), now)
+                    day to History.hours(a, day, ZoneId.systemDefault(), now)
                 }
             }
         DailyChart(values, "hours", SevenColors.time)
@@ -497,11 +497,12 @@ internal fun StatTiles(values: List<Triple<String, String, String?>>) {
 
 @Composable
 internal fun WaterSummary(a: FastArchive, end: LocalDate, count: Int) {
-    val days = History.waterDays(a.metrics, end, count, ZoneId.systemDefault())
+    val zone = ZoneId.systemDefault()
+    val days = History.waterDays(a.metrics, end, count, zone)
     val logged = days.filter { it.entryCount > 0 }
     val total = days.sumOf { it.milliliters }
     fun amount(value: Double) =
-        "${Units.display(value, MetricKind.water, a.settings).number(0)} ${Units.label(MetricKind.water, a.settings)}"
+        "${Units.display(value, MetricKind.WATER, a.settings).number(0)} ${Units.label(MetricKind.WATER, a.settings)}"
     StatTiles(
         listOf(
             Triple("Total logged", amount(total), null),
@@ -515,11 +516,11 @@ internal fun WaterSummary(a: FastArchive, end: LocalDate, count: Int) {
         Panel("Daily water") {
             DailyChart(
                 days.map {
-                    it.date to
+                    it.date.atZone(zone).toLocalDate() to
                         if (it.entryCount == 0) null
-                        else Units.display(it.milliliters, MetricKind.water, a.settings)
+                        else Units.display(it.milliliters, MetricKind.WATER, a.settings)
                 },
-                Units.label(MetricKind.water, a.settings),
+                Units.label(MetricKind.WATER, a.settings),
                 SevenColors.water,
             )
         }
@@ -532,6 +533,7 @@ internal fun WaterSummary(a: FastArchive, end: LocalDate, count: Int) {
 
 @Composable
 internal fun WaterTrendsScreen(a: FastArchive, now: Double) {
+    val zone = ZoneId.systemDefault()
     var count by rememberSaveable { mutableIntStateOf(30) }
     var endText by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
     val end = LocalDate.parse(endText)
@@ -546,11 +548,11 @@ internal fun WaterTrendsScreen(a: FastArchive, now: Double) {
         Section("Daily water")
         History.waterDays(a.metrics, end, count, ZoneId.systemDefault()).reversed().forEach { day ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(day.date.format(DateTimeFormatter.ofPattern("MMM d, yyyy")))
+                Text(day.date.atZone(zone).format(DateTimeFormatter.ofPattern("MMM d, yyyy")))
                 Text(
                     if (day.entryCount == 0) "No entries"
                     else
-                        "${Units.display(day.milliliters, MetricKind.water, a.settings).number(0)} ${Units.label(MetricKind.water, a.settings)}"
+                        "${Units.display(day.milliliters, MetricKind.WATER, a.settings).number(0)} ${Units.label(MetricKind.WATER, a.settings)}"
                 )
             }
         }
@@ -559,7 +561,7 @@ internal fun WaterTrendsScreen(a: FastArchive, now: Double) {
 
 @Composable
 internal fun WaterEntriesScreen(a: FastArchive, open: OpenEditor) {
-    val entries = a.metrics.filter { it.kind == MetricKind.water }.sortedByDescending { it.date }
+    val entries = a.metrics.filter { it.kind == MetricKind.WATER }.sortedByDescending { it.date }
     LazyColumn(
         Modifier.widthIn(max = 960.dp).fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
@@ -603,14 +605,14 @@ internal fun WaterScreen(
     addAt: (Double) -> Unit,
 ) {
     var dayText by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
-    var undoId by rememberSaveable { mutableStateOf<String?>(null) }
-    var deleting by rememberSaveable { mutableStateOf<String?>(null) }
+    var undoId by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
+    var deleting by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
     val day = LocalDate.parse(dayText)
     val zone = ZoneId.systemDefault()
     val today = LocalDate.now()
     val entries =
         a.metrics
-            .filter { it.kind == MetricKind.water && History.onDay(it.date, day, zone) }
+            .filter { it.kind == MetricKind.WATER && History.onDay(it.date, day, zone) }
             .sortedByDescending { it.date }
     val busy by m.busy.collectAsState()
     fun entryDate() =
@@ -641,7 +643,7 @@ internal fun WaterScreen(
         WaterAmount(a, day, large = true)
         if (a.settings.water.goalMilliliters == null)
             TextButton(
-                onClick = { open("waterSettings", "settings") },
+                onClick = { open("waterSettings", null) },
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
                 Icon(Icons.Outlined.TrackChanges, null)
@@ -658,9 +660,9 @@ internal fun WaterScreen(
                     if (!m.canCreate) addAt(entryDate())
                     else {
                         val entry =
-                            MetricEntry(
+                            metricEntry(
                                 date = entryDate(),
-                                kind = MetricKind.water,
+                                kind = MetricKind.WATER,
                                 value = a.settings.water.quickAddMilliliters,
                             )
                         m.mutate(
@@ -673,7 +675,7 @@ internal fun WaterScreen(
                 Icon(Icons.Outlined.Add, null)
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    "${Units.display(a.settings.water.quickAddMilliliters,MetricKind.water,a.settings).number(0)} ${Units.label(MetricKind.water,a.settings)}"
+                    "${Units.display(a.settings.water.quickAddMilliliters,MetricKind.WATER,a.settings).number(0)} ${Units.label(MetricKind.WATER,a.settings)}"
                 )
             }
             FilledTonalButton(onClick = { addAt(entryDate()) }) {
@@ -736,19 +738,19 @@ internal fun WaterScreen(
             val week = History.waterDays(a.metrics, today, 7, zone)
             DailyChart(
                 week.map {
-                    it.date to
+                    it.date.atZone(zone).toLocalDate() to
                         if (it.entryCount == 0) null
-                        else Units.display(it.milliliters, MetricKind.water, a.settings)
+                        else Units.display(it.milliliters, MetricKind.WATER, a.settings)
                 },
-                Units.label(MetricKind.water, a.settings),
+                Units.label(MetricKind.WATER, a.settings),
                 SevenColors.water,
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 week.forEach { value ->
                     FilterChip(
                         selected = value.date == day,
-                        onClick = { dayText = value.date.toString() },
-                        label = { Text(value.date.format(DateTimeFormatter.ofPattern("EEE d"))) },
+                        onClick = { dayText = value.date.atZone(zone).toLocalDate().toString() },
+                        label = { Text(value.date.atZone(zone).format(DateTimeFormatter.ofPattern("EEE d"))) },
                     )
                 }
             }
@@ -879,7 +881,7 @@ private fun HistoryCalendar(
                         },
                         dayContent = { day ->
                             val hours =
-                                History.hours(a.fasts, day.date, ZoneId.systemDefault(), now)
+                                History.hours(a, day.date, ZoneId.systemDefault(), now)
                             val journal =
                                 a.journal.any {
                                     History.onDay(it.date, day.date, ZoneId.systemDefault())
@@ -940,7 +942,7 @@ private fun HistoryCalendar(
 }
 
 @Composable
-internal fun FastDetailScreen(a: FastArchive, id: String?, now: Double, open: OpenEditor) {
+internal fun FastDetailScreen(a: FastArchive, id: java.util.UUID?, now: Double, open: OpenEditor) {
     val fast = a.fasts.find { it.id == id }
     Page {
         if (fast == null)
@@ -963,7 +965,7 @@ internal fun FastDetailScreen(a: FastArchive, id: String?, now: Double, open: Op
                 ValueRow("Started", stamp(fast.start))
                 fast.end?.let { ValueRow("Finished", stamp(it)) }
                 ValueRow("Goal", fast.goalMinutes?.let { duration(it * 60_000.0) } ?: "Open ended")
-                ValueRow("Recorded time zone", fast.timeZoneID)
+                ValueRow("Recorded time zone", fast.timeZoneId)
                 if (fast.tags.isNotEmpty()) ValueRow("Tags", fast.tags.joinToString(" · "))
             }
             if (fast.intention.isNotBlank())
@@ -980,7 +982,7 @@ internal fun FastDetailScreen(a: FastArchive, id: String?, now: Double, open: Op
                 }
             SevenGroup(header = "Observations") {
                 a.journal
-                    .filter { it.fastID == id }
+                    .filter { it.fastId == id }
                     .sortedBy { it.date }
                     .forEach { entry ->
                         ValueRow(

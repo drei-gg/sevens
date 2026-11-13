@@ -107,7 +107,7 @@ internal fun MeasurementChart(entries: List<MetricEntry>, settings: TrackerSetti
         remember(entries, settings) {
             entries
                 .sortedBy { it.date }
-                .map { it.date / 86_400_000 to Units.display(it.value, it.kind, settings) }
+                .map { it.date.millis() / 86_400_000 to Units.display(it.value, it.kind, settings) }
         }
     LaunchedEffect(points) {
         producer.runTransaction {

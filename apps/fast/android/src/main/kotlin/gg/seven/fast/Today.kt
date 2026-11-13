@@ -49,7 +49,7 @@ internal fun TodayScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TimeCard("Started", active.start) { open("fast", active.id) }
+                TimeCard("Started", active.start.millis()) { open("fast", active.id) }
                 active.goalDate?.let { goal -> TimeCard("Goal", goal) { open("fast", active.id) } }
             }
             Button(
@@ -129,7 +129,7 @@ private fun TimerHero(a: FastArchive, now: Double) {
     var remaining by rememberSaveable { mutableStateOf(false) }
     val active = a.active
     val last = a.latestCompleted
-    val windowEnd = last?.end?.let { it + last.eatingMinutes * 60_000.0 }
+    val windowEnd = last?.end?.let { it.millis() + last.eatingMinutes * 60_000.0 }
     val eating =
         active == null && a.settings.showEatingWindow && windowEnd != null && now < windowEnd
     val target = active?.goalMinutes?.times(60_000.0)
@@ -138,7 +138,7 @@ private fun TimerHero(a: FastArchive, now: Double) {
     val progress =
         when {
                 active != null -> if (target != null) elapsed / target else 1.0
-                eating -> (now - last!!.end!!) / (last.eatingMinutes * 60_000.0)
+                eating -> (now - last!!.end!!.millis()) / (last.eatingMinutes * 60_000.0)
                 else -> 0.0
             }
             .toFloat()
@@ -352,10 +352,10 @@ internal fun WaterAmount(a: FastArchive, day: LocalDate, large: Boolean = false)
     val total = History.water(a.metrics, day, ZoneId.systemDefault())
     val count =
         a.metrics.count {
-            it.kind == MetricKind.water && History.onDay(it.date, day, ZoneId.systemDefault())
+            it.kind == MetricKind.WATER && History.onDay(it.date, day, ZoneId.systemDefault())
         }
     val goal = a.settings.water.goalMilliliters
-    val unit = Units.label(MetricKind.water, a.settings)
+    val unit = Units.label(MetricKind.WATER, a.settings)
     if (large) {
         Column(
             Modifier.fillMaxWidth(),
@@ -364,7 +364,7 @@ internal fun WaterAmount(a: FastArchive, day: LocalDate, large: Boolean = false)
         ) {
             WaterLevel(goal?.let { total / it }, Modifier.size(168.dp))
             Text(
-                "${Units.display(total,MetricKind.water,a.settings).number(0)} $unit",
+                "${Units.display(total,MetricKind.WATER,a.settings).number(0)} $unit",
                 style =
                     MaterialTheme.typography.displayMedium.copy(
                         fontWeight = FontWeight.SemiBold,
@@ -373,7 +373,7 @@ internal fun WaterAmount(a: FastArchive, day: LocalDate, large: Boolean = false)
             )
             Text(
                 if (goal == null) "$count ${if(count==1) "drink" else "drinks"}"
-                else "of ${Units.display(goal,MetricKind.water,a.settings).number(0)} $unit",
+                else "of ${Units.display(goal,MetricKind.WATER,a.settings).number(0)} $unit",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -385,7 +385,7 @@ internal fun WaterAmount(a: FastArchive, day: LocalDate, large: Boolean = false)
             WaterLevel(goal?.let { total / it }, Modifier.size(64.dp))
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    "${Units.display(total,MetricKind.water,a.settings).number(0)} $unit",
+                    "${Units.display(total,MetricKind.WATER,a.settings).number(0)} $unit",
                     style =
                         MaterialTheme.typography.displaySmall.copy(
                             fontWeight = FontWeight.SemiBold,
@@ -394,7 +394,7 @@ internal fun WaterAmount(a: FastArchive, day: LocalDate, large: Boolean = false)
                 )
                 Text(
                     if (goal == null) "$count ${if(count==1) "drink" else "drinks"}"
-                    else "of ${Units.display(goal,MetricKind.water,a.settings).number(0)} $unit",
+                    else "of ${Units.display(goal,MetricKind.WATER,a.settings).number(0)} $unit",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -409,7 +409,7 @@ private fun WaterTodayCard(
     onPage: (String) -> Unit,
     onUnlock: () -> Unit,
 ) {
-    var undoId by rememberSaveable { mutableStateOf<String?>(null) }
+    var undoId by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
     val busy by m.busy.collectAsState()
     Panel {
         Row(
@@ -424,7 +424,7 @@ private fun WaterTodayCard(
         }
         WaterAmount(a, LocalDate.now())
         if (a.settings.water.goalMilliliters == null)
-            TextButton(onClick = { open("waterSettings", "settings") }) {
+            TextButton(onClick = { open("waterSettings", null) }) {
                 Icon(Icons.Outlined.TrackChanges, null)
                 Spacer(Modifier.width(8.dp))
                 Text("Set a daily goal")
@@ -439,9 +439,9 @@ private fun WaterTodayCard(
                     if (!m.canCreate) onUnlock()
                     else {
                         val entry =
-                            MetricEntry(
+                            metricEntry(
                                 date = nowMillis(),
-                                kind = MetricKind.water,
+                                kind = MetricKind.WATER,
                                 value = a.settings.water.quickAddMilliliters,
                             )
                         m.mutate(
@@ -454,7 +454,7 @@ private fun WaterTodayCard(
                 Icon(Icons.Outlined.Add, null)
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    "${Units.display(a.settings.water.quickAddMilliliters,MetricKind.water,a.settings).number(0)} ${Units.label(MetricKind.water,a.settings)}"
+                    "${Units.display(a.settings.water.quickAddMilliliters,MetricKind.WATER,a.settings).number(0)} ${Units.label(MetricKind.WATER,a.settings)}"
                 )
             }
             FilledTonalButton(onClick = { open("water", null) }) {

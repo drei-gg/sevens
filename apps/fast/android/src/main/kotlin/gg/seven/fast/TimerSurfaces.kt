@@ -82,7 +82,7 @@ object TimerSurfaces {
                     active.goalDate?.let { "Goal · ${stamp(it)}" }
                         ?: "Open ended · finish when you choose"
                 )
-                .setWhen(active.start.toLong())
+                .setWhen(active.start.toEpochMilli())
                 .setUsesChronometer(true)
                 .setShowWhen(true)
                 .setOngoing(true)

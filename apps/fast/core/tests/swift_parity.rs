@@ -135,7 +135,7 @@ fn backup_round_trip_preserves_milliseconds_and_all_kinds() {
     archive.plans = vec![plan(plus(now(), 86_400.0), Some(960))];
     archive.rest_days = vec![RestDay { id: Uuid::new_v4(), date: now(), note: String::new() }];
     archive.presets = vec![FastPreset { id: Uuid::new_v4(), name: "My rhythm".into(), goal_minutes: Some(780), eating_minutes: 660 }];
-    let decoded = archive_decode(&archive_encode(&archive).unwrap(), now()).unwrap();
+    let decoded = archive_decode_slice(&archive_encode(&archive).unwrap(), now()).unwrap();
     assert!(secs(decoded.fasts[0].start, f.start).abs() < 0.001);
     assert_eq!(decoded.journal, archive.journal);
     assert_eq!(decoded.metrics, archive.metrics);
@@ -158,8 +158,8 @@ fn import_is_idempotent_rejects_conflict_and_overlap() {
 
 #[test]
 fn malformed_and_future_files_are_not_silently_emptied() {
-    assert_eq!(archive_decode(b"broken", now()).err(), Some(TrackerError::Unreadable));
-    assert_eq!(archive_decode(br#"{"schemaVersion":2}"#, now()).err(), Some(TrackerError::UnsupportedSchema));
+    assert_eq!(archive_decode_slice(b"broken", now()).err(), Some(TrackerError::Unreadable));
+    assert_eq!(archive_decode_slice(br#"{"schemaVersion":2}"#, now()).err(), Some(TrackerError::UnsupportedSchema));
 }
 
 #[test]
@@ -220,7 +220,7 @@ fn duplicate_external_measurements_reject_an_import_without_partial_changes() {
 fn older_version_one_settings_get_new_defaults() {
     let mut a: serde_json::Value = serde_json::from_slice(&archive_encode(&new_archive()).unwrap()).unwrap();
     a["settings"] = serde_json::json!({"usePounds": true});
-    let decoded = archive_decode(&serde_json::to_vec(&a).unwrap(), now()).unwrap();
+    let decoded = archive_decode_slice(&serde_json::to_vec(&a).unwrap(), now()).unwrap();
     let s = decoded.settings;
     assert!(s.use_pounds);
     assert!(!s.live_activity);
@@ -249,7 +249,7 @@ fn backup_of_fractional_timestamps_merges_back_into_its_source() {
         let mut archive = new_archive();
         archive.fasts = vec![ended(plus(now, -7_200.0 + fraction), plus(now, -3_600.0 + fraction))];
         archive.journal = vec![JournalEntry { text: "Keep precise times".into(), ..journal(plus(now, -3_000.0 + fraction)) }];
-        let copy = archive_decode(&archive_encode(&archive).unwrap(), now).unwrap();
+        let copy = archive_decode_slice(&archive_encode(&archive).unwrap(), now).unwrap();
         assert_eq!(archive_merge(&copy, &archive, now).unwrap().total_added, 0);
         let mut edited = copy.clone();
         edited.fasts[0].start = plus(edited.fasts[0].start, 0.01);
@@ -493,7 +493,7 @@ fn old_archives_keep_water_logs_with_reminders_off() {
     archive.metrics = vec![metric(now, MetricKind::Water, 250.0)];
     let mut json: serde_json::Value = serde_json::from_slice(&archive_encode(&archive).unwrap()).unwrap();
     json["settings"].as_object_mut().unwrap().remove("water");
-    let restored = archive_decode(&serde_json::to_vec(&json).unwrap(), now).unwrap();
+    let restored = archive_decode_slice(&serde_json::to_vec(&json).unwrap(), now).unwrap();
     assert_eq!(restored.settings.water, default_water_settings());
     assert_eq!(restored.settings.water.goal_milliliters, None);
     assert_eq!(water_total(&restored.metrics, now, &cal("UTC")), 250.0);
@@ -563,7 +563,7 @@ fn water_preferences_round_trip_and_merge_keeps_local_choices() {
     archive.settings.water.quick_add_milliliters = units_canonical(8.0, MetricKind::Water, &archive.settings);
     archive.settings.water.reminders_enabled = true;
     archive.metrics = vec![metric(now, MetricKind::Water, archive.settings.water.quick_add_milliliters)];
-    let copy = archive_decode(&archive_encode(&archive).unwrap(), now).unwrap();
+    let copy = archive_decode_slice(&archive_encode(&archive).unwrap(), now).unwrap();
     assert_eq!(copy.settings, archive.settings);
     assert!((units_display(copy.metrics[0].value, MetricKind::Water, &copy.settings) - 8.0).abs() < 0.000001);
     let merged = archive_merge(&copy, &new_archive(), now).unwrap();
@@ -585,7 +585,7 @@ fn water_pause_persists_without_erasing_reminder_window() {
     archive.settings.goal_reminder = true;
     archive.fasts = vec![fast(now)];
     archive.settings.water.reminders_paused = true;
-    let restored = archive_decode(&archive_encode(&archive).unwrap(), now).unwrap();
+    let restored = archive_decode_slice(&archive_encode(&archive).unwrap(), now).unwrap();
     let events = reminder_events(&restored, now);
     assert_eq!(events.len(), 1);
     assert_eq!(events[0].kind, ReminderKind::Goal);
@@ -632,7 +632,7 @@ fn watch_commands_are_idempotent_and_reject_stale_state() {
     assert_eq!(repeat.metrics.len(), 1);
     let stale = FastWatchRequest { id: Uuid::new_v4(), ..water.clone() };
     assert_eq!(watch_apply(&first, stale, true, "UTC".into(), now), Err(FastWatchFailure::Stale));
-    let restored = archive_decode(&archive_encode(&first).unwrap(), now).unwrap();
+    let restored = archive_decode_slice(&archive_encode(&first).unwrap(), now).unwrap();
     let replayed = watch_apply(&restored, water, false, "UTC".into(), now).unwrap();
     assert_eq!(replayed.metrics.len(), 1);
 }
@@ -674,7 +674,7 @@ fn archives_before_companion_support_still_decode() {
     let object = json.as_object_mut().unwrap();
     object.remove("companionReceipts");
     object.remove("companionRevision");
-    let decoded = archive_decode(&serde_json::to_vec(&json).unwrap(), now).unwrap();
+    let decoded = archive_decode_slice(&serde_json::to_vec(&json).unwrap(), now).unwrap();
     assert!(decoded.companion_receipts.is_empty());
     assert!(decoded.fasts.is_empty());
 }
@@ -686,7 +686,7 @@ fn receipt_replay_survives_fractional_date_backup_precision() {
     let archive = new_archive();
     let r = request(now, FastWatchAction::Water, Some(archive.companion_revision), None);
     let archive = watch_apply(&archive, r.clone(), true, "UTC".into(), now).unwrap();
-    let restored = archive_decode(&archive_encode(&archive).unwrap(), now).unwrap();
+    let restored = archive_decode_slice(&archive_encode(&archive).unwrap(), now).unwrap();
     let replayed = watch_apply(&restored, r, true, "UTC".into(), plus(now, 1.0)).unwrap();
     assert_eq!(replayed.metrics.len(), 1);
 }

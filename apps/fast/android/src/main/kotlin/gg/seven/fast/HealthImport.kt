@@ -95,8 +95,8 @@ internal fun HealthImportPanel(m: FastModel) {
         }
     }
     preview?.let { incoming ->
-        val known = m.archive.value?.metrics?.mapNotNull { it.externalID }?.toSet().orEmpty()
-        val count = incoming.count { it.externalID !in known }
+        val known = m.archive.value?.metrics?.mapNotNull { it.externalId }?.toSet().orEmpty()
+        val count = incoming.count { it.externalId !in known }
         AlertDialog(
             onDismissRequest = { preview = null },
             title = { Text("Import $count weights?") },
@@ -110,11 +110,11 @@ internal fun HealthImportPanel(m: FastModel) {
                     onClick = {
                         m.mutate(
                             { current ->
-                                val existing = current.metrics.mapNotNull { it.externalID }.toSet()
+                                val existing = current.metrics.mapNotNull { it.externalId }.toSet()
                                 current.copy(
                                     metrics =
                                         current.metrics +
-                                            incoming.filter { it.externalID !in existing }
+                                            incoming.filter { it.externalId !in existing }
                                 )
                             },
                             { preview = null },
@@ -148,17 +148,17 @@ private suspend fun readWeights(context: Context): List<MetricEntry> =
                 )
             result +=
                 response.records.map {
-                    MetricEntry(
+                    metricEntry(
                         date = it.time.toEpochMilli().toDouble(),
-                        kind = MetricKind.weight,
+                        kind = MetricKind.WEIGHT,
                         value = it.weight.inKilograms,
-                        externalID = "healthconnect:${it.metadata.id}",
+                        externalId = "healthconnect:${it.metadata.id}",
                     )
                 }
             require(result.size <= 100_000) { "Too many records in one import" }
             page = response.pageToken
         } while (page != null)
-        result.distinctBy { it.externalID }
+        result.distinctBy { it.externalId }
     }
 
 class HealthRationaleActivity : ComponentActivity() {

@@ -49,6 +49,8 @@ internal fun stamp(value: Double): String {
     return "${SevenFormat.date(at)} at ${SevenFormat.time(at, use24Hour)}"
 }
 
+internal fun stamp(value: java.time.Instant): String = stamp(value.millis())
+
 internal fun clock(value: Double): String =
     SevenFormat.time(value.instant().atZone(ZoneId.systemDefault()), use24Hour)
 
@@ -64,7 +66,7 @@ internal fun duration(value: Double): String {
     }
 }
 
-internal typealias OpenEditor = (String, String?) -> Unit
+internal typealias OpenEditor = (String, java.util.UUID?) -> Unit
 
 @Composable
 fun FastApp(m: FastModel) {
@@ -78,9 +80,9 @@ fun FastApp(m: FastModel) {
     var tab by rememberSaveable { mutableStateOf("Today") }
     var page by rememberSaveable { mutableStateOf<String?>(null) }
     var editor by rememberSaveable { mutableStateOf<String?>(null) }
-    var detailFast by rememberSaveable { mutableStateOf<String?>(null) }
+    var detailFast by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
     var editorDate by rememberSaveable { mutableStateOf<Double?>(null) }
-    var editId by rememberSaveable { mutableStateOf<String?>(null) }
+    var editId by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
     var unlock by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     use24Hour = android.text.format.DateFormat.is24HourFormat(context)
@@ -93,7 +95,7 @@ fun FastApp(m: FastModel) {
             m.message.value = null
         }
     }
-    val openAt: (String, String?, Double?) -> Unit = { type, id, date ->
+    val openAt: (String, java.util.UUID?, Double?) -> Unit = { type, id, date ->
         if (type == "detail") {
             detailFast = id
             page = "Fast details"
@@ -164,7 +166,7 @@ fun FastApp(m: FastModel) {
                         },
                         actions = {
                             if (page == "Water")
-                                IconButton(onClick = { open("waterSettings", "settings") }) {
+                                IconButton(onClick = { open("waterSettings", null) }) {
                                     Icon(Icons.Outlined.Settings, "Goal, glass & reminders")
                                 }
                             if (page == null)

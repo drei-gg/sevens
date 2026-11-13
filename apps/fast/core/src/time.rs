@@ -12,20 +12,26 @@ pub struct CalendarSpec {
     pub first_weekday: i32,
 }
 
-/// Milliseconds since 1970 as JSON stores them. Fractions are kept.
+/// Milliseconds since 1970 as JSON stores them. Fractions are kept; whole and fractional parts
+/// are converted separately so whole milliseconds round-trip exactly.
 pub fn millis(t: SystemTime) -> f64 {
-    match t.duration_since(UNIX_EPOCH) {
-        Ok(d) => d.as_secs_f64() * 1_000.0,
-        Err(e) => -e.duration().as_secs_f64() * 1_000.0,
-    }
+    let (sign, d) = match t.duration_since(UNIX_EPOCH) {
+        Ok(d) => (1.0, d),
+        Err(e) => (-1.0, e.duration()),
+    };
+    sign * (d.as_secs() as f64 * 1_000.0 + d.subsec_nanos() as f64 / 1_000_000.0)
 }
 
 pub fn from_millis(ms: f64) -> SystemTime {
-    let nanos = (ms * 1_000_000.0).round();
-    if nanos >= 0.0 {
-        UNIX_EPOCH + Duration::from_nanos(nanos as u64)
+    let whole = ms.floor();
+    let mut nanos = whole as i128 * 1_000_000 + ((ms - whole) * 1_000_000.0).round() as i128;
+    if nanos >= 0 {
+        let n = nanos as u128;
+        UNIX_EPOCH + Duration::new((n / 1_000_000_000) as u64, (n % 1_000_000_000) as u32)
     } else {
-        UNIX_EPOCH - Duration::from_nanos((-nanos) as u64)
+        nanos = -nanos;
+        let n = nanos as u128;
+        UNIX_EPOCH - Duration::new((n / 1_000_000_000) as u64, (n % 1_000_000_000) as u32)
     }
 }
 
