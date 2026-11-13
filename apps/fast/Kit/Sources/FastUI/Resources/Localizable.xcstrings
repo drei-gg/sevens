@@ -1,6 +1,16 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "1 hour": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 hour"
+          }
+        }
+      }
+    },
     "A complete calendar, heatmap and trends": {
       "localizations": {
         "en": {
@@ -91,6 +101,16 @@
         }
       }
     },
+    "A water break, if it suits your day. Log a drink in Fast.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A water break, if it suits your day. Log a drink in Fast."
+          }
+        }
+      }
+    },
     "About": {
       "localizations": {
         "en": {
@@ -117,6 +137,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "About fasting & this tracker"
+          }
+        }
+      }
+    },
+    "Add": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
           }
         }
       }
@@ -191,6 +221,36 @@
         }
       }
     },
+    "All water entries": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All water entries"
+          }
+        }
+      }
+    },
+    "Amount": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount"
+          }
+        }
+      }
+    },
+    "Amounts use": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amounts use"
+          }
+        }
+      }
+    },
     "An actual record cannot be in the future. Use Plans for a future fast.": {
       "localizations": {
         "en": {
@@ -207,6 +267,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "An early finish is still a record. This timer does not measure ketosis, autophagy or fat burning."
+          }
+        }
+      }
+    },
+    "An optional target you choose, not a recommended intake. No streaks or pressure to catch up.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An optional target you choose, not a recommended intake. No streaks or pressure to catch up."
           }
         }
       }
@@ -311,6 +381,16 @@
         }
       }
     },
+    "Average on logged days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average on logged days"
+          }
+        }
+      }
+    },
     "Back to today": {
       "localizations": {
         "en": {
@@ -367,6 +447,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Change units in Settings. Watch quick-add remains 250 mL.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change units in Settings. Watch quick-add remains 250 mL."
           }
         }
       }
@@ -471,6 +561,36 @@
         }
       }
     },
+    "Daily amount": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily amount"
+          }
+        }
+      }
+    },
+    "Daily at your chosen hours, from the start time up to but not including the end. Outside this window, water reminders are quiet. They follow local time and continue whether or not a fast is running or a goal is reached.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily at your chosen hours, from the start time up to but not including the end. Outside this window, water reminders are quiet. They follow local time and continue whether or not a fast is running or a goal is reached."
+          }
+        }
+      }
+    },
+    "Daily water": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily water"
+          }
+        }
+      }
+    },
     "Darker means more recorded time, not a better day. A dot marks a journal entry.": {
       "localizations": {
         "en": {
@@ -491,12 +611,42 @@
         }
       }
     },
+    "Day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day"
+          }
+        }
+      }
+    },
     "Day to explore": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Day to explore"
+          }
+        }
+      }
+    },
+    "Days follow your current time zone. Changing time zones can move a drink to another date.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Days follow your current time zone. Changing time zones can move a drink to another date."
+          }
+        }
+      }
+    },
+    "Days with entries": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Days with entries"
           }
         }
       }
@@ -517,6 +667,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete all records"
+          }
+        }
+      }
+    },
+    "Delete drink": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete drink"
           }
         }
       }
@@ -567,6 +727,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete plan"
+          }
+        }
+      }
+    },
+    "Delete this drink?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this drink?"
           }
         }
       }
@@ -637,6 +807,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Done"
+          }
+        }
+      }
+    },
+    "Drinks": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drinks"
           }
         }
       }
@@ -721,6 +901,16 @@
         }
       }
     },
+    "End time must be after start time.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End time must be after start time."
+          }
+        }
+      }
+    },
     "Ending": {
       "localizations": {
         "en": {
@@ -767,6 +957,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Entry deleted"
+          }
+        }
+      }
+    },
+    "Every": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every"
           }
         }
       }
@@ -961,6 +1161,16 @@
         }
       }
     },
+    "From": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From"
+          }
+        }
+      }
+    },
     "Goal": {
       "localizations": {
         "en": {
@@ -987,6 +1197,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Goal reached"
+          }
+        }
+      }
+    },
+    "Goal, glass & reminders": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal, glass & reminders"
           }
         }
       }
@@ -1241,6 +1461,16 @@
         }
       }
     },
+    "Last seven days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last seven days"
+          }
+        }
+      }
+    },
     "Leave room for real life. Add dates that work for you.": {
       "localizations": {
         "en": {
@@ -1277,6 +1507,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Local reminders and portable backups"
+          }
+        }
+      }
+    },
+    "Log a drink": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log a drink"
           }
         }
       }
@@ -1361,6 +1601,16 @@
         }
       }
     },
+    "Midnight": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Midnight"
+          }
+        }
+      }
+    },
     "Month": {
       "localizations": {
         "en": {
@@ -1431,6 +1681,16 @@
         }
       }
     },
+    "No entries": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No entries"
+          }
+        }
+      }
+    },
     "No fast running": {
       "localizations": {
         "en": {
@@ -1457,6 +1717,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No new weight measurements were available."
+          }
+        }
+      }
+    },
+    "No water logged for this day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No water logged for this day."
           }
         }
       }
@@ -1627,6 +1897,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Optional check-in"
+          }
+        }
+      }
+    },
+    "Pause water reminders": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause water reminders"
+          }
+        }
+      }
+    },
+    "Paused until you resume.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused until you resume."
           }
         }
       }
@@ -1811,6 +2101,16 @@
         }
       }
     },
+    "Quick-add glass": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick-add glass"
+          }
+        }
+      }
+    },
     "Read the source": {
       "localizations": {
         "en": {
@@ -1891,6 +2191,16 @@
         }
       }
     },
+    "Remind me to drink water": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remind me to drink water"
+          }
+        }
+      }
+    },
     "Reminder settings": {
       "localizations": {
         "en": {
@@ -1957,6 +2267,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rest days:"
+          }
+        }
+      }
+    },
+    "Resume water reminders": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume water reminders"
           }
         }
       }
@@ -2291,6 +2611,16 @@
         }
       }
     },
+    "These are recorded amounts. A day without entries does not mean you drank no water.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These are recorded amounts. A day without entries does not mean you drank no water."
+          }
+        }
+      }
+    },
     "These are your observations, not a score to improve.": {
       "localizations": {
         "en": {
@@ -2357,6 +2687,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "This brings your timers, calendar, patterns and private journal together. Try everything for 7 days, no card. Then {price}, once. Nothing renews."
+          }
+        }
+      }
+    },
+    "This brings your timers, calendar, patterns, private journal and water tracker with optional reminders together. Try everything for 7 days, no card. Then a one-time purchase. Nothing renews.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This brings your timers, calendar, patterns, private journal and water tracker with optional reminders together. Try everything for 7 days, no card. Then a one-time purchase. Nothing renews."
+          }
+        }
+      }
+    },
+    "This brings your timers, calendar, patterns, private journal and water tracker with optional reminders together. Try everything for 7 days, no card. Then {price}, once. Nothing renews.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This brings your timers, calendar, patterns, private journal and water tracker with optional reminders together. Try everything for 7 days, no card. Then {price}, once. Nothing renews."
           }
         }
       }
@@ -2431,6 +2781,26 @@
         }
       }
     },
+    "Total": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        }
+      }
+    },
+    "Total logged": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total logged"
+          }
+        }
+      }
+    },
     "Trends": {
       "localizations": {
         "en": {
@@ -2457,6 +2827,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "US fl oz"
+          }
+        }
+      }
+    },
+    "Undo last drink": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo last drink"
+          }
+        }
+      }
+    },
+    "Until": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Until"
+          }
+        }
+      }
+    },
+    "Use a personal goal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use a personal goal"
           }
         }
       }
@@ -2501,12 +2901,102 @@
         }
       }
     },
+    "Water history & settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water history & settings"
+          }
+        }
+      }
+    },
     "Water in US fluid ounces": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Water in US fluid ounces"
+          }
+        }
+      }
+    },
+    "Water progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water progress"
+          }
+        }
+      }
+    },
+    "Water reminders": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water reminders"
+          }
+        }
+      }
+    },
+    "Water settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water settings"
+          }
+        }
+      }
+    },
+    "Water today": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water today"
+          }
+        }
+      }
+    },
+    "Water tracker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water tracker"
+          }
+        }
+      }
+    },
+    "Water tracking now includes quick-add, daily history, an optional personal goal and reminders during hours you choose. Included with your one-time unlock.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water tracking now includes quick-add, daily history, an optional personal goal and reminders during hours you choose. Included with your one-time unlock."
+          }
+        }
+      }
+    },
+    "Water tracking, personal goals and gentle reminders": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water tracking, personal goals and gentle reminders"
+          }
+        }
+      }
+    },
+    "Water trends": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water trends"
           }
         }
       }
@@ -2641,6 +3131,16 @@
         }
       }
     },
+    "Your daily goal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your daily goal"
+          }
+        }
+      }
+    },
     "Your data": {
       "localizations": {
         "en": {
@@ -2657,6 +3157,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your first records will appear here."
+          }
+        }
+      }
+    },
+    "Your goal:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your goal:"
           }
         }
       }

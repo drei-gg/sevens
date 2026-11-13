@@ -56,3 +56,15 @@ import FastCore
     #expect(reply.failure != nil)
     #expect(model.archive.fasts.isEmpty)
 }
+
+@Test @MainActor func waterEditsSurviveExpiryWhileNewDrinksStayGated() async {
+    var seed = FastArchive(); let entry = MetricEntry(date: Date(), kind: .water, value: 250)
+    seed.metrics = [entry]
+    let model = await model(.expired, seed: seed)
+    #expect(!(await model.saveMetric(MetricEntry(date: Date(), kind: .water, value: 500))))
+    var edited = entry; edited.value = 150
+    #expect(await model.saveMetric(edited))
+    #expect(model.archive.metrics == [edited])
+    #expect(await model.change { $0.metrics.removeAll { $0.id == entry.id } })
+    #expect(model.archive.metrics.isEmpty)
+}

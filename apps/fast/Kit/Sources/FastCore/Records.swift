@@ -102,6 +102,7 @@ public struct RestDay: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct TrackerSettings: Codable, Equatable, Sendable {
+    public var water = WaterSettings()
     public var usePounds = false
     public var useFluidOunces = false
     public var showWeight = true
@@ -117,11 +118,12 @@ public struct TrackerSettings: Codable, Equatable, Sendable {
     public init() {}
     enum CodingKeys: String, CodingKey {
         case usePounds, useFluidOunces, showWeight, showEatingWindow, liveActivity, goalReminder, eatingReminder, scheduleReminders
-        case reminderWeekdays, reminderHour, reminderMinute
+        case reminderWeekdays, reminderHour, reminderMinute, water
     }
     public init(from decoder: any Decoder) throws {
         self.init()
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        water = try c.decodeIfPresent(WaterSettings.self, forKey: .water) ?? WaterSettings()
         usePounds = try c.decodeIfPresent(Bool.self, forKey: .usePounds) ?? false
         useFluidOunces = try c.decodeIfPresent(Bool.self, forKey: .useFluidOunces) ?? false
         showWeight = try c.decodeIfPresent(Bool.self, forKey: .showWeight) ?? true

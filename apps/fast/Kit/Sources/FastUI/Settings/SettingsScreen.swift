@@ -14,6 +14,7 @@ struct SettingsScreen: View {
                 Text(f("iOS limits each Live Activity to eight hours. Your fast keeps running; reopen the app to refresh the Lock Screen timer. The Home Screen widget remains available.")).font(.footnote).foregroundStyle(.secondary)
                 Toggle(f("Weight in pounds"), isOn: setting(\.usePounds))
                 Toggle(f("Water in US fluid ounces"), isOn: setting(\.useFluidOunces))
+                NavigationLink(f("Water tracker")) { WaterScreen() }
                 NavigationLink(f("Reminders")) { ReminderSettingsScreen() }
                 NavigationLink(f("Plans & presets")) { PlansScreen() }
             }
@@ -32,7 +33,7 @@ struct SettingsScreen: View {
                         Text(f("Exports go only to the destination you choose. About links open only when tapped."))
                     }.navigationTitle(f("Network contact"))
                 }
-                AboutWhatsNewRow(text: f("First development build: editable fasting records, calendar and heatmap, journal, measurements, plans, reminders and portable backups."))
+                AboutWhatsNewRow(text: f("Water tracking now includes quick-add, daily history, an optional personal goal and reminders during hours you choose. Included with your one-time unlock."))
                 AboutLicenseRow(repositoryURL: URL(string: "https://github.com/drei-gg/sevens")!)
                 AboutNoticesRow(notices: [f("Built with Apple's frameworks and the shared SevenKit package. No third-party libraries or tracking SDKs.")])
                 if let email = Bundle.main.object(forInfoDictionaryKey: "SevensSupportEmail") as? String,

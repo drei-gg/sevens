@@ -1,6 +1,6 @@
 # 7&D Fast Tracker
 
-Draft 0.1 · 11 November 2026
+Draft 0.1 · 12 November 2026
 
 A private fasting tracker with a history worth keeping. Paid for once.
 
@@ -13,7 +13,7 @@ A private fasting tracker with a history worth keeping. Paid for once.
 
 ## What it adds
 
-The iPhone's Clock already times things, Notes keeps a journal, and Health records weight. Say that on the first screen. This app brings editable fasting and eating windows, a calendar, long-term patterns and a private journal together. No account, ads, social feed, remotely published articles or subscription.
+The iPhone's Clock already times things, Notes keeps a journal, and Health records weight. Say that on the first screen. This app brings editable fasting and eating windows, a calendar, long-term patterns, a private journal and a water tracker with optional reminders together. No account, ads, social feed, remotely published articles or subscription.
 
 Native SwiftUI, iOS 17+, Swift 6. Shared SevenKit for purchase, restore, trial and About. Pure Foundation FastCore with portable tests, Apple-only FastUI. System backgrounds, controls, type and accent; brand only in About. String catalogs, Dynamic Type, VoiceOver and Reduce Motion from the start. No third-party dependencies.
 
@@ -53,6 +53,16 @@ Numina informs the concept only: intention → observation → reflection. No sh
 - Optional weight (kg/lb), water (mL/US fl oz), waist and sleep records. Editable dates and values, export included. Hide weight when it is irrelevant.
 - Comparisons use the chosen period, so returning after a break does not require destroying old history to get a fresh baseline. Show sample counts and empty states.
 - Manual measurements work offline. Apple Health is an explicit, manual, read-only weight import with duplicate-sample protection; do not invent a fasting HealthKit type or write fasting as a workout.
+
+## Water tracker
+
+Water is part of the existing unlock, with no separate subscription, service or account. The Today card shows the local day's total, a configurable quick-add glass and an immediate undo for that phone entry. A personal daily goal is optional and off initially; it is user-entered, not an intake recommendation. No streaks, catch-up prompts or automatic goal increases.
+
+Dedicated water history provides a date picker, each day's editable drinks, seven recent daily totals, swipe-to-delete with confirmation and the complete entry list. Dedicated water trends show week/month/quarter/year periods ending on a chosen date, totals, days with entries and averages over logged days. Empty days are explicitly missing logs, not inferred zero consumption. Custom amounts and backdated entries use the existing measurement editor. Values remain canonical mL; presentation can use mL or US fluid ounces. Local calendar day boundaries handle midnight and DST; timezone changes regroup by current local day without rewriting timestamps. Watch Add 250 mL and phone entries feed the same totals, trends, JSON and CSV. The Watch amount remains explicitly 250 mL, independent of the configurable phone glass.
+
+Water reminders default off. Users choose a start hour, exclusive end hour and interval of one to four hours within one same-day window. Repeating local notifications use wall-clock hours, with no water notifications outside that window. A persisted pause/resume control on Today and in settings suspends only water reminders until explicitly resumed. They continue independent of fasting state, logging and goal completion; this is a chosen schedule, not adaptive coaching. Permission is requested only when enabling reminders; denial leaves tracking functional and shows the Settings route. Focus/system notification settings control delivery. No background server or network scheduling.
+
+Timer and recurring reminders reserve notification slots; the nearest dated plans occupy up to 40 remaining slots, with at most 64 pending requests total. Reopening/editing reconciles the plan. Existing archives default to no water goal and no water reminders. JSON exports include preferences; merge imports preserve the current device's settings, including reminder consent. New water entries require access; editing, deleting, viewing and exporting saved entries remain available after expiry.
 
 ## Plans and reminders
 

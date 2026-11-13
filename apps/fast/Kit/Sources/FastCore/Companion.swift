@@ -28,7 +28,7 @@ public struct FastWatchSnapshot: Codable, Equatable, Sendable {
     public init(archive: FastArchive, canCreateRecords: Bool, now: Date = Date(), calendar: Calendar = .current) {
         revision = archive.companionRevision; generatedAt = now
         activeID = archive.active?.id; start = archive.active?.start; goal = archive.active?.goalDate
-        waterMilliliters = archive.metrics.filter { $0.kind == .water && calendar.isDate($0.date, inSameDayAs: now) }.reduce(0) { $0 + $1.value }
+        waterMilliliters = WaterHistory.total(archive.metrics, on: now, calendar: calendar)
         self.canCreateRecords = canCreateRecords
     }
 }

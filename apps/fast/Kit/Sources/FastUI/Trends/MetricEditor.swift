@@ -9,8 +9,8 @@ struct MetricEditor: View {
     @State private var delete = false
     let kind: MetricKind
     let existing: MetricEntry?
-    init(kind: MetricKind, existing: MetricEntry? = nil) {
-        self.kind = kind; self.existing = existing; _date = State(initialValue: existing?.date ?? Date())
+    init(kind: MetricKind, existing: MetricEntry? = nil, initialDate: Date = Date()) {
+        self.kind = kind; self.existing = existing; _date = State(initialValue: existing?.date ?? min(initialDate, Date()))
     }
     var body: some View {
         NavigationStack {
@@ -19,7 +19,7 @@ struct MetricEditor: View {
                 Section {
                     DatePicker(f("When"), selection: $date, in: ...Date())
                     LabeledContent(FastFormat.unit(kind, settings: model.archive.settings)) {
-                        TextField(f("Value"), text: $value).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                        TextField(f("Value"), text: $value).accessibilityIdentifier("metric.value").keyboardType(.decimalPad).multilineTextAlignment(.trailing)
                     }
                     if kind == .water && existing == nil {
                         HStack {
@@ -37,7 +37,7 @@ struct MetricEditor: View {
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button(f("Cancel")) { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button(f("Save")) { Task { await save() } }.disabled(parsed == nil || model.busy) }
+                ToolbarItem(placement: .confirmationAction) { Button(f("Save")) { Task { await save() } }.disabled(parsed == nil || model.busy).accessibilityIdentifier("metric.save") }
             }
             .confirmationDialog(f("Delete this measurement?"), isPresented: $delete, titleVisibility: .visible) {
                 Button(f("Delete measurement"), role: .destructive) {

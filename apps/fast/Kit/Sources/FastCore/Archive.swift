@@ -90,6 +90,7 @@ public struct FastArchive: Codable, Equatable, Sendable {
             }
             try validGoal(preset.goalMinutes, eating: preset.eatingMinutes)
         }
+        try settings.water.validate()
         guard (0...23).contains(settings.reminderHour), (0...59).contains(settings.reminderMinute),
               settings.reminderWeekdays.allSatisfy({ (1...7).contains($0) }),
               Set(settings.reminderWeekdays).count == settings.reminderWeekdays.count else { throw TrackerError.invalidEntry }

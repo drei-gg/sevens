@@ -9,7 +9,6 @@ struct TodayScreen: View {
     @State private var editFast: FastRecord?
     @State private var endFast: FastRecord?
     @State private var showJournal = false
-    @State private var showWater = false
     @State private var remaining = false
     var body: some View {
         ScrollView {
@@ -57,12 +56,10 @@ struct TodayScreen: View {
                             }
                         }
                     }
+                    WaterCard()
                     GroupBox(f("Notice your day")) {
                         VStack(alignment: .leading, spacing: 16) {
                             GatedButton(feature: f("Journal"), action: { showJournal = true }) { Label(f("Check in"), systemImage: "square.and.pencil") }
-                            GatedButton(feature: f("Water"), action: { showWater = true }) {
-                                LabeledContent { Text(waterToday) } label: { Label(f("Log water"), systemImage: "drop") }
-                            }
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     }
                     NavigationLink { HealthNoteScreen() } label: { Label(f("About fasting & this tracker"), systemImage: "info.circle") }
@@ -76,7 +73,6 @@ struct TodayScreen: View {
         .sheet(item: $editFast) { FastEditor(mode: .edit($0)) }
         .sheet(item: $endFast) { FastEditor(mode: .finish($0)) }
         .sheet(isPresented: $showJournal) { JournalEditor(fastID: model.archive.active?.id) }
-        .sheet(isPresented: $showWater) { MetricEditor(kind: .water) }
     }
     @ViewBuilder private func timer(at now: Date) -> some View {
         VStack(spacing: 16) {
@@ -120,10 +116,5 @@ struct TodayScreen: View {
                 }
             }
         }.frame(maxWidth: .infinity).padding(.vertical, 18)
-    }
-    private var waterToday: String {
-        let total = model.archive.metrics.filter { $0.kind == .water && Calendar.current.isDateInToday($0.date) }.reduce(0) { $0 + $1.value }
-        return Units.display(total, kind: .water, settings: model.archive.settings).formatted(.number.precision(.fractionLength(0)))
-            + " " + FastFormat.unit(.water, settings: model.archive.settings)
     }
 }

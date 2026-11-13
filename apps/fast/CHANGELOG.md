@@ -14,3 +14,18 @@
 - Adaptive Today and History workspaces, with readable shared purchase sheets.
 - Paired Watch timer, start/end and water actions with confirmed saves and duplicate protection.
 - Records stay available to the Watch while the phone is locked (protected until first unlock after restart).
+
+### Integrated water tracker — 12 November 2026
+
+- Today water card with configurable one-tap glass, undo and optional personal daily goal.
+- Water history with daily totals, editable drinks, seven-day overview and complete entry list.
+- Optional local water reminders during chosen hours; existing timer and schedule reminders share a bounded notification budget.
+- Same water records across phone, Watch, trends and backups; no added service or subscription.
+- Added water tracking to the first-launch “what it adds,” unlock and What's New copy.
+
+### Water review follow-up
+
+- Swipe-to-delete drinks with confirmation; edit dates/amounts directly.
+- Dedicated water trends with selectable periods, daily totals and averages over logged days; missing logs stay explicit.
+- Quick pause/resume for water reminders without losing their schedule or affecting fasting reminders.
+- Clarified current-time-zone day grouping in water history.
