@@ -16,3 +16,19 @@ REVIEW*.md
 
 # Machine-local signing (DEVELOPMENT_TEAM); every app includes it, none commits it
 Local.xcconfig
+
+# Android generated output and machine-local signing
+.gradle/
+.kotlin/
+**/build/
+local.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
+
+# Rust cores: build outputs
+apps/*/core/target/
+apps/*/core/generated/
+apps/*/Kit/Generated/
+apps/*/Kit/Sources/*/Generated/

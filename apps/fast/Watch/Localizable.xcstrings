@@ -1,0 +1,266 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Add 250 mL": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add 250 mL"
+          }
+        }
+      }
+    },
+    "At your own pace.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At your own pace."
+          }
+        }
+      }
+    },
+    "Check your iPhone before repeating the action.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your iPhone before repeating the action."
+          }
+        }
+      }
+    },
+    "Dismiss request": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dismiss request"
+          }
+        }
+      }
+    },
+    "End fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End fast"
+          }
+        }
+      }
+    },
+    "End your current fast?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End your current fast?"
+          }
+        }
+      }
+    },
+    "Fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast"
+          }
+        }
+      }
+    },
+    "Fasting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fasting"
+          }
+        }
+      }
+    },
+    "Goal %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal %@"
+          }
+        }
+      }
+    },
+    "Last synced %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last synced %@"
+          }
+        }
+      }
+    },
+    "Not confirmed. Reconnect and retry this request, or check your iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not confirmed. Reconnect and retry this request, or check your iPhone."
+          }
+        }
+      }
+    },
+    "Open Fast on your iPhone to reconnect.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Fast on your iPhone to reconnect."
+          }
+        }
+      }
+    },
+    "Open Fast on your iPhone to sync your timer.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Fast on your iPhone to sync your timer."
+          }
+        }
+      }
+    },
+    "Open Fast on your iPhone, then try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Fast on your iPhone, then try again."
+          }
+        }
+      }
+    },
+    "Refresh": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        }
+      }
+    },
+    "Retry same request": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry same request"
+          }
+        }
+      }
+    },
+    "Saved on iPhone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved on iPhone."
+          }
+        }
+      }
+    },
+    "Saving…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving…"
+          }
+        }
+      }
+    },
+    "Start 16-hour fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start 16-hour fast"
+          }
+        }
+      }
+    },
+    "Start a trial or unlock in Fast on your iPhone. You can still end an active fast.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a trial or unlock in Fast on your iPhone. You can still end an active fast."
+          }
+        }
+      }
+    },
+    "This request expired. Check your iPhone before repeating it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This request expired. Check your iPhone before repeating it."
+          }
+        }
+      }
+    },
+    "Update Fast on both devices and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update Fast on both devices and try again."
+          }
+        }
+      }
+    },
+    "Water: %lld mL": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Water: %lld mL"
+          }
+        }
+      }
+    },
+    "Your iPhone could not save. Open Fast to check storage and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your iPhone could not save. Open Fast to check storage and try again."
+          }
+        }
+      }
+    },
+    "Your records changed on iPhone. Review the updated timer and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your records changed on iPhone. Review the updated timer and try again."
+          }
+        }
+      }
+    },
+    "iPhone disconnected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone disconnected"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

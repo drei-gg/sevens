@@ -1,0 +1,106 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "At your own pace.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At your own pace."
+          }
+        }
+      }
+    },
+    "Fast Tracker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast Tracker"
+          }
+        }
+      }
+    },
+    "Fasting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fasting"
+          }
+        }
+      }
+    },
+    "Fasting timer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fasting timer"
+          }
+        }
+      }
+    },
+    "No fast running": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No fast running"
+          }
+        }
+      }
+    },
+    "Open ended": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open ended"
+          }
+        }
+      }
+    },
+    "Open to start a fast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open to start a fast"
+          }
+        }
+      }
+    },
+    "Planned finish": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planned finish"
+          }
+        }
+      }
+    },
+    "Your current timer, without journal text or measurements.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your current timer, without journal text or measurements."
+          }
+        }
+      }
+    },
+    "Your current timer. No journal or health details on your Home Screen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your current timer. No journal or health details on your Home Screen."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

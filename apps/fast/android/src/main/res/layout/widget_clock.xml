@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The running time inside the Glance widget: a system Chronometer ticks without waking the app. -->
+<Chronometer xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_clock"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="34sp"
+    android:fontFeatureSettings="tnum"
+    android:textStyle="bold" />

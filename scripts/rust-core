@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Build a Seven's shared Rust core (apps/<app>/core) and its UniFFI bindings. Nothing is uploaded.
+# usage: scripts/rust-core <app> <test|bindings|android|apple|all>
+#   test      cargo test on Linux (the Swift-parity and golden-file suites)
+#   bindings  Kotlin and Swift sources into apps/<app>/core/generated/ (from a debug build: release
+#             builds strip the metadata UniFFI reads)
+#   android   lib<crate>.so for arm64-v8a, armeabi-v7a, x86_64 and x86 into generated/jniLibs
+#             (cargo-ndk; ANDROID_NDK_HOME or the newest NDK under ~/Android/Sdk/ndk)
+#   apple     <lib>FFI.xcframework (iOS device + simulator) built in the macOS VM (ssh tahoe) and copied
+#             back, because the VM sync deletes guest-only files. Lands in the app's Swift package:
+#             apps/<app>/Kit/Generated/<lib>FFI.xcframework and Kit/Sources/<Core>/Generated/*.swift
+#   all       everything above
+# Generated files are build outputs and are not committed.
+set -euo pipefail
+root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+app=${1:?app required}; cmd=${2:?test, bindings, android, apple or all}
+core="$root/apps/$app/core"
+[ -f "$core/Cargo.toml" ] || { echo "rust-core: apps/$app has no core/Cargo.toml" >&2; exit 2; }
+lib=$(sed -n 's/^name = "\(.*\)"/\1/p' "$core/Cargo.toml" | sed -n 2p)   # [lib] name
+module=$(sed -n 's/^module_name = "\(.*\)"/\1/p' "$core/uniffi.toml")
+# The Swift target the bindings compile into: the app's core target (FastCore for fast).
+core_module=${RUST_CORE_SWIFT_TARGET:-$(printf '%s' "${app:0:1}" | tr a-z A-Z)${app:1}Core}
+out="$core/generated"
+
+run_test() { (cd "$core" && cargo test); }
+
+run_bindings() {
+  (cd "$core" && cargo build -q && rm -rf "$out/kotlin" "$out/swift" &&
+    cargo run -q --features bindgen --bin uniffi-bindgen -- generate --library "target/debug/lib$lib.so" \
+      --language kotlin --out-dir "$out/kotlin" --no-format &&
+    cargo run -q --features bindgen --bin uniffi-bindgen -- generate --library "target/debug/lib$lib.so" \
+      --language swift --out-dir "$out/swift" --no-format)
+  echo "rust-core: bindings in apps/$app/core/generated/{kotlin,swift}"
+}
+
+run_android() {
+  local ndk=${ANDROID_NDK_HOME:-$(ls -d "$HOME"/Android/Sdk/ndk/*/ 2>/dev/null | sort -V | tail -1)}
+  [ -d "$ndk" ] || { echo "rust-core: no Android NDK found" >&2; exit 3; }
+  (cd "$core" && ANDROID_NDK_HOME=$ndk cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 -t x86 -P 26 \
+    -o "$out/jniLibs" build --release)
+}
+
+run_apple() {
+  [ -f "$out/swift/${lib}FFI.h" ] || run_bindings
+  # Simulator slices: Apple silicon and Intel Macs both run it, so ship both in one fat library.
+  local build="set -e; export PATH=\$HOME/.cargo/bin:\$PATH
+    for t in aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios; do cargo build -q --release --target \$t --lib; done
+    rm -rf generated/apple; mkdir -p generated/apple/headers generated/apple/sim
+    cp generated/swift/${lib}FFI.h generated/apple/headers/
+    cp generated/swift/${lib}FFI.modulemap generated/apple/headers/module.modulemap
+    lipo -create target/aarch64-apple-ios-sim/release/lib$lib.a target/x86_64-apple-ios/release/lib$lib.a -output generated/apple/sim/lib$lib.a
+    xcodebuild -create-xcframework \
+      -library target/aarch64-apple-ios/release/lib$lib.a -headers generated/apple/headers \
+      -library generated/apple/sim/lib$lib.a -headers generated/apple/headers \
+      -output generated/apple/${lib}FFI.xcframework >/dev/null
+    rm -rf generated/apple/sim generated/apple/headers"
+  if [ "$(uname)" = Darwin ]; then
+    (cd "$core" && bash -c "$build")   # on a Mac (CI): build here
+  else
+    local remote="src/rust-core-$app"
+    ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe true || { echo "rust-core: tahoe is not reachable" >&2; exit 3; }
+    ssh tahoe "mkdir -p $remote"
+    rsync -a --delete --exclude target --exclude generated/jniLibs --exclude generated/kotlin "$core/" "tahoe:$remote/"
+    ssh tahoe "cd $remote; $build"
+    rm -rf "$out/apple"; mkdir -p "$out/apple"
+    rsync -a "tahoe:$remote/generated/apple/${lib}FFI.xcframework" "$out/apple/"
+  fi
+  local kit="$root/apps/$app/Kit" swift="$root/apps/$app/Kit/Sources/$core_module/Generated"
+  rm -rf "$kit/Generated/${lib}FFI.xcframework" "$swift"; mkdir -p "$kit/Generated" "$swift"
+  cp -R "$out/apple/${lib}FFI.xcframework" "$kit/Generated/"
+  cp "$out/swift/$module.swift" "$swift/"
+  echo "rust-core: apps/$app/Kit/Generated/${lib}FFI.xcframework and Kit/Sources/$core_module/Generated/$module.swift"
+}
+
+case "$cmd" in
+  test) run_test;;
+  bindings) run_bindings;;
+  android) run_android;;
+  apple) run_apple;;
+  all) run_test; run_bindings; run_android; run_apple;;
+  *) sed -n '2,13p' "$0"; exit 2;;
+esac

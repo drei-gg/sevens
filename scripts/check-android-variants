@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Exercise release gates and build a clearly synthetic store bundle. Never uploads anything."""
+from pathlib import Path
+import base64, hashlib, os, shutil, subprocess, tempfile
+root = Path(__file__).resolve().parents[1]
+sdk = Path(os.environ.get('ANDROID_HOME', str(Path.home() / 'Android/Sdk')))
+java = Path(os.environ['JAVA_HOME']) / 'bin'
+log_dir = root / 'android/build/variant-checks'
+log_dir.mkdir(parents=True, exist_ok=True)
+
+def run(args, log, env=None, succeeds=True):
+    with (log_dir / log).open('w') as output:
+        result = subprocess.run(args, cwd=root, env=env, stdout=output, stderr=subprocess.STDOUT)
+    if (result.returncode == 0) != succeeds:
+        raise SystemExit(f'Unexpected outcome: {log_dir / log}')
+
+def gradle(*tasks):
+    return [str(root / 'android/gradlew'), '-p', str(root / 'android'), '--console=plain', *tasks]
+
+# Even a generic request must not silently treat an invalid personal flag as false.
+run(gradle(':fast:validateSevenStore'), 'missing-store.log', succeeds=False)
+run(gradle(':fast:tasks', '-Psevens.personalUnlock=maybe'), 'invalid-flag.log', succeeds=False)
+with tempfile.TemporaryDirectory(prefix='sevens-variant-fixture-') as directory:
+    fixture = Path(directory)
+    brand = fixture / 'fast/android'
+    res = brand / 'res/mipmap-anydpi-v26'
+    res.mkdir(parents=True)
+    for file in (root / 'apps/fast/android/src/main/res/mipmap-anydpi').iterdir():
+        shutil.copy2(file, res / file.name)
+    key = fixture / 'fixture.p12'
+    # This is a disposable test key, never a production signing identity.
+    password = fixture / 'password'; password.write_text('local-build-fixture-only'); password.chmod(0o600)
+    run([str(java / 'keytool'), '-genkeypair', '-keystore', str(key), '-alias', 'fixture',
+         '-storetype', 'PKCS12', '-keyalg', 'RSA', '-keysize', '2048', '-validity', '2',
+         '-dname', 'CN=Sevens build fixture', '-storepass:file', str(password), '-keypass:file', str(password)], 'fixture-key.log')
+    cert = subprocess.check_output([str(java / 'keytool'), '-exportcert', '-keystore', str(key), '-alias', 'fixture', '-storepass:file', str(password)])
+    pub = subprocess.run(['openssl', 'x509', '-inform', 'DER', '-pubkey', '-noout'], input=cert, capture_output=True, check=True).stdout
+    public_der = subprocess.run(['openssl', 'pkey', '-pubin', '-outform', 'DER'], input=pub, capture_output=True, check=True).stdout
+    (brand / 'identity.properties').write_text('\n'.join([
+        'displayName=Sevens Build Fixture', 'applicationId=org.sevens.fixture.fast',
+        'unlockProductId=fixture_unlock', 'billingPublicKey=' + base64.b64encode(public_der).decode(),
+        'uploadCertificateSha256=' + hashlib.sha256(cert).hexdigest()]) + '\n')
+    options = [f'-Psevens.brandDir={fixture}', '-Psevens.versionCode=1', '-Psevens.versionName=0.0.0-fixture']
+    env = os.environ | {'SEVENS_UPLOAD_KEYSTORE': str(key), 'SEVENS_UPLOAD_KEY_ALIAS': 'fixture',
+                        'SEVENS_UPLOAD_STORE_PASSWORD': password.read_text(), 'SEVENS_UPLOAD_KEY_PASSWORD': password.read_text()}
+    run(gradle(':fast:validateSevenStore', *options, '-Psevens.personalUnlock=true'), 'store-unlock-rejected.log', env, False)
+    identity_path = brand / 'identity.properties'
+    original_identity = identity_path.read_text()
+    identity_path.write_text(original_identity.replace(hashlib.sha256(cert).hexdigest(), '0' * 64))
+    run(gradle(':fast:validateSevenStore', *options), 'wrong-certificate-rejected.log', env, False)
+    identity_path.write_text(original_identity)
+    run(gradle(':fast:generateGenericReleaseBuildConfig', *options, '-Psevens.personalUnlock=true'), 'generic-isolation.log')
+    generic_config = root / 'apps/fast/android/build/generated/source/buildConfig/generic/release/gg/seven/fast/BuildConfig.java'
+    generic_source = generic_config.read_text()
+    assert 'PERSONAL_UNLOCK = false' in generic_source
+    assert 'UNLOCK_PRODUCT_ID = ""' in generic_source and 'BILLING_PUBLIC_KEY = ""' in generic_source
+    run(gradle(':fast:generatePersonalReleaseBuildConfig', *options, '-Psevens.personalUnlock=false'), 'personal-locked.log')
+    personal_config = root / 'apps/fast/android/build/generated/source/buildConfig/personal/release/gg/seven/fast/BuildConfig.java'
+    assert 'PERSONAL_UNLOCK = false' in personal_config.read_text()
+    run(gradle(':fast:generatePersonalReleaseBuildConfig', *options, '-Psevens.personalUnlock=true'), 'personal-unlocked.log')
+    assert 'PERSONAL_UNLOCK = true' in personal_config.read_text()
+
+    run(gradle(':fast:assembleStoreRelease', ':fast:bundleStoreRelease', ':fast:lintStoreRelease', *options), 'store-fixture-build.log', env)
+    apk = root / 'apps/fast/android/build/outputs/apk/store/release/fast-store-release.apk'
+    bundle = root / 'apps/fast/android/build/outputs/bundle/storeRelease/fast-store-release.aab'
+    aapt = sdk / 'build-tools/36.0.0/aapt'
+    badging = subprocess.check_output([str(aapt), 'dump', 'badging', str(apk)], text=True)
+    assert "name='org.sevens.fixture.fast'" in badging
+    assert "application-label:'Sevens Build Fixture'" in badging
+    assert 'application-debuggable' not in badging
+    source = (root / 'apps/fast/android/build/generated/source/buildConfig/store/release/gg/seven/fast/BuildConfig.java').read_text()
+    assert 'PERSONAL_UNLOCK = false' in source
+    assert 'com.android.vending.BILLING' in badging
+    cert_info = subprocess.check_output([str(sdk / 'build-tools/36.0.0/apksigner'), 'verify', '--print-certs', str(apk)], text=True, env=env)
+    assert hashlib.sha256(cert).hexdigest() in cert_info
+    (log_dir / 'fixture-manifest.txt').write_text(badging)
+    (log_dir / 'fixture-signature.txt').write_text(cert_info)
+    shutil.copy2(bundle, log_dir / 'DO-NOT-PUBLISH-store-fixture.aab')
+    shutil.copy2(apk, log_dir / 'DO-NOT-PUBLISH-store-fixture.apk')
+    # The normal store output location must never retain a disposable fixture.
+    apk.unlink(); bundle.unlink()
+print('PASS: missing configuration rejected, invalid flags rejected, store unlock and certificate mismatch rejected, personal flag toggles verified, signed optimized store APK/AAB verified with disposable fixture. Nothing published.')

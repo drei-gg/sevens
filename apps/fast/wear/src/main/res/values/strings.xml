@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The Apple Watch app's words (apps/fast/Watch), with "phone" for "iPhone". -->
+    <string name="title">Fast</string>
+    <string name="fasting">Fasting</string>
+    <string name="goal">Goal %1$s</string>
+    <string name="end_fast">End fast</string>
+    <string name="end_confirm">End your current fast?</string>
+    <string name="own_pace">At your own pace.</string>
+    <string name="start_fast">Start 16-hour fast</string>
+    <string name="water">Water: %1$d mL</string>
+    <string name="add_water">Add 250 mL</string>
+    <string name="last_synced">Last synced %1$s</string>
+    <string name="no_snapshot">Open Fast on your phone to sync your timer.</string>
+    <string name="disconnected">Phone disconnected</string>
+    <string name="saving">Saving…</string>
+    <string name="retry">Retry same request</string>
+    <string name="dismiss">Dismiss request</string>
+    <string name="refresh">Refresh</string>
+    <string name="status_reconnect">Open Fast on your phone to reconnect.</string>
+    <string name="status_saved">Saved on phone.</string>
+    <string name="status_not_confirmed">Not confirmed. Reconnect and retry this request, or check your phone.</string>
+    <string name="status_check_phone">Check your phone before repeating the action.</string>
+    <string name="failure_locked">Start a trial or unlock in Fast on your phone. You can still end an active fast.</string>
+    <string name="failure_stale">Your records changed on your phone. Review the updated timer and try again.</string>
+    <string name="failure_expired">This request expired. Check your phone before repeating it.</string>
+    <string name="failure_unavailable">Open Fast on your phone, then try again.</string>
+    <string name="failure_save">Your phone could not save. Open Fast to check storage and try again.</string>
+    <string name="failure_update">Update Fast on both devices and try again.</string>
+    <!-- Tile, complication and ongoing activity -->
+    <string name="tile_label">Fast timer</string>
+    <string name="complication_label">Fast timer</string>
+    <string name="not_fasting">Not fasting</string>
+    <string name="no_fast">No fast</string>
+    <string name="open">Open</string>
+    <string name="channel_running">Running fast</string>
+    <string name="elapsed_of_goal">%1$s of %2$s</string>
+</resources>

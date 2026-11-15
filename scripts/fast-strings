@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""Refresh Fast Tracker's English catalog keys without overwriting translations."""
+import json
+import pathlib
+import re
+root = pathlib.Path(__file__).resolve().parent.parent / 'apps/fast'
+for directory, pattern, output in [
+    (root / 'Kit/Sources/FastUI', r'\bf\("((?:[^"\\]|\\.)*)"\)', 'Resources/Localizable.xcstrings'),
+    (root / 'Widgets', r'(?:Text|Label|configurationDisplayName|description)\("((?:[^"\\]|\\.)*)"', 'Localizable.xcstrings'),
+]:
+    path = directory / output
+    catalog = json.loads(path.read_text()) if path.exists() else {'sourceLanguage': 'en', 'strings': {}, 'version': '1.0'}
+    for source in directory.rglob('*.swift'):
+        for match in re.findall(pattern, source.read_text()):
+            key = json.loads('"' + match + '"')
+            catalog['strings'].setdefault(key, {'localizations': {'en': {'stringUnit': {'state': 'translated', 'value': key}}}})
+    catalog['strings'] = dict(sorted(catalog['strings'].items()))
+    path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + '\n')

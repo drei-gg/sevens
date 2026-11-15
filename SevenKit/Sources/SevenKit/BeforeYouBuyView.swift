@@ -71,19 +71,20 @@ public struct BeforeYouBuyView: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.m) {
-                Text(content.title).font(.title.weight(.semibold)).foregroundStyle(.primary)
+                Text(content.title).textRole(.title).foregroundStyle(.primary)
                     .accessibilityAddTraits(.isHeader)
                 ForEach(Array(content.resolvedParagraphs(price: store.unlockDisplayPrice).enumerated()), id: \.offset) { _, text in
-                    Text(text).font(.body).foregroundStyle(.primary)
+                    Text(text).textRole(.body).foregroundStyle(.primary)
                 }
                 if let error = store.lastError {
-                    Text(error).font(.callout).foregroundStyle(.secondary)
+                    Text(error).textRole(.secondary)
                 }
             }
-            .padding(Tokens.Space.m)
+            .sevenSheetPadding()
             .frame(maxWidth: .infinity, alignment: .leading)
             .sevenReadableSheet()
         }
+        .sevenScreenBackground()
         .safeAreaInset(edge: .bottom) { buttons.padding(Tokens.Space.m).background(.bar) }
     }
 

@@ -7,13 +7,55 @@ Zlib, Unicode, GPL-3.0-compatible). Nothing that collects data or phones home is
 
 ## Code libraries
 
-No code libraries yet.
-
 | Name | URL | Licence | Version | Used for |
 |---|---|---|---|---|
+| UniFFI | https://github.com/mozilla/uniffi-rs | MPL-2.0 | 0.32.2 | Fast core: Swift and Kotlin bindings for the shared Rust logic |
+| serde | https://github.com/serde-rs/serde | MIT OR Apache-2.0 | 1.0.229 | Fast core: archive and Watch receipt encoding |
+| serde_json | https://github.com/serde-rs/json | MIT OR Apache-2.0 | 1.0.154 | Fast core: JSON backups in the layout the Swift app wrote |
+| uuid | https://github.com/uuid-rs/uuid | MIT OR Apache-2.0 | 1.29.2 | Fast core: record identifiers |
+| jiff | https://github.com/BurntSushi/jiff | Unlicense OR MIT | 0.2.43 | Fast core: calendar days and daylight-saving rules in a named time zone |
+| unicode-segmentation | https://github.com/unicode-rs/unicode-segmentation | MIT OR Apache-2.0 | 1.13.3 | Fast core: character counts that match Swift's `String.count` |
+| unicode-normalization | https://github.com/unicode-rs/unicode-normalization | MIT OR Apache-2.0 | 0.1.26 | Fast core: accent-insensitive search |
+| thiserror | https://github.com/dtolnay/thiserror | MIT OR Apache-2.0 | 2.0.21 | Fast core: error types |
+
+Their own dependencies are pinned in `apps/fast/core/Cargo.lock`.
 
 ## Bundled data
 
 | Name | URL | Licence | Version | Used for |
 |---|---|---|---|---|
+| IANA Time Zone Database, via jiff-tzdb | https://www.iana.org/time-zones | Public domain (jiff-tzdb: Unlicense OR MIT) | jiff-tzdb 0.1.9 | Fast core: the same zone rules on iOS and Android |
 
+
+## Android Fast and shared kit
+
+Versions are pinned in `android/buildSrc/build.gradle.kts` and module build files. AndroidX transitive versions are selected by the pinned Compose BOM; resolved dependency locks accompany the build. iOS Fast has no third-party dependencies to reuse. Native Apple facilities map to the Android platform or AndroidX; the fasting rules and JSON schema come from the shared Rust core (apps/fast/core), reached through UniFFI's generated Kotlin and JNA.
+
+| Dependency | Version | License / source | Purpose |
+| --- | --- | --- | --- |
+| Kotlin / standard library / compiler plugins | 2.2.21 | Apache-2.0, https://github.com/JetBrains/kotlin | Language and Compose compilation |
+| JNA | 5.17.0 | Apache-2.0 (dual-licensed with LGPL-2.1), https://github.com/java-native-access/jna | Calls into the Rust core from Kotlin (UniFFI's runtime) |
+| AndroidX Compose Material 3 | 1.5.0-rc01 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Material 3 Expressive components on the phone (pinned above the Compose BOM, which still selects 1.4) |
+| AndroidX Glance app widget / Glance Material 3 | 1.2.0 / 1.2.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Home-screen timer widget in the app's colours |
+| kotlinx.coroutines | resolved AndroidX dependency | Apache-2.0, https://github.com/Kotlin/kotlinx.coroutines | Lifecycle, state flows and serialized storage work |
+| AndroidX Compose | BOM 2025.12.01 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Native Material controls, adaptive layouts, accessibility |
+| AndroidX Activity / Lifecycle / Core | 1.12.2 / 2.9.4 / 1.17.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Lifecycle, document pickers, AtomicFile and notifications |
+| Vico charts | 2.3.6 | Apache-2.0, https://github.com/patrykandpatrick/vico | Counterpart to Swift Charts; chart rendering, axes, scroll and zoom |
+| Kizitonwose Calendar | 2.9.0 | MIT, https://github.com/kizitonwose/Calendar | Month and heatmap layout, paging and annotated history days |
+| AndroidX Health Connect | 1.1.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Explicit read-only weight import |
+| Google Play Billing | 9.1.0 | Android SDK terms, https://developer.android.com/google/play/billing | Store variant only; platform-purchase exception in LICENSE-PLATFORM-EXCEPTION.md |
+| kotlinx.serialization JSON | 1.9.0 | Apache-2.0, https://github.com/Kotlin/kotlinx.serialization | Wear OS wire protocol codec (`apps/fast/wear/wire`), shared by the watch and the phone's personal/store flavors |
+| AndroidX Wear Compose Material 3 / Foundation | 1.7.1 / 1.7.1 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Wear OS app screens |
+| AndroidX Wear Tiles / ProtoLayout (expression, Material 3) | 1.6.2 / 1.4.2 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Wear OS timer tile with a live elapsed count |
+| AndroidX Wear watch face complications data source (ktx) | 1.3.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Wear OS elapsed-time / goal complication |
+| AndroidX Wear Ongoing | 1.1.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Wear OS ongoing activity while a fast runs |
+| AndroidX Concurrent Futures | 1.3.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | The tile service's future |
+| AndroidX Startup | 1.1.1 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Personal/store phone: starts Wear snapshot publishing at process start |
+| Google Play services Wearable | 20.0.1 | Android SDK terms, https://developers.google.com/android/guides/overview | Wear OS Data Layer between watch and phone: the Wear app and the personal/store phone flavors only |
+| JUnit / AndroidX Test | 4.13.2 / runner 1.7.0 / ext 1.3.0 | EPL-1.0 (JUnit, tests only); Apache-2.0 (AndroidX), https://github.com/junit-team/junit4 and https://github.com/android/android-test | Tests only |
+
+MIT copyright and permission text and Apache-2.0 license text ship in the app's notices. The calendar's month layout/state and serialization's schema/default behavior were reviewed before integration. These libraries do not add app networking.
+
+Google Play services Wearable (the Wear OS Data Layer, the counterpart of Apple's WatchConnectivity) is likewise a platform SDK, not an open-source library. It is in the Wear OS app and in the phone's personal and store flavors only; the generic phone flavor has neither it nor its Google Play services dependencies (`:fast:dependencies --configuration genericReleaseRuntimeClasspath` shows no `play-services`). Only the timer snapshot (revision, start, goal, today's water total, whether records can be added) and the watch's start / end / add-water requests cross it, device to device through Google Play services; journal, weight and reflections never do. It adds no app networking, analytics or backend.
+
+Google Play Billing is a platform SDK, not an open-source library. Its declared dependencies include Google transport and Play services; store builds may contact Google for billing and billing-related diagnostics. No journal, fasting or measurement records are passed to the billing adapter. No developer analytics, advertising SDK, backend or application network client is added. Do not claim that the store binary contains no SDK networking. Generic and personal builds do not have the billing module; generic builds have no Google Play services dependency at all (personal has the Wear OS Data Layer, above).

@@ -2,6 +2,7 @@
 # Runs IN THE VM (called by `scripts/vm device|ui --device|lock-device`). Signing needs the GUI
 # session's keychain (runbook: signing over SSH fails), so this hands xcodebuild to Terminal.app
 # and follows its log.
+# env: SEVENS_APP, SEVENS_SCHEME (default qr / QR)
 # usage: bash scripts/guest-device.sh <derived-data-path> install
 #        bash scripts/guest-device.sh <derived-data-path> test <extra xcodebuild args...>
 set -euo pipefail
@@ -19,9 +20,10 @@ for x in d:
 ' 2>/dev/null || true)
 [ -n "$udid" ] || { echo "no paired iPhone"; exit 4; }
 echo "$udid" > ~/.sevens-device-udid
-xb="xcodebuild -project apps/qr/QR.xcodeproj -scheme QR -configuration Debug -destination platform=iOS,id=$udid -derivedDataPath $dd-device -allowProvisioningUpdates"
+app=${SEVENS_APP:-qr}; scheme=${SEVENS_SCHEME:-QR}
+xb="xcodebuild -project apps/$app/$scheme.xcodeproj -scheme $scheme -configuration Debug -destination platform=iOS,id=$udid -derivedDataPath $dd-device -allowProvisioningUpdates"
 if [ "$mode" = install ]; then
-  run="$xb build && xcrun devicectl device install app --device $udid \"\$(ls -d $dd-device/Build/Products/Debug-iphoneos/QR.app)\""
+  run="$xb build && xcrun devicectl device install app --device $udid \"\$(ls -d $dd-device/Build/Products/Debug-iphoneos/$scheme.app)\""
 else
   run="$xb -parallel-testing-enabled NO $* test"
 fi

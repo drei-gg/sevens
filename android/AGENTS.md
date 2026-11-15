@@ -1,0 +1,12 @@
+# Sevens Android contract
+
+- iOS is the product reference for screens and behaviour. An app's rules, calculations, archive format and shared drawing geometry live once, in its Rust core (`apps/<app>/core`, bound with UniFFI; see its README). Never re-implement them in Kotlin or Swift: change the crate and its tests, then both apps follow. Kotlin keeps only platform work (storage, notifications, Health, purchases, UI). Record intentional platform differences.
+- Library first: check the iOS dependency choice and its Android counterpart, then reputable license-compatible Android libraries. Do not hand-roll a parser, calendar, chart, storage primitive or standard control that a suitable maintained library supplies. Keep dependency versions and locks explicit; include licenses and notices.
+- Use native Material controls where they fit. Custom visuals or controls need a concrete UX benefit. Preserve font scaling, semantics, minimum touch targets, system insets, dark mode and drafts across configuration changes.
+- All app modules use `seven.android-app`. Keep generic resources neutral. Private brand overlays are build inputs outside this repository; never copy them into public source.
+- Generic, personal and store identities are distinct. Only personal may use the explicit build-time unlock. Store release must fail on unlock overrides, missing identity/product/signing, debug signing, certificate mismatch or implicit version metadata.
+- Google Play Billing is the approved platform-purchase exception, equivalent to StoreKit. Keep it in the store dependency graph only. Do not add unrelated analytics, ads or backend services.
+- Persist before publishing UI success. A failed write must leave state unchanged; malformed/newer archives remain intact and read-only. Entitlements never enter backups. Trial expiry preserves reading/editing/export/deletion and ending an active fast.
+- Keep Kotlin sources readable; the baseline uses ktfmt 0.61 with `--kotlinlang-style`.
+- Verify the changed layer: core tests, Android lint/build, native interaction tests for behavior, and visual inspection for layout changes. A signed fixture bundle proves build mechanics, not production Play configuration or purchase acceptance.
+- Never upload or publish as an incidental part of a build. `scripts/android` and the variant checker do not publish.

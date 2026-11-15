@@ -1,0 +1,15 @@
+<!-- Wear OS bridge (src/wearBridge, wired by wear-bridge.gradle.kts): Play-services flavors only. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <!-- Bound by Google Play services only: WearableListenerService rejects callers that are not Play services. -->
+        <service android:name="gg.seven.fast.bridge.FastWearListenerService" android:exported="true" tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
+                <data android:scheme="wear" android:host="*" android:pathPrefix="/fast/request" />
+            </intent-filter>
+        </service>
+        <provider android:name="androidx.startup.InitializationProvider" android:authorities="${applicationId}.androidx-startup" android:exported="false" tools:node="merge">
+            <meta-data android:name="gg.seven.fast.bridge.WearBridgeInitializer" android:value="androidx.startup" />
+        </provider>
+    </application>
+</manifest>

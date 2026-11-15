@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Private platform assets are shared with apps whose minSdk may be below 26.
+         API 33 icons include monochrome; v26 resources intentionally omit that API-33 layer. -->
+    <issue id="ObsoleteSdkInt"><ignore path="**/mipmap-anydpi-v26" /></issue>
+    <issue id="MonochromeLauncherIcon"><ignore path="**/mipmap-anydpi-v26/*.xml" /></issue>
+    <!-- These density PNGs are legacy fallbacks. API 26+ uses the adaptive XML, with system masking. -->
+    <issue id="IconLauncherShape"><ignore path="**/mipmap-*/ic_launcher.png" /></issue>
+</lint>
