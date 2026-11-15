@@ -80,7 +80,7 @@ struct ExportSheet: View {
             if options.sizeChoice == .custom {
                 VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                     Text(verbatim: String(localized: "make.export.customLabel", defaultValue: "Width in pixels (up to 4096)", bundle: .module))
-                        .font(.subheadline).foregroundStyle(Tokens.muted).accessibilityHidden(true)
+                        .textRole(.secondary).accessibilityHidden(true)
                     TextField(String(localized: "make.export.customLabel", defaultValue: "Width in pixels (up to 4096)", bundle: .module),
                               text: $options.customSize)
                         .keyboardType(.numberPad)
@@ -134,7 +134,7 @@ struct ExportSheet: View {
             .accessibilityIdentifier("make.export.paper")
             VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                 Text(verbatim: String(localized: "make.export.caption", defaultValue: "Caption (optional)", bundle: .module))
-                    .font(.subheadline).foregroundStyle(Tokens.muted).accessibilityHidden(true)
+                    .textRole(.secondary).accessibilityHidden(true)
                 TextField(String(localized: "make.export.caption", defaultValue: "Caption (optional)", bundle: .module),
                           text: $options.caption)
                     .accessibilityIdentifier("make.export.captionField")
@@ -153,7 +153,7 @@ struct ExportSheet: View {
                 .accessibilityIdentifier("make.export.share")
             } else if failed {
                 MakeInlineMessage(text: String(localized: "make.export.failed",
-                                               defaultValue: "The file couldn't be created. Try a smaller size.", bundle: .module))
+                                               defaultValue: "The file couldn’t be created. Try a smaller size.", bundle: .module))
             } else {
                 ProgressView().accessibilityLabel(Text(verbatim: String(localized: "make.export.preparing", defaultValue: "Preparing the file", bundle: .module)))
             }

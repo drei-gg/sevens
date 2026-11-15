@@ -19,6 +19,8 @@ public enum Tokens {
         public static let onRed = (light: Palette.onRed.light, dark: Palette.onRed.dark)
         public static let caution = (light: Palette.caution.light, dark: Palette.caution.dark)
         public static let danger = (light: Palette.danger.light, dark: Palette.danger.dark)
+        public static let dataWarm = (light: Palette.dataWarm.light, dark: Palette.dataWarm.dark)
+        public static let dataCool = (light: Palette.dataCool.light, dark: Palette.dataCool.dark)
     }
 
     /// Background of our screens and grouped lists.
@@ -39,8 +41,18 @@ public enum Tokens {
     public static let caution = Color(Palette.caution)
     /// Status "Likely scam", failed checks, field errors.
     public static let danger = Color(Palette.danger)
-    /// Hairlines and decorative outlines (not text).
-    public static let rule = Color(Palette.ink).opacity(0.14)
+    /// Data hue for time: progress rings and chart marks. Never a tint, button fill or status.
+    public static let dataWarm = Color(Palette.dataWarm)
+    /// Data hue for water: fills and chart marks. Never a tint, button fill or status.
+    public static let dataCool = Color(Palette.dataCool)
+    /// Hairlines and decorative outlines (not text). Stronger with Increase Contrast.
+    public static let rule = Color(uiColor: UIColor { traits in
+        let high = traits.accessibilityContrast == .high
+        let hex = traits.userInterfaceStyle == .dark
+            ? (high ? Palette.ink.darkHC : Palette.ink.dark)
+            : (high ? Palette.ink.lightHC : Palette.ink.light)
+        return UIColor(hex: hex).withAlphaComponent(high ? Palette.ruleAlpha.highContrast : Palette.ruleAlpha.normal)
+    })
 
     /// Layout constants.
     public enum Space {
@@ -82,13 +94,12 @@ public enum Tokens {
 }
 
 extension Color {
-    /// A palette pair as an appearance-aware color.
-    init(_ pair: Palette.Pair) { self.init(light: pair.light, dark: pair.dark) }
-
-    /// A color that switches between two sRGB hex values with the appearance.
-    init(light: Int, dark: Int) {
+    /// A palette pair as a color that follows the appearance and Increase Contrast.
+    init(_ pair: Palette.Pair) {
         self.init(uiColor: UIColor { traits in
-            UIColor(hex: traits.userInterfaceStyle == .dark ? dark : light)
+            let high = traits.accessibilityContrast == .high
+            if traits.userInterfaceStyle == .dark { return UIColor(hex: high ? pair.darkHC : pair.dark) }
+            return UIColor(hex: high ? pair.lightHC : pair.light)
         })
     }
 }

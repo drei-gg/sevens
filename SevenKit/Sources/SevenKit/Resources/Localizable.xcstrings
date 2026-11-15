@@ -161,7 +161,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What's new"
+            "value": "What’s new"
           }
         }
       }
@@ -227,7 +227,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The purchase didn't go through. Please try again."
+            "value": "The purchase didn’t go through. Please try again."
           }
         }
       }
@@ -238,7 +238,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Couldn't restore purchases right now. Please try again."
+            "value": "Couldn’t restore purchases right now. Please try again."
           }
         }
       }
@@ -392,7 +392,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Waiting for approval. You'll get access as soon as it comes through."
+            "value": "Waiting for approval. You’ll get access as soon as it comes through."
           }
         }
       }

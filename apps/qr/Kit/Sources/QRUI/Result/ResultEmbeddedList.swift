@@ -19,8 +19,8 @@ struct ResultEmbeddedList: View {
                     ForEach(Array(embedded.enumerated()), id: \.offset) { _, item in
                         NavigationLink(value: ResultRoute.embedded(item)) {
                             HStack(spacing: Tokens.Space.s) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(Self.domain(of: item)).font(.headline).foregroundStyle(.primary)
+                                VStack(alignment: .leading, spacing: Tokens.Space.xs) {
+                                    Text(Self.domain(of: item)).textRole(.rowTitle, emphasized: true).foregroundStyle(.primary)
                                         .fixedSize(horizontal: false, vertical: true)
                                     VerdictLabel(level: item.level)
                                 }
@@ -32,7 +32,7 @@ struct ResultEmbeddedList: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityElement(children: .combine)
-                        .accessibilityHint(String(localized: "result.embedded.hint", defaultValue: "Shows this link's result", bundle: .module))
+                        .accessibilityHint(String(localized: "result.embedded.hint", defaultValue: "Shows this link’s result", bundle: .module))
                     }
                 }
             }

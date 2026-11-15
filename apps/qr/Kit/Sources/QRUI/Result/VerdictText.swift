@@ -45,7 +45,25 @@ public enum VerdictText {
         }
     }
 
-    /// The verdict read aloud as one sentence: "Be careful. Web link. This link isn't encrypted… "
+    /// The SF Symbol for a `Payload.typeID`: History's row tiles. Same symbols as Make's kinds.
+    public static func typeSymbol(for typeID: String) -> String {
+        switch typeID {
+        case "link", "appLink": return "link"
+        case "payment": return "creditcard"
+        case "crypto": return "bitcoinsign.circle"
+        case "wifi": return "wifi"
+        case "contact": return "person.crop.circle"
+        case "event": return "calendar"
+        case "phone": return "phone"
+        case "sms": return "message"
+        case "email": return "envelope"
+        case "geo": return "mappin.and.ellipse"
+        case "text": return "text.alignleft"
+        default: return "qrcode"
+        }
+    }
+
+    /// The verdict read aloud as one sentence: "Be careful. Web link. This link isn’t encrypted… "
     /// Info signals are left out (they never change the verdict); pass only what you want read.
     public static func accessibilitySentence(level: Level, typeName: String, signals: [Signal]) -> String {
         let reasons = SignalText.sentences(for: signals.filter { $0.severity != .info })

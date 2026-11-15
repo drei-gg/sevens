@@ -54,7 +54,7 @@ public struct MakeExtensionRoot: View {
                            defaultValue: "Make QR code is part of the unlock. Open the app to see what it adds.",
                            bundle: .module))
         case .unsupported:
-            message(String(localized: "ext.make.unsupported", defaultValue: "Can't make a code from this file.", bundle: .module))
+            message(String(localized: "ext.make.unsupported", defaultValue: "Can’t make a code from this file.", bundle: .module))
         case .failed(let text):
             message(text)
         case .ready(let made):
@@ -77,7 +77,7 @@ public struct MakeExtensionRoot: View {
 
     private func message(_ text: String) -> some View {
         Text(text)
-            .font(.body)
+            .textRole(.body)
             .foregroundStyle(.primary)
             .multilineTextAlignment(.leading)
             .padding(Tokens.Space.l)

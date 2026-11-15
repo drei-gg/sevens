@@ -21,7 +21,7 @@ struct ListsAboutRow: View {
                 Text(ListsAboutText.title(for: model.lists)).foregroundStyle(.primary)
                     .accessibilityIdentifier(ListsAccessibilityID.title)
                 if ListsAboutText.isOld(built: model.lists.built) {
-                    Text(ListsAboutText.oldLine).font(.footnote).foregroundStyle(Tokens.muted)
+                    Text(ListsAboutText.oldLine).textRole(.caption)
                         .accessibilityIdentifier(ListsAccessibilityID.old)
                 }
             }
@@ -41,7 +41,7 @@ struct ListsAboutRow: View {
             }
 
             if case .finished(let sentence) = model.phase {
-                Text(sentence).font(.callout).foregroundStyle(Tokens.muted)
+                Text(sentence).textRole(.secondary)
                     .accessibilityIdentifier(ListsAccessibilityID.result)
             }
 

@@ -17,16 +17,17 @@ struct ResultKnownOffer: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.m) {
             Text(question)
-                .font(.body.weight(.semibold))
+                .textRole(.rowTitle, emphasized: true)
                 .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             VStack(spacing: Tokens.Space.s) {
                 Button(action: onKeep) {
-                    VStack(spacing: 2) {
+                    VStack(spacing: Tokens.Space.xs) {
                         Text(String(localized: "result.known.keep", defaultValue: "Keep warning me", bundle: .module))
-                            .fontWeight(.semibold)
-                        Text(recommended).font(.caption)
+                            .textRole(.rowTitle, emphasized: true)
+                        // On the ink fill: onInk, not caption's muted (which would fail contrast).
+                        Text(recommended).foregroundStyle(Tokens.onInk).textRole(.caption)
                     }
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)

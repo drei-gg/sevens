@@ -53,4 +53,7 @@ public enum QRLaunchArgument {
     /// `-qr.resetFlags`: Before you buy and the trial-ended sheet count as never shown, so the
     /// launch sheets appear again (the screenshot tour). Applied before the store starts.
     public static let resetFlags = "-qr.resetFlags"
+    /// `-qr.cameraStandIn`: the simulator has no camera, so the scan screen shows its camera
+    /// layout over a black stand-in instead of the no-camera fallback (the screenshot tour).
+    public static let cameraStandIn = "-qr.cameraStandIn"
 }

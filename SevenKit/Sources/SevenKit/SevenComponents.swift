@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import SevenKitCore
 
 /// Small shared pieces for the SevenKit screens.
@@ -11,7 +12,7 @@ struct SevenListLines: View {
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.s) {
                     Image(systemName: symbol).foregroundStyle(Tokens.muted).accessibilityHidden(true)
-                    Text(line).font(.body).foregroundStyle(.primary)
+                    Text(line).textRole(.body).foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -35,7 +36,7 @@ struct SevenButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title).font(.headline).multilineTextAlignment(.center)
+            Text(title).textRole(.rowTitle, emphasized: true).multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, minHeight: 28)
         }
         .modifier(SevenButtonStyle(kind: brand ? .brand : prominent ? .prominent : .bordered))
@@ -79,7 +80,7 @@ struct SevenPlainButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title).font(.body).frame(maxWidth: .infinity, minHeight: 44)
+            Text(title).textRole(.body).frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.plain)
         .foregroundStyle(Tokens.muted)
@@ -120,4 +121,23 @@ enum EntitlementFactsPreset {
         case .pending: return EntitlementFacts(purchasePending: true)
         }
     }
+}
+
+/// Padding for a sheet with no system toolbar, whose title is the first thing in it (Unlock,
+/// Before you buy, Trial ended). Sides and bottom are `Tokens.Space.m`. The top is half a
+/// standard navigation bar, as UIKit sizes one (54 pt on iOS 26), so the title clears the
+/// sheet's rounded corner without a bar drawn above it. Decided with Drei, 13 November 2026:
+/// sheets with a system toolbar let the toolbar place the title; sheets without one use this.
+public extension View {
+    func sevenSheetPadding() -> some View {
+        padding(.horizontal, Tokens.Space.m)
+            .padding(.bottom, Tokens.Space.m)
+            .padding(.top, SheetMetrics.titleTop)
+    }
+}
+
+@MainActor enum SheetMetrics {
+    /// Half the height UIKit gives a standard navigation bar.
+    static let titleTop: CGFloat = UINavigationBar()
+        .sizeThatFits(CGSize(width: 1_000, height: CGFloat.greatestFiniteMagnitude)).height / 2
 }

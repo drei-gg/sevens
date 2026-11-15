@@ -2,34 +2,43 @@ import SwiftUI
 import QRCore
 import SevenKit
 
-/// One History row: verdict icon and word at the time, type, short payload, note, date.
+/// One History row, as library lists draw it (polish guide §5.1): the type in a leading tile,
+/// the short payload as the title, then the verdict at the time (icon and word), a note, and
+/// when it was scanned or made.
 struct HistoryRow: View {
     let item: HistoryItem
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         let style = VerdictText.style(for: item.level)
         let typeName = VerdictText.typeName(for: item.typeID)
         let payload = HistoryRowSummary.shortPayload(for: item)
         let note = HistoryRowSummary.notePreview(item.note)
-        VStack(alignment: .leading, spacing: Tokens.Space.xs) {
-            Label {
-                Text(VerdictText.title(for: item.level))
-                    .font(.subheadline.weight(.semibold))
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Tokens.Space.s))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: Tokens.Space.ms))
+        layout {
+            TypeTile(systemImage: VerdictText.typeSymbol(for: item.typeID))
+            VStack(alignment: .leading, spacing: Tokens.Space.xs) {
+                Text(payload)
+                    .textRole(.rowTitle, emphasized: true)
                     .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } icon: {
-                Image(systemName: style.symbolName).foregroundStyle(style.color)
+                    .lineLimit(2)
+                Label {
+                    Text(VerdictText.title(for: item.level))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: style.symbolName).foregroundStyle(style.color)
+                }
+                .textRole(.secondary)
+                if let note {
+                    Text(note).textRole(.secondary).lineLimit(2)
+                }
+                Text(verbatim: "\(typeName) · \(HistoryLabels.kind(item.kind)) · \(item.date.formatted(date: .abbreviated, time: .shortened))")
+                    .textRole(.caption).numeric()
             }
-            Text(payload)
-                .font(.body)
-                .foregroundStyle(.primary)
-                .lineLimit(2)
-            if let note {
-                Text(note).font(.callout).foregroundStyle(Tokens.muted).lineLimit(2)
-            }
-            Text(verbatim: "\(typeName) · \(HistoryLabels.kind(item.kind)) · \(item.date.formatted(date: .abbreviated, time: .shortened))")
-                .font(.footnote)
-                .foregroundStyle(Tokens.muted)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.vertical, Tokens.Space.xs)
         .accessibilityElement(children: .ignore)

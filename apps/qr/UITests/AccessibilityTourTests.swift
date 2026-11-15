@@ -63,6 +63,7 @@ final class AccessibilityTourTests: XCTestCase {
         try openMake(app)
         try audit(app, "make-empty")
         typeLink(app)
+        app.swipeDown(); app.swipeDown()  // The code is the hero at the top of Make.
         XCTAssertTrue(scrollTo(app, "make.code"), "make.code never appeared")
         try audit(app, "make-filled")
         XCTAssertTrue(scrollTo(app, "make.export"), "make.export never became tappable")
@@ -145,6 +146,7 @@ final class AccessibilityTourTests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
         try openMake(app)
         typeLink(app)
+        app.swipeDown(); app.swipeDown()  // The code is the hero at the top of Make.
         XCTAssertTrue(scrollTo(app, "make.code"), "make.code never appeared")
         try audit(app, "dark-make")
     }

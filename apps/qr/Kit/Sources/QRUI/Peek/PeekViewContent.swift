@@ -25,8 +25,8 @@ struct PeekViewContent: View {
                               signals: allSignals, identifier: "peek.verdict")
                 progress
                 if case .failed = state {
-                    Text(String(localized: "peek.notLink", defaultValue: "This isn't a web link, so there is nothing to Peek at.", bundle: .module))
-                        .font(.body).foregroundStyle(.primary)
+                    Text(String(localized: "peek.notLink", defaultValue: "This isn’t a web link, so there is nothing to Peek at.", bundle: .module))
+                        .textRole(.body).foregroundStyle(.primary)
                 }
                 if let report { ResultSignalList(signals: report.signals) }
                 hops
@@ -44,13 +44,13 @@ struct PeekViewContent: View {
                 ProgressView()
                 Text(stage == .fetching
                      ? String(localized: "peek.fetching", defaultValue: "Fetching…", bundle: .module)
-                     : String(localized: "peek.checkingAge", defaultValue: "Checking the domain's age…", bundle: .module))
-                    .font(.body).foregroundStyle(.primary)
+                     : String(localized: "peek.checkingAge", defaultValue: "Checking the domain’s age…", bundle: .module))
+                    .textRole(.body).foregroundStyle(.primary)
             }
             .accessibilityElement(children: .combine)
         case .idle:
             Text(String(localized: "peek.starting", defaultValue: "Starting…", bundle: .module))
-                .font(.body).foregroundStyle(Tokens.muted)
+                .textRole(.body).foregroundStyle(Tokens.muted)
         case .finished, .failed:
             EmptyView()
         }
@@ -63,15 +63,15 @@ struct PeekViewContent: View {
             ResultCard(title: String(localized: "peek.hops", defaultValue: "Where it goes", bundle: .module)) {
                 VStack(alignment: .leading, spacing: Tokens.Space.m) {
                     ForEach(rows, id: \.number) { row in
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                             Text("\(row.number). \(row.domain)")
-                                .font(.headline.bold()).foregroundStyle(.primary)
+                                .textRole(.rowTitle, emphasized: true).foregroundStyle(.primary)
                                 .fixedSize(horizontal: false, vertical: true)
-                            Text(row.url).font(.footnote).foregroundStyle(Tokens.muted)
+                            Text(row.url).textRole(.caption)
                                 .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                             Text(row.status.map { code in String(localized: "peek.status", defaultValue: "Answered \(code)", bundle: .module) }
                                  ?? String(localized: "peek.notFetched", defaultValue: "Not fetched", bundle: .module))
-                                .font(.caption).foregroundStyle(Tokens.muted)
+                                .textRole(.caption)
                             if let level = row.level, level != .normal { VerdictLabel(level: level) }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -92,7 +92,7 @@ struct PeekViewContent: View {
                         value: PeekViewText.asks(report.signals)
                             ?? (PeekViewText.pageWasRead(capture)
                                 ? String(localized: "peek.asksNothing", defaultValue: "No password, code or card field found", bundle: .module)
-                                : String(localized: "peek.notRead", defaultValue: "The page wasn't read", bundle: .module)))
+                                : String(localized: "peek.notRead", defaultValue: "The page wasn’t read", bundle: .module)))
             ResultField(label: String(localized: "peek.age", defaultValue: "Domain age", bundle: .module),
                         value: PeekViewText.age(days: ageDays))
         }

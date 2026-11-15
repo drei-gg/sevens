@@ -42,7 +42,7 @@ public struct SettingsScreen: View {
             Button(String(localized: "history.cancel", defaultValue: "Cancel", bundle: .module), role: .cancel) {}
         } message: {
             Text(String(localized: "settings.clear.message",
-                        defaultValue: "This removes every saved scan and made code, with its notes. It can't be undone.",
+                        defaultValue: "This removes every saved scan and made code, with its notes. It can’t be undone.",
                         bundle: .module))
         }
     }
@@ -70,7 +70,7 @@ public struct SettingsScreen: View {
                     .foregroundStyle(Tokens.muted)
             } else {
                 Text(String(localized: "settings.history.footer",
-                            defaultValue: "Turning this off stops saving new codes. It doesn't delete what is already saved.",
+                            defaultValue: "Turning this off stops saving new codes. It doesn’t delete what is already saved.",
                             bundle: .module))
                     .foregroundStyle(Tokens.muted)
             }

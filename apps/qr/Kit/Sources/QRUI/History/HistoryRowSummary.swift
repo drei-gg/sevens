@@ -19,7 +19,50 @@ enum HistoryRowSummary {
         if item.typeID == "link" || item.typeID == "appLink", let host = host(in: item.payload) {
             return truncated(host, limit: maxPayloadLength)
         }
+        if item.typeID == "wifi", let name = field("S", in: item.payload, separator: ";") {
+            return truncated(name, limit: maxPayloadLength)
+        }
+        if item.typeID == "contact", let name = contactName(in: item.payload) {
+            return truncated(name, limit: maxPayloadLength)
+        }
         return truncated(item.payload, limit: maxPayloadLength)
+    }
+
+    /// A Wi-Fi code's network name (`WIFI:…;S:<name>;…`), with `\;`-style escapes undone.
+    /// Display only. nil when it has none.
+    static func field(_ key: String, in payload: String, separator: Character) -> String? {
+        var parts: [String] = [], current = "", escaped = false
+        let body = payload.drop { $0 != ":" }.dropFirst()
+        for ch in body {
+            if escaped { current.append(ch); escaped = false }
+            else if ch == "\\" { escaped = true }
+            else if ch == separator { parts.append(current); current = "" }
+            else { current.append(ch) }
+        }
+        parts.append(current)
+        let value = parts.first { $0.hasPrefix(key + ":") }.map { String($0.dropFirst(key.count + 1)) }
+        return value.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
+    }
+
+    /// A vCard's `FN` (or `N`) line, or a MeCard's `N:`. Display only; nil when there is none.
+    static func contactName(in payload: String) -> String? {
+        if payload.uppercased().hasPrefix("MECARD:") {
+            let name = field("N", in: payload, separator: ";")
+            return name?.replacingOccurrences(of: ",", with: " ")
+        }
+        let lines = payload.split(whereSeparator: \.isNewline).map(String.init)
+        func value(_ name: String) -> String? {
+            guard let line = lines.first(where: {
+                let head = $0.prefix { $0 != ":" }.uppercased()
+                return head == name || head.hasPrefix(name + ";")
+            }), let colon = line.firstIndex(of: ":") else { return nil }
+            let text = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+            return text.isEmpty ? nil : text
+        }
+        if let full = value("FN") { return full }
+        return value("N").map { name in
+            name.split(separator: ";").reversed().filter { part in !part.isEmpty }.joined(separator: " ")
+        }
     }
 
     /// nil when the note is missing or blank.

@@ -15,16 +15,16 @@ public struct NetworkContactScreen: View {
             Section {
                 ForEach(Array(NetworkContactContent.entries().enumerated()), id: \.offset) { _, entry in
                     VStack(alignment: .leading, spacing: Tokens.Space.xs) {
-                        Text(entry.when).font(.headline).foregroundStyle(.primary)
+                        Text(entry.when).textRole(.rowTitle, emphasized: true).numeric().foregroundStyle(.primary)
                         line(String(localized: "network.who", defaultValue: "Who we contact", bundle: .module), entry.who)
-                        line(String(localized: "network.sent", defaultValue: "What's sent", bundle: .module), entry.sent)
+                        line(String(localized: "network.sent", defaultValue: "What’s sent", bundle: .module), entry.sent)
                     }
                     .padding(.vertical, Tokens.Space.xs)
                     .accessibilityElement(children: .combine)
                 }
             }
             Section {
-                Text(NetworkContactContent.closing).font(.body.weight(.semibold)).foregroundStyle(.primary)
+                Text(NetworkContactContent.closing).textRole(.rowTitle, emphasized: true).foregroundStyle(.primary)
                 Text(NetworkContactContent.privacyLabel).foregroundStyle(.primary)
             }
         }
@@ -35,8 +35,8 @@ public struct NetworkContactScreen: View {
 
     private func line(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(label).font(.footnote).foregroundStyle(Tokens.muted)
-            Text(value).font(.body).foregroundStyle(.primary)
+            Text(label).textRole(.caption)
+            Text(value).textRole(.body).foregroundStyle(.primary)
         }
     }
 }

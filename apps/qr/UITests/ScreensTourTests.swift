@@ -55,6 +55,11 @@ final class ScreensTourTests: XCTestCase {
         app = launch(largestText: true)
         if id(app, "scan.make").waitForExistence(timeout: 30) { shoot(app, "scan-home-largest-text") }
         app.terminate()
+        // The simulator has no camera: the camera layout over a black stand-in (Debug only).
+        app = launch(extra: ["-qr.cameraStandIn"])
+        if id(app, "scan.make").waitForExistence(timeout: 30) { shoot(app, "scan-home-camera-layout") }
+        else { notes.append("scan: the camera layout did not appear") }
+        app.terminate()
 
         let results: [(String, String, String)] = [
             ("result-likely-scam", trick, "result.verdict"),
@@ -123,22 +128,46 @@ final class ScreensTourTests: XCTestCase {
             sleep(1)
             shoot(app, "make-same-link-smaller-code-off")
         } else { notes.append("make: the 'Same link, smaller code' switch did not appear") }
+        // The field sits above after the scrolls: back up to it first.
+        for _ in 0..<4 where !field.isHittable { app.swipeDown() }
         field.tap()
         field.typeText(trackingSuffix)
         sleep(1)
         if scrollTo(app, "make.link.tracking.remove") { shoot(app, "make-tracking-tags-offer") }
         else { notes.append("make: the tracking-tags offer did not appear") }
+        // The code is the hero at the top of Make: look up for it.
+        app.swipeDown(); app.swipeDown()
         if scrollTo(app, "make.code") { shoot(app, "make-link-code") } else { notes.append("make: no code shown") }
         if scrollTo(app, "make.export") {
             id(app, "make.export").tap()
             if app.buttons["make.export.close"].firstMatch.waitForExistence(timeout: 10) { shoot(app, "make-export-sheet") }
             else { notes.append("make: export sheet did not open") }
-        }
+        } else { notes.append("make: Export not reached") }
         app.terminate()
+
+        // Another kind, picked from the chips.
+        let again = launch()
+        guard id(again, "scan.make").waitForExistence(timeout: 30) else { notes.append("make: no Make button (second visit)"); return }
+        id(again, "scan.make").tap()
+        let wifi = again.buttons["Wi-Fi network"].firstMatch
+        if wifi.waitForExistence(timeout: 10) {
+            wifi.tap()
+            sleep(1)
+            shoot(again, "make-wifi")
+        } else { notes.append("make: the Wi-Fi network chip not found") }
+        again.terminate()
     }
 
     @MainActor private func historyAndSettings() {
-        var app = launch(inject: trick)
+        // A few scans first, so History has rows of different kinds and verdicts.
+        var seeded = 0
+        for (index, payload) in [normalLink, pix, openWiFi, contact].enumerated() {
+            let seed = launch(inject: payload, resetHistory: index == 0)
+            if id(seed, "result.verdict").waitForExistence(timeout: 30) { seeded += 1 }
+            seed.terminate()
+        }
+        if seeded < 4 { notes.append("history: only \(seeded) of 4 seed scans showed a result") }
+        var app = launch(inject: trick, resetHistory: false)
         guard id(app, "result.verdict").waitForExistence(timeout: 30) else { notes.append("history: no result sheet"); return }
         app.buttons["result.done"].firstMatch.tap()
         id(app, "scan.history").tap()
@@ -205,9 +234,9 @@ final class ScreensTourTests: XCTestCase {
 
     @MainActor @discardableResult
     private func launch(entitlement: String? = "unlocked", inject: String? = nil, skipFirstLaunch: Bool = true,
-                        largestText: Bool = false) -> XCUIApplication {
+                        largestText: Bool = false, resetHistory: Bool = true, extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        var args = ["-qr.resetHistory", "-qr.resetKnown", "-qr.resetFlags"]
+        var args = (resetHistory ? ["-qr.resetHistory"] : []) + ["-qr.resetKnown", "-qr.resetFlags"] + extra
         if let entitlement { args += ["-qr.entitlement", entitlement] }
         if skipFirstLaunch { args.append("-qr.skipFirstLaunch") }
         if largestText { args += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }

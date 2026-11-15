@@ -20,17 +20,17 @@ public struct UnlockView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.l) {
                 Text(content.title ?? seven("seven.unlock.title", "What the unlock adds"))
-                    .font(.title2.weight(.semibold)).foregroundStyle(.primary)
+                    .textRole(.title).foregroundStyle(.primary)
                     .accessibilityAddTraits(.isHeader)
                 if let feature {
                     Text(seven("seven.unlock.feature", "%@ is part of the unlock.", feature))
-                        .font(.body).foregroundStyle(Tokens.muted)
+                        .textRole(.body).foregroundStyle(Tokens.muted)
                 }
                 SevenListLines(lines: content.features)
                 statusNote
                 actions
             }
-            .padding(Tokens.Space.m)
+            .sevenSheetPadding()
             .frame(maxWidth: .infinity, alignment: .leading)
             .sevenReadableSheet()
         }
@@ -46,18 +46,18 @@ public struct UnlockView: View {
             note(seven("seven.unlock.expired", "Your free 7 days ended on %@.",
                        end.formatted(date: .abbreviated, time: .omitted)))
         case .pending:
-            note(seven("seven.unlock.pending", "Waiting for approval. You'll get access as soon as it comes through."))
+            note(seven("seven.unlock.pending", "Waiting for approval. You’ll get access as soon as it comes through."))
         default:
             EmptyView()
         }
         if store.unlockDisplayPrice == nil && !store.isUsingLocalSource {
-            note(seven("seven.unlock.priceUnavailable", "The price can't be loaded right now. Check your connection and try again."))
+            note(seven("seven.unlock.priceUnavailable", "The price can’t be loaded right now. Check your connection and try again."))
         }
         if let error = store.lastError { note(error) }
     }
 
     private func note(_ text: String) -> some View {
-        Text(text).font(.callout).foregroundStyle(Tokens.muted)
+        Text(text).textRole(.secondary)
             .accessibilityElement(children: .combine)
     }
 

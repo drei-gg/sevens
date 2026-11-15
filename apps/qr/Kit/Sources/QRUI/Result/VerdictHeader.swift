@@ -2,7 +2,9 @@ import SwiftUI
 import QRCore
 import SevenKit
 
-/// The verdict at the top of a result: icon + word + payload type. Never colour alone (G7).
+/// The verdict at the top of a result, stated big and plainly the way the leading scanner apps
+/// do: a large status symbol, the verdict word as the screen's hero, the payload type under it.
+/// Never colour alone (G7): the colour is on the symbol, the word stays the primary text colour.
 /// One accessibility element whose label is the whole verdict as a sentence.
 struct VerdictHeader: View {
     let level: Level
@@ -13,41 +15,29 @@ struct VerdictHeader: View {
 
     var body: some View {
         let style = VerdictText.style(for: level)
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: Tokens.Space.m) {
-                icon(style)
-                titles
-            }
-            VStack(alignment: .leading, spacing: Tokens.Space.s) {
-                icon(style)
-                titles
-            }
+        VStack(spacing: Tokens.Space.s) {
+            Image(systemName: style.symbolName + ".fill")
+                .textRole(.display)
+                .foregroundStyle(style.color)
+                .padding(.bottom, Tokens.Space.xs)
+            Text(VerdictText.title(for: level))
+                .textRole(.hero)
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.6)
+            Text(typeName)
+                .textRole(.caption)
+                .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Tokens.Space.m)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Tokens.Space.l)
+        .padding(.horizontal, Tokens.Space.m)
         .sevenCard()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(VerdictText.accessibilitySentence(level: level, typeName: typeName, signals: signals))
         .accessibilityIdentifier(identifier)
         .accessibilityAddTraits(.isHeader)
-    }
-
-    private func icon(_ style: Tokens.VerdictStyle) -> some View {
-        Image(systemName: style.symbolName)
-            .font(.largeTitle)
-            .foregroundStyle(style.color)
-    }
-
-    private var titles: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(VerdictText.title(for: level))
-                .font(.title.bold())
-                .foregroundStyle(.primary)
-            Text(typeName)
-                .font(.subheadline)
-                .foregroundStyle(Tokens.muted)
-        }
-        .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -62,6 +52,6 @@ struct VerdictLabel: View {
         } icon: {
             Image(systemName: style.symbolName).foregroundStyle(style.color)
         }
-        .font(.subheadline.weight(.semibold))
+        .textRole(.rowTitle, emphasized: true)
     }
 }

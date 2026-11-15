@@ -15,8 +15,7 @@ struct ResultCard<Content: View>: View {
         VStack(alignment: .leading, spacing: Tokens.Space.m) {
             if let title {
                 Text(title)
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(Tokens.muted)
+                    .textRole(.caption)
                     .accessibilityAddTraits(.isHeader)
             }
             content
@@ -35,10 +34,11 @@ struct ResultField: View {
     var muted = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.caption).foregroundStyle(Tokens.muted)
+        VStack(alignment: .leading, spacing: Tokens.Space.xs) {
+            Text(label).textRole(.caption)
             Text(value)
-                .font(monospaced ? .body.monospaced() : .body)
+                .textRole(.body)
+                .monospaced(monospaced)
                 .foregroundStyle(muted ? Tokens.muted : Color.primary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)

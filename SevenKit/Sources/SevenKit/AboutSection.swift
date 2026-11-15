@@ -34,7 +34,7 @@ public struct AboutSection: View {
                     .accessibilityLabel(seven("seven.restore", "Restore purchases"))
             }
             if let error = store.lastError {
-                Text(error).font(.callout).foregroundStyle(Tokens.muted)
+                Text(error).textRole(.secondary)
             }
             if let onShowBeforeYouBuy {
                 Button(seven("seven.about.beforeYouBuy", "Before you buy"), action: onShowBeforeYouBuy)
@@ -58,7 +58,7 @@ struct AboutWordmark: View {
             Image(SevenStamp.name).resizable().scaledToFit().frame(height: 44)
                 .accessibilityLabel(content.appName)
         } else if !content.appName.isEmpty {
-            Text(content.appName).font(.headline).foregroundStyle(Tokens.ink)
+            Text(content.appName).textRole(.rowTitle, emphasized: true).foregroundStyle(Tokens.ink)
         }
     }
 }
@@ -115,13 +115,13 @@ public struct AboutVersionRow: View {
     }
 }
 
-/// "What's new": the app passes the changelog text.
+/// "What’s new": the app passes the changelog text.
 public struct AboutWhatsNewRow: View {
     private let text: String
     public init(text: String) { self.text = text }
 
     public var body: some View {
-        NavigationLink(seven("seven.about.whatsNew", "What's new")) { AboutTextScreen(title: seven("seven.about.whatsNew", "What's new"), text: text) }
+        NavigationLink(seven("seven.about.whatsNew", "What’s new")) { AboutTextScreen(title: seven("seven.about.whatsNew", "What’s new"), text: text) }
     }
 }
 
@@ -181,7 +181,7 @@ struct AboutTextScreen: View {
     let text: String
     var body: some View {
         ScrollView {
-            Text(text).font(.body).foregroundStyle(Tokens.ink).textSelection(.enabled)
+            Text(text).textRole(.body).foregroundStyle(Tokens.ink).textSelection(.enabled)
                 .padding(Tokens.Space.m).frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(Tokens.paper.ignoresSafeArea())

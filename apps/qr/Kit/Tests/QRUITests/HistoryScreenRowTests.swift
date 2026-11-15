@@ -9,6 +9,16 @@ import QRCore
                     level: .normal, signalIDs: [], date: Date(timeIntervalSince1970: 0))
     }
 
+    @Test func wifiAndContactShowTheirNames() {
+        #expect(HistoryRowSummary.shortPayload(for: item("WIFI:T:nopass;S:Corner Cafe Guest;;", typeID: "wifi")) == "Corner Cafe Guest")
+        #expect(HistoryRowSummary.shortPayload(for: item("WIFI:S:My\\;Net;T:WPA;P:x;;", typeID: "wifi")) == "My;Net")
+        #expect(HistoryRowSummary.shortPayload(for: item("BEGIN:VCARD\nVERSION:3.0\nFN:Ana Reyes\nEND:VCARD", typeID: "contact")) == "Ana Reyes")
+        #expect(HistoryRowSummary.shortPayload(for: item("BEGIN:VCARD\nN:Reyes;Ana;;;\nEND:VCARD", typeID: "contact")) == "Ana Reyes")
+        #expect(HistoryRowSummary.shortPayload(for: item("MECARD:N:Reyes,Ana;TEL:123;;", typeID: "contact")) == "Reyes Ana")
+        // Nothing to name: the payload as before.
+        #expect(HistoryRowSummary.shortPayload(for: item("WIFI:T:WPA;;", typeID: "wifi")) == "WIFI:T:WPA;;")
+    }
+
     @Test func linkShowsOnlyTheHost() {
         #expect(HistoryRowSummary.shortPayload(for: item("https://Example.ORG/menu?x=1#top", typeID: "link")) == "example.org")
     }

@@ -17,8 +17,7 @@ struct MakeFormRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.xs) {
             Text(verbatim: title)
-                .font(.subheadline)
-                .foregroundStyle(Tokens.muted)
+                .textRole(.secondary)
                 .accessibilityHidden(true)
             TextField(title, text: $text, axis: multiline ? .vertical : .horizontal)
                 .lineLimit(multiline ? 1...8 : 1...3)
@@ -46,8 +45,7 @@ struct MakeInlineMessage: View {
             Image(systemName: isError ? "exclamationmark.circle" : "info.circle")
                 .foregroundStyle(isError ? Tokens.danger : Tokens.muted)
         }
-        .font(.footnote)
-        .foregroundStyle(Tokens.muted)
+        .textRole(.caption)
         .accessibilityIdentifier(isError ? "make.error" : "make.hint")
     }
 }

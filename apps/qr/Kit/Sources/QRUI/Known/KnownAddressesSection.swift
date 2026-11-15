@@ -41,15 +41,15 @@ struct KnownAddressesList: View {
         List {
             if model.knownAddresses.isEmpty {
                 Text(String(localized: "settings.known.empty",
-                            defaultValue: "You haven't told us you know any addresses.", bundle: .module))
+                            defaultValue: "You haven’t told us you know any addresses.", bundle: .module))
                     .foregroundStyle(Tokens.muted)
             } else {
                 Section {
                     ForEach(model.knownAddresses.entries, id: \.domain) { entry in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(entry.domain).font(.body)
+                        VStack(alignment: .leading, spacing: Tokens.Space.xs) {
+                            Text(entry.domain).textRole(.body)
                             Text(entry.added.formatted(date: .abbreviated, time: .omitted))
-                                .font(.caption).foregroundStyle(Tokens.muted)
+                                .textRole(.caption)
                         }
                         .accessibilityElement(children: .combine)
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -87,7 +87,7 @@ struct KnownAddressesList: View {
             Button(String(localized: "history.cancel", defaultValue: "Cancel", bundle: .module), role: .cancel) {}
         } message: {
             Text(String(localized: "settings.known.forgetAll.message",
-                        defaultValue: "These addresses will get their warnings again. It can't be undone.", bundle: .module))
+                        defaultValue: "These addresses will get their warnings again. It can’t be undone.", bundle: .module))
         }
     }
 }

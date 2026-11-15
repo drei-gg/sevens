@@ -19,11 +19,11 @@ struct ResultContactView: View {
     var body: some View {
         ResultCard {
             Text(displayName)
-                .font(.largeTitle.weight(.bold)).foregroundStyle(.primary)
+                .textRole(.title).foregroundStyle(.primary)
                 .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             if !roleLine.isEmpty {
-                Text(roleLine).font(.title3).foregroundStyle(Tokens.muted).fixedSize(horizontal: false, vertical: true)
+                Text(roleLine).textRole(.body).foregroundStyle(Tokens.muted).fixedSize(horizontal: false, vertical: true)
             }
             list(String(localized: "result.contact.phones", defaultValue: "Phone", bundle: .module), info.phones)
             list(String(localized: "result.contact.emails", defaultValue: "Email", bundle: .module), info.emails)

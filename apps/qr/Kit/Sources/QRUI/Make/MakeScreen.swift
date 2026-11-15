@@ -1,3 +1,4 @@
+import Combine
 import QRCore
 import SevenKit
 import SwiftUI
@@ -12,6 +13,7 @@ public struct MakeScreen: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var model: MakeScreenModel
     @State private var showExport = false
+    @State private var keyboardUp = false
 
     /// The Make screen; `prefill` comes from a result's "Make code" action. Callers wrap it in
     /// `.gated(feature:)` (paid). Pushed inside a NavigationStack.
@@ -22,6 +24,8 @@ public struct MakeScreen: View {
 
     public var body: some View {
         Form {
+            // At accessibility sizes the code would push the fields off screen: it follows them.
+            if !typeSize.isAccessibilitySize { previewSection }
             typeSection
             Section {
                 MakeFormFields(model: model)
@@ -32,13 +36,19 @@ public struct MakeScreen: View {
                 Text(verbatim: model.kind.title)
                     .foregroundStyle(Tokens.muted)
             }
+            if typeSize.isAccessibilitySize { previewSection }
             MakeLinkOptionsSection(model: model)
-            previewSection
             codeTypeSection
             MakeStyleSection(foreground: $model.foreground, background: $model.background,
                              warnings: model.contrastWarnings)
         }
         .sevenScreenBackground()
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            // Only when there is a code to export, and not over the field being typed in.
+            if model.canExport && !keyboardUp { exportBar }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardUp = true }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardUp = false }
         .scrollDismissesKeyboard(.immediately)
         .navigationTitle(Text(verbatim: String(localized: "make.title", defaultValue: "Make a code", bundle: .module)))
         .navigationBarTitleDisplayMode(.inline)
@@ -73,57 +83,92 @@ public struct MakeScreen: View {
 
     // MARK: Sections
 
+    /// The kinds as one row of chips, the selected one filled: one tap to switch, as the
+    /// leading code makers do, instead of a menu.
     private var typeSection: some View {
         Section {
-            Picker(selection: $model.kind) {
-                ForEach(MakeFormKind.allCases) { kind in
-                    Label(kind.title, systemImage: kind.symbolName).tag(kind)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Tokens.Space.s) {
+                    ForEach(MakeFormKind.allCases) { kind in
+                        let selected = model.kind == kind
+                        Button {
+                            model.kind = kind
+                        } label: {
+                            ChipLabel(title: kind.title, systemImage: kind.symbolName).fixedSize()
+                        }
+                        .modifier(SevenButtonStyle(kind: selected ? .prominent : .bordered))
+                        .controlSize(.large)
+                        .buttonBorderShape(.capsule)
+                        .accessibilityAddTraits(selected ? .isSelected : [])
+                    }
                 }
-            } label: {
-                Text(verbatim: String(localized: "make.type", defaultValue: "What to put in the code", bundle: .module))
+                .padding(.horizontal, Tokens.Space.m)
             }
-            .pickerStyle(.menu)
+            .sensoryFeedback(.selection, trigger: model.kind)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(Text(verbatim: String(localized: "make.type", defaultValue: "What to put in the code", bundle: .module)))
             .accessibilityIdentifier(QRAccessibilityID.makeTypePicker)
+            .bareListRow()
         }
     }
 
+    /// The hero: the code itself, big on a card, updating as you type.
     private var previewSection: some View {
         Section {
             VStack(spacing: Tokens.Space.m) {
-                if let image = model.previewImage, model.generationError == nil {
-                    Image(uiImage: image)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: 320)
-                        .overlay(Rectangle().stroke(Tokens.rule, lineWidth: 1))
-                        .accessibilityElement()
-                        .accessibilityLabel(Text(verbatim: model.codeAccessibilityLabel))
-                        .accessibilityAddTraits(.isImage)
-                        .accessibilityIdentifier(QRAccessibilityID.makeCodeImage)
-                } else if model.isBlank {
-                    MakeInlineMessage(text: String(localized: "make.preview.blank",
-                                                   defaultValue: "Fill in the fields above and your code appears here.", bundle: .module),
+                Group {
+                    if let image = model.previewImage, model.generationError == nil {
+                        Image(uiImage: image)
+                            .interpolation(.none)
+                            .resizable()
+                            .scaledToFit()
+                            .accessibilityElement()
+                            .accessibilityLabel(Text(verbatim: model.codeAccessibilityLabel))
+                            .accessibilityAddTraits(.isImage)
+                            .accessibilityIdentifier(QRAccessibilityID.makeCodeImage)
+                    } else {
+                        Image(systemName: "qrcode")
+                            .resizable()
+                            .scaledToFit()
+                            .padding(Tokens.Space.xl)
+                            .foregroundStyle(Tokens.rule)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .frame(maxWidth: 240, maxHeight: 240)
+                .padding(Tokens.Space.m)
+                .background(Tokens.paper, in: RoundedRectangle(cornerRadius: Tokens.Radius.card, style: .continuous))
+                if model.isBlank {
+                    MakeInlineMessage(text: String(localized: "make.preview.blank.below",
+                                                   defaultValue: "Fill in the fields below and your code appears here.", bundle: .module),
                                       isError: false)
                 } else if let issue = firstIssue {
                     MakeInlineMessage(text: issue.message)
                 }
-                Button {
-                    showExport = true
-                } label: {
-                    Label(String(localized: "make.export", defaultValue: "Export", bundle: .module),
-                          systemImage: "square.and.arrow.up")
-                        .frame(maxWidth: .infinity)
-                }
-                .sevenProminentButton()
-                .disabled(!model.canExport)
-                .accessibilityIdentifier(QRAccessibilityID.makeExport)
             }
             .frame(maxWidth: .infinity)
-        } header: {
-            Text(verbatim: String(localized: "make.preview.header", defaultValue: "Your code", bundle: .module))
-                .foregroundStyle(Tokens.muted)
+            .padding(.vertical, Tokens.Space.m)
         }
+    }
+
+    /// Export, the screen's one primary action, pinned within thumb reach.
+    private var exportBar: some View {
+        Button {
+            showExport = true
+        } label: {
+            Label(String(localized: "make.export", defaultValue: "Export", bundle: .module),
+                  systemImage: "square.and.arrow.up")
+                .textRole(.rowTitle, emphasized: true)
+                .frame(maxWidth: .infinity)
+        }
+        .sevenProminentButton()
+        .controlSize(.extraLarge)
+        .buttonBorderShape(.capsule)
+        .accessibilityIdentifier(QRAccessibilityID.makeExport)
+        .padding(.horizontal, Tokens.Space.m)
+        .padding(.top, Tokens.Space.ms)
+        .padding(.bottom, Tokens.Space.s)
+        .background(.bar)
     }
 
     private var firstIssue: MakeFormIssue? {

@@ -24,8 +24,7 @@ struct MakeLinkOptionsSection: View {
                             Text(verbatim: String(localized: "make.link.smaller.detail",
                                                   defaultValue: "The web address is written in capitals, which fit a smaller code. It opens the same place.",
                                                   bundle: .module))
-                                .font(.footnote)
-                                .foregroundStyle(Tokens.muted)
+                                .textRole(.caption)
                         }
                     }
                     .accessibilityIdentifier(MakeLinkAccessibilityID.smallerCodeSwitch)
@@ -36,10 +35,9 @@ struct MakeLinkOptionsSection: View {
                                               defaultValue: "This link carries tracking tags. Remove them?", bundle: .module))
                             .accessibilityIdentifier(MakeLinkAccessibilityID.trackingPrompt)
                         Text(verbatim: model.trackingTags.joined(separator: ", "))
-                            .font(.footnote)
-                            .foregroundStyle(Tokens.muted)
+                            .textRole(.caption)
                         Text(verbatim: shorter)
-                            .font(.footnote.monospaced())
+                            .textRole(.caption).monospaced()
                             .textSelection(.enabled)
                             .accessibilityIdentifier(MakeLinkAccessibilityID.trackingPreview)
                         Button {

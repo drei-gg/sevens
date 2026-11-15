@@ -62,12 +62,12 @@ public struct CheckExtensionRoot: View {
         VStack(alignment: .leading, spacing: Tokens.Space.s) {
             if showsImageHeaders {
                 Text(String(format: String(localized: "ext.check.image", defaultValue: "Image %lld", bundle: .module), image.position))
-                    .font(.headline)
+                    .textRole(.rowTitle, emphasized: true)
                     .foregroundStyle(Tokens.muted)
                     .accessibilityAddTraits(.isHeader)
             }
             if image.unreadable {
-                note(String(localized: "ext.check.unreadable", defaultValue: "This image couldn't be read.", bundle: .module))
+                note(String(localized: "ext.check.unreadable", defaultValue: "This image couldn’t be read.", bundle: .module))
             } else if image.codes.isEmpty {
                 note(String(localized: "ext.check.none", defaultValue: "No code found in this image", bundle: .module))
             } else {
@@ -78,7 +78,7 @@ public struct CheckExtensionRoot: View {
 
     private func note(_ text: String) -> some View {
         Text(text)
-            .font(.body)
+            .textRole(.body)
             .foregroundStyle(.primary)
             .padding(Tokens.Space.m)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -91,25 +91,27 @@ public struct CheckExtensionRoot: View {
         let typeName = VerdictText.typeName(for: analysis.payload.typeID)
         let shown = analysis.allSignals.filter { $0.severity != .info }
         return VStack(alignment: .leading, spacing: Tokens.Space.s) {
-            HStack(spacing: Tokens.Space.s) {
-                Image(systemName: style.symbolName).foregroundStyle(style.color)
-                Text(VerdictText.title(for: analysis.level)).foregroundStyle(.primary)
+            // The app's verdict block: big symbol, the word as the hero, the type under it.
+            VStack(spacing: Tokens.Space.s) {
+                Image(systemName: style.symbolName + ".fill").textRole(.display).foregroundStyle(style.color)
+                Text(VerdictText.title(for: analysis.level)).textRole(.hero).foregroundStyle(.primary)
+                    .multilineTextAlignment(.center).minimumScaleFactor(0.6)
+                Text(typeName).textRole(.caption).multilineTextAlignment(.center)
             }
-            .font(.title2.weight(.semibold))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Tokens.Space.s)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(VerdictText.accessibilitySentence(level: analysis.level, typeName: typeName, signals: analysis.allSignals))
             .accessibilityAddTraits(.isHeader)
 
-            Text(typeName).font(.subheadline).foregroundStyle(Tokens.muted)
-
             ForEach(Array(SignalText.sentences(for: shown).enumerated()), id: \.offset) { _, sentence in
-                Text(sentence).font(.body).foregroundStyle(.primary)
+                Text(sentence).textRole(.body).foregroundStyle(.primary)
             }
 
             if let summary = code.summary {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(summary.label).font(.caption).foregroundStyle(Tokens.muted)
-                    Text(summary.value).font(.body).foregroundStyle(.primary)
+                VStack(alignment: .leading, spacing: Tokens.Space.xs) {
+                    Text(summary.label).textRole(.caption)
+                    Text(summary.value).textRole(.body).foregroundStyle(.primary)
                 }
                 .accessibilityElement(children: .combine)
             }

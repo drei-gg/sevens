@@ -13,6 +13,18 @@ import Testing
         #expect(dark >= 4.5, "\(name), dark: \(dark)")
     }
 
+    /// Increase Contrast raises every pair to WCAG AAA (7:1), and never lowers one.
+    @Test(arguments: Palette.renderedPairs.map(\.name))
+    func renderedPairMeetsAAAWithIncreaseContrast(_ name: String) throws {
+        let pair = try #require(Palette.renderedPairs.first { $0.name == name })
+        let light = Palette.contrast(pair.foreground.lightHC, pair.background.lightHC)
+        let dark = Palette.contrast(pair.foreground.darkHC, pair.background.darkHC)
+        #expect(light >= 7, "\(name), light HC: \(light)")
+        #expect(dark >= 7, "\(name), dark HC: \(dark)")
+        #expect(light >= Palette.contrast(pair.foreground.light, pair.background.light) - 0.01, "\(name) light")
+        #expect(dark >= Palette.contrast(pair.foreground.dark, pair.background.dark) - 0.01, "\(name) dark")
+    }
+
     /// The failures that kept the ink tint out of QR stay failures, so nobody brings them back.
     @Test func knownBadPairsStayBad() {
         // System white label on dark-mode ink.

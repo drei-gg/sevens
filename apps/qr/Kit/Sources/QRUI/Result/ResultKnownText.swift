@@ -12,20 +12,20 @@ enum ResultKnownText {
             .first
         if let brand {
             return String(localized: "result.known.question.brand",
-                          defaultValue: "This address uses \(brand)'s name, but it isn't one we know.", bundle: .module)
+                          defaultValue: "This address uses \(brand)'s name, but it isn’t one we know.", bundle: .module)
         }
         let name = SignalText.arg(["d": domain], "d") ?? domain
         let ids = Set(analysis.signals.map(\.id))
         if ids.contains(.shortener) {
             return String(localized: "result.known.question.shortener",
-                          defaultValue: "\(name) is a link shortener, so we can't tell where it leads.", bundle: .module)
+                          defaultValue: "\(name) is a link shortener, so we can’t tell where it leads.", bundle: .module)
         }
         if ids.contains(.riskyTLD) {
             return String(localized: "result.known.question.ending",
-                          defaultValue: "\(name) ends in a domain ending scammers use a lot, and it isn't an address we know.",
+                          defaultValue: "\(name) ends in a domain ending scammers use a lot, and it isn’t an address we know.",
                           bundle: .module)
         }
         return String(localized: "result.known.question.plain",
-                      defaultValue: "\(name) isn't an address we know.", bundle: .module)
+                      defaultValue: "\(name) isn’t an address we know.", bundle: .module)
     }
 }

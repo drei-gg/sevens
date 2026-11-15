@@ -34,7 +34,7 @@ enum NetworkContactContent {
     }
 
     static var closing: String {
-        String(localized: "network.closing", defaultValue: "Anything not listed here doesn't happen.", bundle: .module)
+        String(localized: "network.closing", defaultValue: "Anything not listed here doesn’t happen.", bundle: .module)
     }
 
     static var privacyLabel: String {

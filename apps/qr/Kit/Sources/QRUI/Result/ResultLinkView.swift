@@ -4,7 +4,7 @@ import SevenKit
 
 /// What to show for a link, decided without a view so it can be tested.
 enum ResultLinkDisplay {
-    /// The registrable domain: the largest text on a link result (§6.13). IPs and unknown
+    /// The registrable domain: the largest text after the verdict on a link result (§6.13). IPs and unknown
     /// suffixes show the host; dangerous schemes show the scheme.
     static func headline(_ link: LinkInfo) -> String {
         if let domain = link.registrableDomain, !domain.isEmpty { return domain }
@@ -37,7 +37,7 @@ struct ResultLinkView: View {
     var body: some View {
         ResultCard {
             Text(ResultLinkDisplay.headline(link))
-                .font(.largeTitle.weight(.bold))
+                .textRole(.title)
                 .foregroundStyle(.primary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
@@ -54,12 +54,11 @@ struct ResultLinkView: View {
                 ResultField(label: String(localized: "result.link.userinfo", defaultValue: "Text before the @ sign", bundle: .module),
                             value: userinfo, muted: true)
             }
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                 Text(String(localized: "result.link.full", defaultValue: "The whole link", bundle: .module))
-                    .font(.caption).foregroundStyle(Tokens.muted)
+                    .textRole(.caption)
                 Text(link.original)
-                    .font(.footnote)
-                    .foregroundStyle(Tokens.muted)
+                    .textRole(.caption)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
             }

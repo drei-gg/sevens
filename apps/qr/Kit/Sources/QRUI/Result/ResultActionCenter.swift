@@ -137,11 +137,11 @@ final class ResultActionCenter {
         case .joined:
             notice = String(localized: "result.wifi.joined", defaultValue: "Joined \(info.ssid).", bundle: .module)
         case .alreadyJoined:
-            notice = String(localized: "result.wifi.already", defaultValue: "You're already on \(info.ssid).", bundle: .module)
+            notice = String(localized: "result.wifi.already", defaultValue: "You’re already on \(info.ssid).", bundle: .module)
         case .declined:
             notice = String(localized: "result.wifi.declined", defaultValue: "Not joined.", bundle: .module)
         case .failed:
-            notice = String(localized: "result.wifi.failed", defaultValue: "Couldn't join. Try Settings › Wi-Fi.", bundle: .module)
+            notice = String(localized: "result.wifi.failed", defaultValue: "Couldn’t join. Try Settings › Wi-Fi.", bundle: .module)
         }
     }
 }

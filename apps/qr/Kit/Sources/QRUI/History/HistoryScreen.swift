@@ -46,7 +46,7 @@ public struct HistoryScreen: View {
             }
         }
         .sheet(item: $exportFile, onDismiss: removeExportFile) { file in HistoryExportSheet(file: file) }
-        .alert(String(localized: "history.export.failed", defaultValue: "The export didn't work. Try again.", bundle: .module),
+        .alert(String(localized: "history.export.failed", defaultValue: "The export didn’t work. Try again.", bundle: .module),
                isPresented: $exportFailed) {
             Button(String(localized: "history.ok", defaultValue: "OK", bundle: .module), role: .cancel) {}
         }
@@ -61,11 +61,14 @@ public struct HistoryScreen: View {
     private var list: some View {
         List(selection: $selection) {
             if let reason = model.historyReadOnlyReason, model.historyIsReadOnly {
-                Section { Text(reason).font(.callout).foregroundStyle(Tokens.muted) }
+                Section { Text(reason).textRole(.secondary) }
             }
             if HistoryEmptyState.showsLockedNote(itemCount: model.historyCount, keepHistory: model.keepsHistory,
                                                  locked: model.historyIsLocked, readOnly: model.historyIsReadOnly) {
                 Section { lockedNote }
+            }
+            if !isSearching && !editMode.isEditing {
+                Section { summary.bareListRow() }
             }
             Section {
                 ForEach(shown) { item in
@@ -122,8 +125,27 @@ public struct HistoryScreen: View {
             }
             Button(String(localized: "history.cancel", defaultValue: "Cancel", bundle: .module), role: .cancel) {}
         } message: {
-            Text(String(localized: "history.deleteSelected.message", defaultValue: "This can't be undone.", bundle: .module))
+            Text(String(localized: "history.deleteSelected.message", defaultValue: "This can’t be undone.", bundle: .module))
         }
+    }
+
+    /// Summary tiles over the list: what was scanned, what was made, how many warned.
+    private var summary: some View {
+        let items = model.historyItems
+        let scanned = items.filter { $0.kind == .scanned }.count
+        let made = items.count - scanned
+        let warned = items.filter { $0.level != .normal }.count
+        return StatGrid {
+            StatTile(title: String(localized: "history.summary.scanned", defaultValue: "Scanned", bundle: .module),
+                     value: scanned.formatted(), systemImage: "qrcode.viewfinder")
+            StatTile(title: String(localized: "history.summary.made", defaultValue: "Made", bundle: .module),
+                     value: made.formatted(), systemImage: "qrcode")
+            StatTile(title: String(localized: "history.summary.warned", defaultValue: "Warnings", bundle: .module),
+                     value: warned.formatted(), systemImage: "exclamationmark.triangle")
+        }
+        .padding(.bottom, Tokens.Space.s)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String(localized: "history.summary.a11y", defaultValue: "Summary", bundle: .module))
     }
 
     private struct SearchTrigger: Equatable {
@@ -133,7 +155,7 @@ public struct HistoryScreen: View {
 
     private var lockedNote: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s) {
-            Text(HistoryScreen.lockedText).font(.callout).foregroundStyle(.primary)
+            Text(HistoryScreen.lockedText).textRole(.body)
             unlockButton
         }
     }
@@ -193,12 +215,12 @@ public struct HistoryScreen: View {
 
     private var readOnlyView: some View {
         ContentUnavailableView {
-            Label(String(localized: "history.readOnly.title", defaultValue: "History can't be read", bundle: .module),
+            Label(String(localized: "history.readOnly.title", defaultValue: "History can’t be read", bundle: .module),
                   systemImage: "exclamationmark.triangle")
         } description: {
             Text(model.historyReadOnlyReason ?? String(
                 localized: "history.readOnly.fallback",
-                defaultValue: "This version can't read the saved history, so it is left as it is.", bundle: .module))
+                defaultValue: "This version can’t read the saved history, so it is left as it is.", bundle: .module))
         }
         .accessibilityIdentifier(QRAccessibilityID.historyList)
     }

@@ -69,21 +69,44 @@ public struct ScanScreen: View {
 
     // MARK: Layout
 
+    /// Debug builds only: the camera layout over a black stand-in, for the simulator's tour.
+    private static var cameraStandIn: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains(QRLaunchArgument.cameraStandIn)
+        #else
+        false
+        #endif
+    }
+
+    private var showsCamera: Bool { availability == .available || Self.cameraStandIn }
+
+    /// A tool screen (polish guide §5.1): the camera fills the screen under the bar, the frame
+    /// says where the code goes, and the controls sit on one glass platter within thumb reach.
     @ViewBuilder
     private var content: some View {
-        if availability == .available {
-            VStack(spacing: Tokens.Space.m) {
-                camera
-                statusLine
-                actions
+        if showsCamera {
+            ZStack {
+                camera.ignoresSafeArea(edges: [.bottom, .horizontal])
+                VStack(spacing: Tokens.Space.l) {
+                    Spacer(minLength: Tokens.Space.m)
+                    ViewfinderFrame(surface: .camera)
+                        .frame(maxWidth: 280, maxHeight: 280)
+                    hint
+                    Spacer(minLength: Tokens.Space.m)
+                    statusLine
+                    controls
+                }
+                .padding(.horizontal, Tokens.Space.m)
+                .padding(.bottom, Tokens.Space.m)
             }
-            .padding(Tokens.Space.m)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Tokens.paper, for: .navigationBar)
         } else {
             ScrollView {
-                VStack(spacing: Tokens.Space.m) {
+                VStack(spacing: Tokens.Space.l) {
                     fallbackHeader
                     statusLine
-                    actions
+                    controls
                 }
                 .padding(Tokens.Space.m)
             }
@@ -91,73 +114,102 @@ public struct ScanScreen: View {
         }
     }
 
+    @ViewBuilder
     private var camera: some View {
-        ScannerView(
-            isActive: !sheetIsUp && scenePhase == .active,
-            onCode: { code in Task { await present(code) } },
-            onMultipleChange: { many in
-                multipleInView = many
-                if many {
-                    AccessibilityNotification.Announcement(Self.tapACodeText).post()
-                }
-            },
-            onStartFailure: { _ in availability = .unsupported }
-        )
-        .clipShape(RoundedRectangle(cornerRadius: Tokens.Radius.card))
-        .frame(minHeight: 220)
-        .accessibilityLabel(String(localized: "scan.camera.a11y", defaultValue: "Camera viewfinder for scanning codes", bundle: .module))
-        .overlay(alignment: .top) {
-            if multipleInView {
-                Text(Self.tapACodeText)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                    .padding(.horizontal, Tokens.Space.m)
-                    .padding(.vertical, Tokens.Space.s)
-                    .background(Tokens.card, in: Capsule())
-                    .padding(Tokens.Space.m)
-                    .transition(reduceMotion ? .identity : .opacity)
+        if Self.cameraStandIn && availability != .available {
+            Rectangle().fill(Color.black)
+                .accessibilityLabel(String(localized: "scan.camera.a11y", defaultValue: "Camera viewfinder for scanning codes", bundle: .module))
+        } else {
+            ScannerView(
+                isActive: !sheetIsUp && scenePhase == .active,
+                onCode: { code in Task { await present(code) } },
+                onMultipleChange: { many in
+                    multipleInView = many
+                    if many {
+                        AccessibilityNotification.Announcement(Self.tapACodeText).post()
+                    }
+                },
+                onStartFailure: { _ in availability = .unsupported }
+            )
+            .accessibilityLabel(String(localized: "scan.camera.a11y", defaultValue: "Camera viewfinder for scanning codes", bundle: .module))
+        }
+    }
+
+    /// One short line under the frame: what to do, or "Tap a code" when several are in view.
+    private var hint: some View {
+        Text(multipleInView ? Self.tapACodeText : Self.pointText)
+            .textRole(.rowTitle, emphasized: true)
+            .foregroundStyle(.primary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, Tokens.Space.m)
+            .padding(.vertical, Tokens.Space.s)
+            .background(.regularMaterial, in: Capsule())
+            .contentTransition(.opacity)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: multipleInView)
+            .accessibilityHidden(!multipleInView)
+    }
+
+    /// Photo and Paste flank the torch, the one control people reach for while aiming.
+    private var controls: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: Tokens.Space.m) {
+                photoButton
+                if showsCamera && torch.isAvailable { Spacer(minLength: 0); torchButton; Spacer(minLength: 0) }
+                pasteButton
+            }
+            VStack(spacing: Tokens.Space.ms) {
+                if showsCamera && torch.isAvailable { torchButton }
+                photoButton
+                pasteButton
             }
         }
-        .overlay(alignment: .bottomTrailing) {
-            if torch.isAvailable { torchButton.padding(Tokens.Space.m) }
-        }
-        .animation(reduceMotion ? nil : .default, value: multipleInView)
+        .padding(Tokens.Space.ms)
+        .frame(maxWidth: 480)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Tokens.Radius.card * 2, style: .continuous))
     }
 
     private var torchButton: some View {
         Button { torch.toggle() } label: {
             Image(systemName: torch.isOn ? "flashlight.on.fill" : "flashlight.off.fill")
-                .font(.title2)
-                .foregroundStyle(.primary)
-                .frame(minWidth: 44, minHeight: 44)
-                .background(Tokens.card, in: Circle())
+                .textRole(.title)
+                .foregroundStyle(torch.isOn ? Tokens.onInk : Color.primary)
+                .frame(width: 64, height: 64)
+                .background(torch.isOn ? Tokens.ink : Tokens.card, in: Circle())
+                .contentShape(Circle())
         }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: torch.isOn)
         .accessibilityLabel(String(localized: "scan.torch", defaultValue: "Torch", bundle: .module))
         .accessibilityValue(torch.isOn
             ? String(localized: "scan.torch.on", defaultValue: "On", bundle: .module)
             : String(localized: "scan.torch.off", defaultValue: "Off", bundle: .module))
     }
 
+    /// No camera: the same frame on paper, holding the reason, so the screen still reads as a scanner.
     private var fallbackHeader: some View {
-        VStack(spacing: Tokens.Space.s) {
-            Image(systemName: availability == .unsupported ? "photo.on.rectangle" : "camera.fill")
-                .font(.largeTitle)
-                .foregroundStyle(Tokens.muted)
-                .accessibilityHidden(true)
+        VStack(spacing: Tokens.Space.l) {
+            ZStack {
+                ViewfinderFrame(surface: .paper)
+                Image(systemName: availability == .denied || availability == .restricted ? "camera.fill" : "photo.on.rectangle")
+                    .glyph()
+            }
+            .frame(maxWidth: 220, maxHeight: 220)
+            .padding(.top, Tokens.Space.l)
             Text(fallbackText)
-                .font(.body)
+                .textRole(.body)
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
             if availability == .denied {
                 Button(String(localized: "scan.denied.settings", defaultValue: "Open Settings", bundle: .module)) {
                     if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .sevenProminentButton()
+                .controlSize(.extraLarge)
+                .buttonBorderShape(.capsule)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, Tokens.Space.l)
     }
 
     private var fallbackText: String {
@@ -172,7 +224,7 @@ public struct ScanScreen: View {
                           bundle: .module)
         default:
             return String(localized: "scan.unsupported.text",
-                          defaultValue: "This device can't scan with the camera. You can still scan a photo or what you copied.",
+                          defaultValue: "This device can’t scan with the camera. You can still scan a photo or what you copied.",
                           bundle: .module)
         }
     }
@@ -181,28 +233,25 @@ public struct ScanScreen: View {
     private var statusLine: some View {
         if let message {
             Text(message)
-                .font(.callout)
                 .foregroundStyle(.primary)
+                .textRole(.secondary)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
+                .padding(.horizontal, Tokens.Space.m)
+                .padding(.vertical, Tokens.Space.s)
+                .background(.regularMaterial, in: Capsule())
         } else if working {
-            ProgressView().accessibilityLabel(String(localized: "scan.working", defaultValue: "Reading", bundle: .module))
+            ProgressView()
+                .padding(Tokens.Space.s)
+                .background(.regularMaterial, in: Circle())
+                .accessibilityLabel(String(localized: "scan.working", defaultValue: "Reading", bundle: .module))
         }
-    }
-
-    private var actions: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: Tokens.Space.m) { photoButton; pasteButton }
-            VStack(spacing: Tokens.Space.m) { photoButton; pasteButton }
-        }
-        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var photoButton: some View {
         PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
             Label(String(localized: "scan.photo", defaultValue: "Photo", bundle: .module), systemImage: "photo")
         }
-        .buttonStyle(.bordered)
+        .modifier(SevenButtonStyle(kind: .bordered))
         .buttonBorderShape(.capsule)
         .labelStyle(.titleAndIcon)
         .controlSize(.regular)
@@ -243,6 +292,9 @@ public struct ScanScreen: View {
 
     // MARK: Text
 
+    private static var pointText: String {
+        String(localized: "scan.point", defaultValue: "Point at a code", bundle: .module)
+    }
     private static var tapACodeText: String {
         String(localized: "scan.multiple", defaultValue: "Tap a code", bundle: .module)
     }
@@ -253,7 +305,7 @@ public struct ScanScreen: View {
         String(localized: "scan.photo.none", defaultValue: "No code found in this image", bundle: .module)
     }
     private static var photoFailedText: String {
-        String(localized: "scan.photo.failed", defaultValue: "That photo couldn't be read", bundle: .module)
+        String(localized: "scan.photo.failed", defaultValue: "That photo couldn’t be read", bundle: .module)
     }
 
     // MARK: Actions

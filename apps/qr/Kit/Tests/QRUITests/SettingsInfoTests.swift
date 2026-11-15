@@ -21,7 +21,7 @@ import Testing
         #expect(entries[3].who == "Apple, through StoreKit")
         #expect(entries[4].who == "GitHub, where our public code lives")
         #expect(entries[4].sent == "A request for one file. Nothing about you or what you scanned.")
-        #expect(NetworkContactContent.closing == "Anything not listed here doesn't happen.")
+        #expect(NetworkContactContent.closing == "Anything not listed here doesn’t happen.")
         #expect(NetworkContactContent.privacyLabel == "App Store privacy label: Data Not Collected.")
     }
 

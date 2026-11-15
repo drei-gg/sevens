@@ -43,17 +43,17 @@ public enum SignalText {
         case .lookalikeBrand:
             if let brand = arg(args, "brand") {
                 return String(localized: "signal.lookalikeBrand.brand",
-                              defaultValue: "This address imitates the look of \(brand), and it isn't one we know for them.", bundle: .module)
+                              defaultValue: "This address imitates the look of \(brand), and it isn’t one we know for them.", bundle: .module)
             }
             return String(localized: "signal.lookalikeBrand",
-                          defaultValue: "This address imitates the look of a well-known brand, and it isn't one we know for them.", bundle: .module)
+                          defaultValue: "This address imitates the look of a well-known brand, and it isn’t one we know for them.", bundle: .module)
         case .brandInDomain:
             if let brand = arg(args, "brand") {
                 return String(localized: "signal.brandInDomain.brand",
-                              defaultValue: "The name \(brand) appears in this address, but it isn't one we know for them.", bundle: .module)
+                              defaultValue: "The name \(brand) appears in this address, but it isn’t one we know for them.", bundle: .module)
             }
             return String(localized: "signal.brandInDomain",
-                          defaultValue: "A well-known brand's name appears in this address, but it isn't one we know for them.",
+                          defaultValue: "A well-known brand’s name appears in this address, but it isn’t one we know for them.",
                           bundle: .module)
         case .nearBrand:
             if let brand = arg(args, "brand") {
@@ -71,7 +71,7 @@ public enum SignalText {
                           defaultValue: "This is a shortened link, so its real destination is hidden until you follow it.", bundle: .module)
         case .plainHTTP:
             return String(localized: "signal.plainHTTP",
-                          defaultValue: "This link isn't encrypted, so anyone on the network could read or change what you send.",
+                          defaultValue: "This link isn’t encrypted, so anyone on the network could read or change what you send.",
                           bundle: .module)
         case .riskyTLD:
             if let ending = arg(args, "tld").map(withoutLeadingDots), !ending.isEmpty {
@@ -102,15 +102,15 @@ public enum SignalText {
                           defaultValue: "This payment code failed its built-in check. It may be damaged or altered.", bundle: .module)
         case .tlsProblem:
             return String(localized: "signal.tlsProblem",
-                          defaultValue: "The site's certificate didn't check out, so this connection can't be trusted.", bundle: .module)
+                          defaultValue: "The site’s certificate didn’t check out, so this connection can’t be trusted.", bundle: .module)
         case .secretFormBrandMismatch:
             let what = secret(args["kind"])
             if let brand = arg(args, "brand") {
                 return String(localized: "signal.secretFormBrandMismatch.brand",
-                              defaultValue: "This page asks for \(what) and mentions \(brand), but it isn't their site.", bundle: .module)
+                              defaultValue: "This page asks for \(what) and mentions \(brand), but it isn’t their site.", bundle: .module)
             }
             return String(localized: "signal.secretFormBrandMismatch",
-                          defaultValue: "This page asks for \(what) and mentions a well-known brand, but it isn't their site.",
+                          defaultValue: "This page asks for \(what) and mentions a well-known brand, but it isn’t their site.",
                           bundle: .module)
         case .domainVeryNew:
             if let days = dayCount(args) {
@@ -121,7 +121,7 @@ public enum SignalText {
                           defaultValue: "This domain was registered within the last month.", bundle: .module)
         case .redirectsToHTTP:
             return String(localized: "signal.redirectsToHTTP",
-                          defaultValue: "This link sends you on to a page that isn't encrypted.", bundle: .module)
+                          defaultValue: "This link sends you on to a page that isn’t encrypted.", bundle: .module)
         case .redirectLeavesWeb:
             if let scheme = arg(args, "scheme") {
                 return String(localized: "signal.redirectLeavesWeb.scheme",
@@ -157,27 +157,27 @@ public enum SignalText {
                           defaultValue: "The code had no prefix, so it was read as an https web address.", bundle: .module)
         case .sharedHostingDomain:
             return String(localized: "signal.sharedHostingDomain",
-                          defaultValue: "This site sits on a shared hosting domain, so the domain's age says little about it.", bundle: .module)
+                          defaultValue: "This site sits on a shared hosting domain, so the domain’s age says little about it.", bundle: .module)
         case .needsJavaScript:
             return String(localized: "signal.needsJavaScript",
-                          defaultValue: "The page shows almost nothing without JavaScript, so its contents couldn't be read.", bundle: .module)
+                          defaultValue: "The page shows almost nothing without JavaScript, so its contents couldn’t be read.", bundle: .module)
         case .ageUnknown:
             return String(localized: "signal.ageUnknown",
-                          defaultValue: "The age of this domain couldn't be found.", bundle: .module)
+                          defaultValue: "The age of this domain couldn’t be found.", bundle: .module)
         case .peekIncomplete:
             return String(localized: "signal.peekIncomplete",
-                          defaultValue: "Peek didn't finish, so what it shows may be incomplete.", bundle: .module)
+                          defaultValue: "Peek didn’t finish, so what it shows may be incomplete.", bundle: .module)
         case .brandOtherEnding:
             if let brand = arg(args, "brand") {
                 return String(localized: "signal.brandOtherEnding.brand",
-                              defaultValue: "This isn't an address we know for \(brand).", bundle: .module)
+                              defaultValue: "This isn’t an address we know for \(brand).", bundle: .module)
             }
             return String(localized: "signal.brandOtherEnding",
-                          defaultValue: "This uses a well-known brand's name, but it isn't an address we know for them.",
+                          defaultValue: "This uses a well-known brand’s name, but it isn’t an address we know for them.",
                           bundle: .module)
         case .unknownEnding:
             return String(localized: "signal.unknownEnding",
-                          defaultValue: "We don't recognize this domain ending.", bundle: .module)
+                          defaultValue: "We don’t recognize this domain ending.", bundle: .module)
         case .knownByYou:
             return String(localized: "signal.knownByYou",
                           defaultValue: "You told us you know this address.", bundle: .module)

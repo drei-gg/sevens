@@ -16,7 +16,7 @@ enum PeekViewText {
     /// TLS version, or why there is none.
     static func connection(_ capture: PeekCapture) -> String {
         if capture.stoppedBecause == .tlsFailure {
-            return String(localized: "peek.connection.tlsFailure", defaultValue: "The site's certificate was rejected", bundle: .module)
+            return String(localized: "peek.connection.tlsFailure", defaultValue: "The site’s certificate was rejected", bundle: .module)
         }
         if let last = capture.hops.last, last.status == nil, last.url.lowercased().hasPrefix("http://") {
             return String(localized: "peek.connection.http", defaultValue: "Not fetched: plain http", bundle: .module)

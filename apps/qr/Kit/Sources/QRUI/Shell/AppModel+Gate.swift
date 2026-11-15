@@ -21,7 +21,7 @@ public enum QRGate {
     public static func unlockContent(appName: String = QRGate.appName()) -> UnlockContent {
         UnlockContent(appName: appName, features: [
             String(localized: "gate.feature.peek",
-                   defaultValue: "Peek: follow a link's redirects and see what its page asks for before you open it", bundle: .module),
+                   defaultValue: "Peek: follow a link’s redirects and see what its page asks for before you open it", bundle: .module),
             String(localized: "gate.feature.make",
                    defaultValue: "Make QR codes from text, links, Wi-Fi, contacts and more, and export them", bundle: .module),
             String(localized: "gate.feature.extension",
@@ -37,7 +37,7 @@ public enum QRGate {
             title: String(localized: "gate.byb.title", defaultValue: "Before you buy", bundle: .module),
             paragraphs: [
                 .init(String(localized: "gate.byb.p1",
-                             defaultValue: "Your iPhone already scans QR codes. Point the Camera at one, or use Code Scanner in Control Center. If that's all you need, delete this app and keep your money.",
+                             defaultValue: "Your iPhone already scans QR codes. Point the Camera at one, or use Code Scanner in Control Center. If that’s all you need, delete this app and keep your money.",
                              bundle: .module)),
                 .init(String(localized: "gate.byb.p2",
                              defaultValue: "What this adds: it checks where a code really goes before you open it, shows who a payment code pays, makes codes from anything you share, and remembers what you scanned. Free for 7 days from when you tap Start, no card. Then {price} once, if you want to keep it.",

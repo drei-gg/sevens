@@ -45,8 +45,42 @@ enum WiFiJoinPlan: Equatable, Sendable {
     case cannotJoin
 }
 
+/// How a result's actions are laid out: one prominent action and at most one bordered one,
+/// pinned at the bottom of the sheet, and the rest as chips (polish guide §5.1, result sheet).
+struct ResultActionLayout: Equatable, Sendable {
+    var primary: ResultAction?
+    var secondary: ResultAction?
+    var chips: [ResultAction]
+}
+
 /// Pure decisions about the result sheet's buttons.
 enum ResultActionPlan {
+    /// Copy, Share and Make a code are always one-tap chips; the payload's own action leads.
+    static let chipActions: Set<ResultAction> = [.copy, .copyDetails, .share, .makeCode]
+
+    /// Splits `actions` (in `actions(for:)` order) into the pinned pair and the chips. A link
+    /// leads with Open and offers Peek beside it; a likely scam leads with Peek instead, and Open
+    /// moves to the chips (it still asks first, D8). With no action of its own (plain text, an
+    /// EMVCo payment), Copy becomes the primary; Share and Make a code never lead.
+    static func layout(_ actions: [ResultAction], level: Level) -> ResultActionLayout {
+        var main = actions.filter { !chipActions.contains($0) }
+        var chips = actions.filter { chipActions.contains($0) }
+        if main.contains(.open), main.contains(.peek) {
+            let rest = main.filter { $0 != .open && $0 != .peek }
+            if level == .likelyScam {
+                main = [.peek] + rest
+                chips.insert(.open, at: 0)
+            } else {
+                main = [.open, .peek] + rest
+            }
+        }
+        if main.isEmpty, let first = chips.first, first == .copy || first == .copyDetails {
+            main = [chips.removeFirst()]
+        }
+        if main.count > 2 { chips = Array(main.dropFirst(2)) + chips }
+        return ResultActionLayout(primary: main.first, secondary: main.dropFirst().first, chips: chips)
+    }
+
     /// The buttons for a payload, in display order.
     static func actions(for payload: Payload, capabilities: ResultCapabilities, hasText: Bool = true) -> [ResultAction] {
         var list: [ResultAction] = []

@@ -75,9 +75,9 @@ enum ListsAboutText {
     static func sentence(for failure: ListsUpdateFailure) -> String {
         switch failure {
         case .unreachable:
-            return String(localized: "lists.result.unreachable", defaultValue: "Couldn't reach GitHub. Your lists are unchanged.", bundle: .module)
+            return String(localized: "lists.result.unreachable", defaultValue: "Couldn’t reach GitHub. Your lists are unchanged.", bundle: .module)
         case .saveFailed:
-            return String(localized: "lists.result.saveFailed", defaultValue: "Couldn't save the newer lists. Your lists are unchanged.", bundle: .module)
+            return String(localized: "lists.result.saveFailed", defaultValue: "Couldn’t save the newer lists. Your lists are unchanged.", bundle: .module)
         case .refused(let reason):
             switch reason {
             case .notNewer:
@@ -85,13 +85,13 @@ enum ListsAboutText {
             case .tooLarge:
                 return String(localized: "lists.result.tooLarge", defaultValue: "The download was larger than expected, so we kept your lists.", bundle: .module)
             case .badSignature:
-                return String(localized: "lists.result.signature", defaultValue: "The download didn't carry a valid signature, so we kept your lists.", bundle: .module)
+                return String(localized: "lists.result.signature", defaultValue: "The download didn’t carry a valid signature, so we kept your lists.", bundle: .module)
             case .unreadable:
-                return String(localized: "lists.result.unreadable", defaultValue: "The download couldn't be read, so we kept your lists.", bundle: .module)
+                return String(localized: "lists.result.unreadable", defaultValue: "The download couldn’t be read, so we kept your lists.", bundle: .module)
             case .unknownSchema:
                 return String(localized: "lists.result.schema", defaultValue: "These lists are for a newer version of the app, so we kept yours.", bundle: .module)
             case .badShape:
-                return String(localized: "lists.result.shape", defaultValue: "The download didn't pass our checks, so we kept your lists.", bundle: .module)
+                return String(localized: "lists.result.shape", defaultValue: "The download didn’t pass our checks, so we kept your lists.", bundle: .module)
             }
         }
     }

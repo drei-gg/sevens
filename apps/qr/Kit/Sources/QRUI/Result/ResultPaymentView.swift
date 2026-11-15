@@ -41,7 +41,7 @@ struct ResultPaymentView: View {
         case .valid:
             return String(localized: "result.payment.checksumValid", defaultValue: "Checksum matches", bundle: .module)
         case .invalid:
-            return String(localized: "result.payment.checksumInvalid", defaultValue: "Checksum doesn't match. The code may be damaged or altered.", bundle: .module)
+            return String(localized: "result.payment.checksumInvalid", defaultValue: "Checksum doesn’t match. The code may be damaged or altered.", bundle: .module)
         case .absent:
             return info.format == .emv
                 ? String(localized: "result.payment.checksumAbsent", defaultValue: "This code has no checksum", bundle: .module)
@@ -75,27 +75,27 @@ struct ResultPaymentView: View {
         ResultCard(title: String(localized: "result.payment.title", defaultValue: "Who you would pay", bundle: .module)) {
             VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                 Text(payee)
-                    .font(.largeTitle.weight(.bold)).foregroundStyle(.primary)
+                    .textRole(.title).foregroundStyle(.primary)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
                 if let alternate = info.extra["alternateName"], !alternate.isEmpty {
-                    Text(alternate).font(.title3).foregroundStyle(Tokens.muted)
+                    Text(alternate).textRole(.body).foregroundStyle(Tokens.muted)
                         .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                 }
             }
             if let partyText {
-                Text(partyText).font(.headline).foregroundStyle(.primary)
+                Text(partyText).textRole(.rowTitle, emphasized: true).foregroundStyle(.primary)
             } else {
                 Text(String(localized: "result.payment.checkMatch", defaultValue: "Check that this is who you meant to pay.", bundle: .module))
-                    .font(.headline).foregroundStyle(.primary)
+                    .textRole(.rowTitle, emphasized: true).foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             ResultField(label: String(localized: "result.payment.amount", defaultValue: "Amount", bundle: .module), value: amountText)
             if let network = info.network, !network.isEmpty {
                 ResultField(label: String(localized: "result.payment.network", defaultValue: "Network", bundle: .module), value: network)
             }
-            if let kindText { Text(kindText).font(.subheadline).foregroundStyle(Tokens.muted) }
+            if let kindText { Text(kindText).textRole(.caption) }
             if let checksumText {
                 Label {
                     Text(checksumText).foregroundStyle(.primary)
@@ -103,7 +103,7 @@ struct ResultPaymentView: View {
                     Image(systemName: info.checksum == .invalid ? "xmark.octagon" : "checkmark.circle")
                         .foregroundStyle(info.checksum == .invalid ? Tokens.danger : Tokens.muted)
                 }
-                .font(.subheadline)
+                .textRole(.caption)
             }
             let rows = extras
             if !rows.isEmpty {

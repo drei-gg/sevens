@@ -35,7 +35,7 @@ enum MakeFormIssue: Error, Hashable, Sendable {
         case .required:
             return String(localized: "make.issue.required", defaultValue: "Fill in this field to make a code.", bundle: .module)
         case .badEmail:
-            return String(localized: "make.issue.email", defaultValue: "This doesn't look like an email address. Use the form name@example.com.", bundle: .module)
+            return String(localized: "make.issue.email", defaultValue: "This doesn’t look like an email address. Use the form name@example.com.", bundle: .module)
         case .badPhone:
             return String(localized: "make.issue.phone", defaultValue: "Use digits, and + ( ) - . or spaces. At least 3 digits.", bundle: .module)
         case .badLatitude:
@@ -43,7 +43,7 @@ enum MakeFormIssue: Error, Hashable, Sendable {
         case .badLongitude:
             return String(localized: "make.issue.longitude", defaultValue: "Longitude is a number from -180 to 180.", bundle: .module)
         case .endBeforeStart:
-            return String(localized: "make.issue.endBeforeStart", defaultValue: "The event can't end before it starts.", bundle: .module)
+            return String(localized: "make.issue.endBeforeStart", defaultValue: "The event can’t end before it starts.", bundle: .module)
         }
     }
 }

@@ -27,7 +27,7 @@ struct ResultSignalList: View {
                             .foregroundStyle(Tokens.muted)
                             .accessibilityHidden(true)
                         Text(row.sentence)
-                            .font(.body)
+                            .textRole(.body)
                             .foregroundStyle(row.isInfo ? Tokens.muted : Color.primary)
                             .fixedSize(horizontal: false, vertical: true)
                     }

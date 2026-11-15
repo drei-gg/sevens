@@ -210,7 +210,7 @@ public actor HistoryStore {
         case .unknownSchema, .unreadable:
             readOnly = true
             reason = String(localized: "history.readOnly.reason",
-                            defaultValue: "This version can't read the saved history, so new scans aren't being saved.", bundle: .module)
+                            defaultValue: "This version can’t read the saved history, so new scans aren’t being saved.", bundle: .module)
         }
     }
 

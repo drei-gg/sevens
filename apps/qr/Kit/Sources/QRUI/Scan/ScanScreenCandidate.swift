@@ -46,9 +46,9 @@ struct ScanScreenPickList: View {
             List(candidates) { candidate in
                 Button { onPick(candidate) } label: {
                     VStack(alignment: .leading, spacing: Tokens.Space.xs) {
-                        Text(candidate.typeName).font(.headline).foregroundStyle(.primary)
+                        Text(candidate.typeName).textRole(.rowTitle, emphasized: true).foregroundStyle(.primary)
                         if let domain = candidate.domain {
-                            Text(domain).font(.subheadline).foregroundStyle(Tokens.muted)
+                            Text(domain).textRole(.secondary)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

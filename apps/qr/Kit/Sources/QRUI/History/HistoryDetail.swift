@@ -34,7 +34,7 @@ public struct HistoryDetail: View {
             Section { verdictHeader(shown) }
             Section {
                 Text(shown.payload)
-                    .font(.body.monospaced())
+                    .textRole(.body).monospaced()
                     .foregroundStyle(.primary)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -65,7 +65,7 @@ public struct HistoryDetail: View {
                 .disabled(checking)
             } footer: {
                 Text(String(localized: "history.detail.checkAgain.footer",
-                            defaultValue: "Runs today's checks on this code. The verdict above is the one it got when it was saved.",
+                            defaultValue: "Runs today’s checks on this code. The verdict above is the one it got when it was saved.",
                             bundle: .module))
                     .foregroundStyle(Tokens.muted)
             }
@@ -95,7 +95,7 @@ public struct HistoryDetail: View {
             }
             Button(String(localized: "history.cancel", defaultValue: "Cancel", bundle: .module), role: .cancel) {}
         }
-        .alert(String(localized: "history.detail.note.failed", defaultValue: "The note wasn't saved. Try again.", bundle: .module),
+        .alert(String(localized: "history.detail.note.failed", defaultValue: "The note wasn’t saved. Try again.", bundle: .module),
                isPresented: $noteSaveFailed) {
             Button(String(localized: "history.ok", defaultValue: "OK", bundle: .module), role: .cancel) {}
         }
@@ -108,18 +108,25 @@ public struct HistoryDetail: View {
         let typeName = VerdictText.typeName(for: shown.typeID)
         let signals = HistoryVerdictSignals.signals(from: shown.signalIDs)
         let reasons = SignalText.sentences(for: signals.filter { $0.severity != .info })
-        return VStack(alignment: .leading, spacing: Tokens.Space.s) {
-            Label {
-                Text(VerdictText.title(for: shown.level)).font(.title2.weight(.semibold)).foregroundStyle(.primary)
-            } icon: {
-                Image(systemName: style.symbolName).foregroundStyle(style.color)
+        return VStack(alignment: .leading, spacing: Tokens.Space.ms) {
+            // The same verdict block as the result sheet: big symbol, the word as the hero.
+            VStack(spacing: Tokens.Space.s) {
+                Image(systemName: style.symbolName + ".fill")
+                    .textRole(.display)
+                    .foregroundStyle(style.color)
+                Text(VerdictText.title(for: shown.level)).textRole(.hero).foregroundStyle(.primary)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.6)
+                Text(String(localized: "history.detail.atTheTimeType",
+                            defaultValue: "\(typeName) · the verdict when it was saved", bundle: .module))
+                    .textRole(.caption)
+                    .multilineTextAlignment(.center)
             }
-            Text(typeName).font(.headline).foregroundStyle(.primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Tokens.Space.s)
             ForEach(reasons, id: \.self) { reason in
-                Text(reason).font(.callout).foregroundStyle(.primary)
+                Text(reason).textRole(.body).fixedSize(horizontal: false, vertical: true)
             }
-            Text(String(localized: "history.detail.atTheTime", defaultValue: "The verdict when it was saved", bundle: .module))
-                .font(.footnote).foregroundStyle(Tokens.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
@@ -129,7 +136,7 @@ public struct HistoryDetail: View {
     private var noteSection: some View {
         Section {
             TextEditor(text: $draft)
-                .font(.body)
+                .textRole(.body)
                 .frame(minHeight: 120)
                 .accessibilityLabel(String(localized: "history.detail.note", defaultValue: "Note", bundle: .module))
                 .onChange(of: draft) { _, value in

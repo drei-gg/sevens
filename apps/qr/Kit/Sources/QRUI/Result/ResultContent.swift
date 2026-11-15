@@ -11,6 +11,7 @@ struct ResultContent: View {
     let afterSignals: AnyView?
     @State private var center: ResultActionCenter
     @Environment(\.openURL) private var openURL
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     init(analysis: Analysis, capabilities: ResultCapabilities = .current(), afterSignals: AnyView? = nil) {
         self.analysis = analysis
@@ -25,7 +26,16 @@ struct ResultContent: View {
         return .join
     }
 
+    private var actions: [ResultAction] {
+        ResultActionPlan.actions(for: analysis.payload, capabilities: center.capabilities,
+                                 hasText: analysis.code.text != nil)
+    }
+
+    /// Nothing is pinned at accessibility sizes: every action stacks at the end instead.
+    private var pinsActions: Bool { !typeSize.isAccessibilitySize }
+
     var body: some View {
+        let layout = ResultActionPlan.layout(actions, level: analysis.level)
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.l) {
                 VerdictHeader(level: analysis.level, typeName: VerdictText.typeName(for: analysis.payload.typeID),
@@ -33,17 +43,26 @@ struct ResultContent: View {
                 ResultSignalList(signals: analysis.signals)
                 if let afterSignals { afterSignals }
                 ResultPayloadView(payload: analysis.payload, wifiPlan: wifiPlan)
+                if pinsActions {
+                    ResultActionChips(actions: layout.chips, analysis: analysis, center: center)
+                }
                 ResultEmbeddedList(embedded: analysis.embedded)
                 if let notice = center.notice {
-                    Text(notice).font(.subheadline).foregroundStyle(.primary)
+                    Text(notice).textRole(.body)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
-                ResultActionBar(actions: ResultActionPlan.actions(for: analysis.payload, capabilities: center.capabilities,
-                                                                  hasText: analysis.code.text != nil),
-                                analysis: analysis, center: center)
+                if !pinsActions {
+                    ResultActionBar(actions: [layout.primary, layout.secondary].compactMap { $0 } + layout.chips,
+                                    analysis: analysis, center: center)
+                }
             }
             .padding(Tokens.Space.m)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if pinsActions {
+                ResultPinnedActions(layout: layout, analysis: analysis, center: center, quiet: afterSignals != nil)
+            }
         }
         .sevenScreenBackground()
         .navigationTitle(String(localized: "result.title", defaultValue: "Result", bundle: .module))
@@ -55,7 +74,7 @@ struct ResultContent: View {
         ) { request in
             Button(String(localized: "result.confirm.open", defaultValue: "Open \(request.domain) anyway", bundle: .module),
                    role: .destructive) { center.perform(request, openURL: openURL) }
-            Button(String(localized: "result.confirm.cancel", defaultValue: "Don't open", bundle: .module), role: .cancel) {}
+            Button(String(localized: "result.confirm.cancel", defaultValue: "Don’t open", bundle: .module), role: .cancel) {}
         } message: { request in
             Text(String(localized: "result.confirm.message",
                         defaultValue: "This looks like a scam. It would take you to \(request.domain).", bundle: .module))

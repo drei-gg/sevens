@@ -14,7 +14,7 @@ import SevenKit
         ["brand": "Visa", "days": "0", "kind": "card"],
     ]
 
-    static let pressure = ["hurry", "only today", "limited", "don't miss", "last chance"]
+    static let pressure = ["hurry", "only today", "limited", "don’t miss", "don't miss", "last chance"]
 
     static func wordCount(_ text: String) -> Int { text.split(whereSeparator: { $0.isWhitespace }).count }
     static func hasSafe(_ text: String) -> Bool {

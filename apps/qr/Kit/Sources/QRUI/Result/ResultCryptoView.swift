@@ -10,15 +10,15 @@ struct ResultCryptoView: View {
         let groups = info.addressGroups
         ResultCard {
             Text(info.network)
-                .font(.title.bold()).foregroundStyle(.primary)
+                .textRole(.title).foregroundStyle(.primary)
                 .accessibilityAddTraits(.isHeader)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                 Text(info.isLightningInvoice
                      ? String(localized: "result.crypto.invoice", defaultValue: "Invoice", bundle: .module)
                      : String(localized: "result.crypto.address", defaultValue: "Address", bundle: .module))
-                    .font(.caption).foregroundStyle(Tokens.muted)
+                    .textRole(.caption)
                 Text(groups.joined(separator: " "))
-                    .font(.body.monospaced())
+                    .textRole(.body).monospaced()
                     .foregroundStyle(.primary)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)

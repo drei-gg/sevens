@@ -9,13 +9,13 @@ struct ResultEventView: View {
     var body: some View {
         ResultCard {
             Text(info.summary.flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "result.event.noTitle", defaultValue: "Event with no title", bundle: .module))
-                .font(.largeTitle.weight(.bold)).foregroundStyle(.primary)
+                .textRole(.title).foregroundStyle(.primary)
                 .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             if let time = ResultEventFormat.timeText(info) {
                 ResultField(label: String(localized: "result.event.when", defaultValue: "When", bundle: .module), value: time)
                 if let organiser = ResultEventFormat.organiserText(info) {
-                    Text(organiser).font(.subheadline).foregroundStyle(Tokens.muted)
+                    Text(organiser).textRole(.caption)
                 }
             } else {
                 ResultField(label: String(localized: "result.event.when", defaultValue: "When", bundle: .module),

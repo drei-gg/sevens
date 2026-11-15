@@ -34,7 +34,7 @@ enum MakeStyle {
                           defaultValue: "Low contrast (\(value) to 1). Phones may not be able to scan this code.", bundle: .module)
         case .inverted:
             return String(localized: "make.contrast.inverted",
-                          defaultValue: "The code is lighter than its background. Many scanners can't read light-on-dark codes.", bundle: .module)
+                          defaultValue: "The code is lighter than its background. Many scanners can’t read light-on-dark codes.", bundle: .module)
         }
     }
 }

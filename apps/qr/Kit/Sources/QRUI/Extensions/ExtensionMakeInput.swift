@@ -15,7 +15,7 @@ enum ExtensionMakeSource: Equatable, Sendable {
 
 enum ExtensionMakeDecision: Equatable, Sendable {
     case request(MakeRequest)
-    /// "Can't make a code from this file".
+    /// "Can’t make a code from this file".
     case unsupported
 }
 

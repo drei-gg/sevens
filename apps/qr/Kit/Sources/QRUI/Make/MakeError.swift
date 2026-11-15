@@ -16,7 +16,7 @@ public enum MakeError: Error, Sendable, Hashable {
         case .notASCII:
             return String(localized: "make.error.notASCII", defaultValue: "Code 128 only supports plain ASCII characters. Remove accents and symbols, or pick another type.", bundle: .module)
         case .generatorFailed:
-            return String(localized: "make.error.generatorFailed", defaultValue: "The code couldn't be created. Try different content.", bundle: .module)
+            return String(localized: "make.error.generatorFailed", defaultValue: "The code couldn’t be created. Try different content.", bundle: .module)
         }
     }
 }
