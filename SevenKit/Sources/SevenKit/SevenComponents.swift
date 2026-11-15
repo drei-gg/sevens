@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import SevenKitCore
 
 /// Small shared pieces for the SevenKit screens.
@@ -10,8 +11,8 @@ struct SevenListLines: View {
         VStack(alignment: .leading, spacing: Tokens.Space.s) {
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.s) {
-                    Image(systemName: symbol).foregroundStyle(.secondary).accessibilityHidden(true)
-                    Text(line).font(.body).foregroundStyle(.primary)
+                    Image(systemName: symbol).foregroundStyle(Tokens.muted).accessibilityHidden(true)
+                    Text(line).textRole(.body).foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -20,11 +21,14 @@ struct SevenListLines: View {
     }
 }
 
-/// A full-width button. `prominent` is the filled system style; the default is the bordered one,
-/// the same size and shape. Both use the system accent color. Equal weight where two sit together (SPEC §13).
+/// A full-width button. `prominent` is the filled system style in ink; `brand` is the filled
+/// style in brand red, for the Unlock button only; the default is the bordered one, the same size
+/// and shape. Filled labels are set to `onInk`/`onRed` explicitly: the system's automatic white
+/// fails contrast on dark-mode ink and red. Equal weight where two sit together (SPEC §13).
 struct SevenButton: View {
     let title: String
     var prominent = false
+    var brand = false
     var disabled = false
     /// Accessibility identifier for UI tests; empty means none.
     var identifier = ""
@@ -32,10 +36,10 @@ struct SevenButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title).font(.headline).multilineTextAlignment(.center)
+            Text(title).textRole(.rowTitle, emphasized: true).multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, minHeight: 28)
         }
-        .modifier(SevenButtonStyle(prominent: prominent))
+        .modifier(SevenButtonStyle(kind: brand ? .brand : prominent ? .prominent : .bordered))
         .controlSize(.large)
         .accessibilityIdentifier(identifier)
         .disabled(disabled)
@@ -43,11 +47,29 @@ struct SevenButton: View {
     }
 }
 
-private struct SevenButtonStyle: ViewModifier {
-    let prominent: Bool
-    func body(content: Content) -> some View {
-        if prominent { content.buttonStyle(.borderedProminent) } else { content.buttonStyle(.bordered) }
+/// The filled and bordered button styles with the label colors the contrast gate checks
+/// (`Palette.renderedPairs`). Public so apps fill their own prominent buttons the same way;
+/// `scripts/check-rules` rejects a bare `.borderedProminent` outside SevenKit.
+public struct SevenButtonStyle: ViewModifier {
+    public enum Kind: Sendable { case prominent, brand, bordered }
+    let kind: Kind
+    public init(kind: Kind) { self.kind = kind }
+
+    public func body(content: Content) -> some View {
+        switch kind {
+        case .prominent:
+            content.buttonStyle(.borderedProminent).tint(Tokens.ink).foregroundStyle(Tokens.onInk)
+        case .brand:
+            content.buttonStyle(.borderedProminent).tint(Tokens.red).foregroundStyle(Tokens.onRed)
+        case .bordered:
+            content.buttonStyle(.bordered).tint(Tokens.ink)
+        }
     }
+}
+
+public extension View {
+    /// A filled ink button with its `onInk` label (`.borderedProminent` plus the right label color).
+    func sevenProminentButton() -> some View { modifier(SevenButtonStyle(kind: .prominent)) }
 }
 
 /// "Not now", Restore: plain text buttons.
@@ -58,10 +80,10 @@ struct SevenPlainButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title).font(.body).frame(maxWidth: .infinity, minHeight: 44)
+            Text(title).textRole(.body).frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Tokens.muted)
         .disabled(disabled)
         .accessibilityLabel(title)
     }
@@ -99,4 +121,23 @@ enum EntitlementFactsPreset {
         case .pending: return EntitlementFacts(purchasePending: true)
         }
     }
+}
+
+/// Padding for a sheet with no system toolbar, whose title is the first thing in it (Unlock,
+/// Before you buy, Trial ended). Sides and bottom are `Tokens.Space.m`. The top is half a
+/// standard navigation bar, as UIKit sizes one (54 pt on iOS 26), so the title clears the
+/// sheet's rounded corner without a bar drawn above it. Decided with Drei, 13 November 2026:
+/// sheets with a system toolbar let the toolbar place the title; sheets without one use this.
+public extension View {
+    func sevenSheetPadding() -> some View {
+        padding(.horizontal, Tokens.Space.m)
+            .padding(.bottom, Tokens.Space.m)
+            .padding(.top, SheetMetrics.titleTop)
+    }
+}
+
+@MainActor enum SheetMetrics {
+    /// Half the height UIKit gives a standard navigation bar.
+    static let titleTop: CGFloat = UINavigationBar()
+        .sizeThatFits(CGSize(width: 1_000, height: CGFloat.greatestFiniteMagnitude)).height / 2
 }

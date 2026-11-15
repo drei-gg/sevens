@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+"""Update Cleaner's English catalog from c() and native SwiftUI literal copy. Keep plural variants."""
+import json, re
+from pathlib import Path
+root = Path(__file__).resolve().parent.parent
+app = root/'apps/cleaner/App'
+path = app/'Localizable.xcstrings'
+catalog = json.loads(path.read_text()) if path.exists() else {'sourceLanguage':'en','strings':{},'version':'1.0'}
+# SwiftUI extracts native literals at compile time. This also catalogs app-local composition strings.
+pattern = re.compile(r'(?:\bc|Text|Label|Button|Section|NavigationLink|Toggle|Picker|TextField|DisclosureGroup|ContentUnavailableView|\.navigationTitle|\.accessibilityLabel|\.accessibilityHint|\.alert|\.confirmationDialog)\(\s*"((?:[^"\\]|\\.)*)"')
+for source in app.glob('*.swift'):
+    if source.name == 'CleanerTour.swift': continue
+    for match in pattern.finditer(source.read_text()):
+        raw = match[1]
+        if '\\(' in raw: continue  # compiler extraction handles interpolation; counts below use plural keys
+        value = raw.replace('\\n','\n').replace('\\"','"')
+        if not value: continue
+        catalog['strings'][value] = {'comment':'Cleaner interface copy. Preserve the calm, specific tone.','extractionState':'manual','localizations':{'en':{'stringUnit':{'state':'translated','value':value}}}}
+# Runtime-selected category and contact labels do not appear as literal c() arguments.
+for value in ["All","Screenshots","Live Photos","Bursts","HDR","Keep","Later","Remove","Screen recordings","High frame rate","Original","Candidate","First name","Last name","Middle name","Previous last name","Phone","Email","Organization","Birthday","Address","Website","Relationship","Social profile","Messaging","Job title","Record type","Contact photo"]:
+ catalog['strings'].setdefault(value,{'extractionState':'manual','localizations':{'en':{'stringUnit':{'state':'translated','value':value}}}})
+plurals = {
+ 'selected':('%lld selected','%lld selected'),
+ 'delete':('Delete %lld reviewed item from Photos?','Delete %lld reviewed items from Photos?'),
+ 'unmeasured':('%lld item has not been measured.','%lld items have not been measured.'),
+ 'unreadable':('%lld file could not be read or changed during the scan.','%lld files could not be read or changed during the scan.'),
+ 'queue':('Queue %lld selected item','Queue %lld selected items')}
+for key,(one,other) in plurals.items():
+ catalog['strings']['cleaner.count.'+key]={'comment':'Review count. %lld is the number of items.','extractionState':'manual','localizations':{'en':{'variations':{'plural':{n:{'stringUnit':{'state':'translated','value':v}} for n,v in [('one',one),('other',other)]}}}}}
+path.write_text(json.dumps(catalog,ensure_ascii=False,indent=2,sort_keys=True)+'\n')
+print(f"Cleaner catalog: {len(catalog['strings'])} entries")

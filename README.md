@@ -6,6 +6,7 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 
 | App | Status |
 | --- | --- |
+| [Cleaner](apps/cleaner/SPEC.md) | building ([changelog](apps/cleaner/CHANGELOG.md)) |
 | [7&D Document Scanner](apps/scanner/SPEC.md) | building ([changelog](apps/scanner/CHANGELOG.md)) |
 
 ## Rules every app follows
@@ -45,3 +46,14 @@ SEVENS_APP=scanner scripts/vm ui
 ```
 
 Open `apps/scanner/Scanner.xcodeproj` on a Mac. Debug-only `-scanner.ui -scanner.reset` use an isolated library and a local unlocked purchase source; `-scanner.seed` adds two synthetic receipt pages, and `-scanner.audit` exposes the processing audit. None of them is production purchase evidence.
+
+## Build Cleaner
+
+```sh
+scripts/test-linux apps/cleaner/Kit
+SEVENS_APP=cleaner scripts/vm build
+SEVENS_APP=cleaner scripts/vm test
+SEVENS_APP=cleaner scripts/vm ui
+```
+
+Cleaner uses the single shared simulator and reuses `~/src/sevens-personal-cleaner` and `~/src/dd-personal-cleaner` on Tahoe. Debug-only `-cleaner.ui -cleaner.reset -cleaner.seed` uses isolated review state, an unlocked local purchase source and synthetic inventory. It does not modify real Photos or Contacts merely by launching.

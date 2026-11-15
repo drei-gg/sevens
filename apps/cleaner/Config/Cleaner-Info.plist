@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict>
+<key>NSPhotoLibraryUsageDescription</key><string>Review your chosen photos and videos, find cleanup candidates, and save copies you approve.</string>
+<key>NSPhotoLibraryAddUsageDescription</key><string>Save the compressed copies you approve to Photos.</string>
+<key>NSContactsUsageDescription</key><string>Find duplicate contact candidates and compare their fields on this device.</string>
+<key>ITSAppUsesNonExemptEncryption</key><false/>
+<key>SevensBranded</key><string>$(SEVENS_BRANDED)</string>
+<key>SevensProductTrial</key><string>$(SEVENS_PRODUCT_ID_PREFIX).trial7</string>
+<key>SevensProductUnlock</key><string>$(SEVENS_PRODUCT_ID_PREFIX).unlock</string>
+<key>SevensRepositoryURL</key><string>$(SEVENS_REPOSITORY_URL)</string>
+<key>SevensSupportEmail</key><string>$(SEVENS_SUPPORT_EMAIL)</string>
+<key>UILaunchScreen</key><dict/>
+</dict></plist>

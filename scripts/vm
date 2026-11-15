@@ -13,17 +13,21 @@
 #   sh CMD...      run a command in the synced checkout
 # env: SEVENS_APP (an app under apps/ with a case below; defaults to qr)
 #      VM_SLOT (default: worktree folder name, "main" for the main checkout)
+#      VM_CONFIGURATION (build only: Debug or Release; defaults to Debug)
 #      VM_VERBOSE=1 streams the whole log; otherwise errors, warnings and the tail.
 set -euo pipefail
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 cmd=${1:-}; [ $# -gt 0 ] && shift
 app=${SEVENS_APP:-qr}
-case "$app" in qr) scheme=QR;; scanner) scheme=Scanner;; *) echo "Unknown app: $app" >&2; exit 2;; esac
+configuration=${VM_CONFIGURATION:-Debug}
+case "$configuration" in Debug|Release) ;; *) echo "Unknown configuration" >&2; exit 2;; esac
+case "$app" in qr) scheme=QR;; scanner) scheme=Scanner;; cleaner) scheme=Cleaner;; *) echo "Unknown app: $app" >&2; exit 2;; esac
 if [ "$app" != qr ] && [[ "$cmd" = device || "$cmd" = lock-device || ( "$cmd" = ui && "${1:-}" = --device ) ]]; then
   echo "vm: device signing for $app is not configured yet" >&2; exit 2
 fi
 base=$(basename "$root"); [ "$base" = sevens ] && base=main
 slot=${VM_SLOT:-$base}
+if [ "$app" = cleaner ]; then slot=personal; fi
 [ "$app" = qr ] || slot="$slot-$app"
 remote="src/sevens-$slot"
 dd="\$HOME/src/dd-$slot"
@@ -62,13 +66,17 @@ strictw="SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES"
 xb="xcodebuild -project apps/$app/$scheme.xcodeproj -scheme $scheme -derivedDataPath $dd $strictw"
 case "$cmd" in
   version) remote_cmd="xcodebuild -version";;
-  build)   remote_cmd="$xb -configuration Debug -destination '$dest' build";;
-  test)    if [ "$app" = scanner ]; then
-             remote_cmd="cd apps/scanner/Kit && xcodebuild -scheme ScannerKit -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
+  build)   remote_cmd="$xb -configuration $configuration -destination '$dest' build";;
+  test)    if [ "$app" = cleaner ]; then
+             remote_cmd="cd apps/cleaner/Kit && xcodebuild -scheme CleanerKit-Package -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
+           elif [ "$app" = scanner ]; then
+             remote_cmd="cd apps/$app/Kit && xcodebuild -scheme ${scheme}Kit -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
            else
              remote_cmd="$xb -configuration Debug -destination '$dest' -skip-testing:${scheme}SmokeUITests $noclone test"
            fi;;
-  test-kit) remote_cmd="set -o pipefail; (cd SevenKit && xcodebuild -scheme SevenKit-Package -derivedDataPath $dd-sevenkit $strictw -destination '$dest' $noclone test) && (cd apps/$app/Kit && xcodebuild -scheme ${scheme}Kit-Package -derivedDataPath $dd-${app}kit $strictw -destination '$dest' $noclone test)";;
+  test-kit) if [ "$app" = cleaner ]; then
+              remote_cmd="cd apps/cleaner/Kit && xcodebuild -scheme CleanerKit-Package -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
+            else remote_cmd="set -o pipefail; (cd SevenKit && xcodebuild -scheme SevenKit-Package -derivedDataPath $dd-sevenkit $strictw -destination '$dest' $noclone test) && (cd apps/$app/Kit && xcodebuild -scheme ${scheme}Kit-Package -derivedDataPath $dd-${app}kit $strictw -destination '$dest' $noclone test)"; fi;;
   ui)
     if [ "${1:-}" = --device ]; then
       remote_cmd="bash scripts/guest-device.sh '$dd' test -only-testing:${scheme}SmokeUITests -skip-testing:${scheme}SmokeUITests/LockDeviceTests -skip-testing:${scheme}SmokeUITests/ScreensTourTests"
