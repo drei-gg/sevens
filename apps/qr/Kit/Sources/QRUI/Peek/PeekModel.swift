@@ -40,9 +40,11 @@ public final class PeekModel {
         self.analyze = analyze
     }
 
-    public convenience init(original: Analysis, client: PeekClient = PeekClient(), analyzer: PeekAnalyzer) {
-        self.init(original: original, client: client, data: analyzer.data) { original, capture, age in
-            analyzer.report(original: original, capture: capture, ageDays: age)
+    /// `data` is what `analyzer` was made with; the hops are parsed against the same lists.
+    public convenience init(original: Analysis, client: PeekClient = PeekClient(), analyzer: PeekAnalyzer,
+                            data: BundledData = .shared) {
+        self.init(original: original, client: client, data: data) { original, capture, age in
+            analyzer.report(original: original, capture: capture, ageDays: age.map(Int64.init))
         }
     }
 

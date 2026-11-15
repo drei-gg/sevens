@@ -633,3 +633,9 @@ pub fn validate(bundle: &ListsBundle) -> Result<(), ListsBundleError> {
         None => Ok(()),
     }
 }
+
+/// Larger downloads are refused before decoding (`LISTS_MAX_BYTES`); the fetch stops reading here.
+#[uniffi::export]
+pub fn lists_max_bytes() -> i64 {
+    LISTS_MAX_BYTES as i64
+}

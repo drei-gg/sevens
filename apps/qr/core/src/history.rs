@@ -326,3 +326,9 @@ pub fn history_export_known_addresses(bytes: Vec<u8>) -> KnownAddresses {
 pub fn history_export_csv(items: Vec<HistoryItem>) -> String {
     export_csv(&items)
 }
+
+/// `history.v1.json`, the file the platform store keeps.
+#[uniffi::export]
+pub fn history_file_name() -> String {
+    HISTORY_FILE_NAME.to_string()
+}

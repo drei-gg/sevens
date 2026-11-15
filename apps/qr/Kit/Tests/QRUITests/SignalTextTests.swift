@@ -46,9 +46,9 @@ import SevenKit
     @Test func argsAreUsedWhenPresent() {
         #expect(SignalText.sentence(for: Signal(.lookalikeBrand, ["brand": "PayPal"])).contains("PayPal"))
         #expect(SignalText.sentence(for: Signal(.brandInDomain, ["brand": "Visa"])).contains("Visa"))
-        #expect(SignalText.sentence(for: Signal(.riskyTLD, ["tld": "zip"])).contains(".zip"))
-        #expect(SignalText.sentence(for: Signal(.riskyTLD, ["tld": ".zip"])).contains(".zip") )
-        #expect(!SignalText.sentence(for: Signal(.riskyTLD, ["tld": ".zip"])).contains(".."))
+        #expect(SignalText.sentence(for: Signal(.riskyTld, ["tld": "zip"])).contains(".zip"))
+        #expect(SignalText.sentence(for: Signal(.riskyTld, ["tld": ".zip"])).contains(".zip") )
+        #expect(!SignalText.sentence(for: Signal(.riskyTld, ["tld": ".zip"])).contains(".."))
         #expect(SignalText.sentence(for: Signal(.domainNew, ["days": "12"])).contains("12 days"))
         #expect(SignalText.sentence(for: Signal(.domainVeryNew, ["days": "1"])).contains("1 day "))
         #expect(SignalText.sentence(for: Signal(.unknownScheme, ["scheme": "myapp"])).contains("myapp"))
@@ -81,7 +81,7 @@ import SevenKit
     }
 
     @Test func sentencesCollapseDuplicatesAndKeepOrder() {
-        let signals = [Signal(.plainHTTP), Signal(.shortener), Signal(.plainHTTP)]
+        let signals = [Signal(.plainHttp), Signal(.shortener), Signal(.plainHttp)]
         let out = SignalText.sentences(for: signals)
         #expect(out == [SignalText.sentence(for: signals[0]), SignalText.sentence(for: signals[1])])
     }
@@ -118,7 +118,7 @@ import SevenKit
     }
 
     @Test func accessibilitySentenceReadsTheVerdictInOneLine() {
-        let signals = [Signal(.lookalikeBrand, ["brand": "PayPal"]), Signal(.plainHTTP), Signal(.assumedHTTPS)]
+        let signals = [Signal(.lookalikeBrand, ["brand": "PayPal"]), Signal(.plainHttp), Signal(.assumedHttps)]
         let text = VerdictText.accessibilitySentence(level: .likelyScam, typeName: "Web link", signals: signals)
         #expect(text.hasPrefix("Likely scam. Web link. "))
         #expect(text.contains("PayPal"))

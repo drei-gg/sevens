@@ -32,7 +32,7 @@ struct ListsUpdater: Sendable {
     let store: ListsStore
     let protocolClasses: [AnyClass]?
     /// The version in use now.
-    let installedVersion: @Sendable () -> Int
+    let installedVersion: @Sendable () -> Int64
     /// Called with the accepted bytes, or nil after a reset; the app reloads `BundledData.shared`.
     let apply: @Sendable (Data?) -> Void
 
@@ -45,7 +45,7 @@ struct ListsUpdater: Sendable {
     /// - Parameter protocolClasses: tests inject their `URLProtocol` stub here; the app passes nil.
     init(configuration: ListsConfiguration, store: ListsStore = ListsStore(),
          protocolClasses: [AnyClass]? = nil,
-         installedVersion: @escaping @Sendable () -> Int = { BundledData.shared.lists.version },
+         installedVersion: @escaping @Sendable () -> Int64 = { BundledData.shared.lists.version },
          apply: @escaping @Sendable (Data?) -> Void = { BundledData.reload(downloaded: $0) }) {
         self.configuration = configuration
         self.store = store
@@ -75,36 +75,23 @@ struct ListsUpdater: Sendable {
         return accept(bytes, signature: signature)
     }
 
-    /// Every acceptance rule except the network: signature over the exact bytes, then format,
-    /// schema, no rollback, shape. Saves and loads the lists when all pass.
+    /// Every acceptance rule except the network: signature over the exact bytes here, then the
+    /// core's format, schema, no-rollback and shape rules. Saves and loads the lists when all pass.
     func accept(_ bytes: Data, signature: Data) -> ListsUpdateResult {
-        guard bytes.count <= ListsBundle.maxBytes else { return .failed(.refused(.tooLarge)) }
-        guard verifies(signature, over: bytes) else { return .failed(.refused(.badSignature)) }
-        let decoder = JSONDecoder()
-        guard let header = try? decoder.decode(ListsVersion.self, from: bytes) else {
-            return .failed(.refused(.unreadable))
-        }
-        guard header.schema == ListsBundle.currentSchema else {
-            return .failed(.refused(.unknownSchema(header.schema)))
-        }
-        guard let bundle = try? decoder.decode(ListsBundle.self, from: bytes) else {
-            return .failed(.refused(.unreadable))
-        }
-        let installed = installedVersion()
-        guard bundle.version > installed else {
-            return .failed(.refused(.notNewer(installed: installed, offered: bundle.version)))
-        }
-        do { try BundledData.validate(bundle) } catch let error as ListsBundleError {
+        guard bytes.count <= ListsBundle.maxBytes else { return .failed(.refused(.TooLarge)) }
+        guard verifies(signature, over: bytes) else { return .failed(.refused(.BadSignature)) }
+        let header: ListsVersion
+        do { header = try listsBundleCheck(bytes: bytes, installedVersion: installedVersion()) } catch let error as ListsBundleError {
             return .failed(.refused(error))
         } catch {
-            return .failed(.refused(.unreadable))
+            return .failed(.refused(.Unreadable))
         }
         do { try store.write(bytes) } catch {
             Self.log.error("lists save failed: \(String(describing: error), privacy: .private)")
             return .failed(.saveFailed)
         }
         apply(bytes)
-        return .updated(bundle.header)
+        return .updated(header)
     }
 
     /// "Use the lists that came with the app": deletes the saved download and reloads.
@@ -136,12 +123,12 @@ struct ListsUpdater: Sendable {
         request.setValue(PeekClient.userAgent, forHTTPHeaderField: "User-Agent")
         let (stream, response) = try await session.bytes(for: request, delegate: RefuseRedirects())
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { throw ListsUpdateFailure.unreachable }
-        if http.expectedContentLength > Int64(limit) { throw ListsUpdateFailure.refused(.tooLarge) }
+        if http.expectedContentLength > Int64(limit) { throw ListsUpdateFailure.refused(.TooLarge) }
         var buffer = Data()
         buffer.reserveCapacity(min(max(Int(max(http.expectedContentLength, 0)), 16 * 1024), limit))
         for try await byte in stream {
             buffer.append(byte)
-            if buffer.count > limit { throw ListsUpdateFailure.refused(.tooLarge) }
+            if buffer.count > limit { throw ListsUpdateFailure.refused(.TooLarge) }
         }
         return buffer
     }

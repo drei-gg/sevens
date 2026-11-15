@@ -20,7 +20,7 @@ struct ResultPayloadView: View {
         case .email(let info): ResultEmailView(info: info)
         case .geo(let info): ResultGeoView(info: info)
         case .text(let info): ResultTextView(info: info)
-        case .binary(let count): ResultBinaryView(byteCount: count)
+        case .binary(let count): ResultBinaryView(byteCount: Int(count))
         }
     }
 }

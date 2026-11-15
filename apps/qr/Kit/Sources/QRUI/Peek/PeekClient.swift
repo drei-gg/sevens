@@ -96,7 +96,7 @@ public struct PeekClient: Sendable {
             stop = .finished
         }
         return PeekCapture(hops: tracker.hops, stoppedBecause: stop, contentType: snapshot.contentType,
-                           contentDisposition: snapshot.contentDisposition, body: snapshot.body,
+                           contentDisposition: snapshot.contentDisposition, body: Data(snapshot.body),
                            tlsVersion: tracker.tlsVersion)
     }
 
@@ -219,7 +219,7 @@ private final class HopTracker: NSObject, URLSessionTaskDelegate, @unchecked Sen
     }
 
     func setFinalStatus(_ status: Int) {
-        lock.withLock { if !recorded.isEmpty { recorded[recorded.count - 1].status = status } }
+        lock.withLock { if !recorded.isEmpty { recorded[recorded.count - 1].status = Int64(status) } }
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
@@ -228,7 +228,7 @@ private final class HopTracker: NSObject, URLSessionTaskDelegate, @unchecked Sen
         let scheme = target?.scheme?.lowercased()
         var follow = false
         lock.withLock {
-            if !recorded.isEmpty { recorded[recorded.count - 1].status = response.statusCode }
+            if !recorded.isEmpty { recorded[recorded.count - 1].status = Int64(response.statusCode) }
             let text = target?.absoluteString ?? ""
             if scheme == "https" {
                 if followed >= PeekClient.maxRedirects {

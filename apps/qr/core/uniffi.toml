@@ -6,6 +6,8 @@ cdylib_name = "qr_core"
 module_name = "QRCoreFFI"
 ffi_module_name = "qr_coreFFI"
 ffi_module_filename = "qr_coreFFI"
+# Symbology, SignalID, PaperSize and SheetGrid were CaseIterable in the Swift app; pickers and tests list them.
+generate_case_iterable_conformance = true
 
 [bindings.kotlin.custom_types.Uuid]
 type_name = "java.util.UUID"

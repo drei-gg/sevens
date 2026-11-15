@@ -55,6 +55,16 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "QRFilesTests"
+               BuildableName = "QRFilesTests"
+               BlueprintName = "QRFilesTests"
+               ReferencedContainer = "container:Kit">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "QRUITests"
                BuildableName = "QRUITests"
                BlueprintName = "QRUITests"

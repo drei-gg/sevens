@@ -4,7 +4,7 @@ import QRCore
 @testable import QRUI
 
 @Suite struct PeekClientTests {
-    static let psl = PublicSuffixList(text: """
+    static let suffixes = """
         // ===BEGIN ICANN DOMAINS===
         com
         io
@@ -12,7 +12,19 @@ import QRCore
         // ===BEGIN PRIVATE DOMAINS===
         github.io
         // ===END PRIVATE DOMAINS===
-        """)
+        """
+
+    /// Lists with `suffixes` and these RDAP services, loaded by the core as a newer download (the
+    /// shape rules want 50 services and one for com, so filler services come first).
+    static func lists(rdap services: [[[String]]]) -> BundledData {
+        var files = ListsTestRig.files()
+        files.publicSuffixList = suffixes
+        files.rdap = TestRDAPFile(services: (0..<60).map { [["tld\($0)"], ["https://rdap.example.org/"]] } + services)
+        let bundle = TestLists(schema: 1, version: 9_999_999_999, built: "2026-12-01", files: files)
+        return BundledData.load(downloaded: ListsTestRig.bytes(bundle))
+    }
+
+    static let psl = lists(rdap: [[["com"], ["https://rdap.example.org/"]]]).publicSuffixes
     static let page = Data("<html><head><title>Hello</title></head><body>hi</body></html>".utf8)
     static let stub: [AnyClass] = [PeekStubProtocol.self]
 
@@ -42,7 +54,7 @@ import QRCore
             PeekHop(url: "https://chain-b.example.com/x", status: 302),
             PeekHop(url: "https://chain-b.example.com/final", status: 200),
         ])
-        #expect(capture.body == Array(Self.page))
+        #expect(capture.body == Self.page)
         #expect(capture.contentType == "text/html; charset=utf-8")
         #expect(capture.contentDisposition == "inline")
     }
@@ -181,9 +193,11 @@ import QRCore
 
     // MARK: Domain age
 
+    /// RDAP for `tld` at `base`; any other com lookup points at plain http, which the client refuses.
     static func bootstrap(_ base: String, tld: String = "com") -> BundledData {
-        let json = #"{"services":[[["\#(tld)"],["\#(base)"]]]}"#
-        return BundledData(publicSuffixes: psl, rdap: RDAPBootstrap(json: Data(json.utf8)))
+        var services = [[[tld], [base]]]
+        if tld != "com" { services.append([["com"], ["http://rdap-unused.example.invalid/"]]) }
+        return lists(rdap: services)
     }
     static let now = ISO8601DateFormatter().date(from: "2026-11-10T00:00:00Z") ?? Date()
     static let rdapBody = Data(#"{"events":[{"eventAction":"registration","eventDate":"2026-10-31T00:00:00Z"}]}"#.utf8)

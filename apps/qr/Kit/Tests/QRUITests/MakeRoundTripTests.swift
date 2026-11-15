@@ -110,36 +110,36 @@ enum MakeTestSupport {
     func quietZoneIsLight(symbology: MakeSymbology) throws {
         let m = try CodeGenerator.generate(text: "Quiet 123", symbology: symbology, correction: .auto)
         let q = QuietZone.modules(for: symbology.symbology)
-        for y in 0..<m.height {
-            for x in 0..<m.width where x < q.horizontal || x >= m.width - q.horizontal
-                || y < q.vertical || y >= m.height - q.vertical {
+        for y in 0..<m.rows {
+            for x in 0..<m.columns where x < q.horizontal || x >= m.columns - q.horizontal
+                || y < q.vertical || y >= m.rows - q.vertical {
                 #expect(!m[x, y])
             }
         }
         // The edge just inside the quiet zone has dark modules (no extra built-in margin left).
-        let inner = (q.horizontal..<(m.width - q.horizontal)).contains { x in
-            (q.vertical..<(m.height - q.vertical)).contains { y in x == q.horizontal && m[x, y] }
+        let inner = (q.horizontal..<(m.columns - q.horizontal)).contains { x in
+            (q.vertical..<(m.rows - q.vertical)).contains { y in x == q.horizontal && m[x, y] }
         }
         #expect(inner)
     }
 
     @Test func code128IsOneRowPlusQuietZone() throws {
         let m = try CodeGenerator.generate(text: "ABC123", symbology: .code128, correction: .auto)
-        #expect(m.height == 1)
+        #expect(m.rows == 1)
         #expect(!(0..<10).contains { m[$0, 0] })
         #expect(m[10, 0])
     }
 
     @Test func qrSizeMatchesVersion() throws {
         let m = try CodeGenerator.generate(text: "hi", symbology: .qr, correction: .L)
-        #expect(m.width == 21 + 8 && m.height == m.width)
+        #expect(m.columns == 21 + 8 && m.rows == m.columns)
     }
 
     @Test func higherCorrectionNeverShrinksQR() throws {
         let text = String(repeating: "x", count: 60)
         let l = try CodeGenerator.generate(text: text, symbology: .qr, correction: .L)
         let h = try CodeGenerator.generate(text: text, symbology: .qr, correction: .H)
-        #expect(h.width >= l.width)
+        #expect(h.columns >= l.columns)
         let auto = try CodeGenerator.generate(text: text, symbology: .qr, correction: .auto)
         let mm = try CodeGenerator.generate(text: text, symbology: .qr, correction: .M)
         #expect(auto == mm)
@@ -151,9 +151,9 @@ enum MakeTestSupport {
         let m = try CodeGenerator.generate(text: "dims", symbology: .qr, correction: .M)
         for size in [512, 1024, 2048] {
             let png = PNGRenderer.png(matrix: m, pixelSize: size, foreground: .black, background: .white)
-            let s = size / m.width
+            let s = size / m.columns
             let dims = try #require(MakeTestSupport.pngSize(png))
-            #expect(dims.0 == s * m.width && dims.1 == s * m.height)
+            #expect(dims.0 == s * m.columns && dims.1 == s * m.rows)
             #expect(dims.0 <= size)
         }
     }
@@ -165,14 +165,14 @@ enum MakeTestSupport {
         #expect(d.0 <= PNGRenderer.maxPixelSize)
         let tiny = PNGRenderer.png(matrix: m, pixelSize: 1, foreground: .black, background: .white)
         let t = try #require(MakeTestSupport.pngSize(tiny))
-        #expect(t.0 == m.width)
+        #expect(t.0 == m.columns)
     }
 
     @Test func code128PngUsesBarHeight() throws {
         let m = try CodeGenerator.generate(text: "ABC", symbology: .code128, correction: .auto)
         let png = PNGRenderer.png(matrix: m, pixelSize: 1024, foreground: .black, background: .white)
         let d = try #require(MakeTestSupport.pngSize(png))
-        let s = d.0 / m.width
+        let s = d.0 / m.columns
         #expect(d.1 == s * MakeGeometry.rows(for: m))
         #expect(d.1 > s)
     }

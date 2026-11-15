@@ -1,5 +1,6 @@
 //! The contract types (QRCore `Contract/`): what a scan is, what it decodes to, the signals and
 //! the verdict. Field names follow Swift's; the bindings spell them in each platform's case.
+//! `#[uniffi(default)]` fields carry the Swift initialisers' default arguments into both bindings.
 
 use std::collections::HashMap;
 use std::time::SystemTime;
@@ -168,22 +169,33 @@ impl PaymentChecksum {
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct PaymentInfo {
     pub format: PaymentFormat,
+    #[uniffi(default = None)]
     pub payee_name: Option<String>,
+    #[uniffi(default = None)]
     pub payee_account: Option<String>,
+    #[uniffi(default = None)]
     pub city: Option<String>,
+    #[uniffi(default = None)]
     pub country: Option<String>,
     /// Decimal text as given; never a float.
+    #[uniffi(default = None)]
     pub amount: Option<String>,
     /// ISO 4217 alpha code.
+    #[uniffi(default = None)]
     pub currency: Option<String>,
     /// Display name from payment-networks.json.
+    #[uniffi(default = None)]
     pub network: Option<String>,
+    #[uniffi(default = None)]
     pub is_dynamic: Option<bool>,
+    #[uniffi(default = None)]
     pub reference: Option<String>,
+    #[uniffi(default = None)]
     pub note: Option<String>,
     pub party: PaymentParty,
     pub checksum: PaymentChecksum,
     /// Format-specific extras ("alternateName", "networkID", "bic", "debtorName", …).
+    #[uniffi(default)]
     pub extra: HashMap<String, String>,
 }
 
@@ -274,8 +286,10 @@ pub struct AppLinkInfo {
 pub struct TextInfo {
     /// The text, cut at 8 KB when `is_truncated`.
     pub text: String,
+    #[uniffi(default = false)]
     pub is_truncated: bool,
     /// Links found inside, at most 10.
+    #[uniffi(default)]
     pub links: Vec<String>,
 }
 
@@ -283,12 +297,17 @@ pub struct TextInfo {
 pub struct WiFiInfo {
     pub ssid: String,
     /// `T` as given, uppercased; None when missing.
+    #[uniffi(default = None)]
     pub security: Option<String>,
+    #[uniffi(default = None)]
     pub password: Option<String>,
+    #[uniffi(default = false)]
     pub is_hidden: bool,
     /// `E` (enterprise EAP method).
+    #[uniffi(default = None)]
     pub eap_method: Option<String>,
     /// `I` (enterprise identity).
+    #[uniffi(default = None)]
     pub identity: Option<String>,
 }
 
@@ -318,38 +337,60 @@ pub fn wifi_is_enterprise(info: WiFiInfo) -> bool {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default, uniffi::Record)]
 pub struct ContactInfo {
+    #[uniffi(default = None)]
     pub name: Option<String>,
+    #[uniffi(default = None)]
     pub given_name: Option<String>,
+    #[uniffi(default = None)]
     pub family_name: Option<String>,
+    #[uniffi(default = None)]
     pub organization: Option<String>,
+    #[uniffi(default = None)]
     pub title: Option<String>,
+    #[uniffi(default)]
     pub phones: Vec<String>,
+    #[uniffi(default)]
     pub emails: Vec<String>,
+    #[uniffi(default)]
     pub urls: Vec<String>,
     /// One display string per address, lines joined with "\n".
+    #[uniffi(default)]
     pub addresses: Vec<String>,
+    #[uniffi(default = None)]
     pub note: Option<String>,
     /// As written (vCard `BDAY`).
+    #[uniffi(default = None)]
     pub birthday: Option<String>,
     /// Every link to check: `urls` plus links found in `note`, at most 10.
+    #[uniffi(default)]
     pub links: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default, uniffi::Record)]
 pub struct EventInfo {
+    #[uniffi(default = None)]
     pub summary: Option<String>,
     /// For UTC and TZID times: the instant. For floating and all-day times: the wall-clock time
     /// read as if it were GMT.
+    #[uniffi(default = None)]
     pub start: Option<SystemTime>,
+    #[uniffi(default = None)]
     pub end: Option<SystemTime>,
+    #[uniffi(default = false)]
     pub is_all_day: bool,
+    #[uniffi(default = false)]
     pub is_floating: bool,
     /// The TZID the times were given in, when known.
+    #[uniffi(default = None)]
     pub time_zone_id: Option<String>,
+    #[uniffi(default = None)]
     pub location: Option<String>,
+    #[uniffi(default = None)]
     pub description: Option<String>,
+    #[uniffi(default = None)]
     pub url: Option<String>,
     /// `url` plus links found in description and location, at most 10.
+    #[uniffi(default)]
     pub links: Vec<String>,
 }
 
@@ -361,15 +402,20 @@ pub struct PhoneInfo {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, uniffi::Record)]
 pub struct SmsInfo {
     pub number: String,
+    #[uniffi(default = None)]
     pub body: Option<String>,
+    #[uniffi(default)]
     pub links: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, uniffi::Record)]
 pub struct EmailInfo {
     pub address: String,
+    #[uniffi(default = None)]
     pub subject: Option<String>,
+    #[uniffi(default = None)]
     pub body: Option<String>,
+    #[uniffi(default)]
     pub links: Vec<String>,
 }
 
@@ -378,8 +424,10 @@ pub struct GeoInfo {
     /// Decimal text as given.
     pub latitude: String,
     pub longitude: String,
+    #[uniffi(default = None)]
     pub altitude: Option<String>,
     /// `?q=` as given (percent-decoded).
+    #[uniffi(default = None)]
     pub query: Option<String>,
 }
 
@@ -691,10 +739,14 @@ pub struct PeekCapture {
     /// Every URL requested or redirected to, in order; the first is the scanned link.
     pub hops: Vec<PeekHop>,
     pub stopped_because: StopReason,
+    #[uniffi(default = None)]
     pub content_type: Option<String>,
+    #[uniffi(default = None)]
     pub content_disposition: Option<String>,
     /// At most 512 KB.
+    #[uniffi(default)]
     pub body: Vec<u8>,
+    #[uniffi(default = None)]
     pub tls_version: Option<String>,
 }
 

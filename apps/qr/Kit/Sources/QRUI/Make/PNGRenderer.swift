@@ -9,7 +9,7 @@ public enum PNGRenderer {
     public static let presetSizes = [512, 1024, 2048]
     public static let maxPixelSize = 4096
 
-    /// Integer pixels per module for a requested size: floor(pixelSize / matrix.width), at least 1.
+    /// Integer pixels per module for a requested size: floor(pixelSize / matrix.columns), at least 1.
     public static func scale(matrixWidth: Int, pixelSize: Int) -> Int {
         guard matrixWidth > 0 else { return 1 }
         return max(1, min(max(1, pixelSize), maxPixelSize) / matrixWidth)
@@ -19,10 +19,10 @@ public enum PNGRenderer {
     /// (never over, unless the matrix itself is wider than `pixelSize`). One-row codes get the bar
     /// height from `MakeGeometry`. No interpolation. Empty data for an empty matrix.
     public static func png(matrix: BitMatrix, pixelSize: Int, foreground: RGBColor, background: RGBColor) -> Data {
-        guard matrix.width > 0, matrix.height > 0 else { return Data() }
-        let s = scale(matrixWidth: matrix.width, pixelSize: pixelSize)
+        guard matrix.columns > 0, matrix.rows > 0 else { return Data() }
+        let s = scale(matrixWidth: matrix.columns, pixelSize: pixelSize)
         let rows = MakeGeometry.rows(for: matrix)
-        let w = matrix.width * s, h = rows * s
+        let w = matrix.columns * s, h = rows * s
         guard let space = CGColorSpace(name: CGColorSpace.sRGB),
               let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: space,
                                   bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return Data() }

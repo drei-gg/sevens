@@ -7,8 +7,8 @@ import Vision
 @Suite struct ScanSymbologyTests {
     @Test func scanSymbologyMapping() {
         let expected: [(VNBarcodeSymbology, Symbology)] = [
-            (.qr, .qr), (.microQR, .microQR), (.aztec, .aztec), (.pdf417, .pdf417),
-            (.microPDF417, .microPDF417), (.dataMatrix, .dataMatrix), (.code128, .code128),
+            (.qr, .qr), (.microQR, .microQr), (.aztec, .aztec), (.pdf417, .pdf417),
+            (.microPDF417, .microPdf417), (.dataMatrix, .dataMatrix), (.code128, .code128),
             (.code39, .code39), (.code39Checksum, .code39), (.code39FullASCII, .code39),
             (.code39FullASCIIChecksum, .code39), (.code93, .code93), (.code93i, .code93),
             (.ean13, .ean13), (.ean8, .ean8), (.upce, .upce), (.itf14, .itf14),
@@ -27,17 +27,17 @@ import Vision
         #expect(a == ScannedCode(text: "héllo", bytes: Array("héllo".utf8), symbology: .qr))
         // Raw bytes win over the string's UTF-8 when Vision has them.
         let b = ScanDecoding.code(payloadString: "h\u{e9}", payloadData: Data([0x68, 0xE9]), symbology: .pdf417)
-        #expect(b.text == "h\u{e9}" && b.bytes == [0x68, 0xE9] && b.symbology == .pdf417)
+        #expect(b.text == "h\u{e9}" && b.bytes == Data([0x68, 0xE9]) && b.symbology == .pdf417)
         // No data: UTF-8 of the text.
         let c = ScanDecoding.code(payloadString: "abc", payloadData: nil, symbology: .code128)
-        #expect(c.bytes == [0x61, 0x62, 0x63])
+        #expect(c.bytes == Data([0x61, 0x62, 0x63]))
     }
 
     @Test func scanCodeWithoutStringDecodesUTF8OrIsNil() {
         let ok = ScanDecoding.code(payloadString: nil, payloadData: Data("plain".utf8), symbology: .qr)
         #expect(ok.text == "plain")
         let binary = ScanDecoding.code(payloadString: nil, payloadData: Data([0xFF, 0xFE, 0x00, 0x80]), symbology: .dataMatrix)
-        #expect(binary.text == nil && binary.bytes == [0xFF, 0xFE, 0x00, 0x80])
+        #expect(binary.text == nil && binary.bytes == Data([0xFF, 0xFE, 0x00, 0x80]))
         let empty = ScanDecoding.code(payloadString: nil, payloadData: nil, symbology: .qr)
         #expect(empty.text == nil && empty.bytes.isEmpty)
     }

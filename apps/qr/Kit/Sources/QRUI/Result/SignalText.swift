@@ -69,11 +69,11 @@ public enum SignalText {
         case .shortener:
             return String(localized: "signal.shortener",
                           defaultValue: "This is a shortened link, so its real destination is hidden until you follow it.", bundle: .module)
-        case .plainHTTP:
+        case .plainHttp:
             return String(localized: "signal.plainHTTP",
                           defaultValue: "This link isn’t encrypted, so anyone on the network could read or change what you send.",
                           bundle: .module)
-        case .riskyTLD:
+        case .riskyTld:
             if let ending = arg(args, "tld").map(withoutLeadingDots), !ending.isEmpty {
                 return String(localized: "signal.riskyTLD.tld",
                               defaultValue: "Addresses ending in .\(ending) show up often in scam reports.", bundle: .module)
@@ -119,7 +119,7 @@ public enum SignalText {
             }
             return String(localized: "signal.domainVeryNew",
                           defaultValue: "This domain was registered within the last month.", bundle: .module)
-        case .redirectsToHTTP:
+        case .redirectsToHttp:
             return String(localized: "signal.redirectsToHTTP",
                           defaultValue: "This link sends you on to a page that isn’t encrypted.", bundle: .module)
         case .redirectLeavesWeb:
@@ -152,7 +152,7 @@ public enum SignalText {
             }
             return String(localized: "signal.domainNew",
                           defaultValue: "This domain was registered within the last six months.", bundle: .module)
-        case .assumedHTTPS:
+        case .assumedHttps:
             return String(localized: "signal.assumedHTTPS",
                           defaultValue: "The code had no prefix, so it was read as an https web address.", bundle: .module)
         case .sharedHostingDomain:

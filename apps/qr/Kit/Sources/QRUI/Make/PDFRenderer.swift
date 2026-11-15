@@ -42,16 +42,16 @@ public enum PDFRenderer {
     /// Draws the code scaled to fit `box`, centered horizontally and kept at the top, caption below it.
     private static func draw(matrix: BitMatrix, in box: CGRect, caption: String?, captionSize: CGFloat,
                              foreground: RGBColor, background: RGBColor, context: CGContext) {
-        guard matrix.width > 0, matrix.height > 0 else { return }
+        guard matrix.columns > 0, matrix.rows > 0 else { return }
         let rows = MakeGeometry.rows(for: matrix)
         let text = caption?.trimmingCharacters(in: .whitespacesAndNewlines)
         let hasCaption = !(text ?? "").isEmpty
         let font = UIFont.systemFont(ofSize: captionSize)
         let captionHeight: CGFloat = hasCaption ? ceil(font.lineHeight) + 4 : 0
         let availW = box.width, availH = max(1, box.height - captionHeight)
-        var module = min(availW / CGFloat(matrix.width), availH / CGFloat(rows))
+        var module = min(availW / CGFloat(matrix.columns), availH / CGFloat(rows))
         if module >= 1 { module = module.rounded(.down) }   // whole points: crisp edges
-        let w = module * CGFloat(matrix.width), h = module * CGFloat(rows)
+        let w = module * CGFloat(matrix.columns), h = module * CGFloat(rows)
         var ox = box.minX + (availW - w) / 2
         var oy = box.minY + (hasCaption ? 0 : (availH - h) / 2)
         if module >= 1 { ox = ox.rounded(); oy = oy.rounded() }

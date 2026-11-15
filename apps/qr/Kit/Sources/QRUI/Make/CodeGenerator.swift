@@ -52,7 +52,7 @@ public enum CodeGenerator {
         }
         guard let base = qr(.M) else { return nil }
         for level in [Correction.H, .Q] {
-            if let m = qr(level), m.width == base.width { return (level, m) }
+            if let m = qr(level), m.columns == base.columns { return (level, m) }
         }
         return (.M, base)
     }
@@ -65,8 +65,8 @@ public enum CodeGenerator {
     /// QR version (1...40) of a generated matrix, which includes our quiet zone; nil if the size
     /// isn't a QR size.
     static func qrVersion(of matrix: BitMatrix) -> Int? {
-        let modules = matrix.width - 2 * QuietZone.modules(for: .qr).horizontal
-        guard matrix.width == matrix.height, modules >= 21, (modules - 17) % 4 == 0 else { return nil }
+        let modules = matrix.columns - 2 * QuietZone.modules(for: .qr).horizontal
+        guard matrix.columns == matrix.rows, modules >= 21, (modules - 17) % 4 == 0 else { return nil }
         return (modules - 17) / 4
     }
 
@@ -131,22 +131,22 @@ public enum CodeGenerator {
     }
 
     private static func firstRow(of m: BitMatrix) -> BitMatrix {
-        BitMatrix(width: m.width, height: 1, bits: (0..<m.width).map { m[$0, 0] })
+        BitMatrix(width: m.columns, height: 1, bits: (0..<m.columns).map { m[$0, 0] })
     }
 
     /// The filter draws each PDF417 row several pixels tall. Merge identical neighbours (adjacent
     /// PDF417 rows always differ) and give every row `rowHeight` modules.
     private static func collapsedRows(_ m: BitMatrix, rowHeight: Int) -> BitMatrix {
         var rows: [[Bool]] = []
-        for y in 0..<m.height {
-            let row = (0..<m.width).map { m[$0, y] }
+        for y in 0..<m.rows {
+            let row = (0..<m.columns).map { m[$0, y] }
             if rows.last != row { rows.append(row) }
         }
         var bits: [Bool] = []
-        bits.reserveCapacity(m.width * rows.count * rowHeight)
+        bits.reserveCapacity(m.columns * rows.count * rowHeight)
         for row in rows {
             for _ in 0..<rowHeight { bits.append(contentsOf: row) }
         }
-        return BitMatrix(width: m.width, height: rows.count * rowHeight, bits: bits)
+        return BitMatrix(width: m.columns, height: rows.count * rowHeight, bits: bits)
     }
 }

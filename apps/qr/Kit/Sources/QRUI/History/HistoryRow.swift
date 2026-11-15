@@ -68,10 +68,10 @@ enum HistoryLabels {
     static func symbology(_ symbology: Symbology) -> String {
         switch symbology {
         case .qr: return String(localized: "history.symbology.qr", defaultValue: "QR code", bundle: .module)
-        case .microQR: return String(localized: "history.symbology.microQR", defaultValue: "Micro QR code", bundle: .module)
+        case .microQr: return String(localized: "history.symbology.microQR", defaultValue: "Micro QR code", bundle: .module)
         case .aztec: return "Aztec"
         case .pdf417: return "PDF417"
-        case .microPDF417: return "MicroPDF417"
+        case .microPdf417: return "MicroPDF417"
         case .dataMatrix: return "Data Matrix"
         case .code128: return "Code 128"
         case .code39: return "Code 39"

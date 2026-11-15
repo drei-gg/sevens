@@ -12,10 +12,10 @@ enum ScanDecoding {
     static func symbology(_ s: VNBarcodeSymbology) -> Symbology {
         switch s {
         case .qr: .qr
-        case .microQR: .microQR
+        case .microQR: .microQr
         case .aztec: .aztec
         case .pdf417: .pdf417
-        case .microPDF417: .microPDF417
+        case .microPDF417: .microPdf417
         case .dataMatrix: .dataMatrix
         case .code128: .code128
         case .code39, .code39Checksum, .code39FullASCII, .code39FullASCIIChecksum: .code39

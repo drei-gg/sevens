@@ -2,9 +2,11 @@ import Foundation
 
 /// Where an accepted `lists.json` is kept between launches (SPEC §4.3): Application Support, in
 /// the app group's container when the app has one so the extensions read the same file.
-/// Holds no state beyond the folder; reads are capped at `ListsBundle.maxBytes`.
+/// Holds no state beyond the folder; reads are capped at `maxBytes`.
 public struct ListsStore: Sendable {
     public static let fileName = "lists.json"
+    /// The core refuses larger bundles (`lists_max_bytes`), so a larger saved file is never read.
+    public static let maxBytes = 2 * 1024 * 1024
     private static let folderName = "QRLists"
 
     private let directory: URL?
@@ -21,7 +23,7 @@ public struct ListsStore: Sendable {
     public func read() -> Data? {
         guard let url = fileURL,
               let size = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? NSNumber,
-              size.intValue > 0, size.intValue <= ListsBundle.maxBytes else { return nil }
+              size.intValue > 0, size.intValue <= Self.maxBytes else { return nil }
         return try? Data(contentsOf: url)
     }
 

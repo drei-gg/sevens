@@ -20,8 +20,8 @@ import QRCore
     }
 
     @Test func paymentOpenInOnlyForURIShaped() {
-        let upi = Payload.payment(PaymentInfo(format: .upi))
-        let emv = Payload.payment(PaymentInfo(format: .emv))
+        let upi = Payload.payment(PaymentInfo(format: .upi, party: .unknown, checksum: .absent))
+        let emv = Payload.payment(PaymentInfo(format: .emv, party: .unknown, checksum: .absent))
         #expect(ResultActionPlan.actions(for: upi, capabilities: device).contains(.openPaymentIn))
         #expect(!ResultActionPlan.actions(for: emv, capabilities: device).contains(.openPaymentIn))
         #expect(ResultActionPlan.actions(for: emv, capabilities: device).contains(.copyDetails))
@@ -65,7 +65,7 @@ import QRCore
         if case .wifi = ResultMakeMapping.request(for: ResultSamples.wifi) {} else { Issue.record("wifi should map to .wifi") }
         let phone = Analysis(code: ScannedCode(text: "tel:123"), payload: .phone(PhoneInfo(number: "123")), signals: [], embedded: [], level: .normal)
         #expect(ResultMakeMapping.request(for: phone) == .phone("123"))
-        let bin = Analysis(code: ScannedCode(text: nil, bytes: [1], symbology: .qr), payload: .binary(byteCount: 1), signals: [], embedded: [], level: .normal)
+        let bin = Analysis(code: ScannedCode(text: nil, bytes: Data([1]), symbology: .qr), payload: .binary(byteCount: 1), signals: [], embedded: [], level: .normal)
         #expect(ResultMakeMapping.request(for: bin) == nil)
     }
 

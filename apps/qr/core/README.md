@@ -17,15 +17,17 @@ scripts/rust-core qr android    # .so for four ABIs into generated/jniLibs
 scripts/rust-core qr apple      # QRCoreFFI.xcframework, built in the macOS VM
 ```
 
+**Where the iPhone app picks it up.** `scripts/rust-core qr apple` puts the bindings in `Kit/Sources/QRCore/Generated/` and the library in `Kit/Generated/qr_coreFFI.xcframework`; `QRCore` adds a thin façade (`Facade.swift`) that keeps the Swift names QRUI and the two share extensions use and only converts. The saved lists file is `QRFiles` (`ListsStore`, plain Swift); `BundledData.shared` hands its bytes to the core on first use. The History and known-address stores, networking, the signature check and drawing stay in QRUI.
+
 Needs Rust (stable), `rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android`, `cargo install cargo-ndk`, an Android NDK, and in the VM `rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios`. `generated/` is a build output and is not committed.
 
 ## Tests
 
-- `tests/{analyzer,checks,lists,payments,peek,render_make,structured,url,history_known}.rs`: every QRCore test from the iOS app, one to one, under the Swift names (parameterised Swift tests loop inside one test). Fixture runners read the same fixture files as Swift. The two `ListsStore` tests stay with the platforms' stores.
+- `tests/{analyzer,checks,lists,payments,peek,render_make,structured,url,history_known}.rs`: every QRCore test the iOS app had before it switched to this core, one to one, under the Swift names (parameterised Swift tests loop inside one test). Fixture runners read the fixture files in `Kit/Tests/QRCoreTests/Fixtures/`. The two `ListsStore` tests stay with the platforms' stores (`QRFilesTests` on iOS); `QRCoreTests` now only runs every fixture and a Peek pair through the Swift façade.
 - `tests/swift_analysis.rs`: `fixtures/swift-analysis.json` is what the real Swift QRCore returned for every fixture input, a set of adversarial extras and every Peek pair; the Rust core must return the same type, level, signals with their arguments, fields and embedded analyses.
 - `tests/golden.rs`: history, known-address and history-export files the Swift encoders wrote (`.sortedKeys`) come back byte for byte, including fractional-second dates read and written as whole seconds. The lists bundle the app stores is the exact bytes `scripts/refresh-lists` publishes, so `fixtures/lists-refresh.json` (written by that script's serialiser) must round-trip byte for byte; Swift's own `JSONEncoder()` has unstable key order, so `fixtures/swift-encoder-lists.json` only has to read back equal.
 
-The `swift-*.json` fixtures were generated in the `swift:6.3` Linux container by a scratch package that depends on `apps/qr/Kit` and calls the real `HistoryFile`, `KnownAddressesFile`, `HistoryExport`, `JSONEncoder`, `Analyzer` and `PeekAnalyzer`. Regenerate them the same way after a Swift change to those types.
+The `swift-*.json` fixtures were generated in the `swift:6.3` Linux container by a scratch package that depends on `apps/qr/Kit` and calls the real `HistoryFile`, `KnownAddressesFile`, `HistoryExport`, `JSONEncoder`, `Analyzer` and `PeekAnalyzer`. That Swift code has since been removed from the app (it is in the history before the iOS switch), so these files are now fixed references.
 
 ## Adding the next Seven's core
 

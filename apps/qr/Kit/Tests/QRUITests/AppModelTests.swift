@@ -41,7 +41,7 @@ enum AppModelTestSupport {
         let model = AppModel(store: store, history: HistoryStore(directory: directory), settings: settings,
                              analyze: { code in
             Analysis(code: code, payload: .text(TextInfo(text: code.text ?? "")),
-                     signals: [Signal(.plainHTTP)], embedded: [], level: .careful)
+                     signals: [Signal(.plainHttp)], embedded: [], level: .careful)
         })
         return Rig(model: model, source: source, defaults: defaults)
     }

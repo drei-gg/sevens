@@ -14,7 +14,7 @@ enum ResultSamples {
 
     static var scamLink: Analysis {
         link("http://login.paypa1-verify.example/account?id=1", host: "login.paypa1-verify.example", domain: "paypa1-verify.example",
-             level: .likelyScam, signals: [Signal(.lookalikeBrand, ["brand": "PayPal"]), Signal(.plainHTTP)], scheme: "http")
+             level: .likelyScam, signals: [Signal(.lookalikeBrand, ["brand": "PayPal"]), Signal(.plainHttp)], scheme: "http")
     }
 
     static var payment: Analysis {

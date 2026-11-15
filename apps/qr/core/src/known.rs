@@ -18,6 +18,7 @@ pub struct KnownAddressEntry {
 /// Registrable domains the person told us they know. Newest first.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default, uniffi::Record)]
 pub struct KnownAddresses {
+    #[uniffi(default)]
     pub entries: Vec<KnownAddressEntry>,
 }
 
@@ -202,4 +203,22 @@ pub fn known_addresses_file_decode(bytes: Vec<u8>) -> KnownAddressesDecoded {
 #[uniffi::export]
 pub fn known_addresses_file_encode(known: KnownAddresses) -> Vec<u8> {
     encode_known_file(&known)
+}
+
+/// The signals a known address can switch off (`LIST_BASED`), for the "I know this address" text.
+#[uniffi::export]
+pub fn known_addresses_list_based() -> Vec<SignalId> {
+    LIST_BASED.to_vec()
+}
+
+/// The most entries kept (`KNOWN_MAX_ENTRIES`).
+#[uniffi::export]
+pub fn known_addresses_max_entries() -> i64 {
+    KNOWN_MAX_ENTRIES as i64
+}
+
+/// `known.v1.json`, the file the platform store keeps.
+#[uniffi::export]
+pub fn known_addresses_file_name() -> String {
+    KNOWN_FILE_NAME.to_string()
 }

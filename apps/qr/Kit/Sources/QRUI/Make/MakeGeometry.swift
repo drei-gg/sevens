@@ -7,13 +7,13 @@ enum MakeGeometry {
 
     /// Rows to draw: the matrix height, except a one-row code is stretched to 0.3 x width (min 1).
     static func rows(for matrix: BitMatrix) -> Int {
-        guard matrix.height == 1 else { return matrix.height }
-        return max(1, Int((Double(matrix.width) * barHeightRatio).rounded()))
+        guard matrix.rows == 1 else { return matrix.rows }
+        return max(1, Int((Double(matrix.columns) * barHeightRatio).rounded()))
     }
 
     /// Source row for a drawn row.
     static func sourceRow(_ drawn: Int, matrix: BitMatrix) -> Int {
-        matrix.height == 1 ? 0 : drawn
+        matrix.rows == 1 ? 0 : drawn
     }
 
     /// Horizontal runs of dark modules per drawn row, as (row, start, length).
@@ -22,10 +22,10 @@ enum MakeGeometry {
         for y in 0..<rows(for: matrix) {
             let sy = sourceRow(y, matrix: matrix)
             var x = 0
-            while x < matrix.width {
+            while x < matrix.columns {
                 guard matrix[x, sy] else { x += 1; continue }
                 var end = x + 1
-                while end < matrix.width, matrix[end, sy] { end += 1 }
+                while end < matrix.columns, matrix[end, sy] { end += 1 }
                 out.append((y, x, end - x))
                 x = end
             }

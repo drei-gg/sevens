@@ -70,7 +70,7 @@ struct PeekHopRow: Hashable {
             }
             if link == nil { link = WebAddress.parse(hop.url, psl: data.publicSuffixes)?.link }
             let domain = link.map(ResultLinkDisplay.headline) ?? hop.url
-            return PeekHopRow(number: index + 1, domain: domain, url: hop.url, status: hop.status, level: level)
+            return PeekHopRow(number: index + 1, domain: domain, url: hop.url, status: hop.status.map(Int.init), level: level)
         }
     }
 }

@@ -20,7 +20,7 @@ enum ResultKnownText {
             return String(localized: "result.known.question.shortener",
                           defaultValue: "\(name) is a link shortener, so we can’t tell where it leads.", bundle: .module)
         }
-        if ids.contains(.riskyTLD) {
+        if ids.contains(.riskyTld) {
             return String(localized: "result.known.question.ending",
                           defaultValue: "\(name) ends in a domain ending scammers use a lot, and it isn’t an address we know.",
                           bundle: .module)

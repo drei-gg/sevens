@@ -278,3 +278,15 @@ pub fn sheet_grid_columns(grid: SheetGrid) -> i64 {
 pub fn sheet_grid_rows(grid: SheetGrid) -> i64 {
     grid.rows()
 }
+
+/// The label sheet's page margin (`SHEET_MARGIN`), points; a single-code page uses it too.
+#[uniffi::export]
+pub fn sheet_margin() -> f64 {
+    SHEET_MARGIN
+}
+
+/// The gap between label cells (`SHEET_GUTTER`), points.
+#[uniffi::export]
+pub fn sheet_gutter() -> f64 {
+    SHEET_GUTTER
+}

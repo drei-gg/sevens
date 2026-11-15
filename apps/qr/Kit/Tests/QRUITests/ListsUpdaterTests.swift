@@ -37,7 +37,7 @@ import QRCore
         let rig = ListsTestRig(), stranger = Curve25519.Signing.PrivateKey()
         let bytes = ListsTestRig.bytes(ListsTestRig.bundle(version: 101))
         let forged = (try? stranger.signature(for: bytes)) ?? Data()
-        #expect(Self.refusal(rig.updater().accept(bytes, signature: forged)) == .badSignature)
+        #expect(Self.refusal(rig.updater().accept(bytes, signature: forged)) == .BadSignature)
         #expect(rig.store.read() == nil)
         #expect(rig.appliedCalls.isEmpty)
     }
@@ -47,22 +47,22 @@ import QRCore
         var bytes = ListsTestRig.bytes(ListsTestRig.bundle(version: 101))
         let signature = rig.sign(bytes)
         bytes[bytes.count / 2] ^= 0x01
-        #expect(Self.refusal(rig.updater().accept(bytes, signature: signature)) == .badSignature)
+        #expect(Self.refusal(rig.updater().accept(bytes, signature: signature)) == .BadSignature)
         #expect(rig.store.read() == nil)
     }
 
     @Test func listsWrongSizedSignatureIsRefused() {
         let rig = ListsTestRig()
         let bytes = ListsTestRig.bytes(ListsTestRig.bundle(version: 101))
-        #expect(Self.refusal(rig.updater().accept(bytes, signature: Data())) == .badSignature)
-        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes) + Data([0]))) == .badSignature)
+        #expect(Self.refusal(rig.updater().accept(bytes, signature: Data())) == .BadSignature)
+        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes) + Data([0]))) == .BadSignature)
     }
 
     @Test func listsSameOrLowerVersionIsARollbackAndRefused() {
         let rig = ListsTestRig()
         for version in [100, 99] {
             let bytes = ListsTestRig.bytes(ListsTestRig.bundle(version: version))
-            #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .notNewer(installed: 100, offered: version))
+            #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .NotNewer(installed: 100, offered: Int64(version)))
         }
         #expect(rig.store.read() == nil)
         #expect(rig.appliedCalls.isEmpty)
@@ -71,13 +71,13 @@ import QRCore
     @Test func listsUnknownSchemaIsRefused() {
         let rig = ListsTestRig()
         let bytes = ListsTestRig.bytes(ListsTestRig.bundle(version: 101, schema: 2))
-        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .unknownSchema(2))
+        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .UnknownSchema(schema: 2))
     }
 
     @Test func listsUnknownSchemaWithAnotherShapeIsStillTheSchemaReason() {
         let rig = ListsTestRig()
         let bytes = Data(#"{"schema":7,"version":999,"built":"2027-01-01","files":[1,2,3]}"#.utf8)
-        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .unknownSchema(7))
+        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .UnknownSchema(schema: 7))
     }
 
     @Test func listsBadShapeIsRefusedWithTheFileName() {
@@ -85,20 +85,20 @@ import QRCore
         var bundle = ListsTestRig.bundle(version: 101)
         bundle.files.shorteners = ["bit.ly"]
         let bytes = ListsTestRig.bytes(bundle)
-        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .badShape("shorteners"))
+        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .BadShape(file: "shorteners"))
         #expect(rig.store.read() == nil)
     }
 
     @Test func listsSignedGarbageIsUnreadable() {
         let rig = ListsTestRig()
         let bytes = Data("hello".utf8)
-        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .unreadable)
+        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .Unreadable)
     }
 
     @Test func listsOversizeIsRefusedBeforeAnythingIsDecoded() {
         let rig = ListsTestRig()
         let bytes = Data(count: ListsBundle.maxBytes + 1)
-        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .tooLarge)
+        #expect(Self.refusal(rig.updater().accept(bytes, signature: rig.sign(bytes))) == .TooLarge)
     }
 
     // MARK: Network
@@ -127,7 +127,7 @@ import QRCore
         PeekStubProtocol.register(base + "lists.json", .ok(body: bytes))
         PeekStubProtocol.register(base + "lists.json.sig", .ok(body: rig.sign(bytes)))
         let result = await rig.updater(owner: "acme-net2", repo: "kit").check()
-        #expect(Self.refusal(result) == .notNewer(installed: 100, offered: 100))
+        #expect(Self.refusal(result) == .NotNewer(installed: 100, offered: 100))
         #expect(ListsAboutText.sentence(for: result) == "No newer lists.")
     }
 
@@ -136,7 +136,7 @@ import QRCore
         let base = "https://raw.githubusercontent.com/acme-net3/kit/lists/"
         PeekStubProtocol.register(base + "lists.json", .ok(body: Data(count: ListsBundle.maxBytes + 4096)))
         let result = await rig.updater(owner: "acme-net3", repo: "kit").check()
-        #expect(Self.refusal(result) == .tooLarge)
+        #expect(Self.refusal(result) == .TooLarge)
         #expect(PeekStubProtocol.requests(to: base + "lists.json.sig").isEmpty)
     }
 
@@ -175,8 +175,8 @@ import QRCore
     }
 
     @Test func listsEverySentenceIsPlainAndNeverSaysSafe() {
-        let failures: [ListsUpdateFailure] = [.unreachable, .saveFailed, .refused(.tooLarge), .refused(.badSignature),
-            .refused(.unreadable), .refused(.unknownSchema(2)), .refused(.notNewer(installed: 2, offered: 1)), .refused(.badShape("brands"))]
+        let failures: [ListsUpdateFailure] = [.unreachable, .saveFailed, .refused(.TooLarge), .refused(.BadSignature),
+            .refused(.Unreadable), .refused(.UnknownSchema(schema: 2)), .refused(.NotNewer(installed: 2, offered: 1)), .refused(.BadShape(file: "brands"))]
         let sentences = failures.map { ListsAboutText.sentence(for: $0) }
         #expect(Set(sentences).count == sentences.count)
         for sentence in sentences {
