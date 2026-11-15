@@ -7,6 +7,7 @@ root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 base=$(basename "$root"); [ "$base" = sevens ] && base=main
 slot=${VM_SLOT:-$base}
 app=${SEVENS_APP:-qr}
+if [ "$app" = cleaner ]; then slot=personal; fi
 [ "$app" = qr ] || slot="$slot-$app"
 [ "${VM_SIM_SLOT:-1}" = 1 ] || slot="$slot-sim$VM_SIM_SLOT"   # a tour run with VM_SIM_SLOT
 out="src/screens-$slot-export"

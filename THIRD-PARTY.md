@@ -16,6 +16,7 @@ Zlib, Unicode, GPL-3.0-compatible). Nothing that collects data or phones home is
 | jiff | https://github.com/BurntSushi/jiff | Unlicense OR MIT | 0.2.43 | Fast core: calendar days and daylight-saving rules in a named time zone |
 | unicode-segmentation | https://github.com/unicode-rs/unicode-segmentation | MIT OR Apache-2.0 | 1.13.3 | Fast core: character counts that match Swift's `String.count` |
 | unicode-normalization | https://github.com/unicode-rs/unicode-normalization | MIT OR Apache-2.0 | 0.1.26 | Fast core: accent-insensitive search |
+| PhoneNumberKit | https://github.com/PhoneNumberKit/PhoneNumberKit | MIT | 5.0.14 (ff40a615c71bf3e1785562c86f7e38bdea29660a) | Contact phone candidate normalization; bundled libphonenumber metadata, no network client |
 | thiserror | https://github.com/dtolnay/thiserror | MIT OR Apache-2.0 | 2.0.21 | Fast core: error types |
 
 Their own dependencies are pinned in `apps/fast/core/Cargo.lock`.
@@ -28,6 +29,7 @@ Their own dependencies are pinned in `apps/fast/core/Cargo.lock`.
 | Public Suffix List | https://publicsuffix.org/list/public_suffix_list.dat | MPL-2.0 | as dated in `lists-version.json` | Finding a link's registrable domain (`apps/qr/Kit/Sources/QRCore/Data/public_suffix_list.dat`) |
 | IANA RDAP bootstrap for DNS | https://data.iana.org/rdap/dns.json | IANA public data (no licence restrictions stated) | as dated in the file's `publication` field | Finding the registry to ask a domain's age (`rdap-dns.json`) |
 | Unicode confusables (UTS #39), curated subset | https://www.unicode.org/Public/security/latest/confusables.txt | Unicode | 18.0.0 | Look-alike letters in addresses (`confusables.json`) |
+| Libphonenumber metadata | https://github.com/google/libphonenumber | Apache-2.0 | metadata 9.0.43, as bundled in PhoneNumberKit 5.0.14 | International phone numbering plans, transformed XML to JSON by PhoneNumberKit |
 
 Where each data entry comes from is recorded in `apps/qr/Kit/Sources/QRCore/Data/DATA-SOURCES.md`.
 
