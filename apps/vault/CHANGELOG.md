@@ -2,6 +2,10 @@
 
 ## 0.1.0 — unreleased
 
+### One core for both phones — 15 November 2026
+
+- Vault's credential rules, pattern canonicalization, library index and edits, header format, size limits and `.vault7` backup framing now come from one shared core for the iPhone and Android apps. All encryption, key derivation, Keychain custody and file protection stay native on the phone, and recovery keys and note text never enter the core. Existing vaults and backups open unchanged.
+
 - Added independent PIN and 5×5 drawn/tapped pattern credentials, selection during create/open/change/restore, and compatibility with existing passphrase vaults.
 - Added automatic encrypted backup to a persistently selected Files-provider folder, revision coalescing, durable retries, coordinated/verified copying, three-version retention and background delivery opportunities.
 - Extracted Scanner's manual export picker into SevenKit; Vault and Scanner now share it. The new SevenBackup product keeps platform transport outside portable SevenKitCore.

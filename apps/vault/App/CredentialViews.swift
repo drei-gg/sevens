@@ -21,6 +21,7 @@ struct PatternPad: View {
     @State private var drawing = false
     private var path: [Int] { PatternPath.decode(value) ?? [] }
     var body: some View {
+        let path = self.path   // decoded once per render, not once per dot
         VStack(alignment: .leading) {
             HStack { Text(label); Spacer(); Button("Clear") { value = "" }.accessibilityIdentifier(identifier + ".clear") }
             GeometryReader { geometry in

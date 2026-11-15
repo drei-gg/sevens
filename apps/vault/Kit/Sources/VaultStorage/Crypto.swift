@@ -7,28 +7,21 @@ import AppleArchive
 import System
 import VaultCore
 
-struct KeyEnvelope: Codable, Sendable {
-    let salt: Data
-    let rounds: UInt32
-    let sealed: Data
-}
-struct VaultHeader: Codable, Sendable {
-    var version = 1
-    let id: UUID
-    var password: KeyEnvelope
-    var recovery: KeyEnvelope
-    var credentialKind: VaultCredentialKind? = nil
-}
+// `KeyEnvelope` and `VaultHeader` (header.json) are the core's records; their JSON coding, the
+// format's parameters and its associated-data strings come from the core. Every cryptographic
+// operation here stays native, and no credential or key is handed to the core: the derivation
+// check below reads the core's limits rather than passing it the credential.
 enum VaultCrypto {
-    static let rounds: UInt32 = 600_000
+    static let format = vaultFormat()
+    static var rounds: UInt32 { format.pbkdf2Rounds }
     static func random(_ count: Int) throws -> Data {
         var bytes = [UInt8](repeating: 0, count: count)
-        guard SecRandomCopyBytes(kSecRandomDefault, count, &bytes) == errSecSuccess else { throw VaultError.damaged }
+        guard SecRandomCopyBytes(kSecRandomDefault, count, &bytes) == errSecSuccess else { throw VaultError.Damaged }
         return Data(bytes)
     }
     static func derive(_ credential: String, salt: Data, rounds: UInt32) throws -> SymmetricKey {
-        guard salt.count == 32, rounds == Self.rounds, credential.utf8.count <= 4096 else { throw VaultError.unsupported }
-        var output = [UInt8](repeating: 0, count: 32)
+        guard salt.count == Int(format.saltBytes), rounds == format.pbkdf2Rounds, credential.utf8.count <= Int(format.credentialMaxBytes) else { throw VaultError.Unsupported }
+        var output = [UInt8](repeating: 0, count: Int(format.keyBytes))
         let password = Array(credential.utf8)
         let status = password.withUnsafeBytes { pass in
             salt.withUnsafeBytes { saltBytes in
@@ -37,22 +30,22 @@ enum VaultCrypto {
                                     CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA256), rounds, &output, output.count)
             }
         }
-        guard status == kCCSuccess else { throw VaultError.damaged }
+        guard status == kCCSuccess else { throw VaultError.Damaged }
         defer { _ = output.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) } }
         return SymmetricKey(data: output)
     }
     static func wrap(_ key: SymmetricKey, credential: String, context: String) throws -> KeyEnvelope {
-        let salt = try random(32); let wrapping = try derive(credential, salt: salt, rounds: rounds)
+        let salt = try random(Int(format.saltBytes)); let wrapping = try derive(credential, salt: salt, rounds: rounds)
         return KeyEnvelope(salt: salt, rounds: rounds, sealed: try seal(key.withUnsafeBytes { Data($0) }, key: wrapping, context: context))
     }
     static func unwrap(_ envelope: KeyEnvelope, credential: String, context: String) throws -> SymmetricKey {
         let key = try derive(credential, salt: envelope.salt, rounds: envelope.rounds)
         let bytes = try open(envelope.sealed, key: key, context: context)
-        guard bytes.count == 32 else { throw VaultError.damaged }
+        guard bytes.count == Int(format.keyBytes) else { throw VaultError.Damaged }
         return SymmetricKey(data: bytes)
     }
     static func seal(_ data: Data, key: SymmetricKey, context: String) throws -> Data {
-        guard let sealed = try AES.GCM.seal(data, using: key, authenticating: Data(context.utf8)).combined else { throw VaultError.damaged }
+        guard let sealed = try AES.GCM.seal(data, using: key, authenticating: Data(context.utf8)).combined else { throw VaultError.Damaged }
         return sealed
     }
     static func open(_ data: Data, key: SymmetricKey, context: String) throws -> Data {
@@ -61,20 +54,20 @@ enum VaultCrypto {
     static func digest(_ url: URL) throws -> (Int64, String) {
         let handle = try FileHandle(forReadingFrom: url); defer { try? handle.close() }
         var hash = SHA256(); var size: Int64 = 0
-        while let data = try handle.read(upToCount: 1_048_576), !data.isEmpty { hash.update(data: data); size += Int64(data.count) }
+        while let data = try handle.read(upToCount: Int(format.streamChunkBytes)), !data.isEmpty { hash.update(data: data); size += Int64(data.count) }
         return (size, hash.finalize().map { String(format: "%02x", $0) }.joined())
     }
     static func fileKey(_ key: SymmetricKey, id: UUID) -> SymmetricKey {
-        HKDF<SHA256>.deriveKey(inputKeyMaterial: key, salt: Data(id.uuidString.utf8), info: Data("Vault/file/v1".utf8), outputByteCount: 32)
+        HKDF<SHA256>.deriveKey(inputKeyMaterial: key, salt: fileKeySalt(item: id), info: Data(format.fileKeyInfo.utf8), outputByteCount: Int(format.keyBytes))
     }
     static func encrypt(_ source: URL, to destination: URL, key: SymmetricKey) throws {
         let context = ArchiveEncryptionContext(profile: .hkdf_sha256_aesctr_hmac__symmetric__none, compressionAlgorithm: .none)
         try context.setSymmetricKey(key)
-        guard let input = ArchiveByteStream.fileStream(path: FilePath(source.path), mode: .readOnly, options: [], permissions: FilePermissions(rawValue: 0o600)) else { throw VaultError.missingFile }
+        guard let input = ArchiveByteStream.fileStream(path: FilePath(source.path), mode: .readOnly, options: [], permissions: FilePermissions(rawValue: 0o600)) else { throw VaultError.MissingFile }
         defer { try? input.close() }
-        guard let output = ArchiveByteStream.fileStream(path: FilePath(destination.path), mode: .writeOnly, options: [.create, .exclusiveCreate], permissions: FilePermissions(rawValue: 0o600)) else { throw VaultError.damaged }
+        guard let output = ArchiveByteStream.fileStream(path: FilePath(destination.path), mode: .writeOnly, options: [.create, .exclusiveCreate], permissions: FilePermissions(rawValue: 0o600)) else { throw VaultError.Damaged }
         defer { try? output.close() }
-        guard let stream = ArchiveByteStream.encryptionStream(writingTo: output, encryptionContext: context) else { throw VaultError.damaged }
+        guard let stream = ArchiveByteStream.encryptionStream(writingTo: output, encryptionContext: context) else { throw VaultError.Damaged }
         do {
             _ = try ArchiveByteStream.process(readingFrom: input, writingTo: stream)
             try stream.close(); try output.close()
@@ -83,17 +76,17 @@ enum VaultCrypto {
     /// Read authenticated chunks with bounded memory. A consumer sees only authenticated stream output;
     /// callers publish files only after complete-stream authentication and expected digest/size checks.
     static func decrypt(_ source: URL, key: SymmetricKey, consume: (Data) throws -> Void) throws {
-        guard let input = ArchiveByteStream.fileStream(path: FilePath(source.path), mode: .readOnly, options: [], permissions: FilePermissions(rawValue: 0o600)) else { throw VaultError.missingFile }
+        guard let input = ArchiveByteStream.fileStream(path: FilePath(source.path), mode: .readOnly, options: [], permissions: FilePermissions(rawValue: 0o600)) else { throw VaultError.MissingFile }
         defer { try? input.close() }
-        guard let context = ArchiveEncryptionContext(from: input), context.profile == .hkdf_sha256_aesctr_hmac__symmetric__none else { throw VaultError.damaged }
+        guard let context = ArchiveEncryptionContext(from: input), context.profile == .hkdf_sha256_aesctr_hmac__symmetric__none else { throw VaultError.Damaged }
         try context.setSymmetricKey(key)
-        guard let stream = ArchiveByteStream.decryptionStream(readingFrom: input, encryptionContext: context) else { throw VaultError.damaged }
+        guard let stream = ArchiveByteStream.decryptionStream(readingFrom: input, encryptionContext: context) else { throw VaultError.Damaged }
         defer { try? stream.close() }
-        let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 1_048_576, alignment: 16)
+        let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: Int(format.streamChunkBytes), alignment: 16)
         defer { buffer.initializeMemory(as: UInt8.self, repeating: 0); buffer.deallocate() }
         while true {
             let count = try stream.read(into: buffer)
-            guard count >= 0 else { throw VaultError.damaged }
+            guard count >= 0 else { throw VaultError.Damaged }
             if count == 0 { break }
             try consume(Data(buffer.prefix(count)))
         }
@@ -102,11 +95,11 @@ enum VaultCrypto {
     static func verify(_ source: URL, key: SymmetricKey, item: VaultItem, output: FileHandle? = nil) throws {
         var hash = SHA256(); var bytes: Int64 = 0
         try decrypt(source, key: fileKey(key, id: item.id)) { data in
-            bytes += Int64(data.count); guard bytes <= item.bytes else { throw VaultError.damaged }
+            bytes += Int64(data.count); guard bytes <= item.bytes else { throw VaultError.Damaged }
             hash.update(data: data); try output?.write(contentsOf: data)
         }
         let digest = hash.finalize().map { String(format: "%02x", $0) }.joined()
-        guard bytes == item.bytes, digest == item.digest else { throw VaultError.damaged }
+        guard bytes == item.bytes, digest == item.digest else { throw VaultError.Damaged }
     }
 }
 
@@ -130,9 +123,9 @@ enum ProtectedFiles {
         #endif
         try protect(url)
     }
-    static func boundedRead(_ url: URL, max: Int = 32_000_000) throws -> Data {
+    static func boundedRead(_ url: URL, max: Int = Int(VaultCrypto.format.sealedIndexMaxBytes)) throws -> Data {
         let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-        guard size > 0, size <= max else { throw VaultError.damaged }
+        guard size > 0, size <= max else { throw VaultError.Damaged }
         return try Data(contentsOf: url)
     }
 }

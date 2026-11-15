@@ -60,8 +60,8 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
     func start() async {
         guard !started else { return }; started = true
         BackupBackground.queue = automatic
-        do { try await repository.prepare() } catch { self.error = error.localizedDescription }
-        do { try await automatic.prepare() } catch { automaticMessage = error.localizedDescription }
+        do { try await repository.prepare() } catch { self.error = error.vaultMessage }
+        do { try await automatic.prepare() } catch { automaticMessage = error.vaultMessage }
         await store.start()
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-vault.routes") && ProcessInfo.processInfo.arguments.contains("-vault.reset") {
@@ -69,7 +69,7 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
                 _ = try await repository.create(name: "PIN library", passphrase: "00123456", kind: .pin)
                 _ = try await repository.create(name: "Pattern library", passphrase: "0,5,10,15,20,21,22,23,24", kind: .pattern)
                 await repository.lock()
-            } catch { self.error = error.localizedDescription }
+            } catch { self.error = error.vaultMessage }
         }
         #endif
         await retryAutomaticBackups()
@@ -96,13 +96,13 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
         guard !busy else { return }; busy = true; progress = label; operation += 1; let token = operation
         defer { if token == operation { busy = false; progress = "" } }
         do { let (value, recovery) = try await action(); guard token == operation else { return }; library = value; recoveryKey = recovery; scheduleAutomaticBackup() }
-        catch { if token == operation { self.error = error.localizedDescription } }
+        catch { if token == operation { self.error = error.vaultMessage } }
     }
     func update(_ label: String = "Saving…", action: () async throws -> Void) async {
         guard !busy, library != nil else { return }; busy = true; progress = label; let token = operation
         defer { if token == operation { busy = false; progress = "" } }
         do { try await action(); let value = try await repository.snapshot(); if token == operation { library = value; scheduleAutomaticBackup() } }
-        catch { if token == operation { self.error = error.localizedDescription } }
+        catch { if token == operation { self.error = error.vaultMessage } }
     }
     func importFiles(_ urls: [URL], folder: UUID?) async {
         guard !busy, library != nil, store.paidFeaturesAvailable else { return }
@@ -115,7 +115,7 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
             do {
                 let type = (try? url.resourceValues(forKeys: [.contentTypeKey]).contentType?.identifier) ?? "public.data"
                 _ = try await repository.importFile(url, name: url.lastPathComponent, type: type, folder: folder); successes += 1
-            } catch { failures.append("\(url.lastPathComponent): \(error.localizedDescription)") }
+            } catch { failures.append("\(url.lastPathComponent): \(error.vaultMessage)") }
         }
         guard token == operation else { return }
         library = try? await repository.snapshot(); scheduleAutomaticBackup()
@@ -130,12 +130,12 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
             guard token == operation else { return }
             progress = "Loading and encrypting \(index + 1) of \(items.count)…"
             do {
-                guard let media = try await item.loadTransferable(type: IncomingMedia.self) else { throw VaultError.unsupported }
+                guard let media = try await item.loadTransferable(type: IncomingMedia.self) else { throw VaultError.Unsupported }
                 defer { try? FileManager.default.removeItem(at: media.url.deletingLastPathComponent()) }
                 guard token == operation else { return }
                 let type = (try? media.url.resourceValues(forKeys: [.contentTypeKey]).contentType?.identifier) ?? "public.data"
                 _ = try await repository.importFile(media.url, name: media.url.lastPathComponent, type: type, folder: folder); successes += 1
-            } catch { failures.append("Item \(index + 1): \(error.localizedDescription)") }
+            } catch { failures.append("Item \(index + 1): \(error.vaultMessage)") }
         }
         guard token == operation else { return }
         library = try? await repository.snapshot(); scheduleAutomaticBackup(); importResult = "\(successes) imported. Originals stay in Photos."
@@ -154,7 +154,7 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
             var urls: [URL] = []; var failures: [String] = []
             for id in ids.sorted(by: { $0.uuidString < $1.uuidString }) {
                 guard token == self.operation else { return }
-                do { urls.append(try await self.repository.export(id)) } catch { failures.append(error.localizedDescription) }
+                do { urls.append(try await self.repository.export(id)) } catch { failures.append(error.vaultMessage) }
             }
             guard token == self.operation else { return }
             if !urls.isEmpty { self.presentation = PresentedFiles(urls: urls, sharing: true) }
@@ -206,7 +206,7 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
         do {
             try FileManager.default.createDirectory(at: testBackupFolder, withIntermediateDirectories: true)
             await enableAutomaticBackup(in: testBackupFolder)
-        } catch { self.error = error.localizedDescription }
+        } catch { self.error = error.vaultMessage }
     }
     func verifyTestBackup() async {
         guard ProcessInfo.processInfo.arguments.contains("-vault.ui"), let value = library else { return }
@@ -221,7 +221,7 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
             let result = try await restored.restore(file, credential: "several private testing words", recovery: false)
             guard result.items.count == value.items.count else { throw BackupFailure.changedCopy }
             automaticMessage = "Verified automatic backup: \(result.items.count) files"
-        } catch { self.error = error.localizedDescription }
+        } catch { self.error = error.vaultMessage }
     }
     func fixture() async {
         guard ProcessInfo.processInfo.arguments.contains("-vault.ui") else { return }
@@ -247,9 +247,9 @@ enum BiometricKey {
     static func save(_ data: Data, id: UUID) throws {
         let context = LAContext(); var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else { throw error ?? NSError(domain: "Vault", code: 1, userInfo: [NSLocalizedDescriptionKey: "Set up Face ID or Touch ID first."]) }
-        guard let access = SecAccessControlCreateWithFlags(nil, kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly, .biometryCurrentSet, nil) else { throw VaultError.damaged }
+        guard let access = SecAccessControlCreateWithFlags(nil, kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly, .biometryCurrentSet, nil) else { throw VaultError.Damaged }
         var query = base(id); query[kSecAttrAccessControl as String] = access; query[kSecValueData as String] = data
-        remove(id: id); guard SecItemAdd(query as CFDictionary, nil) == errSecSuccess else { throw VaultError.damaged }
+        remove(id: id); guard SecItemAdd(query as CFDictionary, nil) == errSecSuccess else { throw VaultError.Damaged }
     }
     static func remove(id: UUID) { SecItemDelete(base(id) as CFDictionary) }
     static func read(id: UUID) async throws -> Data {
@@ -257,7 +257,7 @@ enum BiometricKey {
         _ = try await context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: "Open your encrypted vault")
         var query = base(id); query[kSecReturnData as String] = true; query[kSecUseAuthenticationContext as String] = context
         var result: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { throw VaultError.invalidCredential }
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { throw VaultError.InvalidCredential }
         return data
     }
 }
@@ -285,18 +285,18 @@ extension VaultModel {
                 guard status != nil else { return }
                 try await Task.sleep(for: .seconds(2))
                 await prepareAutomaticBackup()
-            } catch is CancellationError { } catch { if library?.id == id { automaticMessage = error.localizedDescription } }
+            } catch is CancellationError { } catch { if library?.id == id { automaticMessage = error.vaultMessage } }
         }
     }
     func enableAutomaticBackup(in directory: URL) async {
         guard let id = library?.id else { return }
         do { try await automatic.configure(target: id, directory: directory); automaticMessage = nil; scheduleAutomaticBackup() }
-        catch { automaticMessage = error.localizedDescription }
+        catch { automaticMessage = error.vaultMessage }
     }
     func disableAutomaticBackup() async {
         guard let id = library?.id else { return }; automaticTask?.cancel()
         do { try await automatic.disable(target: id); automaticStatus = nil; automaticMessage = nil }
-        catch { automaticMessage = error.localizedDescription }
+        catch { automaticMessage = error.vaultMessage }
     }
     func prepareAutomaticBackup() async {
         guard !automaticWorking, let id = library?.id else { return }
@@ -320,7 +320,7 @@ extension VaultModel {
             BackupBackground.schedule()
             await retryAutomaticBackups()
         } catch {
-            if library?.id == id { automaticMessage = "Backup needs another attempt: " + error.localizedDescription }
+            if library?.id == id { automaticMessage = "Backup needs another attempt: " + error.vaultMessage }
         }
     }
     func retryAutomaticBackups() async {
@@ -332,7 +332,7 @@ extension VaultModel {
                 if let id = library?.id { automaticStatus = try await automatic.status(target: id) }
                 if try await automatic.hasPending() { BackupBackground.schedule() }
             } catch {
-                if library != nil { automaticMessage = error.localizedDescription }
+                if library != nil { automaticMessage = error.vaultMessage }
                 BackupBackground.schedule()
             }
         }

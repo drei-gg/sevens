@@ -48,7 +48,7 @@ let password = "four separate private words"
     #expect(restored.items.first?.deleted != nil); #expect(restored.items.first?.favorite == true)
     try await other.updateItem(item.id, trashed: false)
     #expect(try String(contentsOf: await other.export(item.id), encoding: .utf8) == "original evidence")
-    await #expect(throws: VaultError.duplicateVault) { try await other.restore(backup, credential: password, recovery: false) }
+    await #expect(throws: VaultError.DuplicateVault) { try await other.restore(backup, credential: password, recovery: false) }
     #expect(try await other.snapshot().items.first?.deleted == nil)
 }
 
@@ -75,7 +75,7 @@ let password = "four separate private words"
     _ = try await repo.create(name: "Other", passphrase: "a different vault password")
     #expect(try await repo.snapshot().items.isEmpty)
     #expect(try await repo.unlock(credential: password).items.count == 1)
-    await #expect(throws: VaultError.duplicateVault) { try await repo.create(name: "Collision", passphrase: password) }
+    await #expect(throws: VaultError.DuplicateVault) { try await repo.create(name: "Collision", passphrase: password) }
 }
 
 @Test func malformedBackupsPreserveExistingState() async throws {
@@ -160,7 +160,7 @@ let password = "four separate private words"
     #expect(try await repo.snapshot().items.isEmpty)
     let backup = try await repo.backup(), other = g.repo; try await other.prepare()
     #expect(try await other.restore(backup, credential: pattern, recovery: false, kind: .pattern).id == drawn.library.id)
-    await #expect(throws: VaultError.duplicateVault) { try await repo.create(name: "Collision", passphrase: "00123456", kind: .pin) }
+    await #expect(throws: VaultError.DuplicateVault) { try await repo.create(name: "Collision", passphrase: "00123456", kind: .pin) }
     try await repo.changePassphrase("98765432", kind: .pin)
     await #expect(throws: (any Error).self) { try await repo.unlock(credential: pattern, kind: .pattern) }
     #expect(try await repo.unlock(credential: "98765432", kind: .pin).id == drawn.library.id)
@@ -177,7 +177,7 @@ let password = "four separate private words"
     let other = g.repo; try await other.prepare()
     let restored = try await other.restore(output, credential: password, recovery: false)
     #expect(try await other.readNote(restored.items[0].id) == "original encrypted snapshot")
-    await #expect(throws: VaultError.locked) { try await repo.automaticBackup(to: f.directory.appendingPathComponent("locked.vault7")) }
+    await #expect(throws: VaultError.Locked) { try await repo.automaticBackup(to: f.directory.appendingPathComponent("locked.vault7")) }
 }
 @Test func originalHeaderWithoutCredentialTypeStillUnlocks() async throws {
     let f = Fixture(); defer { f.cleanup() }; let repo = f.repo; try await repo.prepare()

@@ -149,7 +149,7 @@ struct RestoreVaultSheet: View {
                 }.disabled(file == nil || credential.isEmpty || model.busy)
             }.navigationTitle("Restore vault").toolbar { Button("Cancel") { dismiss() } }
                 .fileImporter(isPresented: $choosing, allowedContentTypes: [.data]) { result in
-                    do { file = try result.get() } catch { model.error = error.localizedDescription }
+                    do { file = try result.get() } catch { model.error = error.vaultMessage }
                 }
         }
     }
@@ -281,7 +281,7 @@ struct VaultLibraryView: View {
                     }
                 }
                 .onChange(of: photos) { _, items in guard !items.isEmpty else { return }; photos = []; Task { await model.importPhotos(items, folder: folder) } }
-                .fileImporter(isPresented: $importing, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in do { let urls = try result.get(); Task { await model.importFiles(urls, folder: folder) } } catch { model.error = error.localizedDescription } }
+                .fileImporter(isPresented: $importing, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in do { let urls = try result.get(); Task { await model.importFiles(urls, folder: folder) } } catch { model.error = error.vaultMessage } }
                 .sheet(isPresented: $note) { NoteSheet(folder: folder) }
                 .sheet(item: $editing) { item in ItemSheet(item: item) }
                 .sheet(isPresented: $camera) { VaultCamera { url in if let url { Task { await model.importFiles([url], folder: folder); try? FileManager.default.removeItem(at: url) } } } }
@@ -344,7 +344,7 @@ struct ItemSheet: View {
             }
             Section { Button(item.deleted == nil ? "Move to Recently Deleted" : "Restore file", role: item.deleted == nil ? .destructive : nil) { Task { await model.update { try await model.repository.updateItem(item.id, trashed: item.deleted == nil) }; if model.error == nil { dismiss() } } } }
         }.disabled(model.busy).navigationTitle("File details").toolbar { Button("Lock") { model.lock() }; Button("Done") { dismiss() } }.onAppear { name = item.name; favorite = item.favorite }
-                .task { if item.type == "public.plain-text" && item.bytes <= 5_000_000 { do { noteText = try await model.repository.readNote(item.id); noteLoaded = true } catch { model.error = error.localizedDescription } } }
+                .task { if item.type == "public.plain-text" && item.bytes <= 5_000_000 { do { noteText = try await model.repository.readNote(item.id); noteLoaded = true } catch { model.error = error.vaultMessage } } }
         }
     }
     private func shift(_ delta: Int) {
