@@ -20,6 +20,7 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.fast.core.*
 import gg.seven.kit.*
 import gg.seven.kit.SevenTheme
@@ -94,8 +95,9 @@ internal fun HealthImportPanel(m: FastModel) {
             }
         }
     }
+    val archive by m.archive.collectAsStateWithLifecycle()
     preview?.let { incoming ->
-        val known = m.archive.value?.metrics?.mapNotNull { it.externalId }?.toSet().orEmpty()
+        val known = archive?.metrics?.mapNotNull { it.externalId }?.toSet().orEmpty()
         val count = incoming.count { it.externalId !in known }
         AlertDialog(
             onDismissRequest = { preview = null },

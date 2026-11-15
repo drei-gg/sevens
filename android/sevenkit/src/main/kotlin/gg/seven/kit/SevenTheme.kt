@@ -120,3 +120,9 @@ object SevenColors {
     val onUnlock: Color
         @Composable get() = if (isSystemInDarkTheme()) Color(0xFF121110) else Color.White
 }
+
+/** The fixed light and dark schemes, for surfaces outside Compose's theme (Glance widgets). */
+object SevenSchemes {
+    val light: ColorScheme = Light
+    val dark: ColorScheme = Dark
+}

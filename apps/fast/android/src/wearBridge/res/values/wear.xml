@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The watch finds the phone by this capability (gg.seven.fast.wire.WirePaths.PHONE_CAPABILITY).
+     Kept from resource shrinking by raw/wear_bridge_keep.xml: only Google Play services reads it. -->
+<resources>
+    <string-array name="android_wear_capabilities" translatable="false">
+        <item>fast_phone</item>
+    </string-array>
+</resources>

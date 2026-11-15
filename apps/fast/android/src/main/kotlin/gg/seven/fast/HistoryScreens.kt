@@ -121,7 +121,7 @@ internal fun HistoryScreen(m: FastModel, a: FastArchive, now: Double, open: Open
                                 Text(
                                     weekday.getDisplayName(
                                         java.time.format.TextStyle.SHORT,
-                                        java.util.Locale.getDefault(),
+                                        androidx.compose.ui.platform.LocalConfiguration.current.locales[0],
                                     ),
                                     style = MaterialTheme.typography.labelSmall,
                                 )
@@ -821,7 +821,7 @@ private fun HistoryCalendar(
                                     Text(
                                         day.date.dayOfWeek.getDisplayName(
                                             java.time.format.TextStyle.SHORT,
-                                            java.util.Locale.getDefault(),
+                                            androidx.compose.ui.platform.LocalConfiguration.current.locales[0],
                                         ),
                                         Modifier.weight(1f),
                                         style = MaterialTheme.typography.bodySmall,

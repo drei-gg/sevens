@@ -32,6 +32,8 @@ tasks.named("preBuild") { dependsOn(rustAndroid) }
 dependencies {
     implementation(project(":core"))
     implementation("net.java.dev.jna:jna:5.17.0@aar")
+    implementation("androidx.glance:glance-appwidget:1.2.0")
+    implementation("androidx.glance:glance-material3:1.2.0")
     implementation("com.kizitonwose.calendar:compose:2.9.0")
     implementation("com.patrykandpatrick.vico:compose-m3:2.3.6")
     implementation("androidx.health.connect:connect-client:1.1.0")
@@ -46,3 +48,6 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
+
+// Wear OS bridge: personal and store flavors only (see the script).
+apply(from = "wear-bridge.gradle.kts")

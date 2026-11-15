@@ -123,7 +123,7 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit)
                             val names = java.time.format.TextStyle.SHORT
                             (1..7).forEach { day ->
                                 val label =
-                                    java.time.DayOfWeek.of((day + 5) % 7 + 1).getDisplayName(names, java.util.Locale.getDefault())
+                                    java.time.DayOfWeek.of((day + 5) % 7 + 1).getDisplayName(names, androidx.compose.ui.platform.LocalConfiguration.current.locales[0])
                                 val on = day in a.settings.reminderWeekdays
                                 FilterChip(
                                     selected = on,

@@ -82,4 +82,23 @@ The `seven.android-app` Gradle convention supplies flavors, signing gates, versi
 
 Fast uses AndroidX `AtomicFile` with serialized IO; a failed write does not publish state. A corrupt/newer archive remains intact and blocks edits. JSON import validates and previews a stable-ID merge, keeping local settings. CSV includes every record type. Reminders use Android's inexact, idle-capable alarms and reconcile after boot, clock/timezone changes, app updates and edits; delayed water reminders outside the chosen window are dropped. Permission denial does not affect tracking.
 
-Android provides a display-only home-screen timer widget and optional ongoing timer notification using native RemoteViews / NotificationCompat. Health Connect imports available weight records from the last 30 days only after explicit permission and preview, skipping already imported sample IDs; no writes or background reads. Physical Health permission/data and widget/notification behavior require device acceptance. Wear OS companion and cross-device sync are not part of this phone baseline.
+Android provides a display-only home-screen timer widget and optional ongoing timer notification using native RemoteViews / NotificationCompat. Health Connect imports available weight records from the last 30 days only after explicit permission and preview, skipping already imported sample IDs; no writes or background reads. Physical Health permission/data and widget/notification behavior require device acceptance. Cross-device sync is not part of this phone baseline; the Wear OS companion is below.
+
+## Wear OS companion
+
+`apps/fast/wear` (Gradle `:wear`) ports the Apple Watch app (`apps/fast/Watch`): Compose for Wear OS with Wear Material 3, a timer tile, an elapsed / goal complication and an ongoing activity while a fast runs. It holds no records. It shows the phone's last snapshot and keeps at most one pending request, retried verbatim until the phone answers; the phone applies requests through the Rust core (`watchApply`), whose receipts make a retry idempotent.
+
+- Transport is the Wearable Data Layer (Google Play services), the counterpart of WatchConnectivity: the phone publishes its snapshot as the DataItem `/fast/snapshot` after every committed write, and the watch sends `/fast/request` with `MessageClient.sendRequest` to a node advertising the `fast_phone` capability.
+- The wire protocol (`apps/fast/wear/wire`, Gradle `:fast-wire`) keeps the Swift FastWire JSON names, actions, failures, version and 32,768-byte limit, except that dates are integer epoch milliseconds. The two protocols never meet: each watch only talks to its own platform's phone.
+- Flavor rule: like Play Billing, the Data Layer is a platform exception. The phone's bridge (`apps/fast/android/src/wearBridge`, wired by `wear-bridge.gradle.kts` with the manifests in `src/personal` and `src/store`) is compiled into the personal and store flavors only. The generic phone flavor has no Play services:
+
+  ```sh
+  android/gradlew -p android :fast:dependencies --configuration genericReleaseRuntimeClasspath | grep -c play-services   # 0
+  ```
+
+- The Wear app uses the same convention plugin as the phone, so its application ID matches the phone's per flavor and build type, as the Data Layer requires (both must also share a signing key). Personal and store Wear builds take the same private overlay (`-Psevens.brandDir`) as the phone.
+
+```sh
+android/gradlew -p android :fast-wire:test :fast:testPersonalDebugUnitTest :wear:lintGenericDebug :wear:assembleGenericDebug
+android/gradlew -p android :wear:assemblePersonalRelease -Psevens.brandDir=/private/sevens-brand
+```
