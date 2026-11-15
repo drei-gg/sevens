@@ -1,4 +1,5 @@
 import SwiftUI
+import SevenKit
 import ScannerCore
 
 struct ExportScreen: View {
@@ -65,7 +66,7 @@ struct ExportScreen: View {
                 .onChange(of: quality) { _, _ in exported = nil }
                 .onChange(of: paper) { _, _ in exported = nil }
                 .onChange(of: searchable) { _, _ in exported = nil }
-                .sheet(isPresented: $saving) { if let exported { FileExportPicker(url: exported.url) } }
+                .sheet(isPresented: $saving) { if let exported { SevenFileExportPicker(urls: [exported.url]) } }
                 .sheet(isPresented: $sharing) { if let exported { ShareSheet(url: exported.url) } }
                 .sheet(isPresented: $previewing) { if let exported { NavigationStack { PDFPreview(url: exported.url).navigationTitle("PDF preview").toolbar { Button("Done") { previewing = false } } } } }
         }

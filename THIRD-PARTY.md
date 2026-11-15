@@ -17,3 +17,5 @@ No code libraries yet.
 | Name | URL | Licence | Version | Used for |
 |---|---|---|---|---|
 
+
+Vault uses the operating-system CryptoKit, CommonCrypto, Security/Keychain and AppleArchive frameworks, with PhotosUI, ImageIO and Quick Look. No additional third-party code is bundled. AppleArchive provides the authenticated streaming file format; Vault does not implement its own cipher.

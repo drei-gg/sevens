@@ -1,4 +1,5 @@
 import SwiftUI
+import SevenKit
 import UniformTypeIdentifiers
 
 struct BackupScreen: View {
@@ -22,7 +23,7 @@ struct BackupScreen: View {
             if working { ProgressView("Working…") }
             if let message { Text(message) }
         }.navigationTitle("Backup & restore").disabled(working)
-            .sheet(item: $exported) { FileExportPicker(url: $0.url) }
+            .sheet(item: $exported) { SevenFileExportPicker(urls: [$0.url]) }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.data], allowsMultipleSelection: false) { result in
                 do { candidate = try result.get().first } catch { message = error.localizedDescription }
             }
@@ -45,9 +46,4 @@ struct BackupScreen: View {
             message = "Restored \(count) document copies."
         } catch { message = "This backup could not be restored. Your existing documents are unchanged. " + error.localizedDescription }
     }
-}
-struct FileExportPicker: UIViewControllerRepresentable {
-    let url: URL
-    func makeUIViewController(context: Context) -> UIDocumentPickerViewController { UIDocumentPickerViewController(forExporting: [url], asCopy: true) }
-    func updateUIViewController(_ controller: UIDocumentPickerViewController, context: Context) {}
 }
