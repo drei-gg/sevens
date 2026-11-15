@@ -62,8 +62,8 @@ internal fun HealthImportPanel(m: FastModel) {
             if (granted.containsAll(permissions)) read()
             else error = "Weight permission was not granted. Manual logging still works."
         }
-    SevenGroup(
-        header = "Health Connect · weight only",
+    Section(
+        title = "Health Connect · weight only",
         footer =
             listOfNotNull(
                     "Manual import of available records from the last 30 days. Existing samples are skipped, so importing again does not duplicate them.",
@@ -75,10 +75,10 @@ internal fun HealthImportPanel(m: FastModel) {
                 )
                 .joinToString("\n\n"),
     ) {
-        ActionRow(
+        action(
             if (working) "Reading weights…" else "Import weight from Health Connect",
+            Icons.Outlined.MonitorWeight,
             enabled = supported && !working && m.canCreate,
-            leading = { Icon(Icons.Outlined.MonitorWeight, null) },
         ) {
             scope.launch {
                 try {

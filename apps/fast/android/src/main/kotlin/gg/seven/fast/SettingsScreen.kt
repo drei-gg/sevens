@@ -70,98 +70,92 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit)
                     "After saving the original, recover from a valid backup in a separate installation or contact support. This app will not overwrite the unreadable file."
                 )
             }
-        SevenGroup(header = "Paid once. Yours to keep.") {
-            ValueRow(
-                "Fast",
-                m.access.label(purchase, now.toLong()),
-                chevron = true,
-                onClick = onUnlock,
-            )
+        Section(title = "Paid once. Yours to keep.") {
+            item("Fast", m.access.label(purchase, now.toLong()), onClick = onUnlock)
         }
         if (a != null) {
-            SevenGroup(
-                header = "Your data",
+            Section(
+                title = "Your data",
                 footer =
                     "Stored on this device. Android may include it in device backups. No account, developer analytics or app server. Backups contain private journal and measurement records; choose where to save them.",
             ) {
-                ActionRow("Export JSON backup", leading = { Icon(Icons.Outlined.Save, null) }) {
-                    exportJson.launch("fast-backup.json")
-                }
-                ActionRow("Export CSV tables", leading = { Icon(Icons.Outlined.TableChart, null) }) {
-                    exportCsv.launch("fast-records.csv")
-                }
-                ActionRow("Import & merge backup", leading = { Icon(Icons.Outlined.FileOpen, null) }) {
+                action("Export JSON backup", Icons.Outlined.Save) { exportJson.launch("fast-backup.json") }
+                action("Export CSV tables", Icons.Outlined.TableChart) { exportCsv.launch("fast-records.csv") }
+                action("Import & merge backup", Icons.Outlined.FileOpen) {
                     importJson.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
                 }
             }
             HealthImportPanel(m)
-            SevenGroup(header = "Make it yours") {
-                SwitchRow("Weight in pounds", a.settings.usePounds) {
-                    saveSettings(a.settings.copy(usePounds = it))
-                }
-                SwitchRow("Water in US fluid ounces", a.settings.useFluidOunces) {
+            Section(title = "Make it yours") {
+                switch("Weight in pounds", a.settings.usePounds) { saveSettings(a.settings.copy(usePounds = it)) }
+                switch("Water in US fluid ounces", a.settings.useFluidOunces) {
                     saveSettings(a.settings.copy(useFluidOunces = it))
                 }
-                SwitchRow("Show weight", a.settings.showWeight) {
-                    saveSettings(a.settings.copy(showWeight = it))
-                }
-                SwitchRow("Show eating window", a.settings.showEatingWindow) {
+                switch("Show weight", a.settings.showWeight) { saveSettings(a.settings.copy(showWeight = it)) }
+                switch("Show eating window", a.settings.showEatingWindow) {
                     saveSettings(a.settings.copy(showEatingWindow = it))
                 }
             }
-            SevenGroup(
-                header = "Reminders you choose",
+            Section(
+                title = "Reminders you choose",
                 footer =
                     "Optional local notifications. Android battery settings may delay delivery. Reminders never start or finish a fast.",
             ) {
-                SwitchRow("Show current timer notification", a.settings.liveActivity) {
+                switch("Show current timer notification", a.settings.liveActivity) {
                     saveSettings(a.settings.copy(liveActivity = it), it)
                 }
-                SwitchRow("Chosen fasting time reached", a.settings.goalReminder) {
+                switch("Chosen fasting time reached", a.settings.goalReminder) {
                     saveSettings(a.settings.copy(goalReminder = it), it)
                 }
-                SwitchRow("Eating window elapsed", a.settings.eatingReminder) {
+                switch("Eating window elapsed", a.settings.eatingReminder) {
                     saveSettings(a.settings.copy(eatingReminder = it), it)
                 }
-                SwitchRow("Dated plans", a.settings.scheduleReminders) {
+                switch("Dated plans", a.settings.scheduleReminders) {
                     saveSettings(a.settings.copy(scheduleReminders = it), it)
                 }
             }
-            SevenGroup(header = "Weekly start reminder") {
-                listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-                    .forEachIndexed { i, label ->
-                        SwitchRow(label, i + 1 in a.settings.reminderWeekdays) { enabled ->
-                            saveSettings(
-                                a.settings.copy(
-                                    reminderWeekdays =
-                                        if (enabled)
-                                            (a.settings.reminderWeekdays + (i + 1)).distinct()
-                                        else a.settings.reminderWeekdays - (i + 1)
-                                ),
-                                enabled,
-                            )
+            Section(title = "Weekly start reminder") {
+                content {
+                    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(Space.s)
+                        ) {
+                            val names = java.time.format.TextStyle.SHORT
+                            (1..7).forEach { day ->
+                                val label =
+                                    java.time.DayOfWeek.of((day + 5) % 7 + 1).getDisplayName(names, java.util.Locale.getDefault())
+                                val on = day in a.settings.reminderWeekdays
+                                FilterChip(
+                                    selected = on,
+                                    onClick = {
+                                        saveSettings(
+                                            a.settings.copy(
+                                                reminderWeekdays =
+                                                    if (on) a.settings.reminderWeekdays - day
+                                                    else (a.settings.reminderWeekdays + day).distinct()
+                                            ),
+                                            !on,
+                                        )
+                                    },
+                                    label = { Text(label) },
+                                )
+                            }
+                        }
+                        TimeField("Time", a.settings.reminderHour, a.settings.reminderMinute) { hour, minute ->
+                            saveSettings(a.settings.copy(reminderHour = hour, reminderMinute = minute))
                         }
                     }
-                val today =
-                    java.time.LocalDate.now()
-                        .atTime(a.settings.reminderHour, a.settings.reminderMinute)
-                        .atZone(java.time.ZoneId.systemDefault())
-                DateTimeRow("Time", today.toInstant().toEpochMilli().toDouble(), withDate = false) { value ->
-                    val local = value.instant().atZone(java.time.ZoneId.systemDefault())
-                    saveSettings(
-                        a.settings.copy(reminderHour = local.hour, reminderMinute = local.minute)
-                    )
                 }
             }
-            SevenGroup(
+            Section(
                 footer =
                     if (NotificationManagerCompat.from(context).areNotificationsEnabled())
                         "Android notifications are allowed."
                     else "Android notifications are off."
             ) {
-                ValueRow(
+                item(
                     "Android notification settings",
-                    chevron = true,
+                    icon = Icons.Outlined.Notifications,
                     onClick = {
                         context.startActivity(
                             Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
@@ -171,11 +165,12 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit)
                 )
             }
         }
-        SevenGroup(header = "About fasting") {
-            Text(
-                "This is a record, not a treatment plan. Longer is not presented as better. Timer stages do not detect ketosis, fat burning or autophagy.\n\nFasting is not appropriate for everyone, particularly minors, pregnancy or breastfeeding, a history of eating disorders, and some conditions or medicines. Ask a clinician where appropriate.",
-                Modifier.padding(Space.m),
-            )
+        Section(title = "About fasting") {
+            content {
+                Text(
+                    "This is a record, not a treatment plan. Longer is not presented as better. Timer stages do not detect ketosis, fat burning or autophagy.\n\nFasting is not appropriate for everyone, particularly minors, pregnancy or breastfeeding, a history of eating disorders, and some conditions or medicines. Ask a clinician where appropriate."
+                )
+            }
         }
         Panel("About ${stringResource(R.string.app_name)}") {
             Text(

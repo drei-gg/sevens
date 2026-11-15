@@ -49,7 +49,7 @@ class SevenAppPlugin : Plugin<Project> {
                     !it.isNullOrBlank()
                 }
             configure<ApplicationExtension> {
-                compileSdk = 36
+                compileSdk = 37
                 defaultConfig {
                     minSdk = 26
                     targetSdk = 36

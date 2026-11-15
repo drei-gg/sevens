@@ -1,4 +1,7 @@
-@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@file:OptIn(
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
+)
 
 package gg.seven.fast
 
@@ -52,21 +55,9 @@ internal fun TodayScreen(
                 TimeCard("Started", active.start.millis()) { open("fast", active.id) }
                 active.goalDate?.let { goal -> TimeCard("Goal", goal) { open("fast", active.id) } }
             }
-            Button(
-                onClick = { open("end", active.id) },
-                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-            ) {
-                Text("End fast", style = MaterialTheme.typography.titleMedium)
-            }
+            PrimaryAction("End fast", null) { open("end", active.id) }
         } else {
-            Button(
-                onClick = { open("start", null) },
-                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-            ) {
-                Icon(Icons.Filled.PlayArrow, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Start fast", style = MaterialTheme.typography.titleMedium)
-            }
+            PrimaryAction("Start fast", Icons.Filled.PlayArrow) { open("start", null) }
             TextButton(
                 onClick = { onPage("Plans") },
                 modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -81,23 +72,9 @@ internal fun TodayScreen(
     }
     val daily: @Composable ColumnScope.() -> Unit = {
         WaterTodayCard(m, a, open, onPage, onUnlock)
-        Card(
-            onClick = { open("journal", null) },
-            modifier = Modifier.fillMaxWidth().testTag("today-check-in"),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        ) {
-            ListItem(
-                headlineContent = { Text("Check in", fontWeight = FontWeight.SemiBold) },
-                supportingContent = { Text("Notice your day") },
-                leadingContent = { Icon(Icons.Outlined.EditNote, null) },
-                trailingContent = { Icon(Icons.AutoMirrored.Outlined.ArrowForward, null) },
-                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
-            )
-        }
-        TextButton(onClick = { open("metric", null) }) {
-            Icon(Icons.Outlined.MonitorWeight, null)
-            Spacer(Modifier.width(8.dp))
-            Text("Log measurement")
+        Section {
+            item("Check in", supporting = "Notice your day", icon = Icons.Outlined.EditNote, onClick = { open("journal", null) })
+            item("Log measurement", icon = Icons.Outlined.MonitorWeight, onClick = { open("metric", null) })
         }
     }
     Page {
@@ -279,39 +256,55 @@ private fun TimerHero(a: FastArchive, now: Double) {
 @Composable
 internal fun PlansScreen(m: FastModel, a: FastArchive, open: OpenEditor) {
     Page {
-        SevenGroup(footer = "Plans are reminders, not records. Nothing starts automatically.") {
-            ActionRow("Plan a fast", leading = { Icon(Icons.Outlined.EventAvailable, null) }) {
-                open("plan", null)
-            }
-        }
-        SevenGroup(header = "Planned fasts") {
+        Text(
+            "Plans are reminders, not records. Nothing starts automatically.",
+            Modifier.padding(horizontal = Space.m),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Section(title = "Planned fasts") {
             if (a.plans.isEmpty())
-                ValueRow("Room for a plan", supporting = "Pick a date and time. Change your mind whenever you need.")
+                item("Room for a plan", supporting = "Pick a date and time. Change your mind whenever you need.")
             a.plans
                 .sortedBy { it.start }
                 .forEach { plan ->
-                    ValueRow(
+                    item(
                         stamp(plan.start),
                         plan.goalMinutes?.let { duration(it * 60_000.0) } ?: "Open ended",
                         supporting = plan.intention.ifBlank { null },
-                        chevron = true,
                         onClick = { open("plan", plan.id) },
                     )
                 }
+            action("Plan a fast", Icons.Outlined.EventAvailable) { open("plan", null) }
         }
-        SevenGroup(header = "Your presets") {
+        Section(title = "Your presets") {
             a.presets.forEach { preset ->
-                ValueRow(
+                item(
                     preset.name,
                     preset.goalMinutes?.let { duration(it * 60_000.0) } ?: "Open ended",
-                    chevron = true,
                     onClick = { open("preset", preset.id) },
                 )
             }
-            ActionRow("Save a custom preset", leading = { Icon(Icons.Outlined.Add, null) }) {
-                open("preset", null)
-            }
+            action("Save a custom preset", Icons.Outlined.Add) { open("preset", null) }
         }
+    }
+}
+
+/** The screen's one primary action: an Expressive large button whose shape morphs on press. */
+@Composable
+private fun PrimaryAction(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector?, onClick: () -> Unit) {
+    val height = ButtonDefaults.LargeContainerHeight
+    Button(
+        onClick = onClick,
+        shapes = ButtonDefaults.shapesFor(height),
+        contentPadding = ButtonDefaults.contentPaddingFor(height),
+        modifier = Modifier.fillMaxWidth().heightIn(min = height),
+    ) {
+        icon?.let {
+            Icon(it, null, Modifier.size(ButtonDefaults.iconSizeFor(height)))
+            Spacer(Modifier.width(Space.s))
+        }
+        Text(label, style = ButtonDefaults.textStyleFor(height))
     }
 }
 

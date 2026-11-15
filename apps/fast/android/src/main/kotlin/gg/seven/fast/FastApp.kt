@@ -1,4 +1,5 @@
 @file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
     androidx.compose.material3.ExperimentalMaterial3Api::class,
     androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
 )
@@ -184,9 +185,9 @@ fun FastApp(m: FastModel) {
                 },
                 bottomBar = {
                     if (!wide)
-                        NavigationBar {
+                        ShortNavigationBar {
                             tabs.forEach { (label, icon) ->
-                                NavigationBarItem(
+                                ShortNavigationBarItem(
                                     modifier = Modifier.testTag("nav-$label"),
                                     selected = tab == label,
                                     onClick = {
@@ -195,7 +196,6 @@ fun FastApp(m: FastModel) {
                                     },
                                     icon = { Icon(icon, null) },
                                     label = { Text(label) },
-                                    alwaysShowLabel = true,
                                 )
                             }
                         }
@@ -207,7 +207,7 @@ fun FastApp(m: FastModel) {
                     contentAlignment = Alignment.TopCenter,
                 ) {
                     if (failure != null) SettingsScreen(m, null, onUnlock = { unlock = true })
-                    else if (a == null) CircularProgressIndicator(Modifier.padding(40.dp))
+                    else if (a == null) LoadingIndicator(Modifier.padding(40.dp))
                     else {
                         val archive = a!!
                         when (page ?: tab) {
@@ -385,13 +385,12 @@ internal fun Page(content: @Composable ColumnScope.() -> Unit) {
     )
 }
 
-/** A card of our own content on paper (iOS: a rounded `card` block). */
+/** A Material card for a block of the app's own content: a glass, a chart, stats. */
 @Composable
 internal fun Panel(title: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    Surface(
+    Card(
         Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.ms)) {
             title?.let { Text(it, style = MaterialTheme.typography.titleMedium) }
@@ -401,23 +400,15 @@ internal fun Panel(title: String? = null, content: @Composable ColumnScope.() ->
 }
 
 @Composable
-internal fun Empty(title: String, detail: String) {
-    Surface(
-        Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        EmptyState(title, detail)
-    }
-}
+internal fun Empty(title: String, detail: String) = EmptyState(title, detail)
 
-/** A section header above a group: muted, aligned to the row text (iOS grouped header). */
+/** A Material list subheader: title small, primary. */
 @Composable
-internal fun Section(title: String) {
+internal fun Heading(title: String) {
     Text(
         title,
         Modifier.padding(start = Space.m, end = Space.m, top = Space.s),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
     )
 }

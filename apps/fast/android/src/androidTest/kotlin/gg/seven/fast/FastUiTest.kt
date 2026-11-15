@@ -31,7 +31,7 @@ class FastUiTest {
         ui.onNodeWithText("Start fast").performScrollTo().performClick()
         ui.onNodeWithText("Save").assertIsDisplayed().performClick()
         ui.onNodeWithText("End fast").performScrollTo().performClick()
-        ui.onNodeWithContentDescription("What did you notice? What would you change?")
+        ui.onNode(hasSetTextAction() and hasText("Reflection"))
             .performScrollTo()
             .performTextInput("A shorter fast is still a record")
         ui.onNodeWithText("Save").assertIsDisplayed().performClick()
@@ -39,10 +39,9 @@ class FastUiTest {
             (ui.activity.application as FastApplication).repository.state.value!!.active == null
         }
         ui.onNodeWithTag("nav-Journal").performClick()
-        ui.onNodeWithText("Add journal entry").performClick()
-        ui.onNodeWithText("Mood", useUnmergedTree = true).performScrollTo().performClick()
-        ui.onNodeWithText("5 · Good").performClick()
-        ui.onNodeWithContentDescription("What’s happening in your body, your day, or your thoughts?")
+        ui.onNodeWithText("Add journal entry", useUnmergedTree = true).performClick()
+        ui.onNodeWithContentDescription("Mood 5").performScrollTo().performClick()
+        ui.onNode(hasSetTextAction() and hasText("Observation"))
             .performScrollTo()
             .performTextInput("Native Android check-in")
         ui.onNodeWithText("Save").assertIsDisplayed().performClick()
@@ -87,7 +86,7 @@ class FastUiTest {
         ui.onNodeWithText("List", useUnmergedTree = true).performClick()
         ui.onNodeWithText("1 hr", substring = true).performScrollTo().performClick()
         ui.onNodeWithText("Edit fast").performClick()
-        ui.onNodeWithContentDescription("What did you notice? What would you change?")
+        ui.onNode(hasSetTextAction() and hasText("Reflection"))
             .performScrollTo()
             .performTextInput("Edited after expiry")
         ui.onNodeWithText("Save").assertIsDisplayed().performClick()
@@ -109,13 +108,13 @@ class FastUiTest {
         ui.waitUntil(10_000) { app.repository.state.value!!.metrics.size == 1 }
         ui.onNodeWithText("Undo last glass").performScrollTo().performClick()
         ui.waitUntil(10_000) { app.repository.state.value!!.metrics.isEmpty() }
-        ui.onNodeWithTag("today-check-in").performScrollTo().performClick()
-        ui.onNodeWithContentDescription("What’s happening in your body, your day, or your thoughts?")
+        ui.onNodeWithText("Check in").performScrollTo().performClick()
+        ui.onNode(hasSetTextAction() and hasText("Observation"))
             .performScrollTo()
             .performTextInput("Keep this draft")
         ui.activityRule.scenario.recreate()
         ui.onNodeWithText("Keep this draft").assertExists()
-        ui.onNodeWithText("Cancel").assertIsDisplayed().performClick()
+        ui.onNodeWithContentDescription("Close").assertIsDisplayed().performClick()
         ui.onNodeWithText("Discard draft").performClick()
     }
 
@@ -128,7 +127,7 @@ class FastUiTest {
         ui.onNodeWithText("Set a daily goal").performScrollTo().performClick()
         ui.onNodeWithText("Save").assertIsDisplayed()
         ui.onNodeWithText("Use a personal goal").performClick()
-        ui.onNodeWithContentDescription("Daily amount").performScrollTo().performTextInput("20")
+        ui.onNode(hasSetTextAction() and hasText("Daily amount")).performScrollTo().performTextInput("20")
         ui.onNodeWithText("Save").assertIsDisplayed().performClick()
         ui.waitUntil(10_000) { app.repository.state.value!!.settings.water.goalMilliliters != null }
         Assert.assertEquals(

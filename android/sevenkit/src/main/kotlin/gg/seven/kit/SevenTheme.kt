@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package gg.seven.kit
 
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -14,9 +16,11 @@ private val Light =
         surfaceTint = Color.Transparent,
         surfaceContainerLowest = Color(0xFFFFFDF8),
         surfaceContainerLow = Color(0xFFF8F4EC),
-        surfaceContainer = Color(0xFFF3EFE6),
-        surfaceContainerHigh = Color(0xFFEEE8DD),
-        surfaceContainerHighest = Color(0xFFE4DED3),
+        // Material's container roles step down from paper so toggles, chips and the search bar
+        // read as surfaces (cards stay on the lighter Lowest/Low).
+        surfaceContainer = Color(0xFFE9E4DA),
+        surfaceContainerHigh = Color(0xFFE3DDD2),
+        surfaceContainerHighest = Color(0xFFDCD6CA),
         inverseSurface = Color(0xFF1C1A18),
         inverseOnSurface = Color(0xFFEEE9DF),
         inversePrimary = Color(0xFFEEE9DF),
@@ -70,8 +74,11 @@ private val Dark =
 
 @Composable
 fun SevenTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
+    // Material 3 Expressive: its components, shapes and springier motion, with the Sevens' fixed
+    // ink-and-paper colours (never dynamic colour) and type roles.
+    MaterialExpressiveTheme(
         colorScheme = if (isSystemInDarkTheme()) Dark else Light,
+        motionScheme = MotionScheme.expressive(),
         shapes = Shapes(),
         typography =
             Typography(

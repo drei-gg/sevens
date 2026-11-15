@@ -1,6 +1,7 @@
 @file:OptIn(
     androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
     androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 
 package gg.seven.fast
@@ -25,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,7 +36,7 @@ import gg.seven.kit.*
 import java.time.*
 import kotlin.math.roundToInt
 
-/** A single date/time row in its own group, for screens outside a form. */
+/** A date (and time) field outside a form. */
 @Composable
 internal fun NativeDateTime(
     label: String,
@@ -41,7 +44,20 @@ internal fun NativeDateTime(
     withTime: Boolean = true,
     onChange: (Double) -> Unit,
 ) {
-    SevenGroup { DateTimeRow(label, value, withTime = withTime, onChange = onChange) }
+    DateTimeField(label, value, withTime = withTime, onChange = onChange)
+}
+
+/** A switch with its label; the whole line toggles. */
+@Composable
+internal fun SwitchLine(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    // Aligned with the fields around it: a form line, not an inset list row.
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(checked, role = Role.Switch, onValueChange = onChange),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+        Switch(checked = checked, onCheckedChange = null)
+    }
 }
 
 /** A form value: no trailing ".0", "." as the separator so parsing stays locale-proof. */
@@ -260,120 +276,120 @@ internal fun EditorDialog(
     val hasEnd = type == "past" || type == "end" || f?.end != null
     val goalMinutes = if (openEnded) null else goal.decimal()?.times(60)?.roundToInt()
     val eatingMinutes = eating.decimal()?.times(60)?.roundToInt()
-    FormSheet(
+    FullScreenForm(
         title,
         { if (!busy) if (draft == pristine) dismiss() else discard = true },
         ::save,
         busy = busy,
-        saveLabel = if (type == "end") "Save" else "Save",
     ) {
-        if (type in listOf("start", "past", "plan"))
-            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+        if (type in listOf("start", "past", "plan")) {
+            FormHeading("Rhythm")
+            val presets = FastPreset.defaults + a.presets
+            ChoiceChips(
+                presets.map { it to it.name },
+                presets.firstOrNull { it.goalMinutes == goalMinutes && it.eatingMinutes == eatingMinutes },
+            ) { p ->
+                openEnded = p.goalMinutes == null
+                goal = plain((p.goalMinutes ?: 960) / 60.0)
+                eating = plain(p.eatingMinutes / 60.0)
+            }
+        }
+        if (type == "preset") TextInput("Preset name", text) { text = it }
+        if (type != "preset") {
+            DateTimeField(
+                when {
+                    type == "plan" -> "Planned start"
+                    fastLike -> "Started"
+                    type == "rest" -> "Day"
+                    else -> "When"
+                },
+                start,
+                withTime = type != "rest",
+            ) {
+                start = it
+            }
+            if (hasEnd) {
+                DateTimeField("Finished", end) { end = it }
                 Text(
-                    "Choose a rhythm",
-                    Modifier.padding(horizontal = Space.m),
+                    "Duration: ${duration(end - start)}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                val presets = FastPreset.defaults + a.presets
-                CapsuleChoices(
-                    presets.map { it to it.name },
-                    presets.firstOrNull {
-                        it.goalMinutes == goalMinutes && it.eatingMinutes == eatingMinutes
-                    },
-                ) { p ->
-                    openEnded = p.goalMinutes == null
-                    goal = plain((p.goalMinutes ?: 960) / 60.0)
-                    eating = plain(p.eatingMinutes / 60.0)
-                }
-            }
-        if (type != "preset")
-            SevenGroup(header = if (fastLike) "Times" else null) {
-                DateTimeRow(
-                    when {
-                        type == "plan" -> "Planned start"
-                        fastLike -> "Started"
-                        type == "rest" -> "Day"
-                        else -> "When"
-                    },
-                    start,
-                    withTime = type != "rest",
-                ) {
-                    start = it
-                }
-                if (hasEnd) DateTimeRow("Finished", end) { end = it }
-                if (hasEnd) ValueRow("Duration", duration(end - start))
-                if (type == "journal")
-                    MenuRow(
-                        "Linked fast",
-                        linkedFast.orEmpty(),
-                        listOf("" to "An ordinary day") +
-                            a.fasts.sortedByDescending { it.start }.map { it.id.toString() to stamp(it.start) },
-                    ) {
-                        linkedFast = it.ifEmpty { null }
-                    }
-            }
-        if (type == "preset") SevenGroup { TextRow(text, "Preset name") { text = it } }
-        if (fastLike)
-            SevenGroup(footer = "Recording limits are not recommendations.") {
-                SwitchRow("Set a goal", !openEnded) { openEnded = !it }
-                if (!openEnded) NumberRow("Goal hours", goal, unit = "hr") { goal = it }
-                NumberRow("Eating window hours", eating, unit = "hr") { eating = it }
-            }
-        if (fastLike && type != "preset")
-            SevenGroup(header = "Intention") {
-                TextRow(intention, "What would you like to make room for?", minLines = 2) {
-                    intention = it
-                }
-            }
-        if (hasEnd)
-            SevenGroup(header = "Reflection") {
-                TextRow(reflection, "What did you notice? What would you change?", minLines = 2) {
-                    reflection = it
-                }
-            }
-        if (type == "rest") SevenGroup(header = "Note") { TextRow(text, "Optional") { text = it } }
-        if (type == "journal") {
-            SevenGroup(header = "Observation") {
-                TextRow(text, "What’s happening in your body, your day, or your thoughts?", minLines = 5) {
-                    text = it
-                }
-            }
-            SevenGroup(
-                header = "Optional check-in",
-                footer = "These are your observations, not a score to improve.",
-            ) {
-                RatingRow("Mood", "Low", "Good", mood) { mood = it }
-                RatingRow("Energy", "Low", "High", energy) { energy = it }
-                RatingRow("Hunger", "None", "Strong", hunger) { hunger = it }
             }
         }
+        if (fastLike) {
+            SwitchLine("Set a goal", !openEnded) { openEnded = !it }
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                if (!openEnded)
+                    NumberField("Goal", goal, Modifier.weight(1f), suffix = "hr") { goal = it }
+                NumberField("Eating window", eating, Modifier.weight(1f), suffix = "hr") { eating = it }
+            }
+            Text(
+                "Recording limits are not recommendations.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (fastLike && type != "preset")
+            TextInput("Intention", intention, minLines = 2, supporting = "What would you like to make room for?") {
+                intention = it
+            }
+        if (hasEnd)
+            TextInput("Reflection", reflection, minLines = 2, supporting = "What did you notice? What would you change?") {
+                reflection = it
+            }
+        if (type == "rest") TextInput("Note (optional)", text) { text = it }
+        if (type == "journal") {
+            DropdownField(
+                "Linked fast",
+                linkedFast.orEmpty(),
+                listOf("" to "An ordinary day") +
+                    a.fasts.sortedByDescending { it.start }.map { it.id.toString() to stamp(it.start) },
+            ) {
+                linkedFast = it.ifEmpty { null }
+            }
+            TextInput(
+                "Observation",
+                text,
+                minLines = 5,
+                supporting = "What’s happening in your body, your day, or your thoughts?",
+            ) {
+                text = it
+            }
+            FormHeading("Optional check-in")
+            RatingField("Mood", "Low", "Good", mood) { mood = it }
+            RatingField("Energy", "Low", "High", energy) { energy = it }
+            RatingField("Hunger", "None", "Strong", hunger) { hunger = it }
+            Text(
+                "These are your observations, not a score to improve.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         if (type in listOf("start", "past", "end", "fast", "journal"))
-            SevenGroup { TextRow(tags, "Tags, separated by commas") { tags = it } }
+            TextInput("Tags", tags, supporting = "Separate with commas") { tags = it }
         if (type in listOf("metric", "water")) {
             if (metric == null && type != "water") {
                 val kinds = MetricKind.entries.filter { a.settings.showWeight || it != MetricKind.WEIGHT }
                 if (kinds.size > 1)
-                    Segmented(
-                        kinds.map { it to it.key.replaceFirstChar { c -> c.uppercase() } },
-                        kind,
-                    ) {
+                    ConnectedChoice(kinds.map { it to it.key.replaceFirstChar { c -> c.uppercase() } }, kind) {
                         kindText = it.key
                         value = ""
                     }
             }
-            SevenGroup(
-                footer =
-                    if (kind == MetricKind.WATER)
-                        "Log your own observations. There is no target you have to meet."
-                    else null
+            NumberField(
+                "Amount",
+                value,
+                suffix = Units.label(kind, a.settings),
+                supporting =
+                    if (kind == MetricKind.WATER) "Log your own observations. There is no target you have to meet."
+                    else null,
             ) {
-                NumberRow(Units.label(kind, a.settings), value) { value = it }
+                value = it
             }
             if (kind == MetricKind.WATER && metric == null) {
-                val amounts =
-                    if (a.settings.useFluidOunces) listOf(8, 12, 16) else listOf(150, 250, 500)
-                CapsuleChoices(
+                val amounts = if (a.settings.useFluidOunces) listOf(8, 12, 16) else listOf(150, 250, 500)
+                ChoiceChips(
                     amounts.map { it to "$it ${Units.label(kind, a.settings)}" },
                     amounts.firstOrNull { value.decimal() == it.toDouble() },
                 ) {
@@ -387,19 +403,17 @@ internal fun EditorDialog(
         if (type == "past" || type == "start")
             Text(
                 "An early finish is still a record. This timer does not measure ketosis, autophagy or fat burning.",
-                Modifier.padding(horizontal = Space.m),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         if (id != null)
-            SevenGroup {
-                ActionRow(
-                    if (f?.end == null && f != null) "Discard fast" else "Delete",
-                    destructive = true,
-                    enabled = !busy,
-                ) {
-                    delete = true
-                }
+            OutlinedButton(
+                onClick = { delete = true },
+                enabled = !busy,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(if (f?.end == null && f != null) "Discard fast" else "Delete")
             }
     }
     if (discard)
@@ -461,9 +475,7 @@ internal fun EditorDialog(
 }
 
 @Composable
-internal fun ToggleRow(label: String, enabled: Boolean, onChange: (Boolean) -> Unit) {
-    SwitchRow(label, enabled, onCheckedChange = onChange)
-}
+internal fun ToggleRow(label: String, enabled: Boolean, onChange: (Boolean) -> Unit) = SwitchLine(label, enabled, onChange)
 
 @Composable
 private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Unit) {
@@ -516,43 +528,37 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
             error = e.explanation
         }
     }
-    FormSheet("Water settings", dismiss, ::save, busy = busy) {
-        SevenGroup(
-            header = "Your daily goal",
-            footer =
-                "An optional target you choose, not a recommended intake. No streaks or pressure to catch up.",
-        ) {
-            SwitchRow("Use a personal goal", useGoal) { useGoal = it }
-            if (useGoal) NumberRow("Daily amount", goal, unit = unit) { goal = it }
-        }
-        SevenGroup(
-            header = "Quick-add glass",
-            footer = "Amounts use $unit. Change units in Settings.",
-        ) {
-            NumberRow("Glass", glass, unit = unit) { glass = it }
-        }
+    FullScreenForm("Water settings", dismiss, ::save, busy = busy) {
+        FormHeading("Your daily goal")
+        SwitchLine("Use a personal goal", useGoal) { useGoal = it }
+        if (useGoal) NumberField("Daily amount", goal, suffix = unit) { goal = it }
+        Text(
+            "An optional target you choose, not a recommended intake. No streaks or pressure to catch up.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FormHeading("Quick-add glass")
+        NumberField("Glass", glass, suffix = unit, supporting = "Change units in Settings.") { glass = it }
         fun hour(n: Int) =
             if (n == 24) "Midnight"
             else SevenFormat.time(java.time.LocalDate.now().atTime(n, 0).atZone(ZoneId.systemDefault()), use24Hour)
-        SevenGroup(
-            header = "Water reminders",
-            footer =
-                "Daily at your chosen hours, up to but not including the end. Android may delay delivery. Logging water does not silence your schedule.",
-        ) {
-            SwitchRow("Remind me to drink water", reminders) { reminders = it }
-            if (reminders) {
-                SwitchRow("Paused until you resume", paused) { paused = it }
-                MenuRow("From", start, (0..23).map { it.toString() to hour(it) }) { start = it }
-                MenuRow("Until", end, (1..24).map { it.toString() to hour(it) }) { end = it }
-                MenuRow(
-                    "Every",
-                    interval,
-                    (1..4).map { it.toString() to if (it == 1) "1 hour" else "$it hours" },
-                ) {
-                    interval = it
-                }
+        FormHeading("Water reminders")
+        SwitchLine("Remind me to drink water", reminders) { reminders = it }
+        if (reminders) {
+            SwitchLine("Paused until you resume", paused) { paused = it }
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                DropdownField("From", start, (0..23).map { it.toString() to hour(it) }, Modifier.weight(1f)) { start = it }
+                DropdownField("Until", end, (1..24).map { it.toString() to hour(it) }, Modifier.weight(1f)) { end = it }
+            }
+            DropdownField("Every", interval, (1..4).map { it.toString() to if (it == 1) "1 hour" else "$it hours" }) {
+                interval = it
             }
         }
+        Text(
+            "Daily at your chosen hours, up to but not including the end. Android may delay delivery. Logging water does not silence your schedule.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         if (reminders && start.toInt() >= end.toInt())
             Text("End time must be after start time.", color = MaterialTheme.colorScheme.error)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -561,21 +567,34 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
     }
 }
 
+/** A 1–5 rating as a connected button group; tapping the selected value clears it. */
 @Composable
-private fun RatingRow(
-    title: String,
-    low: String,
-    high: String,
-    value: String,
-    change: (String) -> Unit,
-) {
-    MenuRow(
-        title,
-        value,
-        listOf("" to "Not recorded") +
-            (1..5).map {
-                it.toString() to "$it${if (it == 1) " · $low" else if (it == 5) " · $high" else ""}"
-            },
-        onSelect = change,
-    )
+private fun RatingField(title: String, low: String, high: String, value: String, change: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+        Row {
+            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                "1 $low · 5 $high",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
+            (1..5).forEach { n ->
+                ToggleButton(
+                    checked = value == n.toString(),
+                    onCheckedChange = { change(if (it) n.toString() else "") },
+                    shapes =
+                        when (n) {
+                            1 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                            5 -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                            else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                        },
+                    modifier = Modifier.weight(1f).semantics { contentDescription = "$title $n" },
+                ) {
+                    Text("$n")
+                }
+            }
+        }
+    }
 }
