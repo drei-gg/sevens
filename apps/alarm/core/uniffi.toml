@@ -1,0 +1,20 @@
+[bindings.kotlin]
+package_name = "gg.seven.alarm.core"
+cdylib_name = "alarm_core"
+
+[bindings.swift]
+module_name = "AlarmCoreFFI"
+ffi_module_name = "alarm_coreFFI"
+ffi_module_filename = "alarm_coreFFI"
+
+[bindings.kotlin.custom_types.Uuid]
+type_name = "java.util.UUID"
+imports = ["java.util.UUID"]
+lift = "java.util.UUID.fromString({})"
+lower = "{}.toString()"
+
+[bindings.swift.custom_types.Uuid]
+type_name = "UUID"
+imports = ["Foundation"]
+lift = "UUID(uuidString: {})!"
+lower = "{}.uuidString"
