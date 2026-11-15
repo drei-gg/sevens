@@ -2,7 +2,7 @@
 
 Vault's shared logic in Rust, for the iOS and Android apps through [UniFFI](https://mozilla.github.io/uniffi-rs/). One implementation, so a credential rule, an index field or a backup frame can't drift between platforms.
 
-**Source snapshot:** ported from the iOS app's `Kit/Sources/VaultCore` and the pure parts of `Kit/Sources/VaultStorage` as they stood on 2026-11-15, while that code was still uncommitted work in progress. If the Swift side changes before it lands, re-check this crate against it.
+**Source:** ported from the iOS app's `Kit/Sources/VaultCore` and the pure parts of `Kit/Sources/VaultStorage` as committed on 15 November 2026.
 
 **In the core:**
 

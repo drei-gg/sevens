@@ -9,7 +9,7 @@ Zlib, Unicode, GPL-3.0-compatible). Nothing that collects data or phones home is
 
 | Name | URL | Licence | Version | Used for |
 |---|---|---|---|---|
-| UniFFI | https://github.com/mozilla/uniffi-rs | MPL-2.0 | 0.32.2 | Rust cores (Fast, QR, Alarm, Scanner): Swift and Kotlin bindings for the shared logic |
+| UniFFI | https://github.com/mozilla/uniffi-rs | MPL-2.0 | 0.32.2 | Rust cores (Fast, QR, Alarm, Scanner, Cleaner, Vault): Swift and Kotlin bindings for the shared logic |
 | serde | https://github.com/serde-rs/serde | MIT OR Apache-2.0 | 1.0.229 | Rust cores: archives, backups, history and Fast's Watch receipts |
 | serde_json | https://github.com/serde-rs/json | MIT OR Apache-2.0 | 1.0.154 | Rust cores: JSON in the layout each Swift app writes |
 | uuid | https://github.com/uuid-rs/uuid | MIT OR Apache-2.0 | 1.29.2 | Rust cores: record identifiers |
@@ -17,7 +17,8 @@ Zlib, Unicode, GPL-3.0-compatible). Nothing that collects data or phones home is
 | unicode-segmentation | https://github.com/unicode-rs/unicode-segmentation | MIT OR Apache-2.0 | 1.13.3 | Rust cores: character counts that match Swift's `String.count` |
 | unicode-normalization | https://github.com/unicode-rs/unicode-normalization | MIT OR Apache-2.0 | 0.1.26 | Rust cores: accent-insensitive search and string comparison as Swift does it |
 | unicode-general-category | https://github.com/yeslogic/unicode-general-category | Apache-2.0 | 1.1.0 | QR core: letter and mark classes for look-alike and mixed-script checks |
-| base64 | https://github.com/marshallpierce/rust-base64 | MIT OR Apache-2.0 | 0.22.1 | QR core: binary payloads in history files, as Swift's `Data` encodes them |
+| base64 | https://github.com/marshallpierce/rust-base64 | MIT OR Apache-2.0 | 0.22.1 | QR, Cleaner and Vault cores: binary fields in JSON, as Swift's `Data` encodes them |
+| caseless | https://github.com/unicode-rs/rust-caseless | MIT | 0.2.2 | Vault core: Unicode case folding for search and name order |
 | PhoneNumberKit | https://github.com/PhoneNumberKit/PhoneNumberKit | MIT | 5.0.14 (ff40a615c71bf3e1785562c86f7e38bdea29660a) | Contact phone candidate normalization; bundled libphonenumber metadata, no network client |
 | thiserror | https://github.com/dtolnay/thiserror | MIT OR Apache-2.0 | 2.0.21 | Rust cores: error types |
 

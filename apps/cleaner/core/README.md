@@ -2,7 +2,7 @@
 
 Cleaner's shared logic in Rust, for the iOS and Android apps through [UniFFI](https://mozilla.github.io/uniffi-rs/). One implementation, so a review rule, a guard or a file format can't drift between platforms.
 
-**Source snapshot:** ported from the iOS app's `Kit/Sources/CleanerCore` and the pure parts of `Kit/Sources/CleanerPlatform`, which were uncommitted work in progress on 2026-11-15. If the Swift changes before it lands, re-check this crate against it.
+**Source:** ported from the iOS app's `Kit/Sources/CleanerCore` and the pure parts of `Kit/Sources/CleanerPlatform` as committed on 15 November 2026.
 
 **In the core:**
 
