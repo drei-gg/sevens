@@ -1,0 +1,20 @@
+[bindings.kotlin]
+package_name = "gg.seven.vault.core"
+cdylib_name = "vault_core"
+
+[bindings.swift]
+module_name = "VaultCoreFFI"
+ffi_module_name = "vault_coreFFI"
+ffi_module_filename = "vault_coreFFI"
+
+[bindings.kotlin.custom_types.Uuid]
+type_name = "java.util.UUID"
+imports = ["java.util.UUID"]
+lift = "java.util.UUID.fromString({})"
+lower = "{}.toString()"
+
+[bindings.swift.custom_types.Uuid]
+type_name = "UUID"
+imports = ["Foundation"]
+lift = "UUID(uuidString: {})!"
+lower = "{}.uuidString"
