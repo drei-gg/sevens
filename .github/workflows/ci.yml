@@ -23,6 +23,8 @@ jobs:
         run: swift test --package-path apps/qr/Kit
       - name: AlarmCore
         run: swift test --package-path apps/alarm/Kit
+      - name: ScannerKit
+        run: swift test --package-path apps/scanner/Kit
       - name: Rules (G6, G7)
         run: scripts/check-rules
 
@@ -78,5 +80,19 @@ jobs:
         working-directory: apps/alarm/Kit
         run: >
           xcodebuild -scheme AlarmLoopsKit-Package
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
+
+      - name: Build and test Document Scanner
+        run: >
+          xcodebuild -project apps/scanner/Scanner.xcodeproj -scheme Scanner -configuration Debug
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
+          build test
+
+      - name: Test Scanner core
+        working-directory: apps/scanner/Kit
+        run: >
+          xcodebuild -scheme ScannerKit
           -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
           CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test

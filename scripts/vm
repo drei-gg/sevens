@@ -21,7 +21,7 @@ set -euo pipefail
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 cmd=${1:-}; [ $# -gt 0 ] && shift
 app=${SEVENS_APP:-qr}
-case "$app" in qr) scheme=QR;; fast) scheme=Fast;; alarm) scheme=Alarm;; *) echo "Unknown app: $app" >&2; exit 2;; esac
+case "$app" in qr) scheme=QR;; fast) scheme=Fast;; alarm) scheme=Alarm;; scanner) scheme=Scanner;; *) echo "Unknown app: $app" >&2; exit 2;; esac
 if [ "$app" != qr ] && [ "$app" != fast ] && [[ "$cmd" = device || "$cmd" = lock-device || ( "$cmd" = ui && "${1:-}" = --device ) ]]; then
   echo "vm: device signing for $app is not configured yet" >&2; exit 2
 fi
@@ -91,6 +91,8 @@ case "$cmd" in
   build)   remote_cmd="$xb -configuration Debug -destination '$dest' build";;
   test)    if [ "$app" = alarm ]; then
              remote_cmd="cd apps/alarm/Kit && xcodebuild -scheme AlarmLoopsKit-Package -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
+           elif [ "$app" = scanner ]; then
+             remote_cmd="cd apps/scanner/Kit && xcodebuild -scheme ScannerKit -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
            else
              remote_cmd="$xb -configuration Debug -destination '$dest' -skip-testing:${scheme}SmokeUITests $noclone test"
            fi;;

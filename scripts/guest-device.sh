@@ -40,4 +40,5 @@ for _ in $(seq 1 240); do [ -f "$status" ] && break; sleep 5; done
 cat "$log"
 s=$(cat "$status" 2>/dev/null || echo 124)
 echo "device run exit $s"
+[ "$mode" = test ] && bash "$here/scripts/guest-testmanagerd.sh" "$udid" || true
 exit "$s"

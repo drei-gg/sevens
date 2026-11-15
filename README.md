@@ -9,6 +9,7 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 | [7&D Fast Tracker](apps/fast/SPEC.md) | building ([changelog](apps/fast/CHANGELOG.md)) |
 | [7&D QR Code Kit](apps/qr/SPEC.md) | building ([changelog](apps/qr/CHANGELOG.md)) |
 | [7&D Alarm](apps/alarm/SPEC.md) | building ([changelog](apps/alarm/CHANGELOG.md)) |
+| [7&D Document Scanner](apps/scanner/SPEC.md) | building ([changelog](apps/scanner/CHANGELOG.md)) |
 
 ## Rules every app follows
 
@@ -65,3 +66,14 @@ SEVENS_APP=alarm scripts/vm ui
 ```
 
 Open `apps/alarm/Alarm.xcodeproj` on a Mac with the iOS 26.1+ SDK. Debug-only `-alarm.demo` uses in-memory fixtures; `-alarm.ui -alarm.reset` uses a separate archive. Both disable actual alarm scheduling and use a development purchase fixture. Physical-phone delivery acceptance is separate.
+
+## Build Document Scanner
+
+```sh
+scripts/test-linux apps/scanner/Kit
+SEVENS_APP=scanner scripts/vm build
+SEVENS_APP=scanner scripts/vm test
+SEVENS_APP=scanner scripts/vm ui
+```
+
+Open `apps/scanner/Scanner.xcodeproj` on a Mac. Debug-only `-scanner.ui -scanner.reset` use an isolated library and a local unlocked purchase source; `-scanner.seed` adds two synthetic receipt pages, and `-scanner.audit` exposes the processing audit. None of them is production purchase evidence.
