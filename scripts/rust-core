@@ -22,14 +22,15 @@ module=$(sed -n 's/^module_name = "\(.*\)"/\1/p' "$core/uniffi.toml")
 # FastCore, QRCoreFFI -> QRCore).
 core_module=${RUST_CORE_SWIFT_TARGET:-${module%FFI}}
 out="$core/generated"
+dylib=so; [ "$(uname)" = Darwin ] && dylib=dylib   # the debug library UniFFI reads its metadata from
 
 run_test() { (cd "$core" && cargo test); }
 
 run_bindings() {
   (cd "$core" && cargo build -q && rm -rf "$out/kotlin" "$out/swift" &&
-    cargo run -q --features bindgen --bin uniffi-bindgen -- generate --library "target/debug/lib$lib.so" \
+    cargo run -q --features bindgen --bin uniffi-bindgen -- generate --library "target/debug/lib$lib.$dylib" \
       --language kotlin --out-dir "$out/kotlin" --no-format &&
-    cargo run -q --features bindgen --bin uniffi-bindgen -- generate --library "target/debug/lib$lib.so" \
+    cargo run -q --features bindgen --bin uniffi-bindgen -- generate --library "target/debug/lib$lib.$dylib" \
       --language swift --out-dir "$out/swift" --no-format)
   echo "rust-core: bindings in apps/$app/core/generated/{kotlin,swift}"
 }
