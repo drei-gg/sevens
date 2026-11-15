@@ -14,8 +14,10 @@ Dates are stored as Foundation's default `JSONEncoder` writes them, seconds sinc
 scripts/rust-core alarm test       # Linux: Swift-parity suite + golden file
 scripts/rust-core alarm bindings   # Kotlin + Swift sources into generated/
 scripts/rust-core alarm android    # .so for four ABIs into generated/jniLibs
-scripts/rust-core alarm apple      # AlarmCoreFFI.xcframework, built in the macOS VM
+scripts/rust-core alarm apple      # alarm_coreFFI.xcframework, built in the macOS VM
 ```
+
+**Where iOS picks it up.** The script puts the bindings in `Kit/Sources/AlarmCore/Generated/` and the library in `Kit/Generated/alarm_coreFFI.xcframework`; `AlarmCore` adds a thin façade (`Facade.swift`) that keeps the Swift names AlarmUI uses and turns the core's `LoopError` into the app's `LoopFailure` sentence. The archive file lives in `AlarmStore`, plain Swift that also builds on Linux: `LoopRepository` reads, calls `store_encode`, writes atomically and publishes only after the write.
 
 Needs Rust (stable), `rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android`, `cargo install cargo-ndk`, an Android NDK, and in the VM `rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios`. `generated/` is a build output and is not committed.
 

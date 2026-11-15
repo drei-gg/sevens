@@ -101,7 +101,7 @@ enum ClockFormat {
     }
 
     /// A clock time stored as minutes after midnight (a routine's shared time).
-    static func parts(minute: Int) -> (time: String, period: String?) {
+    static func parts(minute: Int32) -> (time: String, period: String?) {
         parts(Date(timeIntervalSince1970: Double(minute) * 60), timeZone: TimeZone(secondsFromGMT: 0) ?? .gmt)
     }
 
@@ -126,7 +126,7 @@ enum ClockFormat {
     }
 
     /// "5 minutes", "1 minute": plural-safe and localized.
-    static func minutes(_ count: Int, width: Measurement<UnitDuration>.FormatStyle.UnitWidth = .wide) -> String {
+    static func minutes(_ count: some BinaryInteger, width: Measurement<UnitDuration>.FormatStyle.UnitWidth = .wide) -> String {
         Measurement(value: Double(count), unit: UnitDuration.minutes).formatted(.measurement(width: width))
     }
 }
@@ -165,13 +165,13 @@ enum WeekOrder {
 
 /// The week as initials, the days that ring in bold ink and the rest muted: M T W T F S S.
 struct DayLetters: View {
-    let days: [Int]
+    let days: [Int32]
     var dimmed = false
     var body: some View {
         let symbols = Calendar.autoupdatingCurrent.veryShortWeekdaySymbols
         HStack(spacing: Tokens.Space.xs) {
             ForEach(WeekOrder.days, id: \.self) { day in
-                let on = days.contains(day)
+                let on = days.contains(Int32(day))
                 Text(symbols[day - 1])
                     .foregroundStyle(on && !dimmed ? Color.primary : Tokens.muted)
                     .textRole(.caption, emphasized: on)
@@ -179,7 +179,7 @@ struct DayLetters: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(WeekOrder.spoken(days))
+        .accessibilityLabel(WeekOrder.spoken(days.map(Int.init)))
     }
 }
 

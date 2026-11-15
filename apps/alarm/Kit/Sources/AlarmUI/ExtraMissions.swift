@@ -10,6 +10,7 @@ struct MemoryMission: View {
     @State private var sequence = SequenceChallenge(sequence:[])
     @State private var highlighted: Int?
     @State private var showing = true
+    @State private var completed = false
     @State private var replay = 0
     @State private var message = "Watch the tiles, then repeat the order."
     var body: some View {
@@ -19,21 +20,22 @@ struct MemoryMission: View {
                 ForEach(0..<9,id:\.self) { tile in
                     Button {
                         if sequence.tap(tile) {
-                            if sequence.complete { onComplete() }
-                            else { message = "\(sequence.progress) of \(sequence.sequence.count)" }
+                            if sequence.complete() { completed = true; onComplete() }
+                            else { message = "\(sequence.progress()) of \(sequence.sequence().count)" }
                         } else { message = "Try that sequence again."; replay += 1 }
                     } label: { MissionTile(text:"\(tile + 1)",lit:highlighted == tile) }
-                        .buttonStyle(.plain).disabled(showing || sequence.complete).accessibilityLabel("Tile \(tile + 1)").accessibilityIdentifier("memory-tile-\(tile)")
+                        .buttonStyle(.plain).disabled(showing || completed).accessibilityLabel("Tile \(tile + 1)").accessibilityIdentifier("memory-tile-\(tile)")
                 }
             }
-            Button("Show sequence again",systemImage:"arrow.counterclockwise") { replay += 1 }.disabled(showing || sequence.complete)
+            Button("Show sequence again",systemImage:"arrow.counterclockwise") { replay += 1 }.disabled(showing || completed)
         }.task(id:replay) {
             showing = true
-            if sequence.sequence.isEmpty { sequence = SequenceChallenge(sequence:(0..<(level + 2)).map { _ in Int.random(in:0..<9) }) }
-            else { sequence = SequenceChallenge(sequence:sequence.sequence) }
+            // The core object holds the progress; a replay starts a fresh one on the same tiles.
+            if sequence.sequence().isEmpty { sequence = SequenceChallenge(sequence:(0..<(level + 2)).map { _ in Int32.random(in:0..<9) }) }
+            else { sequence = SequenceChallenge(sequence:sequence.sequence()) }
             do {
                 try await Task.sleep(for:.milliseconds(600))
-                for tile in sequence.sequence {
+                for tile in sequence.sequence().map(Int.init) {
                     highlighted = tile
                     UIAccessibility.post(notification:.announcement,argument:"Tile \(tile + 1)")
                     try await Task.sleep(for:.milliseconds(850)); highlighted = nil
@@ -138,7 +140,7 @@ struct ColorWordMission: View {
                 Task { @MainActor in
                     guard let self, self.running, self.generation == token else { return }
                     if let failure { self.message = failure; self.stop() }
-                    else if let magnitude, let time { self.counter.sample(acceleration:magnitude,timestamp:time); self.count = self.counter.count }
+                    else if let magnitude, let time { self.counter.sample(acceleration:magnitude,timestamp:time); self.count = Int(self.counter.count()) }
                 }
             }
         }

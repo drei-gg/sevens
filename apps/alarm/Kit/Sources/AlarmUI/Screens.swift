@@ -35,14 +35,14 @@ enum AlarmGate {
     static var unlock: UnlockContent { UnlockContent(appName: "Alarm & Loops", features: ["Wake-up missions and follow-up checks", "Shared times with different weekdays", "Interval loops and complete local history", "Portable backups and exports"]) }
     static var before: BeforeYouBuyContent { BeforeYouBuyContent(title: "Your iPhone already has alarms.", paragraphs: [.init("Clock already wakes you up and times things. If that is enough, keep your money."), .init("This adds wake-up missions, flexible time loops and a history you can keep. Try everything for 7 days, then {price}, once. Nothing renews.", withoutPrice: "This adds wake-up missions, flexible time loops and a history you can keep. Try everything for 7 days, then a one-time purchase."), .init("Existing enabled alarms keep running after the trial. You can always stop alarms and read, export or delete your history.")], justScanLabel: "Look around first") }
 }
-func clockText(_ minute: Int) -> String {
+func clockText(_ minute: Int32) -> String {
     let formatter = DateFormatter()
     formatter.locale = .autoupdatingCurrent
     formatter.timeZone = TimeZone(secondsFromGMT: 0)
     formatter.dateStyle = .none; formatter.timeStyle = .short
     return formatter.string(from: Date(timeIntervalSince1970: Double(minute) * 60))
 }
-func dayText(_ weekdays: [Int]) -> String { let symbols = Calendar.current.shortWeekdaySymbols; return weekdays.sorted().map { symbols[$0 - 1] }.joined(separator: " · ") }
+func dayText(_ weekdays: [Int32]) -> String { let symbols = Calendar.current.shortWeekdaySymbols; return weekdays.sorted().map { symbols[Int($0) - 1] }.joined(separator: " · ") }
 
 /// The one filled button on a screen: an ink capsule, full width up to a comfortable measure.
 struct PrimaryButton: View {
@@ -63,7 +63,7 @@ struct PrimaryButton: View {
 
 /// Seven round day buttons: the days a time rings are filled ink, the rest outlined.
 struct WeekdayPicker: View {
-    @Binding var days: [Int]
+    @Binding var days: [Int32]
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s) {
             ViewThatFits(in: .horizontal) {
@@ -79,8 +79,8 @@ struct WeekdayPicker: View {
         .sensoryFeedback(.selection, trigger: days)
     }
     func dayButton(_ day: Int) -> some View {
-        let on = days.contains(day)
-        return Button { if on { if days.count > 1 { days.removeAll { $0 == day } } } else { days.append(day) } } label: {
+        let value = Int32(day), on = days.contains(value)
+        return Button { if on { if days.count > 1 { days.removeAll { $0 == value } } } else { days.append(value) } } label: {
             Text(Calendar.current.veryShortWeekdaySymbols[day - 1])
                 .foregroundStyle(on ? Tokens.onInk : Color.primary)
                 .textRole(.body, emphasized: on)
@@ -97,10 +97,10 @@ struct WeekdayPicker: View {
 }
 struct MinutePicker: View {
     let title: String
-    @Binding var minute: Int
+    @Binding var minute: Int32
     var wheel = false
     var body: some View {
-        let picker = DatePicker(title, selection: Binding(get: { Calendar.current.startOfDay(for: Date()).addingTimeInterval(Double(minute) * 60) }, set: { minute = Calendar.current.component(.hour, from: $0) * 60 + Calendar.current.component(.minute, from: $0) }), displayedComponents: .hourAndMinute)
+        let picker = DatePicker(title, selection: Binding(get: { Calendar.current.startOfDay(for: Date()).addingTimeInterval(Double(minute) * 60) }, set: { minute = Int32(Calendar.current.component(.hour, from: $0) * 60 + Calendar.current.component(.minute, from: $0)) }), displayedComponents: .hourAndMinute)
         if wheel { picker.datePickerStyle(.wheel).labelsHidden().frame(maxWidth: .infinity) } else { picker }
     }
 }
@@ -188,7 +188,7 @@ struct RoutineEditor: View {
             AlarmTonePicker(tone: Binding(get: { routine.tone ?? .system }, set: { routine.tone = $0 }))
             if let tone = routine.tone, tone != .system {
                 Button("Preview tone", systemImage: "play.circle") {
-                    do { guard let url = Bundle.main.url(forResource: "alarm-\(tone.rawValue)", withExtension: "wav") else { throw LoopError.invalid("This tone isn’t in this build.") }; tonePlayer = try AVAudioPlayer(contentsOf: url); tonePlayer?.play() }
+                    do { guard let url = Bundle.main.url(forResource: "alarm-\(tone.rawValue)", withExtension: "wav") else { throw LoopFailure.invalid("This tone isn’t in this build.") }; tonePlayer = try AVAudioPlayer(contentsOf: url); tonePlayer?.play() }
                     catch { saveError = error.localizedDescription }
                 }
             }
@@ -200,7 +200,7 @@ struct RoutineEditor: View {
                 ForEach(MissionKind.allCases, id: \.self) { kind in Label(kind.title, systemImage: kind.symbol).tag(kind) }
             }
             if [.memory, .shake, .walk, .numberOrder, .colorWord].contains(routine.mission) {
-                Picker("Difficulty", selection: Binding(get: { routine.difficulty }, set: { value in routine.challengeLevel = value })) { Text("Easy").tag(1); Text("Medium").tag(2); Text("Hard").tag(3) }
+                Picker("Difficulty", selection: Binding(get: { routine.difficulty }, set: { value in routine.challengeLevel = Int32(value) })) { Text("Easy").tag(1); Text("Medium").tag(2); Text("Hard").tag(3) }
             }
             if routine.mission == .arithmetic { Stepper(routine.mathCount == 1 ? "1 question" : "\(routine.mathCount) questions", value: $routine.mathCount, in: 1...10) }
             if routine.mission == .typing { TextField("Phrase", text: $routine.phrase) }
@@ -285,7 +285,7 @@ struct MissionScreen: View {
                     .padding(Tokens.Space.ms).sevenCard().frame(maxWidth: 240)
                     .accessibilityIdentifier("mission-answer")
                 PrimaryButton(title: "Check answer") {
-                    if challenge.accepts(answer) { solved += 1; answer = ""; feedback = ""; if solved >= routine.mathCount { finish() } else { challenge = ArithmeticChallenge() } } else { feedback = "Try that one again." }
+                    if challenge.accepts(answer) { solved += 1; answer = ""; feedback = ""; if solved >= Int(routine.mathCount) { finish() } else { challenge = ArithmeticChallenge() } } else { feedback = "Try that one again." }
                 }
             }
         case .typing:

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0 — one core for both phones, 15 November 2026
+
+- Alarm & Loops' rules, schedules, missions and backup format now come from one shared core, so the iPhone and Android apps behave the same. Existing records and backups open unchanged.
+
 ## 0.1.0 — polish pass, 13 November 2026
 
 - Alarms and Loops lead with the next one: its time big in a 24-hour dial (midnight at the top, the arc runs from now to when it rings), its name, the day and how long until it rings. At accessibility text sizes the dial steps aside and the words stack.

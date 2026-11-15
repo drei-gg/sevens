@@ -30,22 +30,23 @@ import UserNotifications
     public func schedule(_ r: Registration) async throws {
         if r.routine.delivery == .reminder {
             let settings = await UNUserNotificationCenter.current().notificationSettings()
-            guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { throw LoopError.invalid("Allow notifications in Settings to deliver quiet reminders.") }
+            guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { throw LoopFailure.invalid("Allow notifications in Settings to deliver quiet reminders.") }
             let content = UNMutableNotificationContent(); content.title = r.routine.name; content.body = "Time for your routine."; content.sound = .default
             // Each weekday gets its own native notification. AlarmDriver receipt ID is the root.
             // A weekly registration is split upstream for notification delivery.
             var c = DateComponents()
             if let date = r.date { c = Calendar.current.dateComponents([.year,.month,.day,.hour,.minute,.second],from:date) }
-            else { c.hour = (r.minute ?? 0)/60; c.minute = (r.minute ?? 0)%60; c.weekday = r.weekdays.first }
+            else { let minute = Int(r.minute ?? 0); c.hour = minute/60; c.minute = minute%60; c.weekday = r.weekdays.first.map(Int.init) }
             let trigger = UNCalendarNotificationTrigger(dateMatching:c,repeats:r.date == nil)
             try await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier:r.id.uuidString,content:content,trigger:trigger)); return
         }
-        guard AlarmManager.shared.authorizationState == .authorized else { throw LoopError.invalid("Allow alarms in Settings before relying on this schedule.") }
+        guard AlarmManager.shared.authorizationState == .authorized else { throw LoopFailure.invalid("Allow alarms in Settings before relying on this schedule.") }
         let schedule: Alarm.Schedule
         if let date = r.date { schedule = .fixed(date) }
         else {
             let weekdays: [Locale.Weekday] = [.sunday,.monday,.tuesday,.wednesday,.thursday,.friday,.saturday]
-            schedule = .relative(.init(time:.init(hour:(r.minute ?? 0)/60,minute:(r.minute ?? 0)%60),repeats:.weekly(r.weekdays.map { weekdays[$0-1] })))
+            let minute = Int(r.minute ?? 0)
+            schedule = .relative(.init(time:.init(hour:minute/60,minute:minute%60),repeats:.weekly(r.weekdays.map { weekdays[Int($0)-1] })))
         }
         let alert = AlarmPresentation.Alert(title:LocalizedStringResource(stringLiteral:r.routine.name),secondaryButton:AlarmButton(text:"Open",textColor:.white,systemImageName:"arrow.up.right"),secondaryButtonBehavior:.custom)
         let attributes = AlarmAttributes<LoopMetadata>(presentation:AlarmPresentation(alert:alert),metadata:LoopMetadata(),tintColor:.accentColor)
@@ -96,9 +97,9 @@ public struct StopLoopIntent: LiveActivityIntent {
     public var status: String { "Preview mode: no alarms are scheduled" }
     public func request() async throws {}
     public func identifiers() async throws -> Set<UUID> { Set(rows.keys) }
-    public func schedule(_ r: Registration) async throws { if let failure { throw LoopError.invalid(failure) }; rows[r.id] = r }
+    public func schedule(_ r: Registration) async throws { if let failure { throw LoopFailure.invalid(failure) }; rows[r.id] = r }
     public func cancel(_ r: Registration) async throws {
-        if strictCancel && rows[r.id] == nil { throw LoopError.invalid("No such alarm.") }
+        if strictCancel && rows[r.id] == nil { throw LoopFailure.invalid("No such alarm.") }
         rows.removeValue(forKey:r.id)
     }
     public func stop(_ r: Registration) async throws {}
@@ -172,7 +173,7 @@ public struct StopLoopIntent: LiveActivityIntent {
     public func save(_ r: Routine) async -> Bool {
         guard store.paidFeaturesAvailable else { error = "Start the trial or unlock in Settings to create or edit schedules. Existing enabled alarms keep running."; return false }
         guard !busy else { return false }; busy = true; defer { busy = false }
-        do { try r.validate(); _ = try ScheduleCompiler.registrations(r); if r.timing == .once && r.enabled && r.once <= Date() { throw LoopError.invalid("Choose a future date for this alarm.") } }
+        do { try r.validate(); _ = try ScheduleCompiler.registrations(r); if r.timing == .once && r.enabled && r.once <= Date() { throw LoopFailure.invalid("Choose a future date for this alarm.") } }
         catch { self.error = error.localizedDescription; return false }
         guard await mutate({ a in a.routines.removeAll { $0.id == r.id }; a.routines.append(r) }) else { return false }
         await synchronize(); return true
@@ -223,7 +224,7 @@ public struct StopLoopIntent: LiveActivityIntent {
             }
         }
         // Notification APIs have a bounded queue. Refuse truncation before touching it.
-        guard rows.filter({$0.routine.delivery == .reminder}).count <= 60 else { throw LoopError.invalid("These routines need more than 60 quiet reminders. Reduce their times or weekdays; no reminders were silently dropped.") }
+        guard rows.filter({$0.routine.delivery == .reminder}).count <= 60 else { throw LoopFailure.invalid("These routines need more than 60 quiet reminders. Reduce their times or weekdays; no reminders were silently dropped.") }
         return rows
     }
     public func synchronize() async {
@@ -246,9 +247,9 @@ public struct StopLoopIntent: LiveActivityIntent {
                     if old == row && liveIDs.contains(row.id) { continue }
                     do {
                         // Persist the ID before installation so even a later write failure is recoverable.
-                        if old == nil { guard await mutate({ $0.installed.append(row) }) else { throw LoopError.invalid("Could not save alarm receipt.") } }
+                        if old == nil { guard await mutate({ $0.installed.append(row) }) else { throw LoopFailure.invalid("Could not save alarm receipt.") } }
                         try await driver.schedule(row)
-                        guard await mutate({ a in a.installed.removeAll { $0.id == row.id }; a.installed.append(row) }) else { throw LoopError.invalid("Alarm scheduled, but its receipt could not be updated. Retry before relying on it.") }
+                        guard await mutate({ a in a.installed.removeAll { $0.id == row.id }; a.installed.append(row) }) else { throw LoopFailure.invalid("Alarm scheduled, but its receipt could not be updated. Retry before relying on it.") }
                     } catch { failures.append("\(row.routine.name): \(error.localizedDescription)") }
                 }
                 let wanted = Set(desired.map(\.id))
@@ -274,12 +275,12 @@ public struct StopLoopIntent: LiveActivityIntent {
     }
     public func openNative(_ id: String) async throws {
         await reload()
-        guard var row = archive.installed.first(where:{$0.id.uuidString == id}) else { throw LoopError.invalid("The alarm is no longer in your saved schedule.") }
+        guard var row = archive.installed.first(where:{$0.id.uuidString == id}) else { throw LoopFailure.invalid("The alarm is no longer in your saved schedule.") }
         if archive.pending?.id == row.id, let pending = archive.pending { row = pending }
         // Each ringing is its own occurrence, so snoozes and checks from different days never share IDs.
         if row.occurrenceID == nil { row.occurrenceID = UUID() }
         let opened = row
-        guard await mutate({ $0.pending = opened }) else { throw LoopError.invalid("Could not save the active mission.") }
+        guard await mutate({ $0.pending = opened }) else { throw LoopFailure.invalid("Could not save the active mission.") }
         mission = opened
     }
     public func dismissNative(_ id: String) async throws {
@@ -289,22 +290,22 @@ public struct StopLoopIntent: LiveActivityIntent {
         if row.occurrenceID == nil { row.occurrenceID = UUID() }
         let event = LoopEvent(routine:row.routine,kind:.dismissed,note:"Stopped with the system control; mission completion is unconfirmed.")
         let rowID = row.id
-        guard await mutate({ $0.events.append(event); if $0.pending?.id == rowID { $0.pending = nil } }) else { throw LoopError.invalid("Could not record dismissal.") }
-        if row.purpose != "followUp" && row.routine.followUpMinutes > 0 { try await extra(row,minutes:row.routine.followUpMinutes,purpose:"followUp") }
+        guard await mutate({ $0.events.append(event); if $0.pending?.id == rowID { $0.pending = nil } }) else { throw LoopFailure.invalid("Could not record dismissal.") }
+        if row.purpose != "followUp" && row.routine.followUpMinutes > 0 { try await extra(row,minutes:Int(row.routine.followUpMinutes),purpose:"followUp") }
     }
     public func extra(_ row: Registration, minutes: Int, purpose: String) async throws {
         var extra = row; extra.id = ScheduleCompiler.identifier(row.occurrenceID ?? row.id,key:"\(purpose):\(row.snoozes)"); extra.date = Date().addingTimeInterval(Double(minutes)*60); extra.minute = nil; extra.weekdays = []; extra.purpose = purpose; extra.occurrenceID = row.occurrenceID ?? row.id; extra.snoozes = purpose == "snooze" ? row.snoozes + 1 : row.snoozes
         let saved = extra
-        guard await mutate({ a in a.installed.removeAll { $0.id == saved.id }; a.installed.append(saved) }) else { throw LoopError.invalid("Could not save follow-up alarm.") }
+        guard await mutate({ a in a.installed.removeAll { $0.id == saved.id }; a.installed.append(saved) }) else { throw LoopFailure.invalid("Could not save follow-up alarm.") }
         do { try await driver.schedule(extra) } catch { _ = await mutate { $0.installed.removeAll { $0.id == saved.id } }; throw error }
     }
     public func finish(_ row: Registration, kind: EventKind) async -> Bool {
         guard !busy else { return false }; busy = true; defer { busy = false }
         do {
             if kind == .snoozed {
-                guard row.snoozes < row.routine.snoozeLimit else { throw LoopError.invalid("Snooze limit reached.") }
-                try await extra(row,minutes:row.routine.snoozeMinutes,purpose:"snooze")
-            } else if kind == .completed && row.purpose != "followUp" && row.routine.followUpMinutes > 0 { try await extra(row,minutes:row.routine.followUpMinutes,purpose:"followUp") }
+                guard row.snoozes < row.routine.snoozeLimit else { throw LoopFailure.invalid("Snooze limit reached.") }
+                try await extra(row,minutes:Int(row.routine.snoozeMinutes),purpose:"snooze")
+            } else if kind == .completed && row.purpose != "followUp" && row.routine.followUpMinutes > 0 { try await extra(row,minutes:Int(row.routine.followUpMinutes),purpose:"followUp") }
             if kind == .emergencyStop || (kind == .completed && row.purpose == "followUp") {
                 let liveIDs = try await driver.identifiers()
                 for extra in archive.installed where extra.routine.id == row.routine.id && extra.purpose != "schedule" && extra.id != row.id {
