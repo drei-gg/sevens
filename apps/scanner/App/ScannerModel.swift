@@ -19,9 +19,12 @@ import ScannerCore
         if ProcessInfo.processInfo.arguments.contains("-scanner.ui") {
             folder = "ScannerUITests"
             let defaults = UserDefaults(suiteName: "Scanner.UITests")!
-            let source = LocalSource(defaults: defaults); source.apply(.unlocked)
+            let args = ProcessInfo.processInfo.arguments
+            let source = LocalSource(defaults: defaults)
+            source.apply(args.contains("-scanner.expired") ? .expired : args.contains("-scanner.fresh") ? .notStarted : .unlocked)
             store = Store(config: config, source: source, defaults: defaults)
-            store.markBeforeYouBuyShown(); store.markTrialEndedShown()
+            // The screens tour passes -scanner.launchSheets to see Before you buy and Trial ended at launch.
+            if !args.contains("-scanner.launchSheets") { store.markBeforeYouBuyShown(); store.markTrialEndedShown() }
         } else { store = Store(config: config) }
         #else
         store = Store(config: config)
@@ -95,6 +98,19 @@ import ScannerCore
             if documents.contains(where: { $0.id == document.id }) { self.error = String(localized: "Your scan is saved. Text recognition could not finish. You can retry from the document.") }
         }
     }
+    /// One page's image file, for thumbnails. Deleted documents live in Recently Deleted's folder.
+    func pageURL(_ document: ScanDocument, page: ScanPage?, deleted: Bool = false) async -> URL? {
+        guard let page else { return nil }
+        var subset = document; subset.pages = [page]
+        return try? await repository.pageURLs(subset, deleted: deleted).first
+    }
+    /// Stars or unstars a document without touching its name or notes.
+    @discardableResult func setFavorite(_ document: ScanDocument, _ favorite: Bool) async -> ScanDocument? {
+        do {
+            let updated = try await repository.updateMetadata(documentID: document.id, title: document.title, note: document.note ?? "", favorite: favorite)
+            await reload(); return updated
+        } catch { self.error = error.localizedDescription; return nil }
+    }
     func save(_ document: ScanDocument) async -> Bool {
         do { try await repository.save(document); await reload(); return true }
         catch { self.error = error.localizedDescription; return false }
@@ -120,6 +136,45 @@ import ScannerCore
             }
         }
         await create(images)
+    }
+    /// A small believable library for the screens tour and store pictures: receipts, a lease, a form,
+    /// a recipe, with dates spread over weeks, two favorites and one in Recently Deleted. The text
+    /// is filled in directly, so the tour doesn't wait for recognition.
+    func demo() async {
+        let samples: [(title: String, pages: [String], favorite: Bool, days: Double, note: String?)] = [
+            ("Café receipt", ["NORTH STREET CAFÉ\n13 Nov 2026  08:42\n\nFlat white        4.20\nAlmond croissant  3.80\n\nTotal             8.00\nCard ending 4417"], false, 0.05, nil),
+            ("Apartment lease", ["RESIDENTIAL LEASE AGREEMENT\n\nThis lease is made between the landlord and the tenant for the property at 14 Harbour Road, Unit 3B.\n\nTerm: 12 months from 1 December 2026.",
+                                 "2. RENT AND DEPOSIT\n\nMonthly rent is due on the first day of each month. A deposit equal to one month of rent is held for the term.",
+                                 "3. SIGNATURES\n\nLandlord ______________\n\nTenant ______________\n\nDate 10 November 2026"], true, 3, "Signed copy. Original in the blue folder."),
+            ("Pharmacy receipt", ["GREEN CROSS PHARMACY\n11 Nov 2026\n\nVitamin D 1000 IU   9.50\nSaline spray        6.25\n\nTotal              15.75"], false, 2, nil),
+            ("Tax form 2026", ["INCOME STATEMENT 2026\n\nEmployer: Northwind Studio\nGross pay          52,400\nTax withheld       11,230",
+                               "SUPPLEMENTARY SCHEDULE\n\nCharitable gifts     420\nWork tools           610"], true, 9, "For the accountant, due end of January."),
+            ("Lemon cake recipe", ["LEMON CAKE\n\n200 g flour\n180 g sugar\n3 eggs\n2 lemons, zest and juice\n120 g butter\n\nBake 40 minutes at 175 °C."], false, 16, nil),
+            ("Washer warranty", ["LIMITED WARRANTY\n\nModel WM-7100\nSerial 7Q2-88140\nPurchased 2 March 2025\n\nCovered for 3 years from purchase."], false, 45, nil)]
+        do {
+            for sample in samples {
+                let images = try sample.pages.map { try DocumentProcessing.normalized(Self.page($0)) }
+                var document = try await repository.create(title: sample.title, images: images, text: sample.pages)
+                document.created = Date().addingTimeInterval(-sample.days * 86_400)
+                document.favorite = sample.favorite; document.note = sample.note
+                try await repository.save(document)
+            }
+            let old = try await repository.create(title: "Old utility bill", images: [DocumentProcessing.normalized(Self.page("CITY POWER & WATER\nAugust 2026\n\nAmount due  64.10"))], text: ["CITY POWER & WATER\nAugust 2026\n\nAmount due  64.10"])
+            try await repository.delete(old)
+        } catch { self.error = error.localizedDescription }
+        await reload()
+    }
+    /// A plain printed page: a bold first line, then body text, on white.
+    private static func page(_ text: String) -> UIImage {
+        UIGraphicsImageRenderer(size: CGSize(width: 600, height: 800)).image { context in
+            UIColor.white.setFill(); context.fill(CGRect(x: 0, y: 0, width: 600, height: 800))
+            let lines = text.components(separatedBy: "\n")
+            (lines[0] as NSString).draw(in: CGRect(x: 48, y: 56, width: 504, height: 80), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 26), .foregroundColor: UIColor.black])
+            UIColor(white: 0.2, alpha: 1).setFill(); context.fill(CGRect(x: 48, y: 104, width: 504, height: 2))
+            let style = NSMutableParagraphStyle(); style.lineSpacing = 6
+            (lines.dropFirst().joined(separator: "\n") as NSString).draw(in: CGRect(x: 48, y: 124, width: 504, height: 620),
+                withAttributes: [.font: UIFont.monospacedSystemFont(ofSize: 19, weight: .regular), .foregroundColor: UIColor(white: 0.12, alpha: 1), .paragraphStyle: style])
+        }
     }
     #endif
 }

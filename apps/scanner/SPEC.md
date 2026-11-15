@@ -4,6 +4,8 @@ Native SwiftUI, iOS 17+. Scanner-specific code stays in this app; reuse existing
 
 Notes and Files already scan documents. Scanner adds a dedicated local library, editing, searchable PDFs and portable backup. No backend, analytics or subscription. Explicit seven-day trial and one-time unlock from SevenKit. Existing documents remain readable, editable, deletable and exportable after expiry; new documents and added pages (scanned or imported) require access. Backup and restore are included, with no additional app fee.
 
+Look: SevenKit's ink tint and paper (K17). The library is a grid of first-page thumbnails with one large Scan action; a document opens page first, with Export PDF as its one large action. Scanner has no charts or progress visuals, so it uses no data hues; controls stay ink.
+
 ## Capture and library
 
 Capture multipage paper with VisionKit or import images and PDFs through Files. Normalize orientation and size, commit the document, then recognize text on-device with Vision. OCR failure leaves the saved scan intact. Completion merges by page ID without overwriting concurrent metadata/order changes or newer page adjustments. Retry OCR explicitly when needed.
