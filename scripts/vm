@@ -97,6 +97,8 @@ case "$cmd" in
              remote_cmd="cd apps/alarm/Kit && xcodebuild -scheme AlarmLoopsKit-Package -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
            elif [ "$app" = cleaner ]; then
              remote_cmd="cd apps/cleaner/Kit && xcodebuild -scheme CleanerKit-Package -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
+           elif [ "$app" = vault ]; then
+             remote_cmd="cd apps/vault/Kit && xcodebuild -scheme VaultKit-Package -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
            elif [ "$app" = scanner ]; then
              remote_cmd="cd apps/scanner/Kit && xcodebuild -scheme ScannerKit -derivedDataPath $dd $strictw -destination '$dest' $noclone test"
            else

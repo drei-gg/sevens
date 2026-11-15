@@ -21,14 +21,12 @@ jobs:
         run: swift test --package-path apps/fast/Kit
       - name: QRKit
         run: swift test --package-path apps/qr/Kit
-      - name: AlarmCore
+      - name: AlarmStore
         run: swift test --package-path apps/alarm/Kit
       - name: ScannerKit
         run: swift test --package-path apps/scanner/Kit
       - name: CleanerKit
         run: swift test --package-path apps/cleaner/Kit
-      - name: Vault portable core
-        run: swift test --package-path apps/vault/Kit
       - name: Rules (G6, G7)
         run: scripts/check-rules
 
@@ -122,8 +120,12 @@ jobs:
           -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
           CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
 
-      - name: Test Vault storage
-        run: swift test --package-path apps/vault/Kit -Xswiftc -warnings-as-errors
+      - name: Test Vault storage and core
+        working-directory: apps/vault/Kit
+        run: >
+          xcodebuild -scheme VaultKit-Package
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
       - name: Build and test Vault
         run: >
           xcodebuild -project apps/vault/Vault.xcodeproj -scheme Vault -configuration Debug

@@ -24,7 +24,7 @@ hits+=$(git ls-files --cached --others --exclude-standard -- '*Package.swift' '*
 [ -z "$hits" ] || bad "G6 data-collecting SDK (deny-list):" "$hits"
 # Pure targets import Foundation (and their own siblings) only.
 hits=$(swift_files | grep -E '^(apps/(fast|qr|alarm|scanner|cleaner|vault)/Kit/Sources/(FastCore|QRCore|AlarmCore|ScannerCore|CleanerCore|VaultCore)|SevenKit/Sources/SevenKitCore)/' \
-  | xargs -r grep -nE '^\s*(@[a-zA-Z]+\s+)*import\s' | grep -vE 'import\s+(Foundation|FastCore|QRCore|AlarmCore|ScannerCore|CleanerCore|VaultCore|SevenKitCore)\s*$' || true)
+  | xargs -r grep -nE '^\s*(@[a-zA-Z]+\s+)*import\s' | grep -vE 'import\s+(Foundation|FastCore|QRCore|AlarmCore|ScannerCore|CleanerCore|VaultCore|ScannerFiles|AlarmStore|FastWire|SevenKitCore)\s*$' || true)
 [ -z "$hits" ] || bad "G6 pure target imports something other than Foundation:" "$hits"
 
 # G6c: open-source libraries are welcome, but every one is pinned and credited in THIRD-PARTY.md
