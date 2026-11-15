@@ -1,0 +1,173 @@
+{
+  "alarmDefaults" : {
+    "followUpMinutes" : 7,
+    "snoozeLimit" : 0,
+    "snoozeMinutes" : 12,
+    "tone" : "pulse"
+  },
+  "events" : [
+    {
+      "date" : 784111777.123456,
+      "id" : "00000000-0000-0000-0000-0000000000E1",
+      "kind" : "emergencyStop",
+      "name" : "Wake up",
+      "note" : "Stopped at 06:58 \/ café ☕",
+      "routineID" : "00000000-0000-0000-0000-0000000000A1"
+    },
+    {
+      "date" : 784198177,
+      "id" : "00000000-0000-0000-0000-0000000000E2",
+      "kind" : "followUpScheduled",
+      "name" : "Wake up",
+      "note" : "",
+      "routineID" : "00000000-0000-0000-0000-0000000000A1"
+    }
+  ],
+  "installed" : [
+    {
+      "id" : "8D4F2C1A-0B3E-4F5D-9A6B-7C8D9E0F1A2B",
+      "minute" : 420,
+      "purpose" : "schedule",
+      "routine" : {
+        "code" : "",
+        "delivery" : "reminder",
+        "enabled" : true,
+        "followUpMinutes" : 0,
+        "id" : "00000000-0000-0000-0000-0000000000A2",
+        "intervalMinutes" : 45,
+        "kind" : "loop",
+        "mathCount" : 3,
+        "mission" : "none",
+        "name" : "Take a break",
+        "once" : 784200000.5,
+        "phrase" : "I am awake",
+        "slots" : [
+          {
+            "id" : "00000000-0000-0000-0000-0000000000B2",
+            "minute" : 420,
+            "weekdays" : [
+              2,
+              6
+            ]
+          }
+        ],
+        "snoozeLimit" : 3,
+        "snoozeMinutes" : 5,
+        "timing" : "window",
+        "windowDays" : [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "windowEnd" : 60,
+        "windowStart" : 1380
+      },
+      "snoozes" : 0,
+      "weekdays" : [
+        2,
+        6
+      ]
+    }
+  ],
+  "pending" : {
+    "date" : 784115377.25,
+    "id" : "00000000-0000-0000-0000-0000000000C1",
+    "occurrenceID" : "00000000-0000-0000-0000-0000000000D1",
+    "purpose" : "followUp",
+    "routine" : {
+      "challengeLevel" : 3,
+      "code" : "https:\/\/example.com\/kitchen",
+      "delivery" : "alarm",
+      "enabled" : true,
+      "followUpMinutes" : 7,
+      "group" : "Mornings",
+      "id" : "00000000-0000-0000-0000-0000000000A1",
+      "intervalMinutes" : 60,
+      "kind" : "alarm",
+      "mathCount" : 5,
+      "mission" : "code",
+      "name" : "Wake up",
+      "once" : 784115377,
+      "phrase" : "I am awake",
+      "reason" : "Gym at 7",
+      "slots" : [
+        {
+          "id" : "00000000-0000-0000-0000-0000000000B1",
+          "minute" : 390,
+          "weekdays" : [
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "snoozeLimit" : 0,
+      "snoozeMinutes" : 12,
+      "timing" : "weekly",
+      "tone" : "pulse",
+      "windowDays" : [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "windowEnd" : 1020,
+      "windowStart" : 540
+    },
+    "snoozes" : 1,
+    "weekdays" : [
+
+    ]
+  },
+  "routines" : [
+    {
+      "challengeLevel" : 3,
+      "code" : "https:\/\/example.com\/kitchen",
+      "delivery" : "alarm",
+      "enabled" : true,
+      "followUpMinutes" : 7,
+      "group" : "Mornings",
+      "id" : "00000000-0000-0000-0000-0000000000A1",
+      "intervalMinutes" : 60,
+      "kind" : "alarm",
+      "mathCount" : 5,
+      "mission" : "code",
+      "name" : "Wake up",
+      "once" : 784115377,
+      "phrase" : "I am awake",
+      "reason" : "Gym at 7",
+      "slots" : [
+        {
+          "id" : "00000000-0000-0000-0000-0000000000B1",
+          "minute" : 390,
+          "weekdays" : [
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "snoozeLimit" : 0,
+      "snoozeMinutes" : 12,
+      "timing" : "weekly",
+      "tone" : "pulse",
+      "windowDays" : [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "windowEnd" : 1020,
+      "windowStart" : 540
+    }
+  ],
+  "version" : 1
+}
