@@ -19,6 +19,8 @@ jobs:
         run: swift test --package-path SevenKit
       - name: FastKit
         run: swift test --package-path apps/fast/Kit
+      - name: QRKit
+        run: swift test --package-path apps/qr/Kit
       - name: Rules (G6, G7)
         run: scripts/check-rules
 
@@ -53,6 +55,13 @@ jobs:
       - name: Build and test Fast Tracker
         run: >
           xcodebuild -project apps/fast/Fast.xcodeproj -scheme Fast -configuration Debug
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
+          build test
+
+      - name: Build and test QR Code Kit
+        run: >
+          xcodebuild -project apps/qr/QR.xcodeproj -scheme QR -configuration Debug
           -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
           CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
           build test

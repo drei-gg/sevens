@@ -1,0 +1,31 @@
+{
+ "id": "peekreport-tls-after-redirect",
+ "original": "https://short.example.net/x",
+ "hops": [
+  {
+   "url": "https://short.example.net/x",
+   "status": 301
+  },
+  {
+   "url": "https://pay.example.org/",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "tlsFailure",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "tlsProblem"
+  ],
+  "info": [],
+  "level": 2,
+  "finalHost": "short.example.net",
+  "hopLevels": [
+   0,
+   0
+  ]
+ }
+}

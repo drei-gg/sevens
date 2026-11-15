@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-script-redirect-meta-zero",
+ "original": "https://hop.example.com/r",
+ "hops": [
+  {
+   "url": "https://hop.example.com/r",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "One moment",
+  "signals": [
+   "scriptRedirect"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "hop.example.com",
+  "hopLevels": [
+   0
+  ]
+ }
+}

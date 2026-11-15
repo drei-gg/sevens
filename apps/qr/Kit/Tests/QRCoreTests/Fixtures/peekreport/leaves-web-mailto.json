@@ -1,0 +1,31 @@
+{
+ "id": "peekreport-leaves-web-mailto",
+ "original": "https://example.com/contact",
+ "hops": [
+  {
+   "url": "https://example.com/contact",
+   "status": 302
+  },
+  {
+   "url": "mailto:help@example.com",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "nonWebTarget",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "redirectLeavesWeb"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "example.com",
+  "hopLevels": [
+   0,
+   0
+  ]
+ }
+}

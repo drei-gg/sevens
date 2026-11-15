@@ -1,0 +1,27 @@
+{
+ "id": "peekreport-tls-self-signed",
+ "original": "https://192.0.2.10/",
+ "hops": [
+  {
+   "url": "https://192.0.2.10/",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "tlsFailure",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": null,
+ "expect": {
+  "title": null,
+  "signals": [
+   "tlsProblem"
+  ],
+  "info": [],
+  "level": 2,
+  "finalHost": null,
+  "hopLevels": [
+   1
+  ]
+ },
+ "note": "original already careful (ip host)"
+}

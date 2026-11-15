@@ -1,0 +1,3155 @@
+[
+ {
+  "name": "Microsoft",
+  "keywords": [
+   "microsoft",
+   "onedrive",
+   "sharepoint",
+   "hotmail"
+  ],
+  "domains": [
+   "microsoft.com",
+   "outlook.com",
+   "office.com",
+   "live.com",
+   "microsoftonline.com",
+   "cloud.microsoft",
+   "hotmail.com",
+   "microsoft.at",
+   "microsoft.ca",
+   "microsoft.ch",
+   "microsoft.co.uk",
+   "microsoft.com.au",
+   "microsoft.com.br",
+   "microsoft.com.mx",
+   "microsoft.de",
+   "microsoft.es",
+   "microsoft.fr",
+   "microsoft.it",
+   "microsoft.jp",
+   "microsoft.net",
+   "microsoft.nl",
+   "microsoft.ph",
+   "microsoft.pl",
+   "microsoft.se",
+   "microsoft365.com",
+   "office365.com",
+   "onedrive.com",
+   "windows.com"
+  ],
+  "category": "tech",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Google",
+  "keywords": [
+   "google",
+   "gmail"
+  ],
+  "domains": [
+   "google.com",
+   "gmail.com",
+   "google.ad",
+   "google.ae",
+   "google.al",
+   "google.am",
+   "google.as",
+   "google.at",
+   "google.az",
+   "google.ba",
+   "google.be",
+   "google.bf",
+   "google.bg",
+   "google.bi",
+   "google.bj",
+   "google.bs",
+   "google.bt",
+   "google.by",
+   "google.ca",
+   "google.cat",
+   "google.cd",
+   "google.cf",
+   "google.cg",
+   "google.ch",
+   "google.ci",
+   "google.cl",
+   "google.cm",
+   "google.cn",
+   "google.co.ao",
+   "google.co.bw",
+   "google.co.ck",
+   "google.co.cr",
+   "google.co.id",
+   "google.co.il",
+   "google.co.in",
+   "google.co.jp",
+   "google.co.ke",
+   "google.co.kr",
+   "google.co.ls",
+   "google.co.ma",
+   "google.co.mz",
+   "google.co.nz",
+   "google.co.th",
+   "google.co.tz",
+   "google.co.ug",
+   "google.co.uk",
+   "google.co.uz",
+   "google.co.ve",
+   "google.co.vi",
+   "google.co.za",
+   "google.co.zm",
+   "google.co.zw",
+   "google.com.af",
+   "google.com.ag",
+   "google.com.ar",
+   "google.com.au",
+   "google.com.bd",
+   "google.com.bh",
+   "google.com.bn",
+   "google.com.bo",
+   "google.com.br",
+   "google.com.bz",
+   "google.com.co",
+   "google.com.cu",
+   "google.com.cy",
+   "google.com.do",
+   "google.com.ec",
+   "google.com.eg",
+   "google.com.et",
+   "google.com.fj",
+   "google.com.gh",
+   "google.com.gi",
+   "google.com.gt",
+   "google.com.hk",
+   "google.com.jm",
+   "google.com.kh",
+   "google.com.kw",
+   "google.com.lb",
+   "google.com.ly",
+   "google.com.mm",
+   "google.com.mt",
+   "google.com.mx",
+   "google.com.my",
+   "google.com.na",
+   "google.com.ng",
+   "google.com.ni",
+   "google.com.np",
+   "google.com.om",
+   "google.com.pa",
+   "google.com.pe",
+   "google.com.pg",
+   "google.com.ph",
+   "google.com.pk",
+   "google.com.pr",
+   "google.com.py",
+   "google.com.qa",
+   "google.com.sa",
+   "google.com.sb",
+   "google.com.sg",
+   "google.com.sl",
+   "google.com.sv",
+   "google.com.tj",
+   "google.com.tr",
+   "google.com.tw",
+   "google.com.ua",
+   "google.com.uy",
+   "google.com.vc",
+   "google.com.vn",
+   "google.cv",
+   "google.cz",
+   "google.de",
+   "google.dj",
+   "google.dk",
+   "google.dm",
+   "google.dz",
+   "google.ee",
+   "google.es",
+   "google.fi",
+   "google.fm",
+   "google.fr",
+   "google.ga",
+   "google.ge",
+   "google.gg",
+   "google.gl",
+   "google.gm",
+   "google.gr",
+   "google.gy",
+   "google.hn",
+   "google.hr",
+   "google.ht",
+   "google.hu",
+   "google.ie",
+   "google.im",
+   "google.iq",
+   "google.is",
+   "google.it",
+   "google.je",
+   "google.jo",
+   "google.kg",
+   "google.ki",
+   "google.kz",
+   "google.la",
+   "google.li",
+   "google.lk",
+   "google.lt",
+   "google.lu",
+   "google.lv",
+   "google.md",
+   "google.me",
+   "google.mg",
+   "google.mk",
+   "google.ml",
+   "google.mn",
+   "google.mu",
+   "google.mv",
+   "google.mw",
+   "google.ne",
+   "google.nl",
+   "google.no",
+   "google.nr",
+   "google.nu",
+   "google.pl",
+   "google.pn",
+   "google.ps",
+   "google.pt",
+   "google.ro",
+   "google.rs",
+   "google.ru",
+   "google.rw",
+   "google.sc",
+   "google.se",
+   "google.sh",
+   "google.si",
+   "google.sk",
+   "google.sm",
+   "google.sn",
+   "google.so",
+   "google.sr",
+   "google.st",
+   "google.td",
+   "google.tg",
+   "google.tl",
+   "google.tm",
+   "google.tn",
+   "google.to",
+   "google.tt",
+   "google.vu",
+   "google.ws",
+   "googlemail.com"
+  ],
+  "category": "tech",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Apple",
+  "keywords": [
+   "apple"
+  ],
+  "domains": [
+   "apple.com",
+   "apple.co",
+   "apple.com.cn"
+  ],
+  "category": "tech",
+  "region": "global",
+  "ambiguous": true
+ },
+ {
+  "name": "iCloud",
+  "keywords": [
+   "icloud"
+  ],
+  "domains": [
+   "icloud.com",
+   "icloud.com.cn"
+  ],
+  "category": "tech",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Amazon",
+  "keywords": [
+   "amazon"
+  ],
+  "domains": [
+   "amazon.com",
+   "amazon.co.uk",
+   "amazon.de",
+   "amazon.fr",
+   "amazon.es",
+   "amazon.it",
+   "amazon.ca",
+   "amazon.in",
+   "amazon.com.br",
+   "amazon.com.mx",
+   "amazon.co.jp",
+   "amazon.com.au",
+   "amazon.sg",
+   "amazon.ae",
+   "amazon.sa",
+   "amazon.eg",
+   "amazon.nl",
+   "amazon.pl",
+   "amazon.se",
+   "amazon.com.tr",
+   "amazon.cn",
+   "amazon.co.nz",
+   "amazon.co.za",
+   "amazon.com.be",
+   "amazon.ie",
+   "amazon.ph",
+   "amzn.com"
+  ],
+  "category": "marketplace",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Facebook",
+  "keywords": [
+   "facebook"
+  ],
+  "domains": [
+   "facebook.com",
+   "fb.com",
+   "messenger.com",
+   "facebook.co",
+   "facebook.com.br",
+   "facebook.de",
+   "facebook.dk",
+   "facebook.fr",
+   "facebook.it",
+   "facebook.nl",
+   "facebook.pl",
+   "facebook.se",
+   "facebookmail.com",
+   "fb.me",
+   "fb.watch",
+   "m.me"
+  ],
+  "category": "social",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Instagram",
+  "keywords": [
+   "instagram"
+  ],
+  "domains": [
+   "instagram.com",
+   "ig.me",
+   "instagr.am",
+   "instagram.co",
+   "instagram.com.br",
+   "instagram.de"
+  ],
+  "category": "social",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "WhatsApp",
+  "keywords": [
+   "whatsapp"
+  ],
+  "domains": [
+   "whatsapp.com",
+   "wa.me",
+   "whatsapp.net"
+  ],
+  "category": "social",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "LinkedIn",
+  "keywords": [
+   "linkedin"
+  ],
+  "domains": [
+   "linkedin.com"
+  ],
+  "category": "social",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Netflix",
+  "keywords": [
+   "netflix"
+  ],
+  "domains": [
+   "netflix.com",
+   "netflix.ca",
+   "netflix.co",
+   "netflix.co.jp",
+   "netflix.co.uk",
+   "netflix.com.au",
+   "netflix.com.br",
+   "netflix.de",
+   "netflix.es",
+   "netflix.fr",
+   "netflix.in",
+   "netflix.it",
+   "netflix.net",
+   "netflix.nl",
+   "netflix.ph"
+  ],
+  "category": "streaming",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Spotify",
+  "keywords": [
+   "spotify"
+  ],
+  "domains": [
+   "spotify.com"
+  ],
+  "category": "streaming",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Adobe",
+  "keywords": [
+   "adobe"
+  ],
+  "domains": [
+   "adobe.com"
+  ],
+  "category": "tech",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "DocuSign",
+  "keywords": [
+   "docusign"
+  ],
+  "domains": [
+   "docusign.com"
+  ],
+  "category": "tech",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Dropbox",
+  "keywords": [
+   "dropbox"
+  ],
+  "domains": [
+   "dropbox.com"
+  ],
+  "category": "tech",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Booking.com",
+  "keywords": [
+   "booking"
+  ],
+  "domains": [
+   "booking.com"
+  ],
+  "category": "travel",
+  "region": "global",
+  "ambiguous": true
+ },
+ {
+  "name": "Airbnb",
+  "keywords": [
+   "airbnb"
+  ],
+  "domains": [
+   "airbnb.com"
+  ],
+  "category": "travel",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Uber",
+  "keywords": [
+   "uber"
+  ],
+  "domains": [
+   "uber.com"
+  ],
+  "category": "tech",
+  "region": "global",
+  "ambiguous": true
+ },
+ {
+  "name": "Twitter",
+  "keywords": [
+   "twitter"
+  ],
+  "domains": [
+   "twitter.com",
+   "x.com"
+  ],
+  "category": "social",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "TikTok",
+  "keywords": [
+   "tiktok"
+  ],
+  "domains": [
+   "tiktok.com"
+  ],
+  "category": "social",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Telegram",
+  "keywords": [
+   "telegram"
+  ],
+  "domains": [
+   "telegram.org",
+   "t.me"
+  ],
+  "category": "social",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Snapchat",
+  "keywords": [
+   "snapchat"
+  ],
+  "domains": [
+   "snapchat.com"
+  ],
+  "category": "social",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Discord",
+  "keywords": [
+   "discord"
+  ],
+  "domains": [
+   "discord.com"
+  ],
+  "category": "social",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Steam",
+  "keywords": [
+   "steam",
+   "steampowered",
+   "steamcommunity"
+  ],
+  "domains": [
+   "steampowered.com",
+   "steamcommunity.com"
+  ],
+  "category": "gaming",
+  "region": "global",
+  "ambiguous": true
+ },
+ {
+  "name": "Roblox",
+  "keywords": [
+   "roblox"
+  ],
+  "domains": [
+   "roblox.com"
+  ],
+  "category": "gaming",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "PlayStation",
+  "keywords": [
+   "playstation"
+  ],
+  "domains": [
+   "playstation.com"
+  ],
+  "category": "gaming",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Xbox",
+  "keywords": [
+   "xbox"
+  ],
+  "domains": [
+   "xbox.com"
+  ],
+  "category": "gaming",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Zoom",
+  "keywords": [
+   "zoom"
+  ],
+  "domains": [
+   "zoom.us",
+   "zoom.com"
+  ],
+  "category": "tech",
+  "region": "global",
+  "ambiguous": true
+ },
+ {
+  "name": "GitHub",
+  "keywords": [
+   "github"
+  ],
+  "domains": [
+   "github.com"
+  ],
+  "category": "tech",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Yahoo",
+  "keywords": [
+   "yahoo"
+  ],
+  "domains": [
+   "yahoo.com"
+  ],
+  "category": "tech",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Alibaba",
+  "keywords": [
+   "alibaba"
+  ],
+  "domains": [
+   "alibaba.com"
+  ],
+  "category": "marketplace",
+  "region": "cn",
+  "ambiguous": false
+ },
+ {
+  "name": "AliExpress",
+  "keywords": [
+   "aliexpress"
+  ],
+  "domains": [
+   "aliexpress.com"
+  ],
+  "category": "marketplace",
+  "region": "cn",
+  "ambiguous": false
+ },
+ {
+  "name": "Alipay",
+  "keywords": [
+   "alipay"
+  ],
+  "domains": [
+   "alipay.com"
+  ],
+  "category": "payments",
+  "region": "cn",
+  "ambiguous": false
+ },
+ {
+  "name": "WeChat",
+  "keywords": [
+   "wechat"
+  ],
+  "domains": [
+   "wechat.com"
+  ],
+  "category": "social",
+  "region": "cn",
+  "ambiguous": false
+ },
+ {
+  "name": "Temu",
+  "keywords": [
+   "temu"
+  ],
+  "domains": [
+   "temu.com"
+  ],
+  "category": "marketplace",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Shein",
+  "keywords": [
+   "shein"
+  ],
+  "domains": [
+   "shein.com"
+  ],
+  "category": "marketplace",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "eBay",
+  "keywords": [
+   "ebay"
+  ],
+  "domains": [
+   "ebay.com"
+  ],
+  "category": "marketplace",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Walmart",
+  "keywords": [
+   "walmart"
+  ],
+  "domains": [
+   "walmart.com"
+  ],
+  "category": "marketplace",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "Target",
+  "keywords": [
+   "target"
+  ],
+  "domains": [
+   "target.com"
+  ],
+  "category": "marketplace",
+  "region": "us",
+  "ambiguous": true
+ },
+ {
+  "name": "Rakuten",
+  "keywords": [
+   "rakuten"
+  ],
+  "domains": [
+   "rakuten.co.jp",
+   "rakuten.com"
+  ],
+  "category": "marketplace",
+  "region": "jp",
+  "ambiguous": false
+ },
+ {
+  "name": "PayPal",
+  "keywords": [
+   "paypal"
+  ],
+  "domains": [
+   "paypal.com",
+   "paypal.at",
+   "paypal.be",
+   "paypal.ca",
+   "paypal.ch",
+   "paypal.co.id",
+   "paypal.co.nz",
+   "paypal.co.th",
+   "paypal.co.uk",
+   "paypal.com.au",
+   "paypal.com.br",
+   "paypal.com.hk",
+   "paypal.com.mx",
+   "paypal.com.my",
+   "paypal.com.sg",
+   "paypal.de",
+   "paypal.es",
+   "paypal.fr",
+   "paypal.ie",
+   "paypal.in",
+   "paypal.it",
+   "paypal.jp",
+   "paypal.me",
+   "paypal.nl",
+   "paypal.ph",
+   "paypal.pl",
+   "paypal.se"
+  ],
+  "category": "payments",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Venmo",
+  "keywords": [
+   "venmo"
+  ],
+  "domains": [
+   "venmo.com"
+  ],
+  "category": "payments",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "Cash App",
+  "keywords": [
+   "cashapp"
+  ],
+  "domains": [
+   "cash.app"
+  ],
+  "category": "payments",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "Zelle",
+  "keywords": [
+   "zelle"
+  ],
+  "domains": [
+   "zellepay.com",
+   "zelle.com"
+  ],
+  "category": "payments",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "Revolut",
+  "keywords": [
+   "revolut"
+  ],
+  "domains": [
+   "revolut.com"
+  ],
+  "category": "payments",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Payoneer",
+  "keywords": [
+   "payoneer"
+  ],
+  "domains": [
+   "payoneer.com"
+  ],
+  "category": "payments",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Western Union",
+  "keywords": [
+   "westernunion"
+  ],
+  "domains": [
+   "westernunion.com"
+  ],
+  "category": "payments",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "MoneyGram",
+  "keywords": [
+   "moneygram"
+  ],
+  "domains": [
+   "moneygram.com"
+  ],
+  "category": "payments",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Visa",
+  "keywords": [
+   "visa"
+  ],
+  "domains": [
+   "visa.com",
+   "visa.be",
+   "visa.ca",
+   "visa.cl",
+   "visa.cn",
+   "visa.co.cr",
+   "visa.co.id",
+   "visa.co.il",
+   "visa.co.in",
+   "visa.co.jp",
+   "visa.co.ke",
+   "visa.co.ni",
+   "visa.co.nz",
+   "visa.co.th",
+   "visa.co.uk",
+   "visa.co.ve",
+   "visa.co.za",
+   "visa.com.ar",
+   "visa.com.au",
+   "visa.com.az",
+   "visa.com.bo",
+   "visa.com.br",
+   "visa.com.bz",
+   "visa.com.co",
+   "visa.com.cy",
+   "visa.com.do",
+   "visa.com.ec",
+   "visa.com.ge",
+   "visa.com.gt",
+   "visa.com.hk",
+   "visa.com.hn",
+   "visa.com.hr",
+   "visa.com.jm",
+   "visa.com.kh",
+   "visa.com.kz",
+   "visa.com.lk",
+   "visa.com.mt",
+   "visa.com.mx",
+   "visa.com.my",
+   "visa.com.ng",
+   "visa.com.pa",
+   "visa.com.pe",
+   "visa.com.ph",
+   "visa.com.pr",
+   "visa.com.py",
+   "visa.com.sg",
+   "visa.com.sv",
+   "visa.com.tr",
+   "visa.com.tt",
+   "visa.com.tw",
+   "visa.com.ua",
+   "visa.com.uy",
+   "visa.com.vn",
+   "visa.cz",
+   "visa.de",
+   "visa.dk",
+   "visa.ee",
+   "visa.es",
+   "visa.fi",
+   "visa.fr",
+   "visa.gp",
+   "visa.gr",
+   "visa.hu",
+   "visa.ie",
+   "visa.is",
+   "visa.lt",
+   "visa.lv",
+   "visa.mn",
+   "visa.mq",
+   "visa.nl",
+   "visa.no",
+   "visa.pl",
+   "visa.pt",
+   "visa.ro",
+   "visa.se",
+   "visa.sk"
+  ],
+  "category": "payments",
+  "region": "global",
+  "ambiguous": true
+ },
+ {
+  "name": "Mastercard",
+  "keywords": [
+   "mastercard"
+  ],
+  "domains": [
+   "mastercard.com",
+   "mastercard.co.cr",
+   "mastercard.co.id",
+   "mastercard.co.il",
+   "mastercard.co.in",
+   "mastercard.co.jp",
+   "mastercard.co.ke",
+   "mastercard.co.kr",
+   "mastercard.co.nz",
+   "mastercard.co.th",
+   "mastercard.co.uk",
+   "mastercard.co.ve",
+   "mastercard.co.za",
+   "mastercard.com.ar",
+   "mastercard.com.au",
+   "mastercard.com.bh",
+   "mastercard.com.br",
+   "mastercard.com.bz",
+   "mastercard.com.cn",
+   "mastercard.com.co",
+   "mastercard.com.cy",
+   "mastercard.com.do",
+   "mastercard.com.eg",
+   "mastercard.com.ge",
+   "mastercard.com.gt",
+   "mastercard.com.hk",
+   "mastercard.com.kw",
+   "mastercard.com.lb",
+   "mastercard.com.mt",
+   "mastercard.com.mx",
+   "mastercard.com.my",
+   "mastercard.com.ng",
+   "mastercard.com.pe",
+   "mastercard.com.ph",
+   "mastercard.com.pr",
+   "mastercard.com.sa",
+   "mastercard.com.sg",
+   "mastercard.com.tr",
+   "mastercard.com.tw",
+   "mastercard.com.uy",
+   "mastercard.com.ve",
+   "mastercard.com.vn"
+  ],
+  "category": "payments",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "American Express",
+  "keywords": [
+   "americanexpress",
+   "amex"
+  ],
+  "domains": [
+   "americanexpress.com"
+  ],
+  "category": "payments",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Paytm",
+  "keywords": [
+   "paytm"
+  ],
+  "domains": [
+   "paytm.com"
+  ],
+  "category": "payments",
+  "region": "in",
+  "ambiguous": false
+ },
+ {
+  "name": "PhonePe",
+  "keywords": [
+   "phonepe"
+  ],
+  "domains": [
+   "phonepe.com"
+  ],
+  "category": "payments",
+  "region": "in",
+  "ambiguous": false
+ },
+ {
+  "name": "GCash",
+  "keywords": [
+   "gcash"
+  ],
+  "domains": [
+   "gcash.com"
+  ],
+  "category": "payments",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "Maya",
+  "keywords": [
+   "maya",
+   "paymaya"
+  ],
+  "domains": [
+   "maya.ph",
+   "paymaya.com"
+  ],
+  "category": "payments",
+  "region": "ph",
+  "ambiguous": true
+ },
+ {
+  "name": "Coins.ph",
+  "keywords": [
+   "coinsph"
+  ],
+  "domains": [
+   "coins.ph"
+  ],
+  "category": "crypto",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "JazzCash",
+  "keywords": [
+   "jazzcash"
+  ],
+  "domains": [
+   "jazzcash.com.pk"
+  ],
+  "category": "payments",
+  "region": "pk",
+  "ambiguous": false
+ },
+ {
+  "name": "bKash",
+  "keywords": [
+   "bkash"
+  ],
+  "domains": [
+   "bkash.com"
+  ],
+  "category": "payments",
+  "region": "bd",
+  "ambiguous": false
+ },
+ {
+  "name": "PayPay",
+  "keywords": [
+   "paypay"
+  ],
+  "domains": [
+   "paypay.ne.jp"
+  ],
+  "category": "payments",
+  "region": "jp",
+  "ambiguous": false
+ },
+ {
+  "name": "Grab",
+  "keywords": [
+   "grab"
+  ],
+  "domains": [
+   "grab.com"
+  ],
+  "category": "tech",
+  "region": "sea",
+  "ambiguous": true
+ },
+ {
+  "name": "Gojek",
+  "keywords": [
+   "gojek"
+  ],
+  "domains": [
+   "gojek.com"
+  ],
+  "category": "tech",
+  "region": "id",
+  "ambiguous": false
+ },
+ {
+  "name": "Shopee",
+  "keywords": [
+   "shopee"
+  ],
+  "domains": [
+   "shopee.ph",
+   "shopee.sg",
+   "shopee.co.id",
+   "shopee.com.my",
+   "shopee.vn",
+   "shopee.co.th",
+   "shopee.tw",
+   "shopee.com.br"
+  ],
+  "category": "marketplace",
+  "region": "sea",
+  "ambiguous": false
+ },
+ {
+  "name": "Lazada",
+  "keywords": [
+   "lazada"
+  ],
+  "domains": [
+   "lazada.com.ph",
+   "lazada.sg",
+   "lazada.co.id",
+   "lazada.com.my",
+   "lazada.co.th",
+   "lazada.vn"
+  ],
+  "category": "marketplace",
+  "region": "sea",
+  "ambiguous": false
+ },
+ {
+  "name": "Tokopedia",
+  "keywords": [
+   "tokopedia"
+  ],
+  "domains": [
+   "tokopedia.com"
+  ],
+  "category": "marketplace",
+  "region": "id",
+  "ambiguous": false
+ },
+ {
+  "name": "Mercado Libre",
+  "keywords": [
+   "mercadolibre",
+   "mercadolivre"
+  ],
+  "domains": [
+   "mercadolibre.com",
+   "mercadolibre.com.ar",
+   "mercadolibre.com.mx",
+   "mercadolivre.com.br"
+  ],
+  "category": "marketplace",
+  "region": "latam",
+  "ambiguous": false
+ },
+ {
+  "name": "Mercado Pago",
+  "keywords": [
+   "mercadopago"
+  ],
+  "domains": [
+   "mercadopago.com",
+   "mercadopago.com.ar",
+   "mercadopago.com.br",
+   "mercadopago.com.mx"
+  ],
+  "category": "payments",
+  "region": "latam",
+  "ambiguous": false
+ },
+ {
+  "name": "Nubank",
+  "keywords": [
+   "nubank"
+  ],
+  "domains": [
+   "nubank.com.br"
+  ],
+  "category": "bank",
+  "region": "br",
+  "ambiguous": false
+ },
+ {
+  "name": "Chase",
+  "keywords": [
+   "chase"
+  ],
+  "domains": [
+   "chase.com"
+  ],
+  "category": "bank",
+  "region": "us",
+  "ambiguous": true
+ },
+ {
+  "name": "Bank of America",
+  "keywords": [
+   "bankofamerica"
+  ],
+  "domains": [
+   "bankofamerica.com"
+  ],
+  "category": "bank",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "Wells Fargo",
+  "keywords": [
+   "wellsfargo"
+  ],
+  "domains": [
+   "wellsfargo.com"
+  ],
+  "category": "bank",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "Citibank",
+  "keywords": [
+   "citibank"
+  ],
+  "domains": [
+   "citi.com",
+   "citibank.com"
+  ],
+  "category": "bank",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "Capital One",
+  "keywords": [
+   "capitalone"
+  ],
+  "domains": [
+   "capitalone.com"
+  ],
+  "category": "bank",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "U.S. Bank",
+  "keywords": [
+   "usbank"
+  ],
+  "domains": [
+   "usbank.com"
+  ],
+  "category": "bank",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "Navy Federal",
+  "keywords": [
+   "navyfederal"
+  ],
+  "domains": [
+   "navyfederal.org"
+  ],
+  "category": "bank",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "RBC Royal Bank",
+  "keywords": [
+   "rbcroyalbank",
+   "royalbank"
+  ],
+  "domains": [
+   "rbc.com",
+   "rbcroyalbank.com"
+  ],
+  "category": "bank",
+  "region": "ca",
+  "ambiguous": false
+ },
+ {
+  "name": "HSBC",
+  "keywords": [
+   "hsbc"
+  ],
+  "domains": [
+   "hsbc.com",
+   "hsbc.co.uk"
+  ],
+  "category": "bank",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Barclays",
+  "keywords": [
+   "barclays"
+  ],
+  "domains": [
+   "barclays.co.uk",
+   "barclays.com"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Lloyds Bank",
+  "keywords": [
+   "lloydsbank",
+   "lloyds"
+  ],
+  "domains": [
+   "lloydsbank.com",
+   "lloydsbank.co.uk"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "NatWest",
+  "keywords": [
+   "natwest"
+  ],
+  "domains": [
+   "natwest.com"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Santander",
+  "keywords": [
+   "santander"
+  ],
+  "domains": [
+   "santander.com",
+   "santander.co.uk",
+   "santander.com.br",
+   "santander.es"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "ING",
+  "keywords": [],
+  "domains": [
+   "ing.com",
+   "ing.de"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Deutsche Bank",
+  "keywords": [
+   "deutschebank"
+  ],
+  "domains": [
+   "deutsche-bank.de",
+   "db.com"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Sparkasse",
+  "keywords": [
+   "sparkasse"
+  ],
+  "domains": [
+   "sparkasse.de"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "BNP Paribas",
+  "keywords": [
+   "bnpparibas"
+  ],
+  "domains": [
+   "bnpparibas.com",
+   "bnpparibas.fr"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Credit Agricole",
+  "keywords": [
+   "creditagricole"
+  ],
+  "domains": [
+   "credit-agricole.fr"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "BBVA",
+  "keywords": [
+   "bbva"
+  ],
+  "domains": [
+   "bbva.com",
+   "bbva.es",
+   "bbva.mx"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Intesa Sanpaolo",
+  "keywords": [
+   "intesasanpaolo"
+  ],
+  "domains": [
+   "intesasanpaolo.com"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "UBS",
+  "keywords": [
+   "ubs"
+  ],
+  "domains": [
+   "ubs.com"
+  ],
+  "category": "bank",
+  "region": "eu",
+  "ambiguous": true
+ },
+ {
+  "name": "Banco do Brasil",
+  "keywords": [
+   "bancodobrasil"
+  ],
+  "domains": [
+   "bb.com.br"
+  ],
+  "category": "bank",
+  "region": "br",
+  "ambiguous": false
+ },
+ {
+  "name": "Itau",
+  "keywords": [
+   "itau"
+  ],
+  "domains": [
+   "itau.com.br"
+  ],
+  "category": "bank",
+  "region": "br",
+  "ambiguous": false
+ },
+ {
+  "name": "Bradesco",
+  "keywords": [
+   "bradesco"
+  ],
+  "domains": [
+   "bradesco.com.br"
+  ],
+  "category": "bank",
+  "region": "br",
+  "ambiguous": false
+ },
+ {
+  "name": "Caixa Economica Federal",
+  "keywords": [
+   "caixa"
+  ],
+  "domains": [
+   "caixa.gov.br"
+  ],
+  "category": "bank",
+  "region": "br",
+  "ambiguous": true
+ },
+ {
+  "name": "Banamex",
+  "keywords": [
+   "banamex"
+  ],
+  "domains": [
+   "banamex.com"
+  ],
+  "category": "bank",
+  "region": "mx",
+  "ambiguous": false
+ },
+ {
+  "name": "Bancolombia",
+  "keywords": [
+   "bancolombia"
+  ],
+  "domains": [
+   "bancolombia.com"
+  ],
+  "category": "bank",
+  "region": "latam",
+  "ambiguous": false
+ },
+ {
+  "name": "BCP Peru",
+  "keywords": [
+   "viabcp"
+  ],
+  "domains": [
+   "viabcp.com"
+  ],
+  "category": "bank",
+  "region": "latam",
+  "ambiguous": false
+ },
+ {
+  "name": "Absa",
+  "keywords": [
+   "absa"
+  ],
+  "domains": [
+   "absa.co.za"
+  ],
+  "category": "bank",
+  "region": "za",
+  "ambiguous": false
+ },
+ {
+  "name": "Standard Bank",
+  "keywords": [
+   "standardbank"
+  ],
+  "domains": [
+   "standardbank.co.za"
+  ],
+  "category": "bank",
+  "region": "za",
+  "ambiguous": false
+ },
+ {
+  "name": "FNB South Africa",
+  "keywords": [],
+  "domains": [
+   "fnb.co.za"
+  ],
+  "category": "bank",
+  "region": "za",
+  "ambiguous": false
+ },
+ {
+  "name": "GTBank",
+  "keywords": [
+   "gtbank"
+  ],
+  "domains": [
+   "gtbank.com"
+  ],
+  "category": "bank",
+  "region": "ng",
+  "ambiguous": false
+ },
+ {
+  "name": "Opay",
+  "keywords": [
+   "opay"
+  ],
+  "domains": [
+   "opayweb.com"
+  ],
+  "category": "payments",
+  "region": "ng",
+  "ambiguous": false
+ },
+ {
+  "name": "Jumia",
+  "keywords": [
+   "jumia"
+  ],
+  "domains": [
+   "jumia.com.ng",
+   "jumia.co.ke",
+   "jumia.com.eg"
+  ],
+  "category": "marketplace",
+  "region": "africa",
+  "ambiguous": false
+ },
+ {
+  "name": "Emirates NBD",
+  "keywords": [
+   "emiratesnbd"
+  ],
+  "domains": [
+   "emiratesnbd.com"
+  ],
+  "category": "bank",
+  "region": "ae",
+  "ambiguous": false
+ },
+ {
+  "name": "Al Rajhi Bank",
+  "keywords": [
+   "alrajhi"
+  ],
+  "domains": [
+   "alrajhibank.com.sa"
+  ],
+  "category": "bank",
+  "region": "sa",
+  "ambiguous": false
+ },
+ {
+  "name": "Saudi National Bank",
+  "keywords": [
+   "alahli"
+  ],
+  "domains": [
+   "snb.com.sa"
+  ],
+  "category": "bank",
+  "region": "sa",
+  "ambiguous": false
+ },
+ {
+  "name": "SBI",
+  "keywords": [
+   "sbi"
+  ],
+  "domains": [
+   "sbi.co.in",
+   "onlinesbi.sbi",
+   "onlinesbi.sbi.bank.in"
+  ],
+  "category": "bank",
+  "region": "in",
+  "ambiguous": true
+ },
+ {
+  "name": "HDFC Bank",
+  "keywords": [
+   "hdfcbank"
+  ],
+  "domains": [
+   "hdfcbank.com",
+   "hdfc.bank.in"
+  ],
+  "category": "bank",
+  "region": "in",
+  "ambiguous": false
+ },
+ {
+  "name": "ICICI Bank",
+  "keywords": [
+   "icicibank"
+  ],
+  "domains": [
+   "icicibank.com",
+   "icici.bank.in"
+  ],
+  "category": "bank",
+  "region": "in",
+  "ambiguous": false
+ },
+ {
+  "name": "Axis Bank",
+  "keywords": [
+   "axisbank"
+  ],
+  "domains": [
+   "axisbank.com",
+   "axis.bank.in"
+  ],
+  "category": "bank",
+  "region": "in",
+  "ambiguous": false
+ },
+ {
+  "name": "Flipkart",
+  "keywords": [
+   "flipkart"
+  ],
+  "domains": [
+   "flipkart.com"
+  ],
+  "category": "marketplace",
+  "region": "in",
+  "ambiguous": false
+ },
+ {
+  "name": "BDO Unibank",
+  "keywords": [
+   "bdounibank",
+   "bdo"
+  ],
+  "domains": [
+   "bdo.com.ph"
+  ],
+  "category": "bank",
+  "region": "ph",
+  "ambiguous": true
+ },
+ {
+  "name": "BPI",
+  "keywords": [
+   "bpi"
+  ],
+  "domains": [
+   "bpi.com.ph"
+  ],
+  "category": "bank",
+  "region": "ph",
+  "ambiguous": true
+ },
+ {
+  "name": "Metrobank",
+  "keywords": [
+   "metrobank"
+  ],
+  "domains": [
+   "metrobank.com.ph"
+  ],
+  "category": "bank",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "UnionBank",
+  "keywords": [
+   "unionbankph"
+  ],
+  "domains": [
+   "unionbankph.com"
+  ],
+  "category": "bank",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "Landbank",
+  "keywords": [
+   "landbank"
+  ],
+  "domains": [
+   "landbank.com"
+  ],
+  "category": "bank",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "RCBC",
+  "keywords": [
+   "rcbc"
+  ],
+  "domains": [
+   "rcbc.com"
+  ],
+  "category": "bank",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "Security Bank",
+  "keywords": [
+   "securitybank"
+  ],
+  "domains": [
+   "securitybank.com"
+  ],
+  "category": "bank",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "Philippine National Bank",
+  "keywords": [],
+  "domains": [
+   "pnb.com.ph"
+  ],
+  "category": "bank",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "China Bank",
+  "keywords": [
+   "chinabank"
+  ],
+  "domains": [
+   "chinabank.ph"
+  ],
+  "category": "bank",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "EastWest Bank",
+  "keywords": [
+   "eastwestbanker"
+  ],
+  "domains": [
+   "eastwestbanker.com"
+  ],
+  "category": "bank",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "Maybank",
+  "keywords": [
+   "maybank"
+  ],
+  "domains": [
+   "maybank.com",
+   "maybank2u.com.my"
+  ],
+  "category": "bank",
+  "region": "my",
+  "ambiguous": false
+ },
+ {
+  "name": "CIMB",
+  "keywords": [
+   "cimb"
+  ],
+  "domains": [
+   "cimb.com",
+   "cimbclicks.com.my"
+  ],
+  "category": "bank",
+  "region": "my",
+  "ambiguous": false
+ },
+ {
+  "name": "DBS",
+  "keywords": [
+   "dbs"
+  ],
+  "domains": [
+   "dbs.com",
+   "dbs.com.sg"
+  ],
+  "category": "bank",
+  "region": "sg",
+  "ambiguous": true
+ },
+ {
+  "name": "OCBC",
+  "keywords": [
+   "ocbc"
+  ],
+  "domains": [
+   "ocbc.com"
+  ],
+  "category": "bank",
+  "region": "sg",
+  "ambiguous": false
+ },
+ {
+  "name": "BCA",
+  "keywords": [
+   "klikbca"
+  ],
+  "domains": [
+   "bca.co.id"
+  ],
+  "category": "bank",
+  "region": "id",
+  "ambiguous": false
+ },
+ {
+  "name": "Bank Mandiri",
+  "keywords": [
+   "mandiri"
+  ],
+  "domains": [
+   "bankmandiri.co.id"
+  ],
+  "category": "bank",
+  "region": "id",
+  "ambiguous": false
+ },
+ {
+  "name": "Vietcombank",
+  "keywords": [
+   "vietcombank"
+  ],
+  "domains": [
+   "vietcombank.com.vn"
+  ],
+  "category": "bank",
+  "region": "vn",
+  "ambiguous": false
+ },
+ {
+  "name": "MUFG",
+  "keywords": [
+   "mufg"
+  ],
+  "domains": [
+   "mufg.jp"
+  ],
+  "category": "bank",
+  "region": "jp",
+  "ambiguous": false
+ },
+ {
+  "name": "Mizuho",
+  "keywords": [
+   "mizuho"
+  ],
+  "domains": [
+   "mizuhobank.co.jp",
+   "mizuho-fg.co.jp"
+  ],
+  "category": "bank",
+  "region": "jp",
+  "ambiguous": false
+ },
+ {
+  "name": "KB Kookmin Bank",
+  "keywords": [
+   "kbstar"
+  ],
+  "domains": [
+   "kbstar.com"
+  ],
+  "category": "bank",
+  "region": "kr",
+  "ambiguous": false
+ },
+ {
+  "name": "Naver",
+  "keywords": [
+   "naver"
+  ],
+  "domains": [
+   "naver.com"
+  ],
+  "category": "tech",
+  "region": "kr",
+  "ambiguous": false
+ },
+ {
+  "name": "Kakao",
+  "keywords": [
+   "kakao"
+  ],
+  "domains": [
+   "kakao.com",
+   "kakaocorp.com"
+  ],
+  "category": "tech",
+  "region": "kr",
+  "ambiguous": false
+ },
+ {
+  "name": "Coupang",
+  "keywords": [
+   "coupang"
+  ],
+  "domains": [
+   "coupang.com"
+  ],
+  "category": "marketplace",
+  "region": "kr",
+  "ambiguous": false
+ },
+ {
+  "name": "Commonwealth Bank",
+  "keywords": [
+   "commbank"
+  ],
+  "domains": [
+   "commbank.com.au"
+  ],
+  "category": "bank",
+  "region": "oceania",
+  "ambiguous": false
+ },
+ {
+  "name": "ANZ",
+  "keywords": [],
+  "domains": [
+   "anz.com",
+   "anz.com.au"
+  ],
+  "category": "bank",
+  "region": "oceania",
+  "ambiguous": false
+ },
+ {
+  "name": "Binance",
+  "keywords": [
+   "binance"
+  ],
+  "domains": [
+   "binance.com"
+  ],
+  "category": "crypto",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Coinbase",
+  "keywords": [
+   "coinbase"
+  ],
+  "domains": [
+   "coinbase.com"
+  ],
+  "category": "crypto",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Kraken",
+  "keywords": [
+   "kraken"
+  ],
+  "domains": [
+   "kraken.com"
+  ],
+  "category": "crypto",
+  "region": "global",
+  "ambiguous": true
+ },
+ {
+  "name": "MetaMask",
+  "keywords": [
+   "metamask"
+  ],
+  "domains": [
+   "metamask.io",
+   "metamask.com"
+  ],
+  "category": "crypto",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Trust Wallet",
+  "keywords": [
+   "trustwallet"
+  ],
+  "domains": [
+   "trustwallet.com"
+  ],
+  "category": "crypto",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Ledger",
+  "keywords": [
+   "ledger"
+  ],
+  "domains": [
+   "ledger.com"
+  ],
+  "category": "crypto",
+  "region": "global",
+  "ambiguous": true
+ },
+ {
+  "name": "OKX",
+  "keywords": [],
+  "domains": [
+   "okx.com"
+  ],
+  "category": "crypto",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "Bybit",
+  "keywords": [
+   "bybit"
+  ],
+  "domains": [
+   "bybit.com"
+  ],
+  "category": "crypto",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "OpenSea",
+  "keywords": [
+   "opensea"
+  ],
+  "domains": [
+   "opensea.io"
+  ],
+  "category": "crypto",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "DHL",
+  "keywords": [
+   "dhl"
+  ],
+  "domains": [
+   "dhl.com",
+   "dhl.de",
+   "dhl.ae",
+   "dhl.af",
+   "dhl.al",
+   "dhl.at",
+   "dhl.ba",
+   "dhl.be",
+   "dhl.bg",
+   "dhl.ca",
+   "dhl.cd",
+   "dhl.ch",
+   "dhl.cl",
+   "dhl.cm",
+   "dhl.co.ae",
+   "dhl.co.ao",
+   "dhl.co.bw",
+   "dhl.co.cr",
+   "dhl.co.id",
+   "dhl.co.il",
+   "dhl.co.in",
+   "dhl.co.ir",
+   "dhl.co.jp",
+   "dhl.co.ke",
+   "dhl.co.kr",
+   "dhl.co.ls",
+   "dhl.co.mu",
+   "dhl.co.mw",
+   "dhl.co.mz",
+   "dhl.co.nz",
+   "dhl.co.rs",
+   "dhl.co.th",
+   "dhl.co.tz",
+   "dhl.co.ug",
+   "dhl.co.uk",
+   "dhl.co.za",
+   "dhl.co.zm",
+   "dhl.co.zw",
+   "dhl.com.af",
+   "dhl.com.au",
+   "dhl.com.bb",
+   "dhl.com.bd",
+   "dhl.com.bh",
+   "dhl.com.bm",
+   "dhl.com.bn",
+   "dhl.com.bo",
+   "dhl.com.br",
+   "dhl.com.bs",
+   "dhl.com.co",
+   "dhl.com.cy",
+   "dhl.com.ec",
+   "dhl.com.fj",
+   "dhl.com.ge",
+   "dhl.com.gh",
+   "dhl.com.gt",
+   "dhl.com.hk",
+   "dhl.com.hn",
+   "dhl.com.ht",
+   "dhl.com.jm",
+   "dhl.com.jo",
+   "dhl.com.kh",
+   "dhl.com.kw",
+   "dhl.com.ky",
+   "dhl.com.la",
+   "dhl.com.lb",
+   "dhl.com.lk",
+   "dhl.com.mg",
+   "dhl.com.mk",
+   "dhl.com.mt",
+   "dhl.com.mx",
+   "dhl.com.my",
+   "dhl.com.na",
+   "dhl.com.ng",
+   "dhl.com.ni",
+   "dhl.com.np",
+   "dhl.com.om",
+   "dhl.com.pa",
+   "dhl.com.pe",
+   "dhl.com.pg",
+   "dhl.com.ph",
+   "dhl.com.pk",
+   "dhl.com.pl",
+   "dhl.com.py",
+   "dhl.com.qa",
+   "dhl.com.sa",
+   "dhl.com.sg",
+   "dhl.com.sv",
+   "dhl.com.tr",
+   "dhl.com.tt",
+   "dhl.com.tw",
+   "dhl.com.ua",
+   "dhl.com.uy",
+   "dhl.com.vc",
+   "dhl.cw",
+   "dhl.cz",
+   "dhl.dk",
+   "dhl.dz",
+   "dhl.ee",
+   "dhl.es",
+   "dhl.fi",
+   "dhl.fr",
+   "dhl.ga",
+   "dhl.gm",
+   "dhl.gr",
+   "dhl.hr",
+   "dhl.hu",
+   "dhl.id",
+   "dhl.ie",
+   "dhl.in",
+   "dhl.is",
+   "dhl.it",
+   "dhl.jo",
+   "dhl.kz",
+   "dhl.lt",
+   "dhl.lu",
+   "dhl.lv",
+   "dhl.me",
+   "dhl.mk",
+   "dhl.mn",
+   "dhl.mv",
+   "dhl.nl",
+   "dhl.no",
+   "dhl.org.bz",
+   "dhl.pt",
+   "dhl.re",
+   "dhl.ro",
+   "dhl.rs",
+   "dhl.sc",
+   "dhl.se",
+   "dhl.si",
+   "dhl.sk",
+   "dhl.sl",
+   "dhl.sn",
+   "dhl.tl",
+   "dhl.vg"
+  ],
+  "category": "courier",
+  "region": "global",
+  "ambiguous": true
+ },
+ {
+  "name": "FedEx",
+  "keywords": [
+   "fedex"
+  ],
+  "domains": [
+   "fedex.com",
+   "fedex.ae",
+   "fedex.as",
+   "fedex.at",
+   "fedex.be",
+   "fedex.ch",
+   "fedex.co.at",
+   "fedex.co.ck",
+   "fedex.co.il",
+   "fedex.co.in",
+   "fedex.co.jp",
+   "fedex.co.nz",
+   "fedex.co.th",
+   "fedex.co.uk",
+   "fedex.com.au",
+   "fedex.com.bn",
+   "fedex.com.hk",
+   "fedex.com.kw",
+   "fedex.com.mt",
+   "fedex.com.my",
+   "fedex.com.ng",
+   "fedex.com.om",
+   "fedex.com.ph",
+   "fedex.com.pk",
+   "fedex.com.sg",
+   "fedex.com.tw",
+   "fedex.com.vn",
+   "fedex.de",
+   "fedex.dk",
+   "fedex.fr",
+   "fedex.gr",
+   "fedex.ie",
+   "fedex.in",
+   "fedex.it",
+   "fedex.lk",
+   "fedex.lt",
+   "fedex.lu",
+   "fedex.lv",
+   "fedex.mp",
+   "fedex.nl",
+   "fedex.pl",
+   "fedex.pt",
+   "fedex.se",
+   "fedex.si"
+  ],
+  "category": "courier",
+  "region": "global",
+  "ambiguous": false
+ },
+ {
+  "name": "UPS",
+  "keywords": [
+   "ups"
+  ],
+  "domains": [
+   "ups.com",
+   "ups.ag",
+   "ups.am",
+   "ups.as",
+   "ups.at",
+   "ups.az",
+   "ups.bb",
+   "ups.be",
+   "ups.bi",
+   "ups.bo",
+   "ups.bs",
+   "ups.bz",
+   "ups.ca",
+   "ups.cc",
+   "ups.ch",
+   "ups.cl",
+   "ups.cr",
+   "ups.cx",
+   "ups.de",
+   "ups.dm",
+   "ups.do",
+   "ups.eu",
+   "ups.fi",
+   "ups.fm",
+   "ups.fo",
+   "ups.fr",
+   "ups.gl",
+   "ups.gm",
+   "ups.gp",
+   "ups.hk",
+   "ups.hm",
+   "ups.hn",
+   "ups.ht",
+   "ups.hu",
+   "ups.ie",
+   "ups.im",
+   "ups.in",
+   "ups.it",
+   "ups.jp",
+   "ups.kg",
+   "ups.ki",
+   "ups.kn",
+   "ups.ky",
+   "ups.kz",
+   "ups.lc",
+   "ups.li",
+   "ups.lu",
+   "ups.lv",
+   "ups.ly",
+   "ups.md",
+   "ups.me",
+   "ups.mn",
+   "ups.ms",
+   "ups.mu",
+   "ups.mw",
+   "ups.my",
+   "ups.nf",
+   "ups.nl",
+   "ups.no",
+   "ups.nr",
+   "ups.nz",
+   "ups.pe",
+   "ups.ph",
+   "ups.pn",
+   "ups.pr",
+   "ups.ps",
+   "ups.pt",
+   "ups.ro",
+   "ups.sc",
+   "ups.se",
+   "ups.sg",
+   "ups.sh",
+   "ups.si",
+   "ups.sn",
+   "ups.sr",
+   "ups.tc",
+   "ups.tf",
+   "ups.tj",
+   "ups.tl",
+   "ups.tt",
+   "ups.tv",
+   "ups.tw",
+   "ups.ua",
+   "ups.ug",
+   "ups.us",
+   "ups.uz",
+   "ups.vc",
+   "ups.vg",
+   "ups.vn",
+   "ups.ws"
+  ],
+  "category": "courier",
+  "region": "global",
+  "ambiguous": true
+ },
+ {
+  "name": "USPS",
+  "keywords": [
+   "usps"
+  ],
+  "domains": [
+   "usps.com"
+  ],
+  "category": "courier",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "Canada Post",
+  "keywords": [
+   "canadapost"
+  ],
+  "domains": [
+   "canadapost-postescanada.ca"
+  ],
+  "category": "courier",
+  "region": "ca",
+  "ambiguous": false
+ },
+ {
+  "name": "Australia Post",
+  "keywords": [
+   "auspost"
+  ],
+  "domains": [
+   "auspost.com.au"
+  ],
+  "category": "courier",
+  "region": "oceania",
+  "ambiguous": false
+ },
+ {
+  "name": "Royal Mail",
+  "keywords": [
+   "royalmail"
+  ],
+  "domains": [
+   "royalmail.com"
+  ],
+  "category": "courier",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Evri",
+  "keywords": [
+   "evri"
+  ],
+  "domains": [
+   "evri.com"
+  ],
+  "category": "courier",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Correos",
+  "keywords": [
+   "correos"
+  ],
+  "domains": [
+   "correos.es"
+  ],
+  "category": "courier",
+  "region": "eu",
+  "ambiguous": true
+ },
+ {
+  "name": "Correios",
+  "keywords": [
+   "correios"
+  ],
+  "domains": [
+   "correios.com.br"
+  ],
+  "category": "courier",
+  "region": "br",
+  "ambiguous": true
+ },
+ {
+  "name": "Poste Italiane",
+  "keywords": [
+   "posteitaliane"
+  ],
+  "domains": [
+   "poste.it",
+   "posteitaliane.it"
+  ],
+  "category": "courier",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "La Poste",
+  "keywords": [
+   "laposte"
+  ],
+  "domains": [
+   "laposte.fr"
+  ],
+  "category": "courier",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Aramex",
+  "keywords": [
+   "aramex"
+  ],
+  "domains": [
+   "aramex.com"
+  ],
+  "category": "courier",
+  "region": "mena",
+  "ambiguous": false
+ },
+ {
+  "name": "J&T Express",
+  "keywords": [
+   "jtexpress"
+  ],
+  "domains": [
+   "jtexpress.ph",
+   "jtexpress.com.cn",
+   "jtexpress.my"
+  ],
+  "category": "courier",
+  "region": "sea",
+  "ambiguous": false
+ },
+ {
+  "name": "LBC Express",
+  "keywords": [
+   "lbcexpress"
+  ],
+  "domains": [
+   "lbcexpress.com"
+  ],
+  "category": "courier",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "India Post",
+  "keywords": [
+   "indiapost"
+  ],
+  "domains": [
+   "indiapost.gov.in"
+  ],
+  "category": "courier",
+  "region": "in",
+  "ambiguous": false
+ },
+ {
+  "name": "Sagawa Express",
+  "keywords": [
+   "sagawa"
+  ],
+  "domains": [
+   "sagawa-exp.co.jp"
+  ],
+  "category": "courier",
+  "region": "jp",
+  "ambiguous": false
+ },
+ {
+  "name": "Yamato Transport",
+  "keywords": [
+   "yamato",
+   "kuronekoyamato"
+  ],
+  "domains": [
+   "kuronekoyamato.co.jp"
+  ],
+  "category": "courier",
+  "region": "jp",
+  "ambiguous": false
+ },
+ {
+  "name": "Verizon",
+  "keywords": [
+   "verizon"
+  ],
+  "domains": [
+   "verizon.com"
+  ],
+  "category": "telecom",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "AT&T",
+  "keywords": [],
+  "domains": [
+   "att.com"
+  ],
+  "category": "telecom",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "T-Mobile",
+  "keywords": [
+   "tmobile"
+  ],
+  "domains": [
+   "t-mobile.com"
+  ],
+  "category": "telecom",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "Xfinity",
+  "keywords": [
+   "xfinity",
+   "comcast"
+  ],
+  "domains": [
+   "xfinity.com",
+   "comcast.com"
+  ],
+  "category": "telecom",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "Vodafone",
+  "keywords": [
+   "vodafone"
+  ],
+  "domains": [
+   "vodafone.com",
+   "vodafone.co.uk"
+  ],
+  "category": "telecom",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Orange",
+  "keywords": [
+   "orange"
+  ],
+  "domains": [
+   "orange.fr",
+   "orange.com"
+  ],
+  "category": "telecom",
+  "region": "eu",
+  "ambiguous": true
+ },
+ {
+  "name": "Movistar",
+  "keywords": [
+   "movistar"
+  ],
+  "domains": [
+   "movistar.es"
+  ],
+  "category": "telecom",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Telcel",
+  "keywords": [
+   "telcel"
+  ],
+  "domains": [
+   "telcel.com"
+  ],
+  "category": "telecom",
+  "region": "mx",
+  "ambiguous": false
+ },
+ {
+  "name": "Claro",
+  "keywords": [
+   "claro"
+  ],
+  "domains": [
+   "claro.com.br",
+   "claro.com.co"
+  ],
+  "category": "telecom",
+  "region": "latam",
+  "ambiguous": true
+ },
+ {
+  "name": "Globe Telecom",
+  "keywords": [
+   "globe"
+  ],
+  "domains": [
+   "globe.com.ph"
+  ],
+  "category": "telecom",
+  "region": "ph",
+  "ambiguous": true
+ },
+ {
+  "name": "Smart Communications",
+  "keywords": [
+   "smart"
+  ],
+  "domains": [
+   "smart.com.ph"
+  ],
+  "category": "telecom",
+  "region": "ph",
+  "ambiguous": true
+ },
+ {
+  "name": "DITO Telecommunity",
+  "keywords": [
+   "dito"
+  ],
+  "domains": [
+   "dito.ph"
+  ],
+  "category": "telecom",
+  "region": "ph",
+  "ambiguous": true
+ },
+ {
+  "name": "PLDT",
+  "keywords": [
+   "pldt"
+  ],
+  "domains": [
+   "pldt.com",
+   "pldthome.com"
+  ],
+  "category": "telecom",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "Airtel",
+  "keywords": [
+   "airtel"
+  ],
+  "domains": [
+   "airtel.in",
+   "airtel.com"
+  ],
+  "category": "telecom",
+  "region": "in",
+  "ambiguous": false
+ },
+ {
+  "name": "Telstra",
+  "keywords": [
+   "telstra"
+  ],
+  "domains": [
+   "telstra.com.au"
+  ],
+  "category": "telecom",
+  "region": "oceania",
+  "ambiguous": false
+ },
+ {
+  "name": "Safaricom",
+  "keywords": [
+   "safaricom",
+   "mpesa"
+  ],
+  "domains": [
+   "safaricom.co.ke"
+  ],
+  "category": "telecom",
+  "region": "ke",
+  "ambiguous": false
+ },
+ {
+  "name": "MTN",
+  "keywords": [
+   "mtngroup"
+  ],
+  "domains": [
+   "mtn.com"
+  ],
+  "category": "telecom",
+  "region": "africa",
+  "ambiguous": false
+ },
+ {
+  "name": "Etisalat",
+  "keywords": [
+   "etisalat"
+  ],
+  "domains": [
+   "etisalat.ae",
+   "eand.ae"
+  ],
+  "category": "telecom",
+  "region": "ae",
+  "ambiguous": false
+ },
+ {
+  "name": "Telkomsel",
+  "keywords": [
+   "telkomsel"
+  ],
+  "domains": [
+   "telkomsel.com"
+  ],
+  "category": "telecom",
+  "region": "id",
+  "ambiguous": false
+ },
+ {
+  "name": "IRS",
+  "keywords": [
+   "irs"
+  ],
+  "domains": [
+   "irs.gov"
+  ],
+  "category": "government",
+  "region": "us",
+  "ambiguous": true
+ },
+ {
+  "name": "Social Security Administration",
+  "keywords": [],
+  "domains": [
+   "ssa.gov"
+  ],
+  "category": "government",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "E-ZPass",
+  "keywords": [
+   "ezpass",
+   "ezpassny"
+  ],
+  "domains": [
+   "e-zpassny.com"
+  ],
+  "category": "government",
+  "region": "us",
+  "ambiguous": false
+ },
+ {
+  "name": "HMRC",
+  "keywords": [
+   "hmrc"
+  ],
+  "domains": [
+   "hmrc.gov.uk"
+  ],
+  "category": "government",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "DVLA",
+  "keywords": [
+   "dvla"
+  ],
+  "domains": [
+   "dvla.gov.uk"
+  ],
+  "category": "government",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "TV Licensing",
+  "keywords": [
+   "tvlicensing"
+  ],
+  "domains": [
+   "tvlicensing.co.uk"
+  ],
+  "category": "government",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "ATO",
+  "keywords": [],
+  "domains": [
+   "ato.gov.au"
+  ],
+  "category": "government",
+  "region": "oceania",
+  "ambiguous": false
+ },
+ {
+  "name": "myGov",
+  "keywords": [
+   "mygov",
+   "servicesaustralia"
+  ],
+  "domains": [
+   "my.gov.au",
+   "servicesaustralia.gov.au"
+  ],
+  "category": "government",
+  "region": "oceania",
+  "ambiguous": false
+ },
+ {
+  "name": "Income Tax India",
+  "keywords": [
+   "incometax",
+   "incometaxindia",
+   "incometaxindiaefiling"
+  ],
+  "domains": [
+   "incometax.gov.in",
+   "incometaxindia.gov.in"
+  ],
+  "category": "government",
+  "region": "in",
+  "ambiguous": false
+ },
+ {
+  "name": "Aadhaar UIDAI",
+  "keywords": [
+   "aadhaar",
+   "uidai"
+  ],
+  "domains": [
+   "uidai.gov.in"
+  ],
+  "category": "government",
+  "region": "in",
+  "ambiguous": false
+ },
+ {
+  "name": "SSS Philippines",
+  "keywords": [
+   "sss"
+  ],
+  "domains": [
+   "sss.gov.ph"
+  ],
+  "category": "government",
+  "region": "ph",
+  "ambiguous": true
+ },
+ {
+  "name": "BIR Philippines",
+  "keywords": [],
+  "domains": [
+   "bir.gov.ph"
+  ],
+  "category": "government",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "PhilHealth",
+  "keywords": [
+   "philhealth"
+  ],
+  "domains": [
+   "philhealth.gov.ph"
+  ],
+  "category": "government",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "Pag-IBIG Fund",
+  "keywords": [
+   "pagibig",
+   "pagibigfund"
+  ],
+  "domains": [
+   "pagibigfund.gov.ph"
+  ],
+  "category": "government",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "LTO Philippines",
+  "keywords": [
+   "lto"
+  ],
+  "domains": [
+   "lto.gov.ph"
+  ],
+  "category": "government",
+  "region": "ph",
+  "ambiguous": true
+ },
+ {
+  "name": "Meralco",
+  "keywords": [
+   "meralco"
+  ],
+  "domains": [
+   "meralco.com.ph"
+  ],
+  "category": "utility",
+  "region": "ph",
+  "ambiguous": false
+ },
+ {
+  "name": "SAT Mexico",
+  "keywords": [],
+  "domains": [
+   "sat.gob.mx"
+  ],
+  "category": "government",
+  "region": "mx",
+  "ambiguous": false
+ },
+ {
+  "name": "Ameli",
+  "keywords": [
+   "ameli"
+  ],
+  "domains": [
+   "ameli.fr"
+  ],
+  "category": "government",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "Impots.gouv.fr",
+  "keywords": [
+   "impots"
+  ],
+  "domains": [
+   "impots.gouv.fr"
+  ],
+  "category": "government",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "DigiD",
+  "keywords": [
+   "digid"
+  ],
+  "domains": [
+   "digid.nl"
+  ],
+  "category": "government",
+  "region": "eu",
+  "ambiguous": false
+ },
+ {
+  "name": "SARS South Africa",
+  "keywords": [
+   "sars"
+  ],
+  "domains": [
+   "sars.gov.za"
+  ],
+  "category": "government",
+  "region": "za",
+  "ambiguous": false
+ }
+]

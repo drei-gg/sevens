@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Gates G6 (network, no data-collecting SDKs, pinned and credited dependencies) and G7 ("safe", hard-coded prices).
+# Gates G6 (network, no data-collecting SDKs, pinned and credited dependencies), G7 ("safe", hard-coded prices) and the look.
 # usage: scripts/check-rules        exits non-zero on any violation
 set -uo pipefail
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)

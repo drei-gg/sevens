@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-age-unknown-plain",
+ "original": "https://unknown.example.com/",
+ "hops": [
+  {
+   "url": "https://unknown.example.com/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": null,
+ "expect": {
+  "title": "Harbour news",
+  "signals": [],
+  "info": [
+   "ageUnknown"
+  ],
+  "level": 0,
+  "finalHost": "unknown.example.com",
+  "hopLevels": [
+   0
+  ]
+ }
+}

@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+# Rebuilds the scam lists: re-downloads the Public Suffix List and IANA's RDAP directory,
+# checks every file, runs the whole test suite, bumps lists-version.json and writes lists.json,
+# the one file "Check for newer lists" fetches (SPEC §4.3). Any failure publishes nothing and
+# leaves the files in the tree as they were.
+#
+# usage: scripts/refresh-lists [--offline] [--previous FILE] [--filter WORD] <output-dir>
+#   --offline        use the files in the tree as they are; download nothing (CI tests, local runs)
+#   --previous FILE  the lists.json published last time: the new version is above its version,
+#                    and nothing is written when the lists themselves haven't changed
+#   --filter WORD    run only the tests matching WORD (default: the full suite)
+# Writes <output-dir>/lists.json. Signing is not here: the workflow signs the exact bytes.
+# Needs curl (online only), python3 and the Swift test setup (scripts/test-linux, or swift itself).
+set -euo pipefail
+root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+data="$root/apps/qr/Kit/Sources/QRCore/Data"
+kit="$root/apps/qr/Kit"
+
+offline=0 previous="" filter="" out=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --offline) offline=1 ;;
+    --previous) previous=${2:?--previous needs a file}; shift ;;
+    --filter) filter=${2:?--filter needs a word}; shift ;;
+    -h|--help) sed -n 2,13p "$0"; exit 0 ;;
+    -*) echo "refresh-lists: unknown option $1" >&2; exit 2 ;;
+    *) out=$1 ;;
+  esac
+  shift
+done
+[ -n "$out" ] || { echo "usage: scripts/refresh-lists [--offline] [--previous FILE] [--filter WORD] <output-dir>" >&2; exit 2; }
+command -v python3 >/dev/null || { echo "refresh-lists: python3 is needed" >&2; exit 2; }
+
+work=$(mktemp -d)
+backup="$work/backup"; mkdir -p "$backup"
+tracked=(public_suffix_list.dat rdap-dns.json lists-version.json)
+for f in "${tracked[@]}"; do cp "$data/$f" "$backup/$f"; done
+ok=0
+cleanup() {
+  if [ $ok != 1 ]; then
+    for f in "${tracked[@]}"; do cp "$backup/$f" "$data/$f"; done
+    echo "refresh-lists: failed; nothing published, files in the tree restored" >&2
+  fi
+  rm -rf "$work"
+}
+trap cleanup EXIT
+
+# 1. Upstream lists.
+if [ $offline = 0 ]; then
+  command -v curl >/dev/null || { echo "refresh-lists: curl is needed" >&2; exit 2; }
+  echo "refresh-lists: downloading the Public Suffix List and the RDAP directory"
+  curl -fsSL --proto '=https' --max-time 90 -o "$work/psl.dat" https://publicsuffix.org/list/public_suffix_list.dat
+  curl -fsSL --proto '=https' --max-time 90 -o "$work/rdap.json" https://data.iana.org/rdap/dns.json
+  grep -q '===BEGIN ICANN DOMAINS===' "$work/psl.dat" && grep -q '===END PRIVATE DOMAINS===' "$work/psl.dat" \
+    || { echo "refresh-lists: the suffix list download is not a suffix list" >&2; exit 1; }
+  python3 -I - "$work/rdap.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+s = d["services"]
+assert isinstance(s, list) and len(s) >= 50, "RDAP directory has too few services"
+assert all(len(e) == 2 and e[0] and e[1] for e in s), "RDAP directory has a malformed service"
+PY
+  cp "$work/psl.dat" "$data/public_suffix_list.dat"
+  cp "$work/rdap.json" "$data/rdap-dns.json"
+fi
+
+# 2. Every file parses and has the keys the app reads. Shape rules are the tests in step 3.
+python3 -I - "$data" <<'PY'
+import json, os, sys
+d = sys.argv[1]
+for name in ["brands", "shorteners", "risky-tlds", "bait-words", "payment-networks", "confusables",
+             "currencies", "rdap-dns", "tracking-params", "lists-version"]:
+    with open(os.path.join(d, name + ".json"), encoding="utf-8") as f:
+        json.load(f)
+for name in ["public_suffix_list.dat"]:
+    assert os.path.getsize(os.path.join(d, name)) > 10000, name + " is too small"
+PY
+
+# 3. The full suite: shape rules for every file, then every fixture, against these files.
+rm -f "$kit/.build/lists-candidate.json"
+args=()
+[ -z "$filter" ] || args=(--filter "$filter")
+echo "refresh-lists: running the tests${filter:+ (filter: $filter)}"
+if command -v swift >/dev/null 2>&1; then
+  swift test --package-path "$kit" "${args[@]}"
+else
+  "$root/scripts/test-linux" apps/qr/Kit "${args[@]}"
+fi
+
+# 4. Version and bundle.
+mkdir -p "$out"
+python3 -I - "$data" "$out" "$work/lists.json" "$previous" <<'PY'
+import datetime, json, os, sys
+data, out, tmp, previous = sys.argv[1:5]
+
+def load(name):
+    with open(os.path.join(data, name), encoding="utf-8") as f:
+        return json.load(f, object_pairs_hook=dict)
+
+current = load("lists-version.json")
+rdap = load("rdap-dns.json")
+with open(os.path.join(data, "public_suffix_list.dat"), encoding="utf-8") as f:
+    psl = f.read()
+files = {
+    "brands": load("brands.json"),
+    "shorteners": load("shorteners.json"),
+    "riskyTLDs": load("risky-tlds.json"),
+    "baitWords": load("bait-words.json"),
+    "paymentNetworks": load("payment-networks.json"),
+    "confusables": load("confusables.json"),
+    "publicSuffixList": psl,
+    "rdap": {k: rdap[k] for k in ("description", "publication", "version", "services") if k in rdap},
+    "trackingParams": load("tracking-params.json"),
+}
+
+floor = int(current["version"])
+if previous and os.path.exists(previous):
+    with open(previous, encoding="utf-8") as f:
+        last = json.load(f)
+    floor = max(floor, int(last["version"]))
+    if last.get("files") == files:
+        print("refresh-lists: the lists have not changed since version %d; nothing to publish" % last["version"])
+        sys.exit(0)
+
+today = datetime.datetime.now(datetime.timezone.utc).date()
+version = max(int(today.strftime("%Y%m%d")) * 100, floor + 1)
+header = {"schema": 1, "version": version, "built": today.isoformat()}
+with open(os.path.join(data, "lists-version.json"), "w", encoding="utf-8") as f:
+    f.write(json.dumps(header, separators=(", ", ": ")).replace("{", "{ ").replace("}", " }") + "\n")
+
+bundle = {**header, "files": files}
+blob = json.dumps(bundle, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+limit = 2 * 1024 * 1024
+if len(blob) > limit:
+    sys.exit("refresh-lists: lists.json is %d bytes, over the %d the app accepts" % (len(blob), limit))
+with open(tmp, "wb") as f:
+    f.write(blob)
+print("refresh-lists: version %d, built %s, %d bytes" % (version, header["built"], len(blob)))
+PY
+if [ ! -f "$work/lists.json" ]; then ok=1; exit 0; fi
+
+# 5. The bytes we are about to publish decode and validate in the app's own code.
+mkdir -p "$kit/.build"
+cp "$work/lists.json" "$kit/.build/lists-candidate.json"
+echo "refresh-lists: checking lists.json with the app's own validation"
+if command -v swift >/dev/null 2>&1; then
+  swift test --package-path "$kit" --filter listsCandidateBundleFromTheScriptIsValid
+else
+  "$root/scripts/test-linux" apps/qr/Kit --filter listsCandidateBundleFromTheScriptIsValid
+fi
+rm -f "$kit/.build/lists-candidate.json"
+
+mv "$work/lists.json" "$out/lists.json"
+ok=1
+echo "refresh-lists: wrote $out/lists.json ($(wc -c < "$out/lists.json") bytes, sha256 $(sha256sum "$out/lists.json" | cut -d' ' -f1))"
+echo "refresh-lists: lists-version.json is bumped in the tree; commit it with any refreshed data for the app release"

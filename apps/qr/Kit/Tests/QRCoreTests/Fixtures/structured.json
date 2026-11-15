@@ -1,0 +1,554 @@
+[
+  {
+    "id": "wifi-wpa",
+    "spec": "SPEC §3 Wi-Fi",
+    "input": "WIFI:T:WPA;S:CafeNet;P:hunter2;;",
+    "symbology": "qr",
+    "expect": {
+      "type": "wifi",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "ssid": "CafeNet",
+        "security": "WPA",
+        "password": "hunter2",
+        "hidden": "false"
+      }
+    }
+  },
+  {
+    "id": "wifi-escaped",
+    "spec": "SPEC §3 Wi-Fi",
+    "input": "WIFI:S:My\\;Net\\:5G;T:wpa2;P:pa\\\\ss\\,word;;",
+    "symbology": "qr",
+    "note": "fields in any order, escapes, T uppercased",
+    "expect": {
+      "type": "wifi",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "ssid": "My;Net:5G",
+        "security": "WPA2",
+        "password": "pa\\ss,word"
+      }
+    }
+  },
+  {
+    "id": "wifi-nopass",
+    "spec": "SPEC §3 Wi-Fi",
+    "input": "WIFI:T:nopass;S:Lobby;;",
+    "symbology": "qr",
+    "expect": {
+      "type": "wifi",
+      "level": 1,
+      "signals": [
+        "openWiFi"
+      ],
+      "fields": {
+        "ssid": "Lobby",
+        "security": "NOPASS"
+      }
+    }
+  },
+  {
+    "id": "wifi-missing-t",
+    "spec": "SPEC §3 Wi-Fi",
+    "input": "WIFI:S:FreeWifi;;",
+    "symbology": "qr",
+    "note": "T missing counts as open",
+    "expect": {
+      "type": "wifi",
+      "level": 1,
+      "signals": [
+        "openWiFi"
+      ],
+      "fields": {
+        "ssid": "FreeWifi"
+      }
+    }
+  },
+  {
+    "id": "wifi-eap",
+    "spec": "SPEC §3 Wi-Fi",
+    "input": "WIFI:T:WPA2-EAP;S:CorpNet;E:PEAP;I:jdoe;;",
+    "symbology": "qr",
+    "expect": {
+      "type": "wifi",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "ssid": "CorpNet",
+        "security": "WPA2-EAP",
+        "eapMethod": "PEAP",
+        "identity": "jdoe"
+      }
+    }
+  },
+  {
+    "id": "wifi-hidden-quoted",
+    "spec": "SPEC §3 Wi-Fi",
+    "input": "wifi:T:WPA;S:\"1234\";P:secret;H:true;;",
+    "symbology": "qr",
+    "note": "lowercase prefix; quoted value is literal",
+    "expect": {
+      "type": "wifi",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "ssid": "1234",
+        "password": "secret",
+        "hidden": "true"
+      }
+    }
+  },
+  {
+    "id": "vcard-21-qp-latin1",
+    "spec": "SPEC §3 Contact",
+    "input": "BEGIN:VCARD\r\nVERSION:2.1\r\nN;CHARSET=ISO-8859-1;ENCODING=QUOTED-PRINTABLE:M=FCller;J=F6rg\r\nFN;CHARSET=ISO-8859-1;ENCODING=QUOTED-PRINTABLE:J=F6rg M=FCller\r\nTEL;CELL:+49 170 1234567\r\nNOTE;ENCODING=QUOTED-PRINTABLE:Zeile eins=0D=0AZeile=\r\n  zwei\r\nEND:VCARD",
+    "symbology": "qr",
+    "note": "2.1 quoted-printable, ISO-8859-1, soft line break",
+    "expect": {
+      "type": "contact",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "name": "Jörg Müller",
+        "givenName": "Jörg",
+        "familyName": "Müller",
+        "phones": "+49 170 1234567",
+        "note": "Zeile eins\nZeile  zwei"
+      }
+    }
+  },
+  {
+    "id": "vcard-21-qp-utf8-cp1252",
+    "spec": "SPEC §3 Contact",
+    "input": "BEGIN:VCARD\nVERSION:2.1\nFN;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=E5=B1=B1=E7=94=B0 =E5=A4=AA=E9=83=8E\nORG;CHARSET=Windows-1252;ENCODING=QUOTED-PRINTABLE:=80uro AG\nTEL;WORK;VOICE:03-1234-5678\nEND:VCARD",
+    "symbology": "qr",
+    "expect": {
+      "type": "contact",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "name": "山田 太郎",
+        "organization": "€uro AG",
+        "phones": "03-1234-5678"
+      }
+    }
+  },
+  {
+    "id": "vcard-30-folded",
+    "spec": "SPEC §3 Contact",
+    "input": "BEGIN:VCARD\nVERSION:3.0\nFN:Ana Reyes\nN:Reyes;Ana;;;\nORG:Seven & D\\, Inc.;Eng\nTITLE:Lead\nitem1.TEL;type=CELL;type=pref:+63 917 000 1111\nEMAIL;TYPE=INTERNET:ana@example.com\nNOTE:This note is long enough to need folding across several lines so the \n parser must unfold it correctly.\nADR;TYPE=WORK:;;1 Rizal Ave\\nSuite 4;Manila;NCR;1000;Philippines\nBDAY:1990-04-12\nURL:https\\://example.com\nEND:VCARD",
+    "symbology": "qr",
+    "expect": {
+      "type": "contact",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "name": "Ana Reyes",
+        "givenName": "Ana",
+        "familyName": "Reyes",
+        "organization": "Seven & D, Inc.",
+        "title": "Lead",
+        "phones": "+63 917 000 1111",
+        "emails": "ana@example.com",
+        "urls": "https://example.com",
+        "addresses": "1 Rizal Ave\nSuite 4\nManila\nNCR\n1000\nPhilippines",
+        "note": "This note is long enough to need folding across several lines so the parser must unfold it correctly.",
+        "birthday": "1990-04-12"
+      }
+    }
+  },
+  {
+    "id": "vcard-40",
+    "spec": "SPEC §3 Contact",
+    "input": "BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Dr. Mei Lin\r\nN:Lin;Mei;;Dr.;\r\nTEL;VALUE=uri;TYPE=\"cell,voice\":tel:+65-9123-4567\r\nEMAIL:mei@example.org\r\nPHOTO:data:image/jpeg;base64,/9j/4AAQ\r\nBDAY:19850203\r\nEND:VCARD",
+    "symbology": "qr",
+    "expect": {
+      "type": "contact",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "name": "Dr. Mei Lin",
+        "givenName": "Mei",
+        "familyName": "Lin",
+        "phones": "+65-9123-4567",
+        "emails": "mei@example.org",
+        "birthday": "19850203"
+      }
+    }
+  },
+  {
+    "id": "vcard-no-fn",
+    "spec": "SPEC §3 Contact",
+    "input": "begin:vcard\r\nversion:3.0\r\nn:Santos;Maria\r\nend:vcard",
+    "symbology": "qr",
+    "note": "name built from N; names in any case",
+    "expect": {
+      "type": "contact",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "name": "Maria Santos",
+        "givenName": "Maria",
+        "familyName": "Santos"
+      }
+    }
+  },
+  {
+    "id": "mecard-basic",
+    "spec": "SPEC §3 Contact",
+    "input": "MECARD:N:Doe,John;TEL:+63 917 123 4567;TEL:02-8123456;EMAIL:john@example.com;URL:https\\://example.com;ADR:,,1 Main St,Manila,,1000,PH;NOTE:Met at \\;conf;BDAY:19900101;ORG:Acme;;",
+    "symbology": "qr",
+    "expect": {
+      "type": "contact",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "name": "John Doe",
+        "givenName": "John",
+        "familyName": "Doe",
+        "phones": "+63 917 123 4567\n02-8123456",
+        "emails": "john@example.com",
+        "urls": "https://example.com",
+        "addresses": "1 Main St\nManila\n1000\nPH",
+        "note": "Met at ;conf",
+        "birthday": "19900101",
+        "organization": "Acme"
+      }
+    }
+  },
+  {
+    "id": "mecard-single-name",
+    "spec": "SPEC §3 Contact",
+    "input": "mecard:N:Madonna;TEL:123;;",
+    "symbology": "qr",
+    "expect": {
+      "type": "contact",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "name": "Madonna",
+        "phones": "123"
+      }
+    }
+  },
+  {
+    "id": "mecard-escaped-name",
+    "spec": "SPEC §3 Contact",
+    "input": "MECARD:N:O\\,Brien\\\\X,Sean;;",
+    "symbology": "qr",
+    "expect": {
+      "type": "contact",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "familyName": "O,Brien\\X",
+        "givenName": "Sean",
+        "name": "Sean O,Brien\\X"
+      }
+    }
+  },
+  {
+    "id": "vevent-utc",
+    "spec": "SPEC §3 Event",
+    "input": "BEGIN:VEVENT\r\nSUMMARY:Launch\\, v1\r\nDTSTART:20261110T090000Z\r\nDTEND:20261110T100000Z\r\nLOCATION:Room 1\r\nDESCRIPTION:Line1\\nLine2\r\nEND:VEVENT",
+    "symbology": "qr",
+    "expect": {
+      "type": "event",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "summary": "Launch, v1",
+        "start": "2026-11-10T09:00:00Z",
+        "end": "2026-11-10T10:00:00Z",
+        "allDay": "false",
+        "floating": "false",
+        "location": "Room 1",
+        "description": "Line1\nLine2"
+      }
+    }
+  },
+  {
+    "id": "vevent-tzid",
+    "spec": "SPEC §3 Event",
+    "input": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTIMEZONE\r\nTZID:Asia/Manila\r\nBEGIN:STANDARD\r\nDTSTART:19700101T000000\r\nTZOFFSETFROM:+0800\r\nTZOFFSETTO:+0800\r\nEND:STANDARD\r\nEND:VTIMEZONE\r\nBEGIN:VEVENT\r\nSUMMARY:Standup\r\nDTSTART;TZID=Asia/Manila:20261110T090000\r\nDTEND;TZID=Asia/Manila:20261110T093000\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR",
+    "symbology": "qr",
+    "note": "first VEVENT of a VCALENDAR; VTIMEZONE and VALARM ignored",
+    "expect": {
+      "type": "event",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "summary": "Standup",
+        "start": "2026-11-10T01:00:00Z",
+        "end": "2026-11-10T01:30:00Z",
+        "timeZone": "Asia/Manila",
+        "floating": "false",
+        "allDay": "false"
+      }
+    }
+  },
+  {
+    "id": "vevent-floating",
+    "spec": "SPEC §3 Event",
+    "input": "BEGIN:VEVENT\nSUMMARY:Lunch\nDTSTART:20261110T120000\nDURATION:PT1H30M\nEND:VEVENT",
+    "symbology": "qr",
+    "expect": {
+      "type": "event",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "summary": "Lunch",
+        "start": "2026-11-10T12:00:00",
+        "end": "2026-11-10T13:30:00",
+        "floating": "true",
+        "allDay": "false"
+      }
+    }
+  },
+  {
+    "id": "vevent-allday",
+    "spec": "SPEC §3 Event",
+    "input": "BEGIN:VEVENT\nSUMMARY:Holiday\nDTSTART;VALUE=DATE:20261110\nDTEND;VALUE=DATE:20261111\nEND:VEVENT",
+    "symbology": "qr",
+    "expect": {
+      "type": "event",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "summary": "Holiday",
+        "start": "2026-11-10",
+        "end": "2026-11-11",
+        "allDay": "true",
+        "floating": "false"
+      }
+    }
+  },
+  {
+    "id": "vevent-empty",
+    "spec": "SPEC §3 Event",
+    "input": "BEGIN:VEVENT\r\nEND:VEVENT",
+    "symbology": "qr",
+    "note": "still an event without DTSTART and SUMMARY",
+    "expect": {
+      "type": "event",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "allDay": "false",
+        "floating": "false"
+      }
+    }
+  },
+  {
+    "id": "tel-plain",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "tel:+639171234567",
+    "symbology": "qr",
+    "expect": {
+      "type": "phone",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "number": "+639171234567"
+      }
+    }
+  },
+  {
+    "id": "tel-spaced-upper",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "TEL:+63 917 123 4567",
+    "symbology": "qr",
+    "expect": {
+      "type": "phone",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "number": "+63 917 123 4567"
+      }
+    }
+  },
+  {
+    "id": "tel-percent",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "tel:%2B63917123-4567",
+    "symbology": "qr",
+    "expect": {
+      "type": "phone",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "number": "+63917123-4567"
+      }
+    }
+  },
+  {
+    "id": "sms-query",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "sms:+639171234567?body=Hello%20there",
+    "symbology": "qr",
+    "expect": {
+      "type": "sms",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "number": "+639171234567",
+        "body": "Hello there"
+      }
+    }
+  },
+  {
+    "id": "sms-ampersand",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "SMS:+6391&body=Hi",
+    "symbology": "qr",
+    "expect": {
+      "type": "sms",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "number": "+6391",
+        "body": "Hi"
+      }
+    }
+  },
+  {
+    "id": "smsto-body",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "SMSTO:+639171234567:See you at 5:30",
+    "symbology": "qr",
+    "expect": {
+      "type": "sms",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "number": "+639171234567",
+        "body": "See you at 5:30"
+      }
+    }
+  },
+  {
+    "id": "smsto-nobody",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "smsto:12345",
+    "symbology": "qr",
+    "expect": {
+      "type": "sms",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "number": "12345"
+      }
+    }
+  },
+  {
+    "id": "mailto-basic",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "mailto:ana@example.com?subject=Hello%20World&body=Line1%0ALine2",
+    "symbology": "qr",
+    "expect": {
+      "type": "email",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "address": "ana@example.com",
+        "subject": "Hello World",
+        "body": "Line1\nLine2"
+      }
+    }
+  },
+  {
+    "id": "mailto-several",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "MAILTO:a@example.com,b@example.com",
+    "symbology": "qr",
+    "expect": {
+      "type": "email",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "address": "a@example.com"
+      }
+    }
+  },
+  {
+    "id": "mailto-to-param",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "mailto:?to=x@example.com&subject=Hi",
+    "symbology": "qr",
+    "expect": {
+      "type": "email",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "address": "x@example.com",
+        "subject": "Hi"
+      }
+    }
+  },
+  {
+    "id": "matmsg-basic",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "MATMSG:TO:ana@example.com;SUB:Hi\\; there;BODY:Hello there;;",
+    "symbology": "qr",
+    "expect": {
+      "type": "email",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "address": "ana@example.com",
+        "subject": "Hi; there",
+        "body": "Hello there"
+      }
+    }
+  },
+  {
+    "id": "geo-basic",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "geo:14.5995,120.9842",
+    "symbology": "qr",
+    "expect": {
+      "type": "geo",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "latitude": "14.5995",
+        "longitude": "120.9842"
+      }
+    }
+  },
+  {
+    "id": "geo-altitude",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "geo:14.5,120.9,30",
+    "symbology": "qr",
+    "expect": {
+      "type": "geo",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "latitude": "14.5",
+        "longitude": "120.9",
+        "altitude": "30"
+      }
+    }
+  },
+  {
+    "id": "geo-query",
+    "spec": "SPEC §3 Phone, SMS, email, geo",
+    "input": "GEO:0,0?q=Rizal%20Park",
+    "symbology": "qr",
+    "expect": {
+      "type": "geo",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "latitude": "0",
+        "longitude": "0",
+        "query": "Rizal Park"
+      }
+    }
+  }
+]

@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-download-zip-attachment",
+ "original": "https://files.example.org/get?id=7",
+ "hops": [
+  {
+   "url": "https://files.example.org/get?id=7",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "application/zip",
+ "contentDisposition": "attachment; filename=\"bundle.zip\"",
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "downloadsFile"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "files.example.org",
+  "hopLevels": [
+   0
+  ]
+ }
+}

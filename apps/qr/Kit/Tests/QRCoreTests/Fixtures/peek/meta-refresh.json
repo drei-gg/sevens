@@ -1,0 +1,27 @@
+{
+  "id": "peek-meta-refresh",
+  "original": "https://short-hop.example/r/abc",
+  "hops": [
+    {
+      "url": "https://short-hop.example/r/abc",
+      "status": 200
+    }
+  ],
+  "stoppedBecause": "finished",
+  "contentType": "text/html; charset=utf-8",
+  "contentDisposition": null,
+  "ageDays": 2000,
+  "expect": {
+    "title": "Redirecting",
+    "signals": [
+      "scriptRedirect"
+    ],
+    "sniff": {
+      "formActions": [],
+      "scriptRedirect": false,
+      "metaRefreshURL": "https://landing.example.org/offer?id=7&src=qr",
+      "inputTypes": [],
+      "scriptCount": 0
+    }
+  }
+}

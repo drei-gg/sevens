@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-shared-github-io",
+ "original": "https://someone.github.io/page",
+ "hops": [
+  {
+   "url": "https://someone.github.io/page",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Harbour news",
+  "signals": [],
+  "info": [
+   "sharedHostingDomain"
+  ],
+  "level": 0,
+  "finalHost": "someone.github.io",
+  "hopLevels": [
+   0
+  ]
+ }
+}

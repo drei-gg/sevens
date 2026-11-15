@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-js-shell-inline",
+ "original": "https://spa2.example.com/",
+ "hops": [
+  {
+   "url": "https://spa2.example.com/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Loading",
+  "signals": [],
+  "info": [
+   "needsJavaScript"
+  ],
+  "level": 0,
+  "finalHost": "spa2.example.com",
+  "hopLevels": [
+   0
+  ]
+ }
+}

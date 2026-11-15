@@ -1,0 +1,38 @@
+{
+  "identifier" : "6A1F3C0E-7D2B-4E8A-9C51-0B7E2D4F8A10",
+  "nonRenewingSubscriptions" : [ ],
+  "products" : [
+    {
+      "displayPrice" : "0.00",
+      "familyShareable" : true,
+      "internalID" : "6A1F3C0E-0001-4E8A-9C51-0B7E2D4F8A10",
+      "localizations" : [
+        { "description" : "Try every feature for 7 days. No card, nothing renews.", "displayName" : "7-day Trial", "locale" : "en_US" }
+      ],
+      "productID" : "org.example.sevens.qr.trial7",
+      "referenceName" : "7-day Trial",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "7.00",
+      "familyShareable" : true,
+      "internalID" : "6A1F3C0E-0002-4E8A-9C51-0B7E2D4F8A10",
+      "localizations" : [
+        { "description" : "Peek, Make, share extensions and History. Paid once.", "displayName" : "Unlock", "locale" : "en_US" }
+      ],
+      "productID" : "org.example.sevens.qr.unlock",
+      "referenceName" : "Unlock",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "",
+    "_developerTeamID" : "",
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [ ]
+  },
+  "subscriptionGroups" : [ ],
+  "version" : { "major" : 4, "minor" : 0 }
+}

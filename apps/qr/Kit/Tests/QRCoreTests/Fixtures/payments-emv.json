@@ -1,0 +1,667 @@
+[
+  {
+    "id": "emv-pix-static",
+    "spec": "SPEC §5",
+    "input": "00020101021126460014br.gov.bcb.pix0124pix-test@example.invalid520454115303986540512.505802BR5913FULANO DE TAL6009SAO PAULO62070503***6304F8C4",
+    "symbology": "qr",
+    "note": "pix static, valid CRC",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "FULANO DE TAL",
+        "city": "SAO PAULO",
+        "country": "BR",
+        "currency": "BRL",
+        "isDynamic": "false",
+        "checksum": "valid",
+        "amount": "12.50"
+      }
+    }
+  },
+  {
+    "id": "emv-pix-static-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021126460014br.gov.bcb.pix0124pix-test@example.invalid520454115303986540512.505802BR5913FULANO DE TAL6009XAO PAULO62070503***6304F8C4",
+    "symbology": "qr",
+    "note": "pix static, one character of the city changed",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "FULANO DE TAL",
+        "city": "XAO PAULO",
+        "country": "BR",
+        "currency": "BRL",
+        "isDynamic": "false",
+        "checksum": "invalid",
+        "amount": "12.50"
+      }
+    }
+  },
+  {
+    "id": "emv-pix-dynamic",
+    "spec": "SPEC §5",
+    "input": "00020101021226460014br.gov.bcb.pix0124pix-test@example.invalid520454115303986540512.505802BR5913FULANO DE TAL6009SAO PAULO62070503***63043846",
+    "symbology": "qr",
+    "note": "pix dynamic, valid CRC",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "FULANO DE TAL",
+        "city": "SAO PAULO",
+        "country": "BR",
+        "currency": "BRL",
+        "isDynamic": "true",
+        "checksum": "valid",
+        "amount": "12.50"
+      }
+    }
+  },
+  {
+    "id": "emv-pix-dynamic-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021226460014br.gov.bcb.pix0124pix-test@example.invalid520454115303986540512.505802BR5913FULANO DE TAL6009XAO PAULO62070503***63043846",
+    "symbology": "qr",
+    "note": "pix dynamic, one character of the city changed",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "FULANO DE TAL",
+        "city": "XAO PAULO",
+        "country": "BR",
+        "currency": "BRL",
+        "isDynamic": "true",
+        "checksum": "invalid",
+        "amount": "12.50"
+      }
+    }
+  },
+  {
+    "id": "emv-paynow-static",
+    "spec": "SPEC §5",
+    "input": "00020101021126350009SG.PAYNOW010120208912345670301152045411530370254048.805802SG5917TEST CAFE PTE LTD6009Singapore62110107INV00016304BE90",
+    "symbology": "qr",
+    "note": "paynow static, valid CRC",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "TEST CAFE PTE LTD",
+        "city": "Singapore",
+        "country": "SG",
+        "currency": "SGD",
+        "isDynamic": "false",
+        "checksum": "valid",
+        "amount": "8.80"
+      }
+    }
+  },
+  {
+    "id": "emv-paynow-static-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021126350009SG.PAYNOW010120208912345670301152045411530370254048.805802SG5917TEST CAFE PTE LTD6009Xingapore62110107INV00016304BE90",
+    "symbology": "qr",
+    "note": "paynow static, one character of the city changed",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "TEST CAFE PTE LTD",
+        "city": "Xingapore",
+        "country": "SG",
+        "currency": "SGD",
+        "isDynamic": "false",
+        "checksum": "invalid",
+        "amount": "8.80"
+      }
+    }
+  },
+  {
+    "id": "emv-paynow-dynamic",
+    "spec": "SPEC §5",
+    "input": "00020101021226350009SG.PAYNOW010120208912345670301152045411530370254048.805802SG5917TEST CAFE PTE LTD6009Singapore62110107INV000163047B6F",
+    "symbology": "qr",
+    "note": "paynow dynamic, valid CRC",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "TEST CAFE PTE LTD",
+        "city": "Singapore",
+        "country": "SG",
+        "currency": "SGD",
+        "isDynamic": "true",
+        "checksum": "valid",
+        "amount": "8.80"
+      }
+    }
+  },
+  {
+    "id": "emv-paynow-dynamic-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021226350009SG.PAYNOW010120208912345670301152045411530370254048.805802SG5917TEST CAFE PTE LTD6009Xingapore62110107INV000163047B6F",
+    "symbology": "qr",
+    "note": "paynow dynamic, one character of the city changed",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "TEST CAFE PTE LTD",
+        "city": "Xingapore",
+        "country": "SG",
+        "currency": "SGD",
+        "isDynamic": "true",
+        "checksum": "invalid",
+        "amount": "8.80"
+      }
+    }
+  },
+  {
+    "id": "emv-qris-static",
+    "spec": "SPEC §5",
+    "input": "00020101021126550014ID.CO.QRIS.WWW0115ID12345678901230214TESTMERCHANT015204541153033605405250005802ID5913WARUNG CONTOH6007JAKARTA62070703A016304DF31",
+    "symbology": "qr",
+    "note": "qris static, valid CRC",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "WARUNG CONTOH",
+        "city": "JAKARTA",
+        "country": "ID",
+        "currency": "IDR",
+        "isDynamic": "false",
+        "checksum": "valid",
+        "amount": "25000"
+      }
+    }
+  },
+  {
+    "id": "emv-qris-static-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021126550014ID.CO.QRIS.WWW0115ID12345678901230214TESTMERCHANT015204541153033605405250005802ID5913WARUNG CONTOH6007XAKARTA62070703A016304DF31",
+    "symbology": "qr",
+    "note": "qris static, one character of the city changed",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "WARUNG CONTOH",
+        "city": "XAKARTA",
+        "country": "ID",
+        "currency": "IDR",
+        "isDynamic": "false",
+        "checksum": "invalid",
+        "amount": "25000"
+      }
+    }
+  },
+  {
+    "id": "emv-qris-dynamic",
+    "spec": "SPEC §5",
+    "input": "00020101021226550014ID.CO.QRIS.WWW0115ID12345678901230214TESTMERCHANT015204541153033605405250005802ID5913WARUNG CONTOH6007JAKARTA62070703A016304F644",
+    "symbology": "qr",
+    "note": "qris dynamic, valid CRC",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "WARUNG CONTOH",
+        "city": "JAKARTA",
+        "country": "ID",
+        "currency": "IDR",
+        "isDynamic": "true",
+        "checksum": "valid",
+        "amount": "25000"
+      }
+    }
+  },
+  {
+    "id": "emv-qris-dynamic-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021226550014ID.CO.QRIS.WWW0115ID12345678901230214TESTMERCHANT015204541153033605405250005802ID5913WARUNG CONTOH6007XAKARTA62070703A016304F644",
+    "symbology": "qr",
+    "note": "qris dynamic, one character of the city changed",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "WARUNG CONTOH",
+        "city": "XAKARTA",
+        "country": "ID",
+        "currency": "IDR",
+        "isDynamic": "true",
+        "checksum": "invalid",
+        "amount": "25000"
+      }
+    }
+  },
+  {
+    "id": "emv-qrph-static",
+    "spec": "SPEC §5",
+    "input": "00020101021128420011ph.ppmi.p2m0109TESTBANK1021012345678905204541153036085406150.005802PH5914SARI SARI TEST6006MANILA62100506REF1236304853A",
+    "symbology": "qr",
+    "note": "qrph static, valid CRC",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "SARI SARI TEST",
+        "city": "MANILA",
+        "country": "PH",
+        "currency": "PHP",
+        "isDynamic": "false",
+        "checksum": "valid",
+        "amount": "150.00"
+      }
+    }
+  },
+  {
+    "id": "emv-qrph-static-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021128420011ph.ppmi.p2m0109TESTBANK1021012345678905204541153036085406150.005802PH5914SARI SARI TEST6006XANILA62100506REF1236304853A",
+    "symbology": "qr",
+    "note": "qrph static, one character of the city changed",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "SARI SARI TEST",
+        "city": "XANILA",
+        "country": "PH",
+        "currency": "PHP",
+        "isDynamic": "false",
+        "checksum": "invalid",
+        "amount": "150.00"
+      }
+    }
+  },
+  {
+    "id": "emv-promptpay-static",
+    "spec": "SPEC §5",
+    "input": "00020101021129370016A00000067701011101130066000000000520454115303764540599.005802TH5909TEST SHOP6007BANGKOK6304D196",
+    "symbology": "qr",
+    "note": "promptpay static, valid CRC",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "TEST SHOP",
+        "city": "BANGKOK",
+        "country": "TH",
+        "currency": "THB",
+        "isDynamic": "false",
+        "checksum": "valid",
+        "amount": "99.00"
+      }
+    }
+  },
+  {
+    "id": "emv-promptpay-static-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021129370016A00000067701011101130066000000000520454115303764540599.005802TH5909TEST SHOP6007XANGKOK6304D196",
+    "symbology": "qr",
+    "note": "promptpay static, one character of the city changed",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "TEST SHOP",
+        "city": "XANGKOK",
+        "country": "TH",
+        "currency": "THB",
+        "isDynamic": "false",
+        "checksum": "invalid",
+        "amount": "99.00"
+      }
+    }
+  },
+  {
+    "id": "emv-duitnow-static",
+    "spec": "SPEC §5",
+    "input": "00020101021126320014A00000061500010110999999999952045411530345854045.505802MY5912KEDAI CONTOH6012KUALA LUMPUR6304315A",
+    "symbology": "qr",
+    "note": "duitnow static, valid CRC",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "KEDAI CONTOH",
+        "city": "KUALA LUMPUR",
+        "country": "MY",
+        "currency": "MYR",
+        "isDynamic": "false",
+        "checksum": "valid",
+        "amount": "5.50"
+      }
+    }
+  },
+  {
+    "id": "emv-duitnow-static-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021126320014A00000061500010110999999999952045411530345854045.505802MY5912KEDAI CONTOH6012XUALA LUMPUR6304315A",
+    "symbology": "qr",
+    "note": "duitnow static, one character of the city changed",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "KEDAI CONTOH",
+        "city": "XUALA LUMPUR",
+        "country": "MY",
+        "currency": "MYR",
+        "isDynamic": "false",
+        "checksum": "invalid",
+        "amount": "5.50"
+      }
+    }
+  },
+  {
+    "id": "emv-vietqr-static",
+    "spec": "SPEC §5",
+    "input": "00020101021138500010A0000007270120000697040301111111110208QRIBFTTA5204541153037045405500005802VN5913CUA HANG TEST6006HA NOI62140810thanh toan63047CFF",
+    "symbology": "qr",
+    "note": "vietqr static, valid CRC",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "CUA HANG TEST",
+        "city": "HA NOI",
+        "country": "VN",
+        "currency": "VND",
+        "isDynamic": "false",
+        "checksum": "valid",
+        "amount": "50000"
+      }
+    }
+  },
+  {
+    "id": "emv-vietqr-static-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021138500010A0000007270120000697040301111111110208QRIBFTTA5204541153037045405500005802VN5913CUA HANG TEST6006XA NOI62140810thanh toan63047CFF",
+    "symbology": "qr",
+    "note": "vietqr static, one character of the city changed",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "CUA HANG TEST",
+        "city": "XA NOI",
+        "country": "VN",
+        "currency": "VND",
+        "isDynamic": "false",
+        "checksum": "invalid",
+        "amount": "50000"
+      }
+    }
+  },
+  {
+    "id": "emv-vietqr-dynamic",
+    "spec": "SPEC §5",
+    "input": "00020101021238500010A0000007270120000697040301111111110208QRIBFTTA5204541153037045405500005802VN5913CUA HANG TEST6006HA NOI62140810thanh toan6304BCB4",
+    "symbology": "qr",
+    "note": "vietqr dynamic, valid CRC",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "CUA HANG TEST",
+        "city": "HA NOI",
+        "country": "VN",
+        "currency": "VND",
+        "isDynamic": "true",
+        "checksum": "valid",
+        "amount": "50000"
+      }
+    }
+  },
+  {
+    "id": "emv-vietqr-dynamic-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021238500010A0000007270120000697040301111111110208QRIBFTTA5204541153037045405500005802VN5913CUA HANG TEST6006XA NOI62140810thanh toan6304BCB4",
+    "symbology": "qr",
+    "note": "vietqr dynamic, one character of the city changed",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "CUA HANG TEST",
+        "city": "XA NOI",
+        "country": "VN",
+        "currency": "VND",
+        "isDynamic": "true",
+        "checksum": "invalid",
+        "amount": "50000"
+      }
+    }
+  },
+  {
+    "id": "emv-pix-lowercase-crc",
+    "spec": "SPEC §5",
+    "input": "00020101021126460014br.gov.bcb.pix0124pix-test@example.invalid520454115303986540512.505802BR5913FULANO DE TAL6009SAO PAULO62070503***6304f8c4",
+    "symbology": "qr",
+    "note": "CRC hex digits in lowercase",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "FULANO DE TAL",
+        "city": "SAO PAULO",
+        "country": "BR",
+        "currency": "BRL",
+        "isDynamic": "false",
+        "checksum": "valid",
+        "amount": "12.50"
+      }
+    }
+  },
+  {
+    "id": "emv-utf16-accent",
+    "spec": "SPEC §5",
+    "input": "00020101021129370016A00000067701011101130066000000000520454115303764540599.005802TH5914JOSÉ NIÑO CAFÉ6007BANGKOK63040696",
+    "symbology": "qr",
+    "note": "merchant name length counted in UTF-16 units, as JavaScript tools produce: accents (2 UTF-8 bytes, 1 UTF-16 unit)",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "JOSÉ NIÑO CAFÉ",
+        "city": "BANGKOK",
+        "country": "TH",
+        "currency": "THB",
+        "isDynamic": "false",
+        "checksum": "valid",
+        "amount": "99.00"
+      }
+    }
+  },
+  {
+    "id": "emv-utf16-astral",
+    "spec": "SPEC §5",
+    "input": "00020101021129370016A00000067701011101130066000000000520454115303764540599.005802TH5915Noodle 🍜 House6007กรุงเทพ6304987D",
+    "symbology": "qr",
+    "note": "merchant name length counted in UTF-16 units, as JavaScript tools produce: emoji (4 UTF-8 bytes, 2 UTF-16 units) and Thai city",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "Noodle 🍜 House",
+        "city": "กรุงเทพ",
+        "country": "TH",
+        "currency": "THB",
+        "isDynamic": "false",
+        "checksum": "valid",
+        "amount": "99.00"
+      }
+    }
+  },
+  {
+    "id": "emv-utf16-crc-fail",
+    "spec": "SPEC §5",
+    "input": "00020101021129370016A00000067701011101130066000000000520454115303764540599.005802TH5914JOSÉ NIÑO CAFÉ6007BANGKOK63040690",
+    "symbology": "qr",
+    "note": "UTF-16 counted lengths with a wrong CRC",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "payeeName": "JOSÉ NIÑO CAFÉ",
+        "city": "BANGKOK",
+        "country": "TH",
+        "currency": "THB",
+        "isDynamic": "false",
+        "checksum": "invalid",
+        "amount": "99.00"
+      }
+    }
+  },
+  {
+    "id": "emv-utf8-nonascii",
+    "spec": "SPEC §5",
+    "input": "00020101021129370016A00000067701011101130066000000000520454115303764540599.005802TH5917JOSÉ NIÑO CAFÉ6007BANGKOK630480D3",
+    "symbology": "qr",
+    "note": "non-ASCII name with UTF-8 byte lengths",
+    "expect": {
+      "type": "payment",
+      "level": 0,
+      "signals": [],
+      "fields": {
+        "format": "emv",
+        "payeeName": "JOSÉ NIÑO CAFÉ",
+        "city": "BANGKOK",
+        "country": "TH",
+        "currency": "THB",
+        "isDynamic": "false",
+        "checksum": "valid",
+        "amount": "99.00"
+      }
+    }
+  },
+  {
+    "id": "emv-truncated-no-crc",
+    "spec": "SPEC §5",
+    "input": "00020101021226460014br.gov.bcb.pix0124pix-test@example.invalid520454115303986540512.505802BR5913FULANO DE TAL60",
+    "symbology": "qr",
+    "note": "truncated: the CRC is gone, so the classifier sees plain text",
+    "expect": {
+      "type": "text",
+      "level": 0,
+      "signals": [],
+      "fields": {}
+    }
+  },
+  {
+    "id": "emv-truncated-header-only",
+    "spec": "SPEC §5",
+    "input": "000201",
+    "symbology": "qr",
+    "note": "only the header",
+    "expect": {
+      "type": "text",
+      "level": 0,
+      "signals": [],
+      "fields": {}
+    }
+  },
+  {
+    "id": "emv-truncated-middle",
+    "spec": "SPEC §5",
+    "input": "00020101021226460014br.gov.bcb.pix0124pix-test@example.invalid520454115303986540512.505802BR5913FULE TAL6009SAO PAULO62070503***63043846",
+    "symbology": "qr",
+    "note": "characters missing from the middle, CRC tail kept",
+    "expect": {
+      "type": "payment",
+      "level": 2,
+      "signals": [
+        "paymentChecksumFail"
+      ],
+      "fields": {
+        "format": "emv",
+        "country": "BR",
+        "currency": "BRL",
+        "isDynamic": "true",
+        "checksum": "invalid"
+      }
+    }
+  }
+]

@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-incomplete-timeout",
+ "original": "https://slow.example.com/",
+ "hops": [
+  {
+   "url": "https://slow.example.com/",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "timeout",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": null,
+ "expect": {
+  "title": null,
+  "signals": [],
+  "info": [
+   "peekIncomplete"
+  ],
+  "level": 0,
+  "finalHost": null,
+  "hopLevels": [
+   0
+  ]
+ }
+}

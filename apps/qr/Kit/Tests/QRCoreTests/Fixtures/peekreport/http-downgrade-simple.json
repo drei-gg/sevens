@@ -1,0 +1,31 @@
+{
+ "id": "peekreport-http-downgrade-simple",
+ "original": "https://example.com/go",
+ "hops": [
+  {
+   "url": "https://example.com/go",
+   "status": 302
+  },
+  {
+   "url": "http://example.net/landing",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "httpTarget",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "redirectsToHTTP"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "example.com",
+  "hopLevels": [
+   0,
+   1
+  ]
+ }
+}

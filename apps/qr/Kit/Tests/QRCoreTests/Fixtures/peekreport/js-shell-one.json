@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-js-shell-one",
+ "original": "https://spa1.example.com/",
+ "hops": [
+  {
+   "url": "https://spa1.example.com/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "App",
+  "signals": [],
+  "info": [
+   "needsJavaScript"
+  ],
+  "level": 0,
+  "finalHost": "spa1.example.com",
+  "hopLevels": [
+   0
+  ]
+ }
+}

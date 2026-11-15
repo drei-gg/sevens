@@ -1,6 +1,6 @@
 # 7&D QR Code Kit: spec
 
-Draft 0.1 · 9 November 2026
+Draft 0.3 · 11 November 2026 (0.2 settled decisions D1–D16; 0.3 adds the fixes from review 1: scam-check gaps, smaller codes in Make, lists that age)
 
 | Where | Name |
 |---|---|
@@ -8,7 +8,7 @@ Draft 0.1 · 9 November 2026
 | App Store subtitle | Scanner, maker & scam check |
 | Under the icon | 7&D QR Kit |
 
-The store name uses `7&D` without the `$`: Apple doesn't allow prices in app names (guideline 2.3.7). The full `$7&D` mark stays on the splash screen and the site. About and the store listing carry the line "QR Code is a registered trademark of DENSO WAVE INCORPORATED."
+The store name uses `7&D` without the `$`: Apple doesn't allow prices in app names (guideline 2.3.7). The full `$7&D` mark appears only on the About screen and the site. About and the store listing carry the line "QR Code is a registered trademark of DENSO WAVE INCORPORATED."
 
 A QR reader and maker that tells you where a code really goes before you go there. Paid for once.
 
@@ -26,21 +26,24 @@ The iPhone's camera already scans QR codes, and the app says so on its first scr
 - **Never say "safe."** We show what we see and how worried we are, with reasons.
 - **Fast first.** Offline checks finish before the result sheet appears. The network is used when a feature needs it: Peek, domain age, opening a link.
 - **We collect nothing.** No analytics, no accounts, no backend of ours. The app shows every kind of network contact it makes (see "Network contact").
+- **Look.** Native iOS controls, bars, lists and sheets, in the Sevens' colors (SevenKit plan K17): ink as the accent everywhere instead of system blue, paper behind every screen, card behind our own containers. Every color pair passes 4.5:1 in light and dark (`PaletteContrastTests`, polish guide §3.2): labels on filled buttons are set to `onInk`/`onRed`, secondary text is `muted` rather than the system grey, toggles keep system green. A verdict is an icon plus a word, with the word in the primary text color; the icon is `muted` for "Looks normal", `caution` for "Be careful" and `danger` for "Likely scam". Brand red appears only on the Unlock button, never as a status; system red appears only through a destructive button's role. Text uses SevenKit's seven type roles (hero, title, section, row title, body, secondary, caption), never a text style directly; a result screen uses four sizes: the verdict word as the hero under a large status symbol, the domain or payee as the title, body, caption (polish pass, 13 November 2026: the verdict is stated big and plainly, as the leading scanners do; its colour stays on the symbol). Screens are laid out like the category: a full-screen camera with a viewfinder frame and one control bar, one large primary action pinned on a result and on Make, chips for the rest. Spacing comes from `Tokens.Space`. With Increase Contrast on, every color pair reaches 7:1. UI strings use typographic punctuation (’, …). `scripts/check-rules` enforces all of this. The `$7&D` wordmark appears only on the About screen.
 - **Global by default.** The core logic is built on standards. Anything regional, like brand lists or payment network names, lives in bundled data files that anyone can extend with a pull request.
 
 ## Platform
 
-iOS 17+, iPhone, SwiftUI, Swift 6, with no dependencies beyond Apple's frameworks. It uses the shared `SevenKit` package for the trial, unlock, About screen and design tokens. Android comes later, from this spec.
+iOS 17+, iPhone, SwiftUI, Swift 6. It uses no third-party code libraries today; it may use open-source libraries that are pinned to an exact version, read before they ship and credited in `THIRD-PARTY.md` and the app's notices, and never one that collects data. It uses the shared `SevenKit` package for the trial, unlock, About screen and design tokens. Android comes later, from this spec.
 
 ---
 
 ## 1. First launch
 
-1. **Splash:** `$7&D` wordmark (ink, with a red 7), shown only as long as iOS needs it.
+1. **No splash.** The launch screen is the system background (light and dark), with no wordmark or image, so nothing flashes between launch and the scan screen. The `$7&D` mark appears only in About (as an image in branded builds, as the app's name otherwise). The unlock sheet, Before you buy, the trial-ended sheet and the thank-you moment are plain system screens with text only.
 2. **Before you buy**, shown once and reachable later from About:
    > **Your iPhone already scans QR codes.** Point the Camera at one, or use Code Scanner in Control Center. If that's all you need, delete this app and keep your seven dollars.
    >
    > **What this adds:** it checks where a code really goes before you open it, shows who a payment code pays, makes codes from anything you share, and remembers what you scanned. Free for 7 days, no card. Then $7 once, if you want to keep it.
+
+   Two buttons of equal weight: **Start my free 7 days** and **Just scan for free** (D1). The trial starts only when the person taps Start (a $0 "7-day Trial" purchase); without it the app keeps working in its free-forever mode. In the app the price is always the App Store's own price for the person's storefront, never a hard-coded "$7", and "keep your seven dollars" reads "keep your money".
 3. **Camera permission**, asked when the scanner first opens, not before.
 
 ## 2. Scan (home screen)
@@ -69,6 +72,8 @@ The top always shows the **verdict** and the **payload type**. Below that:
 
 We never act automatically. Every action is a tap.
 
+**"I know this address" (decided 11 November 2026).** When every non-info signal on a link comes from a bundled list (§4.4), the result sheet asks one question in plain words, for example "This address uses PayPal's name, but it isn't one we know.", with two buttons: **Keep warning me** (marked "Recommended") and **I know this address**. It is never offered when a signal that doesn't depend on a list is present (`user@host`, a dangerous scheme, mixed scripts, a failed checksum, anything from Peek).
+
 ## 4. Scam checks
 
 ### 4.1 Verdict
@@ -88,25 +93,49 @@ Every signal shows as one plain sentence under the verdict. No scores, no percen
 | `javascript:`, `data:`, or `file:` scheme | strong |
 | `user@host` trick (`https://bank.com@evil.site`) | strong |
 | Lookalike domain: mixed scripts, or punycode that resembles a domain on the brand list | strong |
-| A brand's name in a domain that isn't that brand's (`paypal-verify.help`) | strong |
+| A brand's name in a domain that isn't that brand's (`paypal-verify.help`, `gcash.top`, `paypal.help`), including a brand in a subdomain or mixed with other words | strong |
+| A brand's exact name on a common ending we don't list for that brand (`paypal.de`, `netflix.co`): the registrable domain is `<brand>.<ending>` with nothing else in the label, the ending is a two-letter country code or `com`, `net`, `org` (also second-level forms such as `co.uk`, `com.ph`), and the ending isn't on the heavily abused list. Shown as "This isn't an address we know for PayPal." | warning |
+| A look-alike spelling of a brand joined to other words (`secure-paypa1.com`, `faceb00k-login.com`): each word of the address is compared, not only whole labels | strong |
+| Brands with three-letter names (DHL, BPI, BDO, UPS): matched only as a whole word, and only next to a bait word such as `tracking` or `online` in the same address (`dhl-tracking.help`) | strong |
 | Raw IP address as the host | warning |
 | Known link shortener: we can't see the destination until you Peek | warning |
 | Plain `http` | warning |
 | Domain ending that scam reports show is heavily abused (bundled list) | warning |
-| Unusually deep subdomains, or very long or encoded paths on a login-like URL | warning |
+| Unusually deep subdomains, or very long or encoded paths on a login-like URL, or a second `http` link inside the path (a return address in the query, as sign-in links carry, doesn't count) | warning |
 | Open (no-password) Wi-Fi network | warning |
 | Payment code fails its checksum | strong |
+| A domain ending that isn't in the bundled suffix list: the last label is taken as the ending, so every brand check still runs, and we say "We don't recognize this domain ending" | info |
+| An address you told us you know (§3, §4.4) | info |
+| A link written without `https://` (`www.example.com`, `example.com/x`), when its ending is a real domain ending and there are no spaces: treated as a link with `https` assumed, and we say so (D9) | info |
 
-### 4.3 Bundled data (`apps/qr/Data/`)
+Before any check, the host is put in Unicode compatibility form (NFKC), as browsers do: full-width `ｐａｙｐａｌ.com` is checked as `paypal.com`.
+
+Only the first 8 KB of a code's text is searched for links. A link longer than 8 KB is shown as text, with the verdict of the links found in its first 8 KB.
+
+**Unknown fails soft.** When a list simply doesn't know something (a brand's other domain, a new ending), the sentence says what we don't know instead of accusing the site. "Likely scam" is kept for things that are true whatever the lists say, and for a brand's name on an ending no brand should use.
+
+Peek adds its own signals (§6): the page asks for a password, PIN, one-time code or card number (warning; **strong** only when the page or its domain claims a brand the domain doesn't belong to, D10), a form that sends to another domain (warning), a redirect by script or meta refresh (warning), a download such as an app or profile (warning), redirects to plain `http` or out of the web, too many redirects (warning), a certificate problem (strong), a domain under 30 days old (strong) or under 6 months (warning). Shown but never changing the verdict: the domain is on shared hosting, the page needs JavaScript, age unknown, Peek couldn't finish.
+
+### 4.3 Bundled data (`apps/qr/Kit/Sources/QRCore/Data/`)
 
 These files are updated with app releases. Pull requests are welcome.
 
 - `brands.json`: the most-impersonated brands worldwide and their official domains (payments, banks, couriers, tech, governments). One global list, grouped by region only so it's easier to maintain.
 - `shorteners.json`: known link shorteners.
 - `risky-tlds.json`: heavily abused domain endings, based on public abuse reports.
-- `payment-networks.json`: payment network identifiers mapped to display names (§5).
+- `payment-networks.json`: payment network identifiers mapped to display names (§5). Only networks whose published spec states the identifier are listed, each with its source (D11).
 - `public_suffix_list.dat`: Mozilla's Public Suffix List (MPL-2.0), used to find the registrable domain.
 - `rdap-dns.json`: IANA's directory of public registry (RDAP) services (§6.2).
+- `tracking-params.json`: tracking tags that Make offers to remove from a link (§8), each with its source.
+- `lists-version.json`: when the lists were built. About shows it as "Scam lists from 10 November 2026".
+
+`scripts/refresh-lists` re-downloads the upstream lists, validates the curated ones, runs every fixture and bumps the date, so a lists-only release is one command and a store submission. The aim is a lists release at least every two months.
+
+**Check for newer lists (decided 11 November 2026).** Settings › About has one button, **Check for newer lists**. Nothing is fetched without that tap: no check at launch, no background refresh, no badge. A tap fetches one signed file, `lists.json`, and its signature from our public repository on GitHub, through the same kind of private connection as Peek; the request carries nothing about the person or their scans. The app accepts it only if the signature verifies against a key built into the app, the format is one it understands, it is newer than what's installed, every list passes the same shape checks as the bundled ones, and it is under 2 MB; otherwise it keeps its lists and says why. "Use the lists that came with the app" undoes it, and an app update with newer lists wins over an older download. When the lists are more than six months old, the About row says so. A build without a configured key hides the button. Free forever: it's part of warning.
+
+### 4.4 Addresses you know
+
+Choosing **I know this address** (§3) stores the link's registrable domain on the phone. Later scans of that domain drop the list-based signals (a brand's name, a look-alike, an abused ending, a shortener) and show "You told us you know this address"; every other check still runs. Settings lists these addresses, with swipe to remove and **Forget all**. They're kept in their own file beside History, exported with it, untouched by list updates, and free forever.
 
 ## 5. Payment codes (offline)
 
@@ -120,7 +149,7 @@ We decode the payment code formats used around the world and show **who you're a
 | Swiss QR-bill | First line `SPC` | Creditor, IBAN, amount, reference |
 | Crypto payment links | `bitcoin:`, `ethereum:`, `lightning:` and others | Address, amount, label |
 
-**Person or business:** we label it only when the network's identifier clearly says so, as listed in `payment-networks.json`. Otherwise we show the name in large type and let the person judge: "Check this matches where you are."
+**Person or business:** we label it only when the network's identifier clearly says so, as listed in `payment-networks.json` with a link to that network's published spec (D11). Otherwise we show the name in large type and let the person judge: "Check this matches where you are."
 
 ## 6. Peek (one tap, online)
 
@@ -132,8 +161,8 @@ It's a tap and never automatic, because fetching a link tells whoever made the c
 - Reads up to 512 KB of the final page **without running any of its code**, and shows:
   - the page title
   - whether the connection is secure
-  - **a password, PIN, one-time code or card-number field** (strong signal if the domain isn't the brand it claims to be)
-  - redirects done by script or meta refresh (warning).
+  - **a password, PIN, one-time code or card-number field** (a warning on its own, since ordinary login pages exist; strong when the page or domain claims a brand the domain doesn't belong to, D10)
+  - redirects done by script (a page that sets `location` or calls `location.replace` or `location.assign`; merely reading `location.href` doesn't count) or meta refresh (warning).
 - Uses a standard Safari user agent, so we see what a real browser would see.
 - Gives up after 8 seconds. Plain `http` links aren't fetched (iOS blocks them by default); they show a warning instead and can still be opened.
 
@@ -148,7 +177,10 @@ Opens in the in-app browser (`SFSafariViewController`) or in Safari, which adds 
 ## 8. Make
 
 - **Types:** link, text, Wi-Fi, contact, event, email, SMS, phone, location.
-- **Error correction:** chosen automatically, or set by hand.
+- **Error correction:** chosen automatically, or set by hand. Automatic finds the smallest code size at level M, then uses the highest level (Q, then H) that still fits that same size, so the code never grows because of it.
+- **Smaller codes:** a link's scheme and host are written in capitals (`HTTPS://EXAMPLE.COM/path`), which lets the code use QR's denser character set. Only the scheme and the host (in its `xn--` form) change; the rest of the link is kept exactly. It's used only when the code really comes out smaller, and Make shows "Same link, smaller code" with a switch, on by default. A default port (`:443`, `:80`) and a lone trailing `/` are dropped; nothing else (never `www.`, never `http` to `https`). History keeps the text actually encoded.
+- **Tracking tags:** when a link carries tags such as `utm_source` or `fbclid` (`tracking-params.json`), Make asks "This link carries tracking tags. Remove them?" and shows the shorter link. Never automatic.
+- **Phone numbers** are written as `TEL:+…`.
 - **Export:** PNG (any size), SVG (built from the module grid), and a PDF ready to print (one code, or a sheet of labels).
 - **Style:** black on white by default, plus foreground and background colors with a contrast check. No logos in the middle for v1.
 - **Barcodes:** Aztec, PDF417 and Code 128 through Core Image, in the same flow.
@@ -165,11 +197,14 @@ Opens in the in-app browser (`SFSafariViewController`) or in Safari, which adds 
 - Swipe to delete, or clear everything. History can be turned off.
 - Export as JSON or CSV.
 - Stored as files on the phone, with complete file protection. No sync in v1.
+- The export includes the addresses you told us you know (§4.4).
 
 ## 11. About & settings
 - Trial status, Unlock, Restore purchases (from SevenKit).
 - **Before you buy** (the screen from §1).
 - **Network contact:** the list from §12, in plain words.
+- **Addresses you know** (§4.4).
+- "Scam lists from …" and **Check for newer lists** (§4.3).
 - Version, changelog, support email, license (GPL-3.0) and open-source notices (Public Suffix List).
 
 ## 12. Network contact
@@ -182,6 +217,7 @@ The complete list. Anything not listed here doesn't happen.
 | You tap Peek | The public registry for that domain ending | The domain name |
 | You tap Open | Safari opens the link | Whatever Safari sends |
 | You buy or restore | Apple, through StoreKit | Handled by iOS |
+| You tap Check for newer lists | GitHub, where our public code lives | A request for one file. Nothing about you or what you scanned. |
 
 App Store privacy label: **Data Not Collected.**
 
@@ -193,11 +229,15 @@ Uses SevenKit's standard mechanism: a $0 "7-day trial" purchase and a $7 one-tim
 | Free forever | Needs the unlock |
 |---|---|
 | Scanning: live, from photos, from the clipboard | **Peek:** redirects, login-form detection, domain age |
-| The verdict and every offline scam check (§4.2) | **Make**, and all export (§8) |
-| Payment-code decoding (§5) | **Share extensions** (§9) |
-| Opening links (§7) | **History:** saving, search, notes, export (§10) |
+| The verdict and every offline scam check (§4.2), addresses you know (§4.4), Check for newer lists (§4.3) | **Make**, and all export (§8) |
+| Payment-code decoding (§5) | **"Make QR code" share extension** (§9) |
+| Opening links (§7) | **History:** saving new scans and made codes (§10) |
+| **"Check this code" share extension** (§9): it only warns (D2) | |
+| Reading, searching, annotating, exporting and deleting History you already have | |
 
-Anything saved to History during the trial stays readable and exportable after it ends.
+When Before you buy and the trial-ended sheet are both due on one launch, Before you buy comes first and the trial-ended sheet waits for the next launch.
+
+Anything saved to History during the trial stays readable, searchable and exportable after it ends; only saving new items needs the unlock.
 
 ## 14. Accessibility and language
 - Full Dynamic Type, VoiceOver labels on every control, and verdicts read aloud as a sentence. Reduce Motion is respected.
@@ -208,7 +248,7 @@ Anything saved to History during the trial stays readable and exportable after i
 Product barcode lookup, link "reputation" from third-party services, iPad layout, sync, widgets, Apple Watch, logos inside generated codes, and batch generation.
 
 ## 16. Test fixtures
-`apps/qr/Fixtures/` holds a payload and its expected result for each signal in §4 and each format in §5:
+`apps/qr/Kit/Tests/QRCoreTests/Fixtures/` holds a payload and its expected result for each signal in §4 and each format in §5:
 - valid and corrupted EMVCo payloads (CRC pass and fail)
 - UPI, EPC and Swiss samples
 - punycode lookalikes, `user@host`, shorteners and IP hosts.
@@ -224,5 +264,5 @@ These fixtures double as the Android port's acceptance tests.
 6. History, trial and unlock, Before you buy, About
 7. Accessibility pass, polish, testing on the iPhone
 
-## Open questions
-1. Which payment networks mark person versus business accounts. To be filled into `payment-networks.json` from each network's published spec.
+## Decided questions
+1. Which payment networks mark person versus business accounts: only those whose published spec says so, cited in `payment-networks.json`; every other network shows the name and "Check this matches where you are." (D11).

@@ -1,0 +1,27 @@
+{
+  "id": "peek-script-redirect",
+  "original": "https://bounce.example/go",
+  "hops": [
+    {
+      "url": "https://bounce.example/go",
+      "status": 200
+    }
+  ],
+  "stoppedBecause": "finished",
+  "contentType": "text/html; charset=utf-8",
+  "contentDisposition": null,
+  "ageDays": 2000,
+  "expect": {
+    "title": "Loading",
+    "signals": [
+      "scriptRedirect"
+    ],
+    "sniff": {
+      "formActions": [],
+      "scriptRedirect": true,
+      "metaRefreshURL": null,
+      "inputTypes": [],
+      "scriptCount": 1
+    }
+  }
+}

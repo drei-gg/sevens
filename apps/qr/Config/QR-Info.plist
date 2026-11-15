@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>SevensAppGroup</key>
+	<string>$(SEVENS_APP_GROUP)</string>
+	<key>SevensProductTrial</key>
+	<string>$(SEVENS_PRODUCT_ID_PREFIX).trial7</string>
+	<key>SevensProductUnlock</key>
+	<string>$(SEVENS_PRODUCT_ID_PREFIX).unlock</string>
+	<key>SevensSupportEmail</key>
+	<string>$(SEVENS_SUPPORT_EMAIL)</string>
+	<key>SevensBranded</key>
+	<string>$(SEVENS_BRANDED)</string>
+	<key>SevensWiFiJoinAvailable</key>
+	<string>$(WIFI_JOIN_AVAILABLE)</string>
+	<key>SevensRepositoryURL</key>
+	<string>$(SEVENS_REPOSITORY_URL)</string>
+	<key>SevensListsKeyCurrent</key>
+	<string>$(SEVENS_LISTS_KEY_CURRENT)</string>
+	<key>SevensListsKeyNext</key>
+	<string>$(SEVENS_LISTS_KEY_NEXT)</string>
+</dict>
+</plist>

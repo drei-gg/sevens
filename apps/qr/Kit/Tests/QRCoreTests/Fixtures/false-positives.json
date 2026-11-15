@@ -1,0 +1,1647 @@
+[
+ {
+  "id": "fp-001",
+  "spec": "4.2",
+  "input": "https://www.google.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-002",
+  "spec": "4.2",
+  "input": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-003",
+  "spec": "4.2",
+  "input": "https://en.wikipedia.org/wiki/QR_code",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-004",
+  "spec": "4.2",
+  "input": "https://www.amazon.com/dp/B08N5WRWNW",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-005",
+  "spec": "4.2",
+  "input": "https://www.facebook.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-006",
+  "spec": "4.2",
+  "input": "https://www.instagram.com/natgeo/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-007",
+  "spec": "4.2",
+  "input": "https://twitter.com/jack/status/20",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-008",
+  "spec": "4.2",
+  "input": "https://x.com/home",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-009",
+  "spec": "4.2",
+  "input": "https://www.linkedin.com/in/williamhgates/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-010",
+  "spec": "4.2",
+  "input": "https://github.com/torvalds/linux",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-011",
+  "spec": "4.2",
+  "input": "https://www.reddit.com/r/swift/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-012",
+  "spec": "4.2",
+  "input": "https://www.apple.com/iphone/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-013",
+  "spec": "4.2",
+  "input": "https://www.microsoft.com/en-us/microsoft-365",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-014",
+  "spec": "4.2",
+  "input": "https://www.netflix.com/browse",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-015",
+  "spec": "4.2",
+  "input": "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-016",
+  "spec": "4.2",
+  "input": "https://www.nytimes.com/section/world",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-017",
+  "spec": "4.2",
+  "input": "https://www.bbc.co.uk/news",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-018",
+  "spec": "4.2",
+  "input": "https://www.theguardian.com/international",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-019",
+  "spec": "4.2",
+  "input": "https://www.cnn.com/world",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-020",
+  "spec": "4.2",
+  "input": "https://www.ebay.com/itm/1234567890",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-021",
+  "spec": "4.2",
+  "input": "https://www.walmart.com/ip/12345",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-022",
+  "spec": "4.2",
+  "input": "https://www.target.com/c/electronics/-/N-5xtg6",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-023",
+  "spec": "4.2",
+  "input": "https://www.ikea.com/ph/en/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-024",
+  "spec": "4.2",
+  "input": "https://stackoverflow.com/questions/11227809",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-025",
+  "spec": "4.2",
+  "input": "https://developer.apple.com/documentation/swiftui",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-026",
+  "spec": "4.2",
+  "input": "https://developer.mozilla.org/en-US/docs/Web/HTTP",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-027",
+  "spec": "4.2",
+  "input": "https://web.whatsapp.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-028",
+  "spec": "4.2",
+  "input": "https://zoom.us/j/123456789",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-029",
+  "spec": "4.2",
+  "input": "https://www.dropbox.com/home",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-030",
+  "spec": "4.2",
+  "input": "https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz/view",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-031",
+  "spec": "4.2",
+  "input": "https://docs.google.com/document/d/1AbCdEfGhIjKlMnOpQrStUvWxYz/edit",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-032",
+  "spec": "4.2",
+  "input": "https://maps.google.com/?q=Manila",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-033",
+  "spec": "4.2",
+  "input": "https://www.paypal.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-034",
+  "spec": "4.2",
+  "input": "https://www.chase.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-035",
+  "spec": "4.2",
+  "input": "https://www.bankofamerica.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-036",
+  "spec": "4.2",
+  "input": "https://www.wellsfargo.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-037",
+  "spec": "4.2",
+  "input": "https://www.hsbc.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-038",
+  "spec": "4.2",
+  "input": "https://www.barclays.co.uk/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-039",
+  "spec": "4.2",
+  "input": "https://www.gcash.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-040",
+  "spec": "4.2",
+  "input": "https://www.grab.com/ph/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-041",
+  "spec": "4.2",
+  "input": "https://shopee.ph/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-042",
+  "spec": "4.2",
+  "input": "https://www.lazada.com.ph/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-043",
+  "spec": "4.2",
+  "input": "https://www.bdo.com.ph/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-044",
+  "spec": "4.2",
+  "input": "https://www.mercadolibre.com.ar/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-045",
+  "spec": "4.2",
+  "input": "https://www.baidu.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-046",
+  "spec": "4.2",
+  "input": "https://www.taobao.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-047",
+  "spec": "4.2",
+  "input": "https://www.rakuten.co.jp/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-048",
+  "spec": "4.2",
+  "input": "https://www.naver.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-049",
+  "spec": "4.2",
+  "input": "https://www.yahoo.co.jp/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-050",
+  "spec": "4.2",
+  "input": "https://www.lemonde.fr/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-051",
+  "spec": "4.2",
+  "input": "https://www.spiegel.de/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-052",
+  "spec": "4.2",
+  "input": "https://elpais.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-053",
+  "spec": "4.2",
+  "input": "https://www.globo.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-054",
+  "spec": "4.2",
+  "input": "https://timesofindia.indiatimes.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-055",
+  "spec": "4.2",
+  "input": "https://www.usa.gov/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-056",
+  "spec": "4.2",
+  "input": "https://www.irs.gov/refunds",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-057",
+  "spec": "4.2",
+  "input": "https://www.gov.uk/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-058",
+  "spec": "4.2",
+  "input": "https://www.canada.ca/en.html",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-059",
+  "spec": "4.2",
+  "input": "https://www.australia.gov.au/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-060",
+  "spec": "4.2",
+  "input": "https://www.ato.gov.au/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-061",
+  "spec": "4.2",
+  "input": "https://www.mit.edu/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-062",
+  "spec": "4.2",
+  "input": "https://www.stanford.edu/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-063",
+  "spec": "4.2",
+  "input": "https://www.ox.ac.uk/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-064",
+  "spec": "4.2",
+  "input": "https://www.up.edu.ph/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-065",
+  "spec": "4.2",
+  "input": "https://www.gov.ph/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-066",
+  "spec": "4.2",
+  "input": "https://www.who.int/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-067",
+  "spec": "4.2",
+  "input": "https://www.un.org/en/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-068",
+  "spec": "4.2",
+  "input": "https://european-union.europa.eu/index_en",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-069",
+  "spec": "4.2",
+  "input": "https://www.nasa.gov/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-070",
+  "spec": "4.2",
+  "input": "https://bücher.de/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-071",
+  "spec": "4.2",
+  "input": "https://www.köln.de/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-072",
+  "spec": "4.2",
+  "input": "https://münchen.de/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-073",
+  "spec": "4.2",
+  "input": "https://правительство.рф/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-074",
+  "spec": "4.2",
+  "input": "https://президент.рф/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-075",
+  "spec": "4.2",
+  "input": "https://例え.jp/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-076",
+  "spec": "4.2",
+  "input": "https://日本語.jp/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-077",
+  "spec": "4.2",
+  "input": "https://www.例え.jp/index.html",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-078",
+  "spec": "4.2",
+  "input": "https://ตัวอย่าง.ไทย/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-079",
+  "spec": "4.2",
+  "input": "https://www.café-de-paris.fr/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-080",
+  "spec": "4.2",
+  "input": "https://www.example.com/article/spring-sale?utm_source=newsletter&utm_medium=email&utm_campaign=spring_sale_2026&utm_term=shoes&utm_content=hero_banner&fbclid=IwAR0kT96fvjN6JMZE8rhNbEHW67a2Jw49sVhzbbbZRaE1rH4bQs6JNSsBs1s6Kxb&gclid=Cj0KCQjweggDn590yvWrWdV1nHYF94PDRJPwdbDKzEHQnSpt",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-081",
+  "spec": "4.2",
+  "input": "https://www.nytimes.com/2026/03/14/world/asia/typhoon-philippines-coast.html?smid=url-share&referringSource=articleShare&utm_source=ios&campaign_id=9&emc=edit_na_20260314&nl=top-stories&ref=homepage&te=1",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-082",
+  "spec": "4.2",
+  "input": "https://www.amazon.com/Wireless-Earbuds-Bluetooth/dp/B08N5WRWNW/ref=sr_1_3?crid=2ABCDEFG1HIJK&keywords=wireless+earbuds&qid=1700000000&sprefix=wireless+ear%2Caps%2C300&sr=8-3&th=1&psc=1",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-083",
+  "spec": "4.2",
+  "input": "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI&index=3&t=42s&si=tVRkDWMYVfWaMvSs&feature=share&pp=ygUJcmljayByb2xs",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-084",
+  "spec": "4.2",
+  "input": "https://www.instagram.com/p/Cxyz123AbCd/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==&img_index=1",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-085",
+  "spec": "4.2",
+  "input": "https://www.facebook.com/share/p/1AbCdEfGh/?mibextid=wwXIfr&rdid=tyh4FMmgfbFSx96esQRDw7phvrbZ9v&utm_campaign=share&utm_medium=social",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-086",
+  "spec": "4.2",
+  "input": "https://www.google.com/maps/place/Manila,+Metro+Manila/@14.5995124,120.9842195,12z/data=!3m1!4b1!4m6!3m5!1s0x3397ca03571ec38b:0x69d1d5751069c11f!8m2!3d14.5995124!4d120.9842195!16zL20vMDF4OGZ3",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-087",
+  "spec": "4.2",
+  "input": "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC?si=a1b2c3d4e5f6&utm_source=copy-link&utm_medium=copy-link&context=spotify%3Aplaylist%3A37i9dQZF1DXcBWIGoYBM5M",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-088",
+  "spec": "4.2",
+  "input": "https://www.booking.com/hotel/ph/shangri-la-manila.en-gb.html?aid=304142&label=gen173nr-1FCAEoggI&sid=Xv5B825ZQbK7tZenjDMtERhTta4rGwp7&checkin=2026-12-01&checkout=2026-12-05&group_adults=2&no_rooms=1&group_children=0",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-089",
+  "spec": "4.2",
+  "input": "https://www.linkedin.com/jobs/view/3712345678/?trackingId=8TgN6vdam0VM65Dz7bwN9q&refId=zmFZefRhDVePrdgHGftgSH&midToken=AQsDEkq3dgkt9PrFZbKNKENTqFgNs6b2",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-090",
+  "spec": "4.2",
+  "input": "https://shop.example.com/products/trail-shoes?variant=4455667788&utm_source=google&utm_medium=cpc&utm_campaign=brand_search&utm_term=trail+shoes+men&gad_source=1&gclid=Cj0KCQiAKXDwkp1aAPKWgASX2d4En3J4HnntejkPVf72E85hxr1s48Gg7w",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-091",
+  "spec": "4.2",
+  "input": "https://www.theguardian.com/world/2026/mar/14/long-read-title?CMP=share_btn_url&utm_source=twitter&utm_medium=social&utm_campaign=sharebtn&ref=TdHMTarKNwZ9ndQNzft5DdGkWBEGx1vKp1y0DkK7",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-092",
+  "spec": "4.2",
+  "input": "https://www.lazada.com.ph/products/wireless-mouse-i123456789-s987654321.html?spm=a2o4l.home.flashSale.1.1234&scm=1007.17760.1234.0&pvid=JS7KJPVqp9PMYX8phJymgR92YdWFJZ&search=1",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-093",
+  "spec": "4.2",
+  "input": "https://www.reddit.com/r/swift/comments/1abcde/how_do_i_parse_json/?utm_source=share&utm_medium=web2x&context=3",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-094",
+  "spec": "4.2",
+  "input": "https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789/edit?gid=0#gid=0&range=A1:C20&usp=sharing",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-095",
+  "spec": "4.2",
+  "input": "https://accounts.google.com/signin/v2/identifier?service=mail",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-096",
+  "spec": "4.2",
+  "input": "https://www.paypal.com/signin",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-097",
+  "spec": "4.2",
+  "input": "https://signin.aws.amazon.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-098",
+  "spec": "4.2",
+  "input": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=00000003-0000-0000-c000-000000000000&response_type=code",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-099",
+  "spec": "4.2",
+  "input": "https://appleid.apple.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-100",
+  "spec": "4.2",
+  "input": "https://support.apple.com/en-us/HT201994",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-101",
+  "spec": "4.2",
+  "input": "https://www.facebook.com/login/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-102",
+  "spec": "4.2",
+  "input": "https://m.facebook.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-103",
+  "spec": "4.2",
+  "input": "https://secure.chase.com/web/auth/dashboard",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-104",
+  "spec": "4.2",
+  "input": "https://myaccount.google.com/security",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-105",
+  "spec": "4.2",
+  "input": "https://account.microsoft.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-106",
+  "spec": "4.2",
+  "input": "https://help.netflix.com/en/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-107",
+  "spec": "4.2",
+  "input": "https://www.paypal.com/myaccount/summary",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-108",
+  "spec": "4.2",
+  "input": "https://sellercentral.amazon.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-109",
+  "spec": "4.2",
+  "input": "https://www.ups.com/track?tracknum=1Z999AA10123456784",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-110",
+  "spec": "4.2",
+  "input": "https://www.fedex.com/fedextrack/?trknbr=123456789012",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-111",
+  "spec": "4.2",
+  "input": "https://www.dhl.com/global-en/home/tracking.html?tracking-id=1234567890",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-112",
+  "spec": "4.2",
+  "input": "https://store.steampowered.com/app/220/HalfLife_2/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-113",
+  "spec": "4.2",
+  "input": "https://www.zoom.com/en/products/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-114",
+  "spec": "4.2",
+  "input": "https://online.citi.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-115",
+  "spec": "4.2",
+  "input": "https://www.smart-home-guide.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-116",
+  "spec": "4.2",
+  "input": "https://www.visitscotland.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-117",
+  "spec": "4.2",
+  "input": "https://www.bostonglobe.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-118",
+  "spec": "4.2",
+  "input": "https://www.mayoclinic.org/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-119",
+  "spec": "4.2",
+  "input": "https://www.grabcad.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-120",
+  "spec": "4.2",
+  "input": "https://www.ubereats.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-121",
+  "spec": "4.2",
+  "input": "https://www.claroshop.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-122",
+  "spec": "4.2",
+  "input": "https://www.bookingholdings.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-123",
+  "spec": "4.2",
+  "input": "https://www.orange.com/en",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-124",
+  "spec": "4.2",
+  "input": "https://www.ledger.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-125",
+  "spec": "4.2",
+  "input": "https://www.visa.co.uk/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-126",
+  "spec": "4.2",
+  "input": "https://www.joesdiner.com/menu",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-127",
+  "spec": "4.2",
+  "input": "https://my-awesome-blog.com/post/1",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-128",
+  "spec": "4.2",
+  "input": "https://www.tiny-house-plans.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-129",
+  "spec": "4.2",
+  "input": "https://blog.example.org/2026/03/hello-world",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fp-130",
+  "spec": "4.2",
+  "input": "https://bit.ly/3AbCdEf",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "shortener"
+   ]
+  }
+ },
+ {
+  "id": "fp-131",
+  "spec": "4.2",
+  "input": "http://neverssl.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "plainHTTP"
+   ]
+  }
+ },
+ {
+  "id": "fp-132",
+  "spec": "4.2",
+  "input": "https://1.1.1.1/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "ipHost"
+   ]
+  }
+ },
+ {
+  "id": "fp-133",
+  "spec": "4.2",
+  "input": "http://example.com/",
+  "symbology": "qr",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "plainHTTP"
+   ]
+  }
+ },
+ {
+  "id": "fx1-fp-paypal-me",
+  "spec": "4.2",
+  "input": "https://paypal.me/someone",
+  "symbology": "qr",
+  "note": "F1: PayPal's payment-link domain; level 0 once brands.json lists paypal.me. Listed in brands.json since fix 1 (R2 verified), so Looks normal.",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-whatsapp-net",
+  "spec": "4.2",
+  "input": "https://whatsapp.net/",
+  "symbology": "qr",
+  "note": "F1: level 0 once brands.json lists whatsapp.net. Listed in brands.json since fix 1 (R2 verified), so Looks normal.",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-microsoft-de",
+  "spec": "4.2",
+  "input": "https://www.microsoft.de/",
+  "symbology": "qr",
+  "note": "F1: regional site; level 0 once brands.json lists microsoft.de. Listed in brands.json since fix 1 (R2 verified), so Looks normal.",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-netflix-co",
+  "spec": "4.2",
+  "input": "https://netflix.co/",
+  "symbology": "qr",
+  "note": "F1: level 0 once brands.json lists netflix.co. Listed in brands.json since fix 1 (R2 verified), so Looks normal.",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-facebook-co-uk",
+  "spec": "4.2",
+  "input": "https://facebook.co.uk/",
+  "symbology": "qr",
+  "note": "F1: second-level ending co.uk; level 0 once listed",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-fp-gcash-ph",
+  "spec": "4.2",
+  "input": "https://gcash.ph/",
+  "symbology": "qr",
+  "note": "F1: level 0 once brands.json lists gcash.ph",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "brandOtherEnding"
+   ]
+  }
+ },
+ {
+  "id": "fx1-fp-wa-me",
+  "spec": "4.2",
+  "input": "https://wa.me/639171234567",
+  "symbology": "qr",
+  "note": "F1: WhatsApp's chat-link domain; 'wa' is not a brand keyword",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-fb-me",
+  "spec": "4.2",
+  "input": "https://fb.me/abc123",
+  "symbology": "qr",
+  "note": "F1: Facebook's short-link domain; fb is not a brand keyword, but fb.me is on the shortener list (honest warning)",
+  "expect": {
+   "type": "link",
+   "level": 1,
+   "signals": [
+    "shortener"
+   ]
+  }
+ },
+ {
+  "id": "fx1-fp-m-me",
+  "spec": "4.2",
+  "input": "https://m.me/somepage",
+  "symbology": "qr",
+  "note": "F1: Messenger's link domain",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-google-oauth",
+  "spec": "4.2",
+  "input": "https://accounts.google.com/o/oauth2/v2/auth?client_id=1234567890-abc.apps.googleusercontent.com&redirect_uri=https://app.example.org/cb&response_type=code",
+  "symbology": "qr",
+  "note": "F5: a return address in the query is not a nested link (bait word 'account' in the host)",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-google-oauth-encoded",
+  "spec": "4.2",
+  "input": "https://accounts.google.com/signin/oauth?client_id=123456-abc.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fapp.example.org%2Fcb",
+  "symbology": "qr",
+  "note": "F5: the same with the return address percent-encoded",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-fullwidth-paypal",
+  "spec": "4.2",
+  "input": "https://ｐａｙｐａｌ.com/",
+  "symbology": "qr",
+  "note": "F6: full-width letters fold to plain paypal.com, which is PayPal's own domain",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-google-oauth-real",
+  "spec": "4.2",
+  "input": "https://accounts.google.com/o/oauth2/v2/auth?client_id=123456789012-abcdefghijklmnopqrstuvwxyz012345.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fapp.example.org%2Fauth%2Fcallback&response_type=code&scope=openid%20email%20profile%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcalendar.readonly&state=Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MA%3D%3D&access_type=offline&prompt=consent",
+  "symbology": "qr",
+  "note": "F5: real-length Google OAuth URL (over 150 characters, many escapes, nested link in the query)",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ },
+ {
+  "id": "fx1-fp-microsoft-authorize-real",
+  "spec": "4.2",
+  "input": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=00000000-0000-0000-0000-000000000000&response_type=code&redirect_uri=https%3A%2F%2Fapp.example.org%2Fsignin-oidc&response_mode=form_post&scope=openid%20profile%20email%20offline_access&state=CfDJ8Hq3VnT9aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV2wX4yZ6&nonce=638000000000000000.ZGVmYXVsdG5vbmNlMTIzNDU2",
+  "symbology": "qr",
+  "note": "F5: real-length Microsoft sign-in authorize URL",
+  "expect": {
+   "type": "link",
+   "level": 0,
+   "signals": []
+  }
+ }
+]

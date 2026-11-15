@@ -1,0 +1,31 @@
+{
+ "id": "peekreport-http-downgrade-ip",
+ "original": "https://example.org/a",
+ "hops": [
+  {
+   "url": "https://example.org/a",
+   "status": 302
+  },
+  {
+   "url": "http://203.0.113.5/",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "httpTarget",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "redirectsToHTTP"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "example.org",
+  "hopLevels": [
+   0,
+   1
+  ]
+ }
+}

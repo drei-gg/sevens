@@ -1,0 +1,31 @@
+{
+ "id": "peekreport-age-unknown-redirect",
+ "original": "https://a.example.com/",
+ "hops": [
+  {
+   "url": "https://a.example.com/",
+   "status": 301
+  },
+  {
+   "url": "https://b.example.org/home",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "text/html; charset=utf-8",
+ "contentDisposition": null,
+ "ageDays": null,
+ "expect": {
+  "title": "Harbour news",
+  "signals": [],
+  "info": [
+   "ageUnknown"
+  ],
+  "level": 0,
+  "finalHost": "b.example.org",
+  "hopLevels": [
+   0,
+   0
+  ]
+ }
+}

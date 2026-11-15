@@ -1,0 +1,25 @@
+{
+  "id": "peek-non-utf8",
+  "original": "https://cafe-du-port.example/menu",
+  "hops": [
+    {
+      "url": "https://cafe-du-port.example/menu",
+      "status": 200
+    }
+  ],
+  "stoppedBecause": "finished",
+  "contentType": "text/html",
+  "contentDisposition": null,
+  "ageDays": 3000,
+  "expect": {
+    "title": "Café menu — prices from €4",
+    "signals": [],
+    "sniff": {
+      "formActions": [],
+      "scriptRedirect": false,
+      "metaRefreshURL": null,
+      "inputTypes": [],
+      "scriptCount": 0
+    }
+  }
+}
