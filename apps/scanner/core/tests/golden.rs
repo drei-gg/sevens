@@ -1,6 +1,9 @@
-//! JSON shaped exactly as the Swift app's `JSONEncoder()` writes it (compact, declaration-order
-//! keys, `\/`, upper-case UUIDs, reference-date doubles, `nil` left out). It must come back byte
-//! for byte, and a backup built from it must carry the same bytes as its index.
+//! The Swift app's plain `JSONEncoder()` writes compact JSON with `\/`, upper-case UUIDs,
+//! reference-date doubles and `nil` left out, but its key order is hash-random from run to run, so
+//! there is no fixed Swift byte layout to match. The core writes declaration order, and the
+//! `swift-manifest`/`swift-backup-index` fixtures pin that output byte for byte. The
+//! `swift-encoder-*` fixtures were written by Swift 6.3's real encoder (Linux, swift-foundation, as on
+//! iOS 17+) and must read back equal to them; Swift reads both fixtures back (checked the same way).
 
 use scanner_core::*;
 
@@ -8,7 +11,7 @@ const MANIFEST: &[u8] = include_bytes!("fixtures/swift-manifest.json");
 const INDEX: &[u8] = include_bytes!("fixtures/swift-backup-index.json");
 
 #[test]
-fn swift_written_manifest_round_trips_byte_for_byte() {
+fn manifest_round_trips_byte_for_byte() {
     let document = manifest_read(MANIFEST, "6F1C2A9E-3B7D-4E21-9A55-0C8D2E4F7A10".into()).unwrap();
     assert_eq!(document.title, "Receipts/November – café");
     assert_eq!(document.created, 816_091_200.123456);
@@ -21,7 +24,7 @@ fn swift_written_manifest_round_trips_byte_for_byte() {
 }
 
 #[test]
-fn swift_written_backup_index_round_trips_byte_for_byte() {
+fn backup_index_round_trips_byte_for_byte() {
     let index: BackupIndex = {
         let mut body = INDEX.to_vec();
         body.extend(backup_checksum_bytes(crc32(INDEX)));
@@ -57,4 +60,23 @@ fn doubles_are_written_as_swift_writes_them() {
     // `UUID(uuidString:)` reads only the hyphenated form.
     let simple = String::from_utf8(MANIFEST.to_vec()).unwrap().replace("6F1C2A9E-3B7D-4E21-9A55-0C8D2E4F7A10", "6F1C2A9E3B7D4E219A550C8D2E4F7A10");
     assert_eq!(document_decode(simple.as_bytes()), Err(ScanError::Unreadable));
+}
+
+const REAL_MANIFEST: &[u8] = include_bytes!("fixtures/swift-encoder-manifest.json");
+const REAL_INDEX: &[u8] = include_bytes!("fixtures/swift-encoder-backup-index.json");
+
+#[test]
+fn swift_encoder_output_reads_in_any_key_order() {
+    let ours = manifest_read(MANIFEST, "6F1C2A9E-3B7D-4E21-9A55-0C8D2E4F7A10".into()).unwrap();
+    let theirs = manifest_read(REAL_MANIFEST, "6F1C2A9E-3B7D-4E21-9A55-0C8D2E4F7A10".into()).unwrap();
+    assert_eq!(theirs, ours);
+    assert_eq!(manifest_encode(&theirs).unwrap(), MANIFEST.strip_suffix(b"\n").unwrap_or(MANIFEST));
+
+    let read = |index: &[u8]| {
+        let mut body = index.to_vec();
+        body.extend(backup_checksum_bytes(crc32(index)));
+        let length = 13 + body.len() as u64 + (1_100_000 + 2 + 1) + 3 * 4;
+        read_backup_index(length, &body).unwrap()
+    };
+    assert_eq!(read(REAL_INDEX), read(INDEX));
 }
