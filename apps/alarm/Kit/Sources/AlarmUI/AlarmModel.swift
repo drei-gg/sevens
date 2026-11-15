@@ -93,7 +93,7 @@ public struct StopLoopIntent: LiveActivityIntent {
     /// Tests set this to fail like a native cancel of an alarm that no longer exists.
     public var strictCancel = false
     public init() {}
-    public var status: String { "Preview mode — no alarms scheduled" }
+    public var status: String { "Preview mode: no alarms are scheduled" }
     public func request() async throws {}
     public func identifiers() async throws -> Set<UUID> { Set(rows.keys) }
     public func schedule(_ r: Registration) async throws { if let failure { throw LoopError.invalid(failure) }; rows[r.id] = r }
@@ -139,6 +139,17 @@ public struct StopLoopIntent: LiveActivityIntent {
                 if let choice = args.first(where: { $0.hasPrefix("-alarm.mission.") }), let kind = MissionKind(rawValue:String(choice.dropFirst("-alarm.mission.".count))) { wake.mission = kind }
                 var loop = Routine(kind:.loop); loop.name = "Workday check-in"; loop.slots = [TimeSlot(minute:420,weekdays:[2,6]),TimeSlot(minute:720,weekdays:[2,4,6]),TimeSlot(minute:840,weekdays:[2,4,6])]
                 seed.routines = [wake,loop]; seed.events = [LoopEvent(routine:wake,kind:.completed,date:Date().addingTimeInterval(-3600)),LoopEvent(routine:loop,kind:.manual,date:Date().addingTimeInterval(-1800))]
+                // The polish tour's fuller week: more alarms (one off, one in a group, one with a reason)
+                // and a week of records so History's tiles and chart have something to show.
+                var weekend = Routine(); weekend.name = "Weekend"; weekend.slots = [TimeSlot(minute:540,weekdays:[1,7])]; weekend.reason = "Farmers market at 9:30"
+                var gym = Routine(); gym.name = "Gym"; gym.group = "Training"; gym.enabled = false; gym.mission = .walk; gym.slots = [TimeSlot(minute:375,weekdays:[3,5])]
+                seed.routines += [weekend,gym]
+                let day = 86_400.0
+                for back in 1...6 {
+                    let at = Date().addingTimeInterval(-Double(back) * day)
+                    seed.events.append(LoopEvent(routine:wake,kind:back % 3 == 0 ? .snoozed : .completed,date:at))
+                    if back % 2 == 0 { seed.events.append(LoopEvent(routine:loop,kind:.manual,date:at.addingTimeInterval(5 * 3600),note:back == 2 ? "Stretched and refilled water" : "")) }
+                }
             }
             let model = AlarmModel(store:store,repository:LoopRepository(file:args.contains("-alarm.demo") ? nil : file,seed:seed),driver:PreviewAlarmDriver()); model.isPreview = true; return model
         }

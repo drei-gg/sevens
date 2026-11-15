@@ -36,38 +36,83 @@ import XCTest
     }
 }
 @MainActor final class ScreensTourTests: XCTestCase {
-    func testScreens() {
-        for mode in ["light","dark"] {
-            let app = XCUIApplication(); app.launchArguments = ["-alarm.demo","-alarm.\(mode)"]; app.launch()
-            XCTAssertTrue(app.buttons["add-routine"].waitForExistence(timeout:15))
-            XCTAssertTrue(app.navigationBars["Alarms"].waitForExistence(timeout:5))
-            capture(app,"alarms-\(mode)")
-            app.tabBars.buttons["Loops"].tap()
-            XCTAssertTrue(app.navigationBars["Time loops"].waitForExistence(timeout:5)); capture(app,"loops-\(mode)")
-            app.buttons["Edit"].firstMatch.tap()
-            XCTAssertTrue(app.navigationBars["Edit routine"].waitForExistence(timeout:5)); capture(app,"editor-\(mode)"); app.buttons["Cancel"].tap()
-            app.tabBars.buttons["History"].tap()
-            XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout:5)); capture(app,"history-\(mode)")
-            app.tabBars.buttons["Settings"].tap()
-            XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout:5)); capture(app,"settings-\(mode)")
-            app.terminate()
-        }
+    // Every screen, light and dark, plus the main screens at an accessibility text size. Each step
+    // is soft: a miss prints "not reached:" (grep the log) and the tour carries on. Each area starts
+    // from a fresh launch, because after a long scroll the tab bar minimises and tab taps miss.
+    var mode = "light"
+    /// Rows sit under the next-alarm dial: scroll until the element is on screen.
+    func reveal(_ element:XCUIElement) {
+        var tries = 0
+        while !(element.exists && element.isHittable) && tries < 4 { XCUIApplication().swipeUp(velocity:.slow); sleep(1); tries += 1 }
     }
-    func capture(_ app:XCUIApplication,_ name:String) { let a = XCTAttachment(screenshot:app.screenshot()); a.name = name; a.lifetime = .keepAlways; add(a) }
+    func launch(_ extra:[String] = []) -> XCUIApplication {
+        let app = XCUIApplication(); app.launchArguments = ["-alarm.demo","-alarm.\(mode)"] + extra; app.launch()
+        if !app.buttons["add-routine"].waitForExistence(timeout:15) { print("not reached: launch (\(mode))") }
+        sleep(1); return app
+    }
+    func step(_ element:XCUIElement,_ what:String,timeout:Double = 5) -> Bool {
+        _ = element.waitForExistence(timeout:timeout)
+        reveal(element)
+        if element.exists && element.isHittable { element.tap(); sleep(1); return true }
+        print("not reached: \(what) (\(mode))"); return false
+    }
+    func testScreens() {
+        for m in ["light","dark"] {
+            mode = m
+            var app = launch()
+            XCTAssertTrue(app.navigationBars["Alarms"].exists)
+            capture(app,"alarms")
+            app.swipeUp(); sleep(1); capture(app,"alarms-scrolled")
+            app.terminate(); app = launch()
+            if step(app.buttons["custom-nap"],"custom nap") { capture(app,"custom-nap"); _ = step(app.buttons["Cancel"],"custom nap cancel") }
+            if step(app.buttons["add-routine"],"new alarm") { capture(app,"editor-new-alarm"); app.swipeUp(); sleep(1); capture(app,"editor-new-alarm-scrolled"); app.swipeUp(); sleep(1); capture(app,"editor-new-alarm-end"); _ = step(app.buttons["Cancel"],"new alarm cancel") }
+            app.terminate(); app = launch()
+            if step(app.buttons["edit-Wake up"],"edit alarm") { capture(app,"editor-alarm"); _ = step(app.buttons["Cancel"],"edit alarm cancel") }
+            if step(app.buttons["try-mission"].firstMatch,"try mission") { capture(app,"mission-arithmetic"); _ = step(app.buttons["Close"],"mission close") }
+            app.terminate(); app = launch()
+            if step(app.tabBars.buttons["Loops"],"loops tab") { capture(app,"loops")
+                if step(app.buttons["edit-Workday check-in"],"edit loop") { capture(app,"editor-loop"); app.swipeUp(); sleep(1); capture(app,"editor-loop-scrolled"); _ = step(app.buttons["Cancel"],"edit loop cancel") }
+                if step(app.buttons["add-routine"],"new loop") { capture(app,"editor-new-loop"); _ = step(app.buttons["Cancel"],"new loop cancel") } }
+            app.terminate(); app = launch()
+            if step(app.tabBars.buttons["History"],"history tab") { capture(app,"history"); app.swipeUp(); sleep(1); capture(app,"history-scrolled")
+                if step(app.buttons.containing(NSPredicate(format:"label BEGINSWITH %@","Wake up")).firstMatch,"history record") { capture(app,"event-editor"); _ = step(app.buttons["Cancel"],"event editor cancel") } }
+            app.terminate(); app = launch()
+            if step(app.tabBars.buttons["Settings"],"settings tab") { capture(app,"settings"); app.swipeUp(); sleep(1); capture(app,"settings-scrolled"); app.swipeUp(); sleep(1); capture(app,"settings-end") }
+            app.terminate(); app = launch()
+            if step(app.tabBars.buttons["Settings"],"settings tab 2") { let d = app.buttons["New alarm defaults"]; if !d.isHittable { app.swipeUp() }; if step(d,"defaults") { capture(app,"alarm-defaults") } }
+            app.terminate()
+            let titles = ["typing":"Type a phrase","memory":"Memory tiles","shake":"Shake","walk":"Walk","numberOrder":"Number order","colorWord":"Color clash","code":"Scan a code"]
+            for mission in ["typing","memory","shake","walk","numberOrder","colorWord","code"] {
+                app = launch(["-alarm.mission.\(mission)"])
+                // Wake up's chip, by its mission (Gym's walk chip sits further down).
+                let chip = app.buttons.matching(NSPredicate(format:"identifier == 'try-mission' AND label CONTAINS %@",titles[mission]!)).firstMatch
+                if step(chip,"try \(mission)") { capture(app,"mission-\(mission)") }
+                app.terminate()
+            }
+        }
+        // Accessibility text size: the dial steps aside and the rows reflow.
+        mode = "light"
+        var app = launch(["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXL"])
+        capture(app,"ax-alarms")
+        app.terminate(); app = launch(["-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXL"])
+        if step(app.tabBars.buttons["History"],"ax history tab") { capture(app,"ax-history") }
+        app.terminate()
+    }
+    func capture(_ app:XCUIApplication,_ name:String) { let a = XCTAttachment(screenshot:app.screenshot()); a.name = "\(name)-\(mode)"; a.lifetime = .keepAlways; add(a) }
 }
 
 
 @MainActor final class ChallengeUITests: XCTestCase {
     func testNumberOrderCompletes() {
         let app = XCUIApplication(); app.launchArguments = ["-alarm.demo","-alarm.mission.numberOrder"]; app.launch()
-        XCTAssertTrue(app.buttons["Try mission"].waitForExistence(timeout:15)); app.buttons["Try mission"].tap()
+        XCTAssertTrue(app.buttons["add-routine"].waitForExistence(timeout:15)); let chip = app.buttons["try-mission"].firstMatch; var n = 0; while !(chip.exists && chip.isHittable) && n < 4 { app.swipeUp(velocity:.slow); n += 1 }; chip.tap()
         for n in 1...6 { let tile = app.buttons["order-\(n)"]; XCTAssertTrue(tile.waitForExistence(timeout:5)); tile.tap() }
         XCTAssertTrue(app.staticTexts["Done."].waitForExistence(timeout:5))
     }
     func testMemoryAndColorPreviews() {
         for mission in ["memory","colorWord","shake","walk"] {
             let app = XCUIApplication(); app.launchArguments = ["-alarm.demo","-alarm.mission.\(mission)"]; app.launch()
-            XCTAssertTrue(app.buttons["Try mission"].waitForExistence(timeout:15)); app.buttons["Try mission"].tap()
+            XCTAssertTrue(app.buttons["add-routine"].waitForExistence(timeout:15)); let chip = app.buttons["try-mission"].firstMatch; var n = 0; while !(chip.exists && chip.isHittable) && n < 4 { app.swipeUp(velocity:.slow); n += 1 }; chip.tap()
             XCTAssertTrue(app.navigationBars["Try mission"].waitForExistence(timeout:5))
             if mission == "memory" { XCTAssertTrue(app.buttons["memory-tile-0"].waitForExistence(timeout:5)) }
             if mission == "colorWord" { XCTAssertTrue(app.buttons["Blue"].waitForExistence(timeout:5)) }

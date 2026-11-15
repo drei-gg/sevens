@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.0 — polish pass, 13 November 2026
+
+- Alarms and Loops lead with the next one: its time big in a 24-hour dial (midnight at the top, the arc runs from now to when it rings), its name, the day and how long until it rings. At accessibility text sizes the dial steps aside and the words stack.
+- One large Add alarm / Add loop button under the dial; quick naps are one-tap chips (15, 20, 30, 60 min) with Custom nap beneath.
+- Each routine is a card with its time large, AM/PM small, the name and the week as initials (ringing days bold), and its switch. Routines with several times list each time with its own days. Tap a routine to edit it; Duplicate, Log done and Delete are in the context menu and swipe actions. The mission an alarm uses is a chip that opens a preview.
+- The editor starts with the time as a wheel (one-time routines and single-time alarms) and round day buttons; name, sound, mission and snooze follow.
+- Custom nap uses hour and minute wheels with the time it will ring shown big, and one Start nap button.
+- History opens with two tiles and a seven-day bar chart of recorded actions, then records grouped by day with a symbol for each kind. Only recorded actions count.
+- Missions: the sum is display size, one filled button per step, snooze as a quieter capsule; tiles, Color clash and movement progress use SevenKit colours and type.
+- Adopted SevenKit's K17 look (ink, paper, text roles, spacing) across the app; check-rules now enforces it for Alarm. Switches keep system green: SevenKit's root ink tint reached them, so Alarm hands them back their system color at the root.
+- Plural-safe minute text, curly apostrophes, no em dashes in UI text. Search appears once there are 8 routines.
+- Demo data now has three alarms (one off and in a group, one with a reason) and a loop, and a week of records, and the screenshot tour reaches every screen, including each mission and two accessibility-size captures.
+
 ## 0.1.0 — development
 
 - Added Alarm & Loops: weekly and one-off alarms, interval windows, shared time rows with per-day inclusion, and seven-day previews.

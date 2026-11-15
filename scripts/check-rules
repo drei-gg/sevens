@@ -65,10 +65,39 @@ hits=$(git ls-files | grep -E '(^|/)(PLAN(-.*)?|BUILD-REPORT.*|REVIEW.*)\.md$' |
 hits=$(git grep -nwE 'PLAN|BUILD-REPORT|REVIEW' -- ':!.gitignore' ':!scripts/check-rules' ':!apps/qr/Kit/Sources/QRCore/Data/public_suffix_list.dat' || true)
 [ -z "$hits" ] || bad "tracked file refers to an internal process document:" "$hits"
 
-# Look (SPEC "Look"): the app is native in color. Brand colors and the wordmark are for About only.
-hits=$(swift_files | grep -vE '^SevenKit/Sources/SevenKit/(AboutSection|Tokens)\.swift$|^SevenKit/Tests/' \
-  | xargs -r grep -nE 'Tokens\.(paper|card|ink|muted|red)\b|SevenStamp|Image\("(SevenStamp|SevenWordmark)"\)' || true)
-[ -z "$hits" ] || bad "brand color or wordmark outside AboutSection.swift:" "$hits"
+# Look (SPEC "Look", polish guide §3.2): ink tint and paper app-wide, under the contrast rules.
+# The colors and the tint are set in SevenKit; app code uses Tokens and SevenKit's helpers.
+look_swift=$(swift_files | grep -E '^(apps/alarm/Kit/Sources/AlarmUI|apps/alarm/App|apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
+look() { [ -z "$look_swift" ] || echo "$look_swift" | grep -vE "$1" | xargs -r grep -nE "$2" || true; }
+hits=$(look '^$' '(foregroundStyle|foregroundColor)\(\s*\.(secondary|tertiary)\b|Color\.(secondary|tertiary)\b|\?\s*\.secondary\b|:\s*\.secondary\b')
+[ -z "$hits" ] || bad "system secondary/tertiary text color (3.25:1 on paper): use Tokens.muted:" "$hits"
+hits=$(look '^SevenKit/Sources/SevenKit/SevenComponents\.swift$' '\.(borderedProminent|glassProminent)\b')
+[ -z "$hits" ] || bad "filled button outside SevenKit (its label must be onInk/onRed): use .sevenProminentButton():" "$hits"
+# .tint(nil) is allowed: it hands a control back its system color (Alarm's green switches).
+hits=$(look '^SevenKit/Sources/SevenKit/(SevenComponents|SevenLook)\.swift$' '\.tint\(' | grep -v '\.tint(nil)' || true)
+[ -z "$hits" ] || bad "tint set outside SevenKit's look (toggles stay untinted):" "$hits"
+hits=$(look '^$' 'Color\.(orange|red|green|blue)\b|(foregroundStyle|foregroundColor|tint|fill)\(\s*\.(orange|red|green|blue)\b|\?\s*\.(orange|red)\b|:\s*\.(orange|red)\b')
+[ -z "$hits" ] || bad "system color for text or status: use Tokens.caution/danger (role: .destructive is fine):" "$hits"
+hits=$(look '^$' 'Color\(\s*\.(secondarySystemBackground|systemBackground|systemGroupedBackground|secondarySystemGroupedBackground)\)')
+[ -z "$hits" ] || bad "system background on our screens: use Tokens.paper (.sevenScreenBackground) or Tokens.card (.sevenCard):" "$hits"
+hits=$(look '^SevenKit/Sources/SevenKit/(Tokens|SevenComponents)\.swift$' 'Tokens\.(red|onRed)\b')
+[ -z "$hits" ] || bad "brand red outside the Unlock button:" "$hits"
+hits=$(swift_files | grep -vE '^SevenKit/Sources/SevenKit/AboutSection\.swift$|^SevenKit/Tests/' \
+  | xargs -r grep -nE 'SevenStamp|Image\("(SevenStamp|SevenWordmark)"\)' || true)
+[ -z "$hits" ] || bad "stamp or wordmark outside AboutSection.swift:" "$hits"
 
-[ $fail = 0 ] && echo "check-rules: G6 and G7 pass"
+# Type and spacing (polish guide §4, §3.3, §12.3): text uses SevenKit's roles, layout uses Tokens.Space.
+hits=$(look '^SevenKit/Sources/SevenKit/SevenType\.swift$' '\.font\(|\.fontWeight\(|Font\.custom|\.system\(size:')
+[ -z "$hits" ] || bad "font set directly: use .textRole(...) (or .glyph() for a status symbol):" "$hits"
+hits=$(look '^$' '\.caption2\b|[wW]eight\(\s*\.(light|thin|ultraLight)\b')
+[ -z "$hits" ] || bad "caption2 or a light weight (fails contrast, looks dated):" "$hits"
+hits=$(look '^SevenKit/Sources/SevenKit/(Tokens|SevenType|SevenLook)\.swift$' '(spacing:\s*|padding\((\.[a-zA-Z]+,\s*)?)[0-9]*[1-9]|lineSpacing\(\s*[0-9]')
+[ -z "$hits" ] || bad "literal spacing number: use Tokens.Space:" "$hits"
+hits=$(look '^$' '\.shadow\(')
+[ -z "$hits" ] || bad "shadow on our screens (depth comes from materials and card on paper):" "$hits"
+# Typographic punctuation in English UI strings: …, not ...; no em dashes.
+hits=$( { [ -z "$look_swift" ] || echo "$look_swift" | xargs grep -nP '(defaultValue:|seven\("[^"]*",|\bf\()\s*"(?:[^"\\]|\\.)*(\.\.\.|—|--|[A-Za-z]'"'"'[A-Za-z])(?:[^"\\]|\\.)*"'; } 2>/dev/null || true)
+[ -z "$hits" ] || bad "UI string with ..., an em dash or a straight apostrophe: use …, a full stop or colon, and ’:" "$hits"
+
+[ $fail = 0 ] && echo "check-rules: G6, G7, the look, type and spacing pass"
 exit $fail

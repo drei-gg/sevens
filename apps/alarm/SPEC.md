@@ -40,7 +40,7 @@ SevenKit handles the explicit trial, non-consumable unlock and restore. Expiry g
 
 ## Interface
 
-Alarms, Loops, History and Settings. System colors/type/controls; shared adaptive tabs; weekday controls wrap at narrow widths. State lives with the editor. Public build uses placeholder icon assets; final brand is injected privately. Before-you-buy names the built-in Clock alternative. No editorial content or morning feed.
+Alarms, Loops, History and Settings. Native controls in the Sevens' look (SevenKit K17): ink as the accent, paper behind every screen, SevenKit's text roles and spacing scale; toggles keep system green. Alarm's own visuals (the next-alarm dial, the History chart, mission progress) use the SevenKit warm data hue for time; controls never do. Color clash draws its words in four game inks that pass 4.5:1 on paper and card. Shared adaptive tabs; weekday controls wrap at narrow widths. State lives with the editor. Public build uses placeholder icon assets; final brand is injected privately. Before-you-buy names the built-in Clock alternative. No editorial content or morning feed.
 
 ## Current boundary
 
