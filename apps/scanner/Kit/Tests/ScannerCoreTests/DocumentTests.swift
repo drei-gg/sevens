@@ -37,6 +37,8 @@ import Foundation
     try await store.delete(doc)
     #expect(try await store.list().isEmpty)
     #expect(try await store.list(deleted: true) == [doc])
+    // Recently Deleted's thumbnails read the page from the trash folder.
+    #expect(try Data(contentsOf: try await store.pageURLs(doc, deleted: true)[0]) == Data([1, 2, 3]))
     let reopened = DocumentStore(root: root)
     try await reopened.restore(doc)
     #expect(try await reopened.images(doc) == [Data([1, 2, 3])])

@@ -114,10 +114,11 @@ public actor DocumentStore {
             return try Data(contentsOf: url)
         }
     }
-    public func pageURLs(_ document: ScanDocument) throws -> [URL] {
+    /// Page image files in document order. `deleted` reads a document in Recently Deleted.
+    public func pageURLs(_ document: ScanDocument, deleted: Bool = false) throws -> [URL] {
         try document.validate()
         return try document.pages.map { page in
-            let url = imageURL(document.id, page.id)
+            let url = deleted ? trash.appendingPathComponent(document.id.uuidString, isDirectory: true).appendingPathComponent(page.id.uuidString + ".jpg") : imageURL(document.id, page.id)
             guard (try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0) <= 20_000_000 else { throw ScanError.tooLarge }
             return url
         }

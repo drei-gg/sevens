@@ -1,5 +1,17 @@
 # Changelog
 
+## Look pass — 13 November 2026
+
+Scanner now looks like a document scanner rather than a settings list, in the Sevens' ink-on-paper look (SevenKit K17).
+
+- Library: documents as a grid of first-page thumbnails with page counts, newest first, search on top, an All/Favorites switch once something is starred, and a large Scan button floating at the bottom with Import beside it. Without a camera, Import takes the large button. Recently Deleted and Backup sit on one card under the grid. Long-press a document to star it or move it to Recently Deleted.
+- Document: pages first, as a grid of thumbnails with an Add pages tile; Preview, Arrange and Share text as chips; recognized text and details (name, notes) on cards; a star in the toolbar; Export PDF as the one large button. Arrange pages reorders or removes pages in one sheet.
+- Page: the page large, Rotate left and right chips, adjustments with their values shown, recognized text below.
+- Export: pick pages on their thumbnails, PDF options in one section, and one large button that prepares the PDF and then becomes Share. The ready file's size is shown large.
+- Backup: tiles for what the file will hold, Export backup as the large button, Restore beneath it.
+- Recently Deleted: thumbnails, Restore on each row, delete permanently by swipe or long-press.
+- Counts read “1 page” and “2 pages”; status lines carry an icon and a word; no system grey text on paper.
+
 ## 0.1.0 — in development
 
 - Native page scanning and image import into a private document library.
