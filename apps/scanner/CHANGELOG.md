@@ -1,5 +1,9 @@
 # Changelog
 
+## One core for both phones — 15 November 2026
+
+- Document Scanner's rules, its document files and the backup format now come from one shared core, so the iPhone and Android apps behave the same. Existing documents and backups open unchanged.
+
 ## Look pass — 13 November 2026
 
 Scanner now looks like a document scanner rather than a settings list, in the Sevens' ink-on-paper look (SevenKit K17).

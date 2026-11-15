@@ -268,7 +268,7 @@ struct DocumentDetail: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.l) {
-                Text("\(pageCount(document.pages.count)) · \(document.created.formatted(date: .abbreviated, time: .shortened))")
+                Text("\(pageCount(document.pages.count)) · \(document.createdDate.formatted(date: .abbreviated, time: .shortened))")
                     .textRole(.secondary).numeric()
                 LazyVGrid(columns: columns, spacing: Tokens.Space.m) {
                     ForEach(Array(document.pages.enumerated()), id: \.element.id) { index, page in pageTile(index: index, page: page) }

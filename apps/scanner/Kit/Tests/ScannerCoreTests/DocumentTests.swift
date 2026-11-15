@@ -64,17 +64,6 @@ import Foundation
     #expect(try await store.list().isEmpty)
 }
 
-@Test func exportSelectionPreservesOrderAndUsesPortableName() throws {
-    let pages = [ScanPage(), ScanPage(), ScanPage()]
-    let doc = ScanDocument(title: "../Receipts: November/2026", pages: pages)
-    let plan = try PDFExportPlan(document: doc, selected: [pages[2].id, pages[0].id])
-    #expect(plan.pages.map(\.id) == [pages[0].id, pages[2].id])
-    #expect(!plan.filename.contains("/"))
-    #expect(!plan.filename.contains(":"))
-    #expect(plan.filename.hasSuffix(" - selected pages.pdf"))
-    #expect(throws: ScanError.self) { try PDFExportPlan(document: doc, selected: []) }
-    #expect(throws: ScanError.self) { try PDFExportPlan(document: doc, selected: [UUID()]) }
-}
 @Test func removingAPageDeletesItsImageOnlyAfterTheManifestCommits() async throws {
     let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: root) }

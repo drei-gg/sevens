@@ -70,7 +70,7 @@ struct DocumentCard: View {
                     }
                     Text(document.title).textRole(.rowTitle, emphasized: true).lineLimit(2).multilineTextAlignment(.leading)
                 }
-                Text(document.created.formatted(date: .abbreviated, time: .omitted)).textRole(.caption).numeric()
+                Text(document.createdDate.formatted(date: .abbreviated, time: .omitted)).textRole(.caption).numeric()
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -81,7 +81,7 @@ struct DocumentCard: View {
         .accessibilityHint(Text("Opens the document."))
     }
     private var cardValue: String {
-        var parts = [pageCount(document.pages.count), document.created.formatted(date: .abbreviated, time: .omitted)]
+        var parts = [pageCount(document.pages.count), document.createdDate.formatted(date: .abbreviated, time: .omitted)]
         if document.favorite == true { parts.append(String(localized: "Favorite")) }
         return parts.joined(separator: ", ")
     }

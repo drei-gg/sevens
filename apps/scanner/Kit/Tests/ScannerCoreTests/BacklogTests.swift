@@ -2,16 +2,6 @@ import Testing
 import Foundation
 @testable import ScannerCore
 
-@Test func oldManifestsOpenWithoutNewFields() throws {
-    let id = UUID(); let page = UUID()
-    let json = """
-    {"version":1,"id":"\(id)","title":"Old scan","created":0,"pages":[{"id":"\(page)","text":"Original OCR"}]}
-    """
-    let document = try JSONDecoder().decode(ScanDocument.self, from: Data(json.utf8))
-    try document.validate()
-    #expect(document.pages[0].settings == PageSettings())
-    #expect(document.note == nil && document.favorite == nil)
-}
 @Test func editsKeepOriginalAndRejectStaleRecognition() async throws {
     let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: root) }

@@ -44,7 +44,7 @@ import ScannerCore
         do {
             let active = try await repository.readLibrary(); let deleted = try await repository.readLibrary(deleted: true)
             documents = active.documents; deletedDocuments = deleted.documents
-            unreadableCount = active.unreadableCount + deleted.unreadableCount
+            unreadableCount = Int(active.unreadableCount + deleted.unreadableCount)
         } catch { self.error = error.localizedDescription }
     }
     func create(_ images: [UIImage], appendTo: UUID? = nil) async {
@@ -53,14 +53,14 @@ import ScannerCore
         guard store.paidFeaturesAvailable else { error = String(localized: "Start a trial or unlock to scan or import pages. Your saved documents remain available."); return }
         busy = true; progress = String(localized: "Preparing pages…"); defer { busy = false; progress = "" }
         do {
-            guard !images.isEmpty, images.count <= 50 else { throw ScanError.tooLarge }
+            guard !images.isEmpty, images.count <= scanLimits().maxPages else { throw ScanError.TooLarge }
             // Normalizing up to 50 camera pages is heavy; keep it off the main actor so the UI stays responsive.
             let pages = CapturedPages(images: images)
             let data = try await Task.detached(priority: .userInitiated) { () throws -> [Data] in
                 var data: [Data] = []; var total = 0
                 for image in pages.images {
                     let bytes = try autoreleasepool { try DocumentProcessing.normalized(image) }
-                    total += bytes.count; guard total <= 100_000_000 else { throw ScanError.tooLarge }; data.append(bytes)
+                    total += bytes.count; guard total <= scanLimits().maxDocumentImageBytes else { throw ScanError.TooLarge }; data.append(bytes)
                 }
                 return data
             }.value
@@ -155,7 +155,7 @@ import ScannerCore
             for sample in samples {
                 let images = try sample.pages.map { try DocumentProcessing.normalized(Self.page($0)) }
                 var document = try await repository.create(title: sample.title, images: images, text: sample.pages)
-                document.created = Date().addingTimeInterval(-sample.days * 86_400)
+                document.createdDate = Date().addingTimeInterval(-sample.days * 86_400)
                 document.favorite = sample.favorite; document.note = sample.note
                 try await repository.save(document)
             }
