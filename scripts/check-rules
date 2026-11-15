@@ -66,6 +66,9 @@ hits=$(git ls-files | grep -E '(^|/)(PLAN(-.*)?|BUILD-REPORT.*|REVIEW.*)\.md$' |
 generic_icon() { case "$1" in
   qr) echo e3c19931272107b262037ab35e4b8bf61b8da859d2052824d842c053b6897fc6;;
   fast) echo 3b75033fce9f3dc592ed48bec5ab2657262005faa2f5bf69600f6e92f081e809;;
+  alarm) echo 3b75033fce9f3dc592ed48bec5ab2657262005faa2f5bf69600f6e92f081e809;;
+  scanner) echo 2dab1742c50a9875533694a7479cd98eeb0341c5297d2fe88a6aad1358730d30;;
+  vault) echo 5a4164b1e9896c252763ad5609ebe59ef5cec1d04af7a4c1dc488a6b5ce0d614;;
 esac; }
 hits=""
 for icon in apps/*/Brand/Brand.xcassets/AppIcon.appiconset/AppIcon-1024.png; do

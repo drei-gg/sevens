@@ -18,8 +18,9 @@ core="$root/apps/$app/core"
 [ -f "$core/Cargo.toml" ] || { echo "rust-core: apps/$app has no core/Cargo.toml" >&2; exit 2; }
 lib=$(sed -n 's/^name = "\(.*\)"/\1/p' "$core/Cargo.toml" | sed -n 2p)   # [lib] name
 module=$(sed -n 's/^module_name = "\(.*\)"/\1/p' "$core/uniffi.toml")
-# The Swift target the bindings compile into: the app's core target (FastCore for fast).
-core_module=${RUST_CORE_SWIFT_TARGET:-$(printf '%s' "${app:0:1}" | tr a-z A-Z)${app:1}Core}
+# The Swift target the bindings compile into: the uniffi module name without "FFI" (FastCoreFFI ->
+# FastCore, QRCoreFFI -> QRCore).
+core_module=${RUST_CORE_SWIFT_TARGET:-${module%FFI}}
 out="$core/generated"
 
 run_test() { (cd "$core" && cargo test); }

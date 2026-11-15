@@ -9,17 +9,19 @@ Zlib, Unicode, GPL-3.0-compatible). Nothing that collects data or phones home is
 
 | Name | URL | Licence | Version | Used for |
 |---|---|---|---|---|
-| UniFFI | https://github.com/mozilla/uniffi-rs | MPL-2.0 | 0.32.2 | Fast core: Swift and Kotlin bindings for the shared Rust logic |
-| serde | https://github.com/serde-rs/serde | MIT OR Apache-2.0 | 1.0.229 | Fast core: archive and Watch receipt encoding |
-| serde_json | https://github.com/serde-rs/json | MIT OR Apache-2.0 | 1.0.154 | Fast core: JSON backups in the layout the Swift app wrote |
-| uuid | https://github.com/uuid-rs/uuid | MIT OR Apache-2.0 | 1.29.2 | Fast core: record identifiers |
-| jiff | https://github.com/BurntSushi/jiff | Unlicense OR MIT | 0.2.43 | Fast core: calendar days and daylight-saving rules in a named time zone |
-| unicode-segmentation | https://github.com/unicode-rs/unicode-segmentation | MIT OR Apache-2.0 | 1.13.3 | Fast core: character counts that match Swift's `String.count` |
-| unicode-normalization | https://github.com/unicode-rs/unicode-normalization | MIT OR Apache-2.0 | 0.1.26 | Fast core: accent-insensitive search |
+| UniFFI | https://github.com/mozilla/uniffi-rs | MPL-2.0 | 0.32.2 | Rust cores (Fast, QR, Alarm, Scanner): Swift and Kotlin bindings for the shared logic |
+| serde | https://github.com/serde-rs/serde | MIT OR Apache-2.0 | 1.0.229 | Rust cores: archives, backups, history and Fast's Watch receipts |
+| serde_json | https://github.com/serde-rs/json | MIT OR Apache-2.0 | 1.0.154 | Rust cores: JSON in the layout each Swift app writes |
+| uuid | https://github.com/uuid-rs/uuid | MIT OR Apache-2.0 | 1.29.2 | Rust cores: record identifiers |
+| jiff | https://github.com/BurntSushi/jiff | Unlicense OR MIT | 0.2.43 | Fast, QR and Alarm cores: calendar days, alarm times, event dates and daylight-saving rules in a named time zone |
+| unicode-segmentation | https://github.com/unicode-rs/unicode-segmentation | MIT OR Apache-2.0 | 1.13.3 | Rust cores: character counts that match Swift's `String.count` |
+| unicode-normalization | https://github.com/unicode-rs/unicode-normalization | MIT OR Apache-2.0 | 0.1.26 | Rust cores: accent-insensitive search and string comparison as Swift does it |
+| unicode-general-category | https://github.com/yeslogic/unicode-general-category | Apache-2.0 | 1.1.0 | QR core: letter and mark classes for look-alike and mixed-script checks |
+| base64 | https://github.com/marshallpierce/rust-base64 | MIT OR Apache-2.0 | 0.22.1 | QR core: binary payloads in history files, as Swift's `Data` encodes them |
 | PhoneNumberKit | https://github.com/PhoneNumberKit/PhoneNumberKit | MIT | 5.0.14 (ff40a615c71bf3e1785562c86f7e38bdea29660a) | Contact phone candidate normalization; bundled libphonenumber metadata, no network client |
-| thiserror | https://github.com/dtolnay/thiserror | MIT OR Apache-2.0 | 2.0.21 | Fast core: error types |
+| thiserror | https://github.com/dtolnay/thiserror | MIT OR Apache-2.0 | 2.0.21 | Rust cores: error types |
 
-Their own dependencies are pinned in `apps/fast/core/Cargo.lock`.
+Their own dependencies are pinned in each core's `Cargo.lock` (`apps/<app>/core/Cargo.lock`).
 
 Vault uses the operating-system CryptoKit, CommonCrypto, Security/Keychain and AppleArchive frameworks, with PhotosUI, ImageIO and Quick Look. No additional third-party code is bundled. AppleArchive provides the authenticated streaming file format; Vault does not implement its own cipher.
 
@@ -27,7 +29,7 @@ Vault uses the operating-system CryptoKit, CommonCrypto, Security/Keychain and A
 
 | Name | URL | Licence | Version | Used for |
 |---|---|---|---|---|
-| IANA Time Zone Database, via jiff-tzdb | https://www.iana.org/time-zones | Public domain (jiff-tzdb: Unlicense OR MIT) | jiff-tzdb 0.1.9 | Fast core: the same zone rules on iOS and Android |
+| IANA Time Zone Database, via jiff-tzdb | https://www.iana.org/time-zones | Public domain (jiff-tzdb: Unlicense OR MIT) | jiff-tzdb 0.1.9 | Fast, QR and Alarm cores: the same zone rules on iOS and Android |
 | Public Suffix List | https://publicsuffix.org/list/public_suffix_list.dat | MPL-2.0 | as dated in `lists-version.json` | Finding a link's registrable domain (`apps/qr/Kit/Sources/QRCore/Data/public_suffix_list.dat`) |
 | IANA RDAP bootstrap for DNS | https://data.iana.org/rdap/dns.json | IANA public data (no licence restrictions stated) | as dated in the file's `publication` field | Finding the registry to ask a domain's age (`rdap-dns.json`) |
 | Unicode confusables (UTS #39), curated subset | https://www.unicode.org/Public/security/latest/confusables.txt | Unicode | 18.0.0 | Look-alike letters in addresses (`confusables.json`) |
