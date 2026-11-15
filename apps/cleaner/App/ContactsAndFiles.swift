@@ -40,14 +40,14 @@ struct FilesScreen: View {
                             }.frame(maxWidth: .infinity,alignment: .leading).padding(Tokens.Space.m).sevenCard().accessibilityElement(children: .combine)
                         }
                     }
-                    if StorageSummary(scan.items).unknownCount > 0 { CleanerNotice(text: cCount(StorageSummary(scan.items).unknownCount,key: "unmeasured")) }
+                    if StorageSummary(scan.items).unknownCount > 0 { CleanerNotice(text: cCount(Int(StorageSummary(scan.items).unknownCount),key: "unmeasured")) }
                     if scan.skipped > 0 { CleanerNotice(text: cCount(scan.skipped,key: "unreadable")) }
                 }
                 CleanerNotice(text: c("Only selected folders are scanned. Other apps’ private data and System Data are outside Cleaner’s access."),symbol: "folder.badge.person.crop")
                 CleanerNotice(text: c("Cloud placeholders are not downloaded for hashing. File providers may behave differently."))
             }.padding(Tokens.Space.m).frame(maxWidth: 672)
         }.frame(maxWidth: .infinity).cleanerCanvas().navigationTitle("Files").searchable(text: $query)
-            .fileImporter(isPresented: $importing,allowedContentTypes: [.folder]) { result in do { model.scanFolder(try result.get()) } catch { model.error = error.localizedDescription } }
+            .fileImporter(isPresented: $importing,allowedContentTypes: [.folder]) { result in do { model.scanFolder(try result.get()) } catch { model.error = error.cleanerMessage } }
     }
     private func fileSymbol(_ name: String) -> String { switch (name as NSString).pathExtension.lowercased() { case "mov","mp4": "film"; case "zip": "doc.zipper"; case "pdf": "doc.richtext"; default: "doc" } }
 }

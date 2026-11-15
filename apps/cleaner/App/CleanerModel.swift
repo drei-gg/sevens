@@ -54,7 +54,7 @@ import CleanerPlatform
     }
     func start() async {
         guard !started else { return }; started = true
-        do { state = try await repository.read(); ready = true } catch { self.error = error.localizedDescription }
+        do { state = try await repository.read(); ready = true } catch { self.error = error.cleanerMessage }
         await store.start()
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-cleaner.ui") && ProcessInfo.processInfo.arguments.contains("-cleaner.seed") {
@@ -72,7 +72,7 @@ import CleanerPlatform
             defer { busy = false; canCancel = false; progress = ""; job = nil }
             do { try await operation() }
             catch is CancellationError { progress = "Cancelled" }
-            catch { self.error = error.localizedDescription }
+            catch { self.error = error.cleanerMessage }
         }
     }
     func cancel() { guard canCancel else { return }; job?.cancel(); progress = "Stopping after the current resource…" }
@@ -96,7 +96,7 @@ import CleanerPlatform
         do {
             let revisions = Dictionary(uniqueKeysWithValues: media.filter { ids.contains($0.id) }.map { ($0.id,$0.revision) })
             state = try await repository.decide(Dictionary(uniqueKeysWithValues: ids.map { ($0,decision) }), revisions: revisions)
-        } catch { self.error = error.localizedDescription }
+        } catch { self.error = error.cleanerMessage }
     }
     func smartSelect() { selected = Matching.proposedRemoval(groups: groups, items: media, decisions: state.decisions) }
     func deleteReviewed(_ ids: Set<String>) { run("Applying reviewed deletion…", cancellable: false) {

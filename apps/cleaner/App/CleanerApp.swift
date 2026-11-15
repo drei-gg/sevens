@@ -68,7 +68,7 @@ struct Dashboard: View {
                 }
                 VStack(alignment: .leading,spacing: Tokens.Space.ms) {
                     if model.limitedPhotos { CleanerNotice(text: c("Only the photos you allowed are included."),symbol: "photo.badge.checkmark") }
-                    if summary.unknownCount > 0 { CleanerNotice(text: cCount(summary.unknownCount,key: "unmeasured")) }
+                    if summary.unknownCount > 0 { CleanerNotice(text: cCount(Int(summary.unknownCount),key: "unmeasured")) }
                     CleanerNotice(text: c("Media size is not space freed on this phone. iCloud and Recently Deleted affect local storage."))
                 }
             }.padding(Tokens.Space.m).frame(maxWidth: 672)

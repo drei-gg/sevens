@@ -21,8 +21,10 @@ Deliberate differences: where Swift's `Dictionary(uniqueKeysWithValues:)` would 
 scripts/rust-core cleaner test       # Linux: Swift-parity suite, platform rules, golden files
 scripts/rust-core cleaner bindings   # Kotlin + Swift sources into generated/
 scripts/rust-core cleaner android    # .so for four ABIs into generated/jniLibs
-scripts/rust-core cleaner apple      # CleanerCoreFFI.xcframework, built in the macOS VM
+scripts/rust-core cleaner apple      # cleaner_coreFFI.xcframework, built in the macOS VM
 ```
+
+**Where iOS picks it up.** The script puts the bindings in `Kit/Sources/CleanerCore/Generated/` and the library in `Kit/Generated/cleaner_coreFFI.xcframework`. `CleanerCore` adds a thin façade (`Facade.swift`) that keeps the Swift names the app and CleanerPlatform use, and the native `ReviewStore` (the atomic file). CleanerPlatform calls the core for every pure rule above and keeps the platform work. On Linux only CleanerPlatform's phone keys build.
 
 Needs Rust (stable), `rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android`, `cargo install cargo-ndk`, an Android NDK, and in the VM `rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios`. `generated/` is a build output and is not committed.
 

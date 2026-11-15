@@ -19,7 +19,7 @@ public actor FilesService {
                 let value = try url.resourceValues(forKeys: Set(keys))
                 guard value.isRegularFile == true, value.isSymbolicLink != true else { continue }
                 var item = CleanupItem(id: url.absoluteString, name: String(url.path.dropFirst(folder.path.count + 1)), kind: .file,
-                    revision: "\(value.contentModificationDate?.timeIntervalSince1970 ?? 0):\(value.fileSize ?? -1)", bytes: value.fileSize.map(Int64.init), date: value.contentModificationDate)
+                    revision: fileRevision(modifiedSince1970: value.contentModificationDate?.timeIntervalSince1970, fileSize: value.fileSize.map(Int64.init)), bytes: value.fileSize.map(Int64.init), date: value.contentModificationDate)
                 if hash && !(value.isUbiquitousItem == true && value.ubiquitousItemDownloadingStatus != .current) {
                     var coordinationError: NSError?; var readError: Error?; var digest: String?
                     NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &coordinationError) { coordinated in
@@ -34,7 +34,7 @@ public actor FilesService {
             } catch is CancellationError { throw CancellationError() }
             catch { skipped += 1 }
         }
-        items.sort { ($0.bytes ?? -1) > ($1.bytes ?? -1) }
+        items = sortLargestFirst(items: items)
         return FolderScan(items: items, groups: Matching.exact(items), skipped: skipped)
     }
 }

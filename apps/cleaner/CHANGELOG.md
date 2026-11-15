@@ -1,5 +1,10 @@
 # Cleaner changes
 
+## 2026-11-15 — one shared core
+
+- Cleaner's review rules, keeper and default-selection rules, removal guard, compression checks, contact candidates and merge plans, and the review and contacts file formats now come from one shared core, so the iPhone and Android apps decide the same way. Existing review files and contact exports open unchanged.
+- A review file that cannot be read now says so in plain words ("This file cannot be read.") instead of a decoder message. It is still never reset.
+
 ## 2026-11-13 — polish (uncommitted review)
 
 - Restructured the five main areas around a hero, one primary action, quick actions and review tiles. Added media previews and measured-size charts with explicit unknown-size and iCloud caveats.

@@ -66,7 +66,7 @@ import CleanerPlatform
             model.contactSnapshot = ContactSnapshot(records: people,archives: [:],limited: true); model.contactMatches = ContactMatching.candidates(people)
             if argument("-cleaner.tour") == "compression" { model.candidate = try ImageCompression.makeCandidate(sourceURL: directory.appendingPathComponent("landscape.png"),directory: directory); model.candidateSource = "tour-a" }
             if argument("-cleaner.tour")?.hasPrefix("empty-") == true { model.media = []; model.groups = []; model.folderScan = nil; model.contactSnapshot = nil; model.contactMatches = []; model.state = ReviewState() }
-        } catch { model.error = error.localizedDescription }
+        } catch { model.error = error.cleanerMessage }
     }
     private static func makeVideo(_ image: UIImage) async throws {
         if FileManager.default.fileExists(atPath: videoURL.path) { return }

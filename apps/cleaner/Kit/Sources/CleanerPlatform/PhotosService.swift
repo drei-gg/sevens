@@ -24,16 +24,14 @@ public actor PhotosService {
     }
     private static func item(_ asset: PHAsset) -> CleanupItem {
         let resources = PHAssetResource.assetResources(for: asset)
-        var tags = Set<String>()
-        if asset.mediaSubtypes.contains(.photoScreenshot) { tags.insert("Screenshots") }
-        if asset.mediaSubtypes.contains(.photoLive) { tags.insert("Live Photos") }
-        if asset.mediaSubtypes.contains(.videoScreenRecording) { tags.insert("Screen recordings") }
-        if asset.mediaSubtypes.contains(.videoHighFrameRate) { tags.insert("High frame rate") }
-        if asset.mediaSubtypes.contains(.photoHDR) { tags.insert("HDR") }
-        if asset.representsBurst { tags.insert("Bursts") }
+        let tags = photoTags(traits: PhotoTraits(screenshot: asset.mediaSubtypes.contains(.photoScreenshot), live: asset.mediaSubtypes.contains(.photoLive),
+                                                 screenRecording: asset.mediaSubtypes.contains(.videoScreenRecording), highFrameRate: asset.mediaSubtypes.contains(.videoHighFrameRate),
+                                                 hdr: asset.mediaSubtypes.contains(.photoHDR), burst: asset.representsBurst))
         return CleanupItem(id: asset.localIdentifier, name: resources.first?.originalFilename ?? "Photo", kind: asset.mediaType == .video ? .video : .photo,
-            revision: "\(asset.modificationDate?.timeIntervalSince1970 ?? 0):\(asset.pixelWidth)x\(asset.pixelHeight):\(resources.count)", date: asset.creationDate,
-            width: asset.pixelWidth, height: asset.pixelHeight, duration: asset.duration, favorite: asset.isFavorite, tags: tags)
+            revision: photoRevision(modifiedSince1970: asset.modificationDate?.timeIntervalSince1970, pixelWidth: Int32(clamping: asset.pixelWidth),
+                                    pixelHeight: Int32(clamping: asset.pixelHeight), resourceCount: Int32(clamping: resources.count)),
+            bytes: nil, date: asset.creationDate, width: Int32(clamping: asset.pixelWidth), height: Int32(clamping: asset.pixelHeight),
+            duration: asset.duration, favorite: asset.isFavorite, tags: tags, fingerprint: nil)
     }
     public func analyze(_ input: [CleanupItem], allowCloud: Bool, progress: @Sendable @escaping (Int, Int) async -> Void) async throws -> PhotoAnalysis {
         var items = input; var unavailable = 0
@@ -53,12 +51,12 @@ public actor PhotosService {
                     try await Self.write(resource, to: url, allowCloud: allowCloud)
                     defer { try? FileManager.default.removeItem(at: url) }
                     bytes += Int64(try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
-                    parts.append("\(resource.type.rawValue):\(resource.uniformTypeIdentifier):\(try FileDigest.sha256(url))")
+                    parts.append(photoResourcePart(resourceType: Int64(resource.type.rawValue), uniformTypeIdentifier: resource.uniformTypeIdentifier, sha256: try FileDigest.sha256(url)))
                 }
                 // Re-check against external edits after resource reads.
                 guard let fresh = PHAsset.fetchAssets(withLocalIdentifiers: [asset.localIdentifier], options: nil).firstObject,
                       Self.item(fresh).revision == items[i].revision else { throw CleanerError.blocked("Asset changed.") }
-                items[i].fingerprint = parts.sorted().joined(separator: "|"); items[i].bytes = bytes
+                items[i].fingerprint = photoFingerprint(parts: parts); items[i].bytes = bytes
             } catch is CancellationError { throw CancellationError() }
             catch { unavailable += 1; items[i].fingerprint = nil; items[i].bytes = nil }
             await progress(i + 1, items.count)
@@ -91,7 +89,7 @@ public actor PhotosService {
         try await PHPhotoLibrary.shared().performChanges { PHAssetChangeRequest.deleteAssets(fetch) }
     }
     public func saveCopy(_ candidate: CompressionCandidate, sourceID: String, revision: String) async throws -> String {
-        guard candidate.assessment.canOfferCopy else { throw CleanerError.blocked("This candidate did not pass the current profile.") }
+        try checkCopyOffer(assessment: candidate.assessment)
         guard let source = PHAsset.fetchAssets(withLocalIdentifiers: [sourceID], options: nil).firstObject,
               Self.item(source).revision == revision else { throw CleanerError.blocked("The source changed or is no longer accessible. Prepare a new candidate.") }
         let albums = PHAssetCollection.fetchAssetCollectionsContaining(source, with: .album, options: nil)
@@ -127,21 +125,22 @@ public actor PhotosService {
     }
     public func addToAlbum(ids: Set<String>, title: String) async throws {
         let fetch = PHAsset.fetchAssets(withLocalIdentifiers: Array(ids), options: nil)
-        guard fetch.count == ids.count, !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw CleanerError.blocked("Choose accessible media and an album name.") }
+        try validateAlbumRequest(requested: UInt32(clamping: ids.count), accessible: UInt32(clamping: fetch.count), title: title)
         try await PHPhotoLibrary.shared().performChanges {
             let request = PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: title)
             request.addAssets(fetch)
         }
     }
-    /// Vision supplies feature prints. Nearby capture-time pairs are review suggestions only;
-    /// threshold and search window are provisional, never used for automatic selection.
+    /// Vision supplies feature prints and their distances; the core keeps the capture-time window and
+    /// words the suggestions. Nearby pairs are review suggestions only; threshold and search window
+    /// are provisional, never used for automatic selection.
     public func similar(_ input: [CleanupItem], allowCloud: Bool) async throws -> [MatchGroup] {
-        var recent: [(CleanupItem, VNFeaturePrintObservation)] = []; var groups: [MatchGroup] = []
-        for item in input.filter({ $0.kind == .photo }).sorted(by: { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }) {
+        let window = SimilarityWindow(); var prints: [String: VNFeaturePrintObservation] = [:]; var groups: [MatchGroup] = []
+        for item in similarityOrder(items: input) {
             try Task.checkCancellation()
             guard let date = item.date, let asset = PHAsset.fetchAssets(withLocalIdentifiers: [item.id], options: nil).firstObject else { continue }
-            recent.removeAll { date.timeIntervalSince($0.0.date ?? .distantPast) > 60 }
-            if recent.count > 20 { recent.removeFirst(recent.count - 20) }
+            let recent = window.prune(date: date)
+            prints = prints.filter { recent.contains($0.key) }
             let options = PHImageRequestOptions(); options.isSynchronous = true; options.isNetworkAccessAllowed = allowCloud; options.deliveryMode = .highQualityFormat
             var print: VNFeaturePrintObservation?
             PHImageManager.default().requestImage(for: asset, targetSize: CGSize(width: 512, height: 512), contentMode: .aspectFit, options: options) { image, _ in
@@ -150,12 +149,13 @@ public actor PhotosService {
                 do { try VNImageRequestHandler(cgImage: cg).perform([request]); print = request.results?.first as? VNFeaturePrintObservation } catch { }
             }
             guard let print else { continue }
-            for (other, feature) in recent {
+            for id in recent {
+                guard let feature = prints[id] else { continue }
                 var distance: Float = 0
                 try feature.computeDistance(&distance, to: print)
-                if distance < 0.2 { groups.append(MatchGroup(id: "similar:\(other.id):\(item.id)", kind: .similar, members: [other.id,item.id], reason: "Nearby capture times and Vision distance \(String(format: "%.3f", distance)). Inspect both; different moments may look alike.")) }
+                if let group = similarGroup(earlierId: id, laterId: item.id, distance: distance) { groups.append(group) }
             }
-            recent.append((item, print))
+            window.admit(id: item.id, date: date); prints[item.id] = print
         }
         return groups
     }

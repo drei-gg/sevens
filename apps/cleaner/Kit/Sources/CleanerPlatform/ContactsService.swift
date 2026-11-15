@@ -78,23 +78,16 @@ public actor ContactsService {
         if let value = c.nonGregorianBirthday { fields.append(ContactField("nonGregorianBirthday", String(describing: value))) }
         if let image = c.imageData { fields.append(ContactField("photo", "\(image.count) bytes retained in archive")) }
         fields.append(ContactField("contactType", String(c.contactType.rawValue)))
-        let name = [c.givenName, c.middleName, c.familyName].filter { !$0.isEmpty }.joined(separator: " ")
         let phones = Set(c.phoneNumbers.compactMap { normalizer.normalized($0.value.stringValue, region: region) })
-        // Domain is case-insensitive; preserve local-part case to avoid asserting provider-specific equivalence.
-        let emails = Set(c.emailAddresses.compactMap { field -> String? in
-            let parts = (field.value as String).trimmingCharacters(in: .whitespacesAndNewlines).split(separator: "@", omittingEmptySubsequences: false)
-            guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty else { return nil }; return String(parts[0]) + "@" + parts[1].lowercased()
-        })
-        return ContactRecord(id: c.identifier, name: name.isEmpty ? c.organizationName : name, container: container, fields: fields.sorted { $0.key < $1.key }, phoneKeys: phones, emailKeys: emails)
+        let emails = Set(c.emailAddresses.compactMap { emailKey(raw: $0.value as String) })
+        return ContactRecord(id: c.identifier, name: contactDisplayName(given: c.givenName, middle: c.middleName, family: c.familyName, organization: c.organizationName),
+                             container: container, fields: sortContactFields(fields: fields), phoneKeys: phones, emailKeys: emails)
     }
     /// This package is explicitly a partial archive, not a complete address-book backup.
     public func export(_ snapshot: ContactSnapshot, to url: URL) throws {
-        struct Package: Codable { var version = 1; var unavailable = ["notes", "account credentials", "group membership and linked-contact relationships"]; var records: [ContactRecord]; var archives: [String: Data] }
-        let package = Package(records: snapshot.records, archives: snapshot.archives)
-        let bytes = try JSONEncoder().encode(package)
-        try bytes.write(to: url, options: [.atomic, .completeFileProtection])
-        let read = try JSONDecoder().decode(Package.self, from: Data(contentsOf: url))
-        guard read.records == package.records, read.archives == package.archives else { throw CleanerError.blocked("Archive read-back did not match.") }
+        let package = newContactPackage(records: snapshot.records, archives: snapshot.archives)
+        try contactPackageEncode(package: package).write(to: url, options: [.atomic, .completeFileProtection])
+        try contactPackageVerify(written: package, readBack: Data(contentsOf: url))
     }
 }
 #endif
