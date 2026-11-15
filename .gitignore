@@ -16,3 +16,7 @@ REVIEW*.md
 
 # Machine-local signing (DEVELOPMENT_TEAM); every app includes it, none commits it
 Local.xcconfig
+
+# Rust cores: build outputs
+apps/*/core/target/
+apps/*/core/generated/
