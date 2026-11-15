@@ -10,7 +10,7 @@
 #                    and nothing is written when the lists themselves haven't changed
 #   --filter WORD    run only the tests matching WORD (default: the full suite)
 # Writes <output-dir>/lists.json. Signing is not here: the workflow signs the exact bytes.
-# Needs curl (online only), python3 and the Swift test setup (scripts/test-linux, or swift itself).
+# Needs curl (online only), python3 and Rust (cargo): the rules are the QR core's (apps/qr/core).
 set -euo pipefail
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 data="$root/apps/qr/Kit/Sources/QRCore/Data"
@@ -78,14 +78,8 @@ PY
 
 # 3. The full suite: shape rules for every file, then every fixture, against these files.
 rm -f "$kit/.build/lists-candidate.json"
-args=()
-[ -z "$filter" ] || args=(--filter "$filter")
 echo "refresh-lists: running the tests${filter:+ (filter: $filter)}"
-if command -v swift >/dev/null 2>&1; then
-  swift test --package-path "$kit" "${args[@]}"
-else
-  "$root/scripts/test-linux" apps/qr/Kit "${args[@]}"
-fi
+cargo test --manifest-path "$root/apps/qr/core/Cargo.toml" ${filter:+"$filter"}
 
 # 4. Version and bundle.
 mkdir -p "$out"
@@ -141,13 +135,9 @@ if [ ! -f "$work/lists.json" ]; then ok=1; exit 0; fi
 
 # 5. The bytes we are about to publish decode and validate in the app's own code.
 mkdir -p "$kit/.build"
-cp "$work/lists.json" "$kit/.build/lists-candidate.json"
+mkdir -p "$kit/.build"; cp "$work/lists.json" "$kit/.build/lists-candidate.json"
 echo "refresh-lists: checking lists.json with the app's own validation"
-if command -v swift >/dev/null 2>&1; then
-  swift test --package-path "$kit" --filter listsCandidateBundleFromTheScriptIsValid
-else
-  "$root/scripts/test-linux" apps/qr/Kit --filter listsCandidateBundleFromTheScriptIsValid
-fi
+cargo test --manifest-path "$root/apps/qr/core/Cargo.toml" --test lists lists_candidate_bundle_from_the_script_is_valid
 rm -f "$kit/.build/lists-candidate.json"
 
 mv "$work/lists.json" "$out/lists.json"

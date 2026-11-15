@@ -26,7 +26,6 @@ jobs:
   publish:
     name: Build, sign and publish lists.json
     runs-on: ubuntu-24.04
-    container: swift:6.3   # keep in step with scripts/swift-version
     env:
       LISTS_SIGNING_KEY: ${{ secrets.LISTS_SIGNING_KEY }}
     steps:
@@ -34,7 +33,7 @@ jobs:
         with:
           ref: main
       - name: Tools
-        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates curl git openssl python3
+        run: cargo --version && python3 --version && openssl version   # all on the runner image
       - name: Trust the checkout
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: The key exists

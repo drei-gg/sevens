@@ -59,13 +59,21 @@ run_apple() {
   if [ "$(uname)" = Darwin ]; then
     (cd "$core" && bash -c "$build")   # on a Mac (CI): build here
   else
-    local remote="src/rust-core-$app"
+    local remote="src/rust-core-$app" crate="src/rust-core-$app"
+    # QR's crate reads Kit/Sources/QRCore/Data at build time (include_bytes, ../Kit from the crate):
+    # then mirror apps/<app>/core and that folder under one guest folder.
+    local data="$root/apps/$app/Kit/Sources/$core_module/Data"
+    [ -d "$data" ] && crate="$remote/core"
     ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe true || { echo "rust-core: tahoe is not reachable" >&2; exit 3; }
-    ssh tahoe "mkdir -p $remote"
-    rsync -a --delete --exclude target --exclude generated/jniLibs --exclude generated/kotlin "$core/" "tahoe:$remote/"
-    ssh tahoe "cd $remote; $build"
+    ssh tahoe "mkdir -p $crate"
+    rsync -a --delete --exclude target --exclude generated/jniLibs --exclude generated/kotlin "$core/" "tahoe:$crate/"
+    if [ -d "$data" ]; then
+      ssh tahoe "mkdir -p $remote/Kit/Sources/$core_module"
+      rsync -a --delete "$data/" "tahoe:$remote/Kit/Sources/$core_module/Data/"
+    fi
+    ssh tahoe "cd $crate; $build"
     rm -rf "$out/apple"; mkdir -p "$out/apple"
-    rsync -a "tahoe:$remote/generated/apple/${lib}FFI.xcframework" "$out/apple/"
+    rsync -a "tahoe:$crate/generated/apple/${lib}FFI.xcframework" "$out/apple/"
   fi
   local kit="$root/apps/$app/Kit" swift="$root/apps/$app/Kit/Sources/$core_module/Generated"
   rm -rf "$kit/Generated/${lib}FFI.xcframework" "$swift"; mkdir -p "$kit/Generated" "$swift"
