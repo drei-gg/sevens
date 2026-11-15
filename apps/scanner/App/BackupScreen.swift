@@ -52,7 +52,7 @@ struct BackupScreen: View {
         .sevenScreenBackground()
         .navigationTitle("Backup & restore").disabled(working)
         .sensoryFeedback(.success, trigger: exported?.id) { _, new in new != nil }
-        .sheet(item: $exported) { FileExportPicker(url: $0.url) }
+        .sheet(item: $exported) { SevenFileExportPicker(urls: [$0.url]) }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.data], allowsMultipleSelection: false) { result in
             do { candidate = try result.get().first } catch { failed = true; message = error.localizedDescription }
         }
@@ -75,9 +75,4 @@ struct BackupScreen: View {
             failed = false; message = String(localized: "Restored \(documentCount(count)) as copies.")
         } catch { failed = true; message = String(localized: "This backup could not be restored. Your existing documents are unchanged.") + " " + error.localizedDescription }
     }
-}
-struct FileExportPicker: UIViewControllerRepresentable {
-    let url: URL
-    func makeUIViewController(context: Context) -> UIDocumentPickerViewController { UIDocumentPickerViewController(forExporting: [url], asCopy: true) }
-    func updateUIViewController(_ controller: UIDocumentPickerViewController, context: Context) {}
 }

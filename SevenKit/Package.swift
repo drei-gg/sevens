@@ -21,9 +21,12 @@ var targets: [Target] = [
 ]
 
 #if canImport(Darwin)
+products.append(.library(name: "SevenBackup", targets: ["SevenBackup"]))
 products.append(.library(name: "SevenKit", targets: ["SevenKit"]))
 products.append(.library(name: "SevenCompanion", targets: ["SevenCompanion"]))
 targets += [
+    .target(name: "SevenBackup", swiftSettings: strict),
+    .testTarget(name: "SevenBackupTests", dependencies: ["SevenBackup"], swiftSettings: strict),
     .target(name: "SevenCompanion", dependencies: ["SevenKitCore"], swiftSettings: strict),
     .target(name: "SevenKit", dependencies: ["SevenKitCore"],
             resources: [.process("Resources")], swiftSettings: strict),

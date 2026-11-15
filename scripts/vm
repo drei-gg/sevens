@@ -24,7 +24,7 @@ cmd=${1:-}; [ $# -gt 0 ] && shift
 app=${SEVENS_APP:-qr}
 configuration=${VM_CONFIGURATION:-Debug}
 case "$configuration" in Debug|Release) ;; *) echo "Unknown configuration" >&2; exit 2;; esac
-case "$app" in qr) scheme=QR;; fast) scheme=Fast;; alarm) scheme=Alarm;; scanner) scheme=Scanner;; cleaner) scheme=Cleaner;; *) echo "Unknown app: $app" >&2; exit 2;; esac
+case "$app" in qr) scheme=QR;; fast) scheme=Fast;; alarm) scheme=Alarm;; scanner) scheme=Scanner;; cleaner) scheme=Cleaner;; vault) scheme=Vault;; *) echo "Unknown app: $app" >&2; exit 2;; esac
 if [ "$app" != qr ] && [ "$app" != fast ] && [[ "$cmd" = device || "$cmd" = lock-device || ( "$cmd" = ui && "${1:-}" = --device ) ]]; then
   echo "vm: device signing for $app is not configured yet" >&2; exit 2
 fi

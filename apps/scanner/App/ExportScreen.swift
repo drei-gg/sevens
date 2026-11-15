@@ -87,7 +87,7 @@ struct ExportScreen: View {
             .onChange(of: paper) { _, _ in exported = nil }
             .onChange(of: searchable) { _, _ in exported = nil }
             .sensoryFeedback(.success, trigger: exported?.id) { _, new in new != nil }
-            .sheet(isPresented: $saving) { if let exported { FileExportPicker(url: exported.url) } }
+            .sheet(isPresented: $saving) { if let exported { SevenFileExportPicker(urls: [exported.url]) } }
             .sheet(isPresented: $sharing) { if let exported { ShareSheet(url: exported.url) } }
             .sheet(isPresented: $previewing) { if let exported { PDFPreviewSheet(url: exported.url) { previewing = false } } }
         }

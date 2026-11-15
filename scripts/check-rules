@@ -23,8 +23,8 @@ hits=$(swift_files | xargs -r grep -nE "^\s*(@[A-Za-z_]+(\([A-Za-z]+\))?\s+)*imp
 hits+=$(git ls-files --cached --others --exclude-standard -- '*Package.swift' '*.pbxproj' '*Package.resolved' | xargs -r grep -niE "($deny)" | grep -viE 'firebase-free|no-analytics' || true)
 [ -z "$hits" ] || bad "G6 data-collecting SDK (deny-list):" "$hits"
 # Pure targets import Foundation (and their own siblings) only.
-hits=$(swift_files | grep -E '^(apps/fast/Kit/Sources/FastCore|apps/qr/Kit/Sources/QRCore|SevenKit/Sources/SevenKitCore)/' \
-  | xargs -r grep -nE '^\s*(@[a-zA-Z]+\s+)*import\s' | grep -vE 'import\s+(Foundation|FastCore|QRCore|SevenKitCore)\s*$' || true)
+hits=$(swift_files | grep -E '^(apps/(fast|qr|alarm|scanner|cleaner|vault)/Kit/Sources/(FastCore|QRCore|AlarmCore|ScannerCore|CleanerCore|VaultCore)|SevenKit/Sources/SevenKitCore)/' \
+  | xargs -r grep -nE '^\s*(@[a-zA-Z]+\s+)*import\s' | grep -vE 'import\s+(Foundation|FastCore|QRCore|AlarmCore|ScannerCore|CleanerCore|VaultCore|SevenKitCore)\s*$' || true)
 [ -z "$hits" ] || bad "G6 pure target imports something other than Foundation:" "$hits"
 
 # G6c: open-source libraries are welcome, but every one is pinned and credited in THIRD-PARTY.md
@@ -47,8 +47,8 @@ for url in $(printf '%s\n' "$deps" | grep -oE 'https?://[^"]+' | sed -E 's/\.git
 done
 
 # G7: user-facing text. String catalogs, plists and string literals in UI code.
-ui_swift=$(swift_files | grep -E '^(apps/fast/Kit/Sources/FastUI|apps/fast/App|apps/fast/Widgets|apps/fast/Watch|apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
-ui_text=$(git ls-files --cached --others --exclude-standard -- '*.xcstrings' '*.strings' 'apps/qr/*Info.plist' 'apps/qr/**/Info.plist' 'apps/qr/Config/*.plist' 'apps/fast/Config/*.plist' || true)
+ui_swift=$(swift_files | grep -E '^(apps/alarm/Kit/Sources/AlarmUI|apps/alarm/App|apps/scanner/App|apps/cleaner/App|apps/vault/App|apps/fast/Kit/Sources/FastUI|apps/fast/App|apps/fast/Widgets|apps/fast/Watch|apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
+ui_text=$(git ls-files --cached --others --exclude-standard -- '*.xcstrings' '*.strings' 'apps/qr/*Info.plist' 'apps/qr/**/Info.plist' 'apps/qr/Config/*.plist' 'apps/fast/Config/*.plist' 'apps/alarm/Config/*.plist' 'apps/scanner/Config/*.plist' 'apps/cleaner/Config/*.plist' 'apps/vault/Config/*.plist' || true)
 hits=$( { [ -z "$ui_swift" ] || echo "$ui_swift" | xargs grep -nP '"(?:[^"\\]|\\.)*\bsafe(ly|ty|r|st)?\b(?:[^"\\]|\\.)*"' -i; \
           [ -z "$ui_text" ] || echo "$ui_text" | xargs grep -nPi '\bsafe(ly|ty|r|st)?\b'; } 2>/dev/null || true)
 [ -z "$hits" ] || bad "G7 the word \"safe\" in user-facing text:" "$hits"
@@ -87,8 +87,9 @@ hits=$(git ls-files --cached --others --exclude-standard -- '*.pbxproj' '*.xccon
 
 # Look (SPEC "Look", polish guide §3.2): ink tint and paper app-wide, under the contrast rules.
 # The colors and the tint are set in SevenKit; app code uses Tokens and SevenKit's helpers.
-# The iPhone apps only: Fast's Watch app and widgets aren't on the look yet.
-look_swift=$(swift_files | grep -E '^(apps/fast/Kit/Sources/FastUI|apps/fast/App|apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
+# The iPhone apps only: Fast's Watch app and widgets aren't on the look yet, nor is Vault. Screen tours
+# and the processing audit are test tools, not screens.
+look_swift=$(swift_files | grep -vE '^apps/scanner/App/ProcessingAudit\.swift$|/CleanerTour\.swift$' | grep -E '^(apps/alarm/Kit/Sources/AlarmUI|apps/alarm/App|apps/scanner/App|apps/cleaner/App|apps/fast/Kit/Sources/FastUI|apps/fast/App|apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
 look() { [ -z "$look_swift" ] || echo "$look_swift" | grep -vE "$1" | xargs -r grep -nE "$2" || true; }
 hits=$(look '^$' '(foregroundStyle|foregroundColor)\(\s*\.(secondary|tertiary)\b|Color\.(secondary|tertiary)\b|\?\s*\.secondary\b|:\s*\.secondary\b')
 [ -z "$hits" ] || bad "system secondary/tertiary text color (3.25:1 on paper): use Tokens.muted:" "$hits"

@@ -21,6 +21,8 @@ Zlib, Unicode, GPL-3.0-compatible). Nothing that collects data or phones home is
 
 Their own dependencies are pinned in `apps/fast/core/Cargo.lock`.
 
+Vault uses the operating-system CryptoKit, CommonCrypto, Security/Keychain and AppleArchive frameworks, with PhotosUI, ImageIO and Quick Look. No additional third-party code is bundled. AppleArchive provides the authenticated streaming file format; Vault does not implement its own cipher.
+
 ## Bundled data
 
 | Name | URL | Licence | Version | Used for |

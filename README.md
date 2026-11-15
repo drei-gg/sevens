@@ -11,6 +11,7 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 | [7&D Alarm](apps/alarm/SPEC.md) | building ([changelog](apps/alarm/CHANGELOG.md)) |
 | [7&D Document Scanner](apps/scanner/SPEC.md) | building ([changelog](apps/scanner/CHANGELOG.md)) |
 | [7&D Photo Cleaner](apps/cleaner/SPEC.md) | building ([changelog](apps/cleaner/CHANGELOG.md)) |
+| [7&D Vault](apps/vault/SPEC.md) | development build ([changelog](apps/vault/CHANGELOG.md)) |
 
 ## Rules every app follows
 
@@ -38,6 +39,10 @@ SevenKit provides `SevenAdaptiveColumns` (two children; vertical at narrow width
 Not yet tested: no full-display iPhone Duo build has run. For a Duo build, use an Apple-silicon Mac and select Xcode with iOS SDK 27.1 or later and run `scripts/check-duo` on that Mac. Older-SDK builds remain useful for regular iPhone development but do not prove Duo optimization. Verify narrow/wide transitions with an open draft, rotation, split windows, keyboards, largest text and system sidebars on the Duo runtime before release.
 
 `SevenCompanion` is a separate iOS/watchOS product without purchase UI. It owns one WatchConnectivity session per process and transports opaque snapshots and acknowledged requests. The app owns its schema, authorization, atomic persistence, idempotency and error presentation. Do not treat successful message submission as a saved action. Family Sharing never synchronizes personal records.
+
+## Shared backup infrastructure
+
+`SevenFileExportPicker` in SevenKit is used by Scanner and Vault for manual Files-provider exports. `SevenBackupFolderPicker` grants persistent access to a chosen folder. The separate Apple-only `SevenBackup` product provides a durable queue for prepared artifacts, coordinated file copying, byte verification, retry/backoff, receipts and three-version retention. It owns no encryption keys, app schema or cloud account. See [the shared backup contract](SevenKit/BACKUP.md). Foundation-only SevenKitCore remains portable.
 
 ## Build Fast Tracker
 

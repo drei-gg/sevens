@@ -1,0 +1,15 @@
+# Shared Files-provider backups
+
+`SevenFileExportPicker` is extracted from Scanner's existing manual export. Scanner continues to export plaintext `.scannerbackup` archives manually; extraction does not add encryption or automatic uploads to Scanner. Vault uses the same picker for manual encrypted export and the folder picker for automatic backups.
+
+`SevenBackup` is a separate Apple-only product inside this package. Keep UIKit/bookmarks/file coordination out of portable `SevenKitCore`. The app prepares its own immutable artifact, then enqueues it with an opaque target UUID, a 64-character hexadecimal revision and an alphanumeric extension. Vault queues encrypted `.vault7` archives only. This module cannot independently establish whether another producer's artifact is encrypted.
+
+Call `prepare()` once at startup before producers begin. It removes abandoned preparation directories and unreferenced queue artifacts. Configure a destination with a directory URL from `SevenBackupFolderPicker`; the queue saves a bookmark. `needsPreparation` coalesces identical revisions. `enqueue` copies a complete artifact before atomically publishing its queue record; a newer artifact supersedes an older pending version for the same target.
+
+Delivery resolves the bookmark, obtains scoped access and uses NSFileCoordinator. Copy to a unique partial file, compare SHA-256 of source and copy, then rename to the final versioned filename. Never overwrite a conflicting existing file. Successful receipts are persisted before removing the local artifact or pruning older successful versions. Keep the latest three copied versions tracked by this queue; unrelated files are untouched. Disable removes configuration/pending local work and leaves provider copies intact.
+
+Errors retain pending work, previous success receipts and previous provider backups. Retry delay increases to a maximum of one hour. Cancellation checks stop streaming work and clean partial files. A process killed inside provider coordination may leave a hidden partial file in that provider; completed versioned files remain unchanged. Revoked/moved provider access can require folder reselection. Failures to prune old successful versions do not invalidate a new completed copy.
+
+The app owns scheduling and user-facing status. A Files provider accepting a copy is **not proof of a completed remote cloud upload**. Vault uses a short foreground debounce and BGProcessingTask for already prepared artifacts. iOS controls background opportunities; do not promise an exact backup interval or bypass the vault's encryption lock to prepare new content. Unprepared changes are picked up when the vault next opens. Queue artifacts and bookmarks use protection available after first device unlock, while vault plaintext remains under complete protection.
+
+Tests run on iOS Simulator through the SevenKit-Package scheme (`-only-testing:SevenBackupTests`). Running `swift test` on macOS builds this package's existing UIKit-dependent SevenKit target too and is therefore not the test route for this package.

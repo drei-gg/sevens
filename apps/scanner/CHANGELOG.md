@@ -42,3 +42,7 @@ Scanner now looks like a document scanner rather than a settings list, in the Se
 - Adding pages to an existing document needs the trial or unlock, like a new document; editing existing pages stays free.
 - Removing a page deletes its image file; launch housekeeping clears interrupted staging folders and older leftover images.
 - Camera pages are prepared off the main thread, so the app stays responsive after a long scan.
+
+## Shared export infrastructure — unreleased
+
+- Manual backup export now uses SevenKit’s shared Files export picker, extracted for reuse by Vault. Scanner backup format and manual-only behavior are unchanged.
