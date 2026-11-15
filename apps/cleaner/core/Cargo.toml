@@ -1,0 +1,42 @@
+[package]
+name = "cleaner-core"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+description = "Cleaner's shared logic: review decisions, exact-match grouping and keeper rules, removal guards, compression assessment, contact candidates and merge plans, and the review and contacts file formats. Bound to Swift and Kotlin with UniFFI."
+publish = false
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+name = "cleaner_core"
+
+[[bin]]
+# The bindings generator, pinned to the same UniFFI as the library.
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+required-features = ["bindgen"]
+
+[features]
+bindgen = ["uniffi/cli"]
+
+[dependencies]
+uniffi = "=0.32.2"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+uuid = { version = "=1.29.2", features = ["v4", "serde"] }
+unicode-normalization = "=0.1.26"
+base64 = "=0.22.1"
+thiserror = "=2.0.21"
+
+[dev-dependencies]
+serde_json = "1"
+
+[build-dependencies]
+uniffi = { version = "=0.32.2", features = ["build"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
