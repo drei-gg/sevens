@@ -8,6 +8,7 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 | --- | --- |
 | [7&D Fast Tracker](apps/fast/SPEC.md) | building ([changelog](apps/fast/CHANGELOG.md)) |
 | [7&D QR Code Kit](apps/qr/SPEC.md) | building ([changelog](apps/qr/CHANGELOG.md)) |
+| [7&D Alarm](apps/alarm/SPEC.md) | building ([changelog](apps/alarm/CHANGELOG.md)) |
 
 ## Rules every app follows
 
@@ -54,3 +55,13 @@ Fast embeds `FastWatch` (watchOS 10+). Not yet tested: the Watch app has not run
 ## Build Fast on Android
 
 The [Android baseline](android/README.md) defines Kotlin/Compose architecture, dependency selection, generic/personal/store flavors, private brand overlays, optional personal unlock, release signing and publishing boundaries. Start with `scripts/android fast generic debug` using JDK 21 and Android SDK 36. The Kotlin app lives in `apps/fast/android`; the pure FastCore port and shared app kit are under `android/`.
+## Build Alarm & Loops
+
+```sh
+scripts/test-linux apps/alarm/Kit
+SEVENS_APP=alarm scripts/vm build
+SEVENS_APP=alarm scripts/vm test
+SEVENS_APP=alarm scripts/vm ui
+```
+
+Open `apps/alarm/Alarm.xcodeproj` on a Mac with the iOS 26.1+ SDK. Debug-only `-alarm.demo` uses in-memory fixtures; `-alarm.ui -alarm.reset` uses a separate archive. Both disable actual alarm scheduling and use a development purchase fixture. Physical-phone delivery acceptance is separate.

@@ -21,6 +21,8 @@ jobs:
         run: swift test --package-path apps/fast/Kit
       - name: QRKit
         run: swift test --package-path apps/qr/Kit
+      - name: AlarmCore
+        run: swift test --package-path apps/alarm/Kit
       - name: Rules (G6, G7)
         run: scripts/check-rules
 
@@ -59,9 +61,22 @@ jobs:
           CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
           build test
 
+      - name: Build and test Alarm
+        run: >
+          xcodebuild -project apps/alarm/Alarm.xcodeproj -scheme Alarm -configuration Debug
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
+          build test
+
       - name: Build and test QR Code Kit
         run: >
           xcodebuild -project apps/qr/QR.xcodeproj -scheme QR -configuration Debug
           -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
           CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
           build test
+      - name: Test Alarm core and models
+        working-directory: apps/alarm/Kit
+        run: >
+          xcodebuild -scheme AlarmLoopsKit-Package
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
