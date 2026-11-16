@@ -16,6 +16,7 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 ## Rules every app follows
 
 - Paid for once. A free 7-day trial with no card, then $7 to unlock. Nothing auto-bills, ever.
+- Family Sharing is the default for every iOS app's one-time unlock. Keep StoreKit products family-shareable, enable sharing in App Store Connect, and verify shared purchase, restore and revocation before release. Sharing a purchase does not share personal records. Google Play unlocks remain per account.
 - The first screen says what the phone already does built in. If that's enough, keep your seven dollars.
 - No developer analytics, ads, or crash reporters. Platform purchase integrations (StoreKit / Google Play Billing) are the narrow exception; see [the platform permission](LICENSE-PLATFORM-EXCEPTION.md) and [dependency/network notices](THIRD-PARTY.md). Tracking records are not sent to billing.
 - No backend of ours unless a feature truly needs one, you agree to it, and we say exactly what's sent.
