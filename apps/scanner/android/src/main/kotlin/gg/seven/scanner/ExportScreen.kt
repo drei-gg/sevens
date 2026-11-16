@@ -171,7 +171,7 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                                     Icon(
                                         if (on) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
                                         null,
-                                        Modifier.align(Alignment.TopEnd).padding(Space.xs).background(MaterialTheme.colorScheme.surfaceContainerLowest, CircleShape),
+                                        Modifier.align(Alignment.TopEnd).padding(Space.xs).background(MaterialTheme.colorScheme.surface, CircleShape),
                                         tint = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
@@ -200,7 +200,7 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                     }
                 }
                 exported?.let { file ->
-                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLowest) {
+                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
                         Column(Modifier.fillMaxWidth().padding(Space.m), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.xs)) {
                             Text("PDF READY", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(Formatter.formatShortFileSize(context, file.length()), style = MaterialTheme.typography.displayLarge.numeric(), modifier = Modifier.testTag("export.size"))

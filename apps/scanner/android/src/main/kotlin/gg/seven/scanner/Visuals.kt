@@ -126,7 +126,7 @@ fun PageThumbnail(file: File?, page: ScanPage?, modifier: Modifier = Modifier, m
         modifier
             .aspectRatio(ScannerMetrics.PAGE_ASPECT)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+            .background(MaterialTheme.colorScheme.surface)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
             .clearAndSetSemantics {}
     ) {
@@ -144,7 +144,7 @@ fun DocumentCard(document: ScanDocument, firstPage: File?, modifier: Modifier = 
             Surface(
                 Modifier.align(Alignment.BottomEnd).padding(Space.s),
                 shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
                 Row(Modifier.padding(horizontal = Space.s, vertical = Space.xs), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
@@ -179,7 +179,7 @@ fun StatusLine(text: String, modifier: Modifier = Modifier, icon: ImageVector = 
 /** A labelled number on a card: Backup's summary. */
 @Composable
 fun StatTile(title: String, value: String, modifier: Modifier = Modifier) {
-    Surface(modifier.semantics(mergeDescendants = true) { contentDescription = "$title, $value" }, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLowest) {
+    Surface(modifier.semantics(mergeDescendants = true) { contentDescription = "$title, $value" }, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.padding(Space.ms).heightIn(min = 64.dp), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
             Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, style = MaterialTheme.typography.titleLarge.numeric())
@@ -190,7 +190,7 @@ fun StatTile(title: String, value: String, modifier: Modifier = Modifier) {
 /** A card on paper for a titled block of content (iOS GroupBox). */
 @Composable
 fun ContentCard(title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLowest) {
+    Surface(modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.s)) {
             Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
             content()

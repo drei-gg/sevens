@@ -77,7 +77,7 @@ fun PdfPreview(file: File, onClose: () -> Unit) {
                                 }
                             }
                         }
-                        Box(Modifier.fillMaxWidth().aspectRatio(aspect).background(MaterialTheme.colorScheme.surfaceContainerLowest).semantics { contentDescription = "Page ${index + 1} of $count" }) {
+                        Box(Modifier.fillMaxWidth().aspectRatio(aspect).background(MaterialTheme.colorScheme.surface).semantics { contentDescription = "Page ${index + 1} of $count" }) {
                             image?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
                         }
                     }

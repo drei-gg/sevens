@@ -16,3 +16,9 @@
 -keep class com.tom_roush.fontbox.** { *; }
 -dontwarn org.bouncycastle.**
 -dontwarn com.gemalto.jp2.**
+
+# ML Kit document scanner (personal and store): its components are found by name at run time.
+-keep class com.google.mlkit.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_document_scanner.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_common.** { *; }
+-dontwarn com.google.mlkit.**

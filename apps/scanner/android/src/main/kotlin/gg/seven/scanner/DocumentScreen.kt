@@ -437,7 +437,7 @@ private fun ArrangePages(model: ScannerModel, document: ScanDocument, onClose: (
                     val index = pages.indexOf(page)
                     Surface(
                         shape = MaterialTheme.shapes.medium,
-                        color = if (dragging) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLowest,
+                        color = if (dragging) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surface,
                         tonalElevation = if (dragging) 2.dp else 0.dp,
                         modifier =
                             Modifier.semantics {

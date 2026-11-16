@@ -289,7 +289,7 @@ fun LibraryScreen(model: ScannerModel) {
                 }
             if (busy)
                 item(span = full) {
-                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLowest, modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface, modifier = Modifier.semantics(mergeDescendants = true) {}) {
                         Row(Modifier.fillMaxWidth().padding(Space.m), horizontalArrangement = Arrangement.spacedBy(Space.ms), verticalAlignment = Alignment.CenterVertically) {
                             LoadingIndicator(Modifier.size(32.dp))
                             Text(progress, style = MaterialTheme.typography.bodyLarge)

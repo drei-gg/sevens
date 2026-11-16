@@ -8,6 +8,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberUpdatedState
+import com.google.android.gms.common.moduleinstall.ModuleInstall
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
@@ -39,11 +40,26 @@ fun rememberPlatformScanner(onPages: (List<Uri>) -> Unit, onCamera: () -> Unit):
                 .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
                 .build()
         if (activity == null) camera.value()
-        else
-            GmsDocumentScanning.getClient(options)
-                .getStartScanIntent(activity)
-                .addOnSuccessListener { launcher.launch(IntentSenderRequest.Builder(it).build()) }
+        else {
+            val client = GmsDocumentScanning.getClient(options)
+            val modules = ModuleInstall.getClient(activity)
+            // Until Play services has the scanner module, scan with CameraX now and ask for the
+            // module in the background, so a missing download never blocks scanning.
+            modules
+                .areModulesAvailable(client)
+                .addOnSuccessListener { status ->
+                    if (status.areModulesAvailable())
+                        client
+                            .getStartScanIntent(activity)
+                            .addOnSuccessListener { launcher.launch(IntentSenderRequest.Builder(it).build()) }
+                            .addOnFailureListener { camera.value() }
+                    else {
+                        modules.deferredInstall(client)
+                        camera.value()
+                    }
+                }
                 .addOnFailureListener { camera.value() }
+        }
     }
 }
 
