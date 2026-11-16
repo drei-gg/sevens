@@ -1,0 +1,13 @@
+// Unbranded defaults (D3). scripts/apply-brand copies a brand's own Brand.xcconfig over this file.
+SEVENS_BUNDLE_ID_BASE = org.example.sevens.bloom
+SEVENS_DISPLAY_NAME = Cycle & Health
+SEVENS_PRODUCT_ID_PREFIX = org.example.sevens.bloom
+SEVENS_SUPPORT_EMAIL = support@example.org
+SEVENS_BRANDED = NO
+// The public repository: the licence link in About, and where "Check for newer lists" looks (the
+// `lists` branch). xcconfig reads // as a comment, so the slashes are split with $().
+SEVENS_REPOSITORY_URL = https:/$()/github.com/drei-gg/sevens
+// The two Ed25519 public keys, 64 hex characters each, that may sign lists: the current one and, during a
+// key change, the next. Both empty hides the Check for newer lists button.
+SEVENS_LISTS_KEY_CURRENT =
+SEVENS_LISTS_KEY_NEXT =

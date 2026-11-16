@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+"""Every iOS unlock supports Family Sharing; store configuration still needs release verification."""
+import json
+from pathlib import Path
+import sys
+root = Path(__file__).resolve().parent.parent
+failures = []
+fixtures = list(root.glob('apps/*/*.storekit'))
+for path in fixtures:
+    products = json.loads(path.read_text()).get('products', [])
+    unlocks = [p for p in products if p.get('productID', '').endswith('.unlock')]
+    if not unlocks:
+        failures.append(f'{path.relative_to(root)}: no unlock product')
+    for product in unlocks:
+        if product.get('familyShareable') is not True:
+            failures.append(f'{path.relative_to(root)}: unlock must be familyShareable')
+if failures:
+    print('\n'.join(failures), file=sys.stderr)
+    sys.exit(1)
+print(f'Family Sharing enabled in all {len(fixtures)} iOS unlock fixtures.')

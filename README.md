@@ -11,6 +11,7 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 | [7&D Alarm](apps/alarm/SPEC.md) | building ([changelog](apps/alarm/CHANGELOG.md)) |
 | [7&D Document Scanner](apps/scanner/SPEC.md) | building ([changelog](apps/scanner/CHANGELOG.md)) |
 | [7&D Photo Cleaner](apps/cleaner/SPEC.md) | building ([changelog](apps/cleaner/CHANGELOG.md)) |
+| [Cycle & Health](apps/bloom/SPEC.md) | development build ([changelog](apps/bloom/CHANGELOG.md)) |
 | [7&D Vault](apps/vault/SPEC.md) | development build ([changelog](apps/vault/CHANGELOG.md)) |
 
 ## Rules every app follows
@@ -58,7 +59,7 @@ Open `apps/fast/Fast.xcodeproj` on a Mac. Public builds are unbranded; the schem
 
 Fast Tracker uses the shared adaptive components in Today and History. Its phone is authoritative; its Watch caches only timer and water metadata.
 
-Fast embeds `FastWatch` (watchOS 10+). Not yet tested: the Watch app has not run on a Watch or a Watch simulator. Xcode needs the watchOS platform installed even when building the containing iPhone app; install it through Components or `xcodebuild -downloadPlatform watchOS`. A generic watchOS build needs no booted Watch simulator. Records are protected until the phone's first unlock after restart, so the Watch can save while the phone is locked. Physical pairing, background launches, disconnect/retry and protected-data behavior still require device acceptance. The shared VM's one-simulator rule remains in force.
+Fast embeds `FastWatch` (watchOS 10+). Not yet tested: the Watch app has not run on a Watch or a Watch simulator. Xcode needs the watchOS platform installed even when building the containing iPhone app; install it through Components or `xcodebuild -downloadPlatform watchOS`. A generic watchOS build needs no booted Watch simulator. Records are protected until the phone's first unlock after restart, so the Watch can save while the phone is locked. Physical pairing, background launches, disconnect/retry and protected-data behavior still require device acceptance. The shared VM uses configured simulator slots with per-slot locks; never boot an unassigned device by name.
 
 ## Build Fast on Android
 
@@ -95,3 +96,7 @@ SEVENS_APP=cleaner scripts/vm ui
 ```
 
 Cleaner uses the single shared simulator and reuses `~/src/sevens-personal-cleaner` and `~/src/dd-personal-cleaner` on Tahoe. Debug-only `-cleaner.ui -cleaner.reset -cleaner.seed` uses isolated review state, an unlocked local purchase source and synthetic inventory. It does not modify real Photos or Contacts merely by launching.
+
+## Build Cycle & Health
+
+See [the app spec](apps/bloom/SPEC.md) for `scripts/bloom-apple` commands. The helper uses the authorized second iPhone simulator slot and stable per-app build directories. `scripts/check-family-sharing` enforces the family-shareable unlock default across every app fixture.

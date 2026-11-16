@@ -14,9 +14,11 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: android-actions/setup-android@v3
-      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358'
+      - run: sdkmanager 'platforms;android-37' 'build-tools;36.0.0' 'ndk;28.2.13676358'
       - run: rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
       - run: cargo install cargo-ndk --version 4.1.2 --locked
       - run: scripts/rust-core fast test
       - run: android/gradlew -p android :core:test :fast:lintGenericDebug :fast:assembleGenericDebug :fast:assembleGenericRelease
       - run: scripts/check-android-variants
+      - run: scripts/rust-core bloom test
+      - run: android/gradlew -p android :bloom-core:test :bloom:lintGenericDebug :bloom:assembleGenericDebug :bloom:assembleGenericRelease

@@ -154,3 +154,7 @@ Pinned in `apps/qr/android/build.gradle.kts`; resolved versions are in `apps/qr/
 | Bouncy Castle (bcprov-jdk18on) | 1.83 | MIT (Bouncy Castle Licence), https://github.com/bcgit/bc-java | Ed25519 signature check of a downloaded `lists.json` (CryptoKit's Curve25519 counterpart) |
 | AndroidX Browser | 1.10.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Opening links in Custom Tabs (SFSafariViewController's counterpart) |
 | ColorPicker Compose | 1.1.2 | Apache-2.0, https://github.com/skydoves/colorpicker-compose | Make's code and background colour picker (SwiftUI ColorPicker's counterpart) |
+
+Cycle & Health (`apps/bloom`) uses the Alarm core’s calendar scheduling and the pinned UniFFI, serde, serde_json, uuid, Jiff, thiserror, age, sha2 and zeroize crates credited above. age provides passphrase-encrypted portable backups; CryptoKit AES-GCM and Keychain protect the local journal. Apple HealthKit, WatchConnectivity, WidgetKit, Charts and LocalAuthentication are platform frameworks. No Flo code, content or proprietary prediction model is included.
+
+The Android Bloom base uses the existing shared AndroidX Compose/Material, Lifecycle and JNA dependencies credited above. Android Keystore, AES/GCM and AtomicFile provide native local persistence. The Gradle and Cargo lockfiles pin the resolved dependency graphs.

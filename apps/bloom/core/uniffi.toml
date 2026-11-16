@@ -1,0 +1,8 @@
+[bindings.kotlin]
+package_name = "gg.seven.bloom.core"
+cdylib_name = "bloom_core"
+
+[bindings.swift]
+module_name = "BloomCoreFFI"
+ffi_module_name = "bloom_coreFFI"
+ffi_module_filename = "bloom_coreFFI"
