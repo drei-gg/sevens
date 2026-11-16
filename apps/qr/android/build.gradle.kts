@@ -56,3 +56,9 @@ dependencies {
     "implementation"("com.github.skydoves:colorpicker-compose:1.1.2")
     "testImplementation"("junit:junit:4.13.2")
 }
+
+// JVM tests that call the core load the crate's host build, as :qr-core's own tests do.
+tasks.withType<Test>().configureEach {
+    systemProperty("jna.library.path", rootDir.parentFile.resolve("apps/qr/core/target/debug").absolutePath)
+}
+dependencies { "testImplementation"("net.java.dev.jna:jna:5.17.0") }
