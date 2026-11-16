@@ -28,7 +28,6 @@ import gg.seven.cleaner.core.ContactRecord
 import gg.seven.cleaner.core.contactCrowdedIdentifierCount
 import gg.seven.cleaner.core.contactIsIncomplete
 import gg.seven.cleaner.core.newContactMergePlan
-import gg.seven.kit.DropdownField
 import gg.seven.kit.EmptyState
 import gg.seven.kit.SearchInput
 import gg.seven.kit.Space
@@ -86,7 +85,7 @@ fun ContactsScreen(model: CleanerModel) {
                     }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                    DropdownField("Phone number country", region, countries, Modifier.fillMaxWidth()) { region = it }
+                    CountryField(region, countries) { region = it }
                     Text(
                         "Choose a country to compare local numbers. Without one, international numbers and email addresses are compared.",
                         style = MaterialTheme.typography.bodySmall,
@@ -283,6 +282,45 @@ fun ContactFieldList(record: ContactRecord, modifier: Modifier = Modifier) {
                 }
             }
             CleanerNotice("Notes are not read in this build.", Icons.Outlined.StickyNote2)
+        }
+    }
+}
+
+/**
+ * The phone number country (iOS's navigation-link picker of every region): Material's editable
+ * exposed dropdown, so typing a few letters narrows some 250 countries.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun CountryField(selected: String, countries: List<Pair<String, String>>, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val name = countries.firstOrNull { it.first == selected }?.second.orEmpty()
+    var text by remember(selected) { mutableStateOf(if (selected.isEmpty()) "" else name) }
+    val shown = if (text.isEmpty() || text == name) countries else countries.filter { it.second.contains(text, ignoreCase = true) }
+    ExposedDropdownMenuBox(expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = {
+                text = it
+                expanded = true
+            },
+            label = { Text("Phone number country") },
+            placeholder = { Text("Not specified") },
+            singleLine = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
+        )
+        ExposedDropdownMenu(expanded, onDismissRequest = {
+            expanded = false
+            text = if (selected.isEmpty()) "" else name
+        }) {
+            shown.forEach { (code, country) ->
+                DropdownMenuItem(text = { Text(country) }, onClick = {
+                    onSelect(code)
+                    text = if (code.isEmpty()) "" else country
+                    expanded = false
+                })
+            }
         }
     }
 }

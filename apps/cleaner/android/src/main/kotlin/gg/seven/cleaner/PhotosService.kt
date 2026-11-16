@@ -305,7 +305,6 @@ class PhotosService(private val context: Context) {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, source.name.substringBeforeLast('.') + " compressed.jpg")
                     put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
                     put(MediaStore.MediaColumns.RELATIVE_PATH, folder)
-                    source.date?.let { put(DATE_TAKEN, it.toEpochMilli()) }
                     put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }
             val uri = resolver.insert(images, values) ?: throw blocked("Could not create the copy. The original is unchanged.")
@@ -316,6 +315,9 @@ class PhotosService(private val context: Context) {
                     put(MediaStore.MediaColumns.IS_PENDING, 0)
                     if (Build.VERSION.SDK_INT >= 30 && now.favorite) put(MediaStore.MediaColumns.IS_FAVORITE, 1)
                 }, null, null)
+                // Publishing rescans the file, which takes the date from its metadata; the source's
+                // capture date is set after that, so the copy sorts beside its original.
+                source.date?.let { date -> resolver.update(uri, ContentValues().apply { put(DATE_TAKEN, date.toEpochMilli()) }, null, null) }
             } catch (error: Throwable) {
                 resolver.delete(uri, null, null)
                 throw if (error is gg.seven.cleaner.core.CleanerException) error else blocked("The copy could not be saved. The original is unchanged.")

@@ -548,22 +548,58 @@ fun ZoomImage(bitmap: Bitmap, description: String, modifier: Modifier = Modifier
 /** The platform video view with its transport controls, and a playback-speed choice. */
 @Composable
 private fun VideoPreview(item: CleanupItem) {
-    var player by remember { mutableStateOf<MediaPlayer?>(null) }
+    var failed by remember { mutableStateOf(false) }
     var rate by rememberSaveable { mutableStateOf(1f) }
+    var view by remember { mutableStateOf<SpeedVideoView?>(null) }
+    if (failed) {
+        EmptyState("Preview unavailable", "This video can’t be played here.", icon = Icons.Outlined.Videocam)
+        return
+    }
     AndroidView(
         factory = { context ->
-            VideoView(context).apply {
+            SpeedVideoView(context).apply {
                 setMediaController(MediaController(context).also { it.setAnchorView(this) })
-                setOnPreparedListener { player = it }
+                // The first frame, not a blank box, until the person presses play.
+                setOnPreparedListener { player = it; seekTo(1) }
+                // Shown in the screen's own words instead of the platform's alert.
+                setOnErrorListener { _, _, _ ->
+                    failed = true
+                    true
+                }
                 setVideoURI(item.id.toUri())
                 contentDescription = "Video ${item.name}"
+                view = this
             }
         },
-        modifier = Modifier.fillMaxWidth().heightIn(min = 280.dp).clip(MaterialTheme.shapes.medium),
+        // Exact constraints: VideoView sizes itself to the video, which it knows only once its
+        // surface exists, so it gets the item's own shape up front.
+        modifier =
+            Modifier.fillMaxWidth()
+                .aspectRatio((item.width.coerceAtLeast(1).toFloat() / item.height.coerceAtLeast(1)).coerceIn(0.5f, 2f))
+                .clip(MaterialTheme.shapes.medium),
         onRelease = { it.stopPlayback() },
     )
     ConnectedChoice(listOf(0.5f to "0.5×", 1f to "1×", 1.5f to "1.5×", 2f to "2×"), rate) { value ->
         rate = value
-        player?.let { runCatching { it.playbackParams = it.playbackParams.setSpeed(value) } }
+        view?.speed = value
+    }
+}
+
+/** VideoView that keeps a playback speed across play and pause. */
+private class SpeedVideoView(context: android.content.Context) : VideoView(context) {
+    var player: MediaPlayer? = null
+    var speed = 1f
+        set(value) {
+            field = value
+            if (isPlaying) apply()
+        }
+
+    override fun start() {
+        super.start()
+        apply()
+    }
+
+    private fun apply() {
+        player?.let { runCatching { it.playbackParams = it.playbackParams.setSpeed(speed) } }
     }
 }

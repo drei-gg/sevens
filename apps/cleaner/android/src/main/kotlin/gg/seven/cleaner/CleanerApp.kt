@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.cleaner.core.MediaKind
 import gg.seven.kit.LocalSevenGate
@@ -123,6 +124,7 @@ fun CleanerApp(model: CleanerModel) {
     CompositionLocalProvider(LocalActions provides actions, LocalPhotos provides model.photos) {
         BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             val wide = maxWidth >= 700.dp && !largeText()
+            val labelStyle = tabLabelStyle(maxWidth)
             Row(Modifier.fillMaxSize()) {
                 if (wide)
                     NavigationRail(
@@ -164,7 +166,7 @@ fun CleanerApp(model: CleanerModel) {
                                             selected = tab == area,
                                             onClick = { if (tab == area) stack = emptyList() else tab = area },
                                             icon = { Icon(area.icon, null) },
-                                            label = { Text(area.title) },
+                                            label = { Text(area.title, style = labelStyle, maxLines = 1, softWrap = false) },
                                             modifier = Modifier.testTag("nav-${area.title}"),
                                         )
                                     }
@@ -249,5 +251,23 @@ private fun BusyBar(progress: String, canCancel: Boolean, cancel: () -> Unit) {
             Text(progress, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = cancel, enabled = canCancel) { Text("Cancel") }
         }
+    }
+}
+
+/**
+ * One label size for every tab: the largest, up to Material's, at which the longest label fits
+ * its share of the bar on one line, so large font sizes shrink all five alike instead of breaking
+ * a word.
+ */
+@Composable
+private fun tabLabelStyle(barWidth: androidx.compose.ui.unit.Dp): androidx.compose.ui.text.TextStyle {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val base = MaterialTheme.typography.labelMedium
+    return remember(barWidth, density, base) {
+        val room = with(density) { (barWidth / Area.entries.size - Space.s).toPx() }
+        var size = base.fontSize.value
+        while (size > 9f && Area.entries.maxOf { measurer.measure(it.title, base.copy(fontSize = size.sp), maxLines = 1, softWrap = false).size.width } > room) size -= 0.5f
+        base.copy(fontSize = size.sp)
     }
 }
