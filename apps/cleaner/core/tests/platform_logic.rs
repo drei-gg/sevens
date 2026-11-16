@@ -240,3 +240,55 @@ fn contact_export_read_back_must_match() {
     assert_eq!(reason(contact_package_verify(&other, &bytes)), "Archive read-back did not match.");
     assert_eq!(contact_package_verify(&package, b"{}"), Err(CleanerError::Unreadable));
 }
+
+// MARK: Perceptual hash (Android's similar-shots pass; additive, iOS uses Vision)
+
+fn thumbnail(f: impl Fn(usize, usize) -> u8) -> Vec<u8> {
+    let mut rgba = Vec::with_capacity(32 * 32 * 4);
+    for y in 0..32 {
+        for x in 0..32 {
+            let v = f(x, y);
+            rgba.extend_from_slice(&[v, v, v, 255]);
+        }
+    }
+    rgba
+}
+
+#[test]
+fn perceptual_hash_needs_a_32_pixel_square() {
+    assert!(perceptual_hash(&[0u8; 16]).is_err());
+    assert!(perceptual_hash(&thumbnail(|_, _| 0)).is_ok());
+}
+
+#[test]
+fn perceptual_hash_matches_itself_and_tolerates_small_changes() {
+    let scene = |x: usize, y: usize| ((x * 7 + y * 3) % 256) as u8 / 2 + if x > 16 { 100 } else { 0 };
+    let a = perceptual_hash(&thumbnail(scene)).unwrap();
+    let brighter = perceptual_hash(&thumbnail(|x, y| scene(x, y).saturating_add(12))).unwrap();
+    let noisy = perceptual_hash(&thumbnail(|x, y| scene(x, y) ^ ((x * y) % 3) as u8)).unwrap();
+    assert_eq!(perceptual_distance(a, a), 0);
+    assert!(perceptual_distance(a, brighter) <= SIMILAR_HASH_DISTANCE);
+    assert!(perceptual_distance(a, noisy) <= SIMILAR_HASH_DISTANCE);
+}
+
+#[test]
+fn perceptual_hash_separates_different_pictures() {
+    let left = perceptual_hash(&thumbnail(|x, _| if x < 16 { 230 } else { 20 })).unwrap();
+    let top = perceptual_hash(&thumbnail(|_, y| if y < 16 { 230 } else { 20 })).unwrap();
+    let inverted = perceptual_hash(&thumbnail(|x, _| if x < 16 { 20 } else { 230 })).unwrap();
+    assert!(perceptual_distance(left, top) > SIMILAR_HASH_DISTANCE);
+    assert!(perceptual_distance(left, inverted) > SIMILAR_HASH_DISTANCE);
+}
+
+#[test]
+fn similar_hash_group_is_a_review_only_suggestion_at_the_threshold() {
+    let group = similar_hash_group("a".into(), "b".into(), SIMILAR_HASH_DISTANCE).unwrap();
+    assert_eq!(group.id, "similar:a:b");
+    assert_eq!(group.kind, MatchKind::Similar);
+    assert_eq!(group.members, vec!["a".to_string(), "b".to_string()]);
+    assert!(group.reason.contains("distance of 10 in 64"));
+    assert!(similar_hash_group("a".into(), "b".into(), SIMILAR_HASH_DISTANCE + 1).is_none());
+    // Similar groups never get default selections.
+    let items = vec![item("a"), item("b")];
+    assert!(matching_proposed_removal(&[group], &items, &HashMap::new()).is_empty());
+}

@@ -11,12 +11,14 @@ uniffi::setup_scaffolding!();
 
 mod codec;
 mod library;
+mod perceptual;
 mod platform;
 mod preservation;
 mod review;
 mod text;
 
 pub use library::*;
+pub use perceptual::*;
 pub use platform::*;
 pub use preservation::*;
 pub use review::*;
