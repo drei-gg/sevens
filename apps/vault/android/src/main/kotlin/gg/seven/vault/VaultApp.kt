@@ -197,7 +197,7 @@ fun CreateVaultScreen(model: VaultModel, onClose: () -> Unit) {
         }
         CredentialInput(kind, password, "New " + kind.title.lowercaseTitle(), "vault.newPassword") { password = it }
         CredentialInput(kind, repeated, "Repeat " + kind.title.lowercaseTitle(), "vault.repeatPassword") { repeated = it }
-        if (repeated.isNotEmpty() && password != repeated) Text("These don’t match yet.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        if (repeated.length >= password.length && repeated.isNotEmpty() && password != repeated) Text("These don’t match.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         Text(
             "Use 12+ characters, an 8–32 digit PIN, or 8+ dots. Each secret opens its own vault. Longer, unpredictable secrets resist guessing better; avoid dates, letters and simple shapes.",
             style = MaterialTheme.typography.bodyMedium,
