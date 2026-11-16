@@ -34,7 +34,18 @@ The versioned `.scannerbackup` archive streams original images plus document met
 
 Restore checks structure, limits and checksums in staging before adding copies with new document IDs. Existing documents are never replaced. Deleted entries restore into Recently Deleted. Ordinary commit errors remove newly added copies; process termination during the multi-folder commit can leave some restored copies. Repeating restore adds another set of copies. This is not crash-atomic whole-library replacement or automatic synchronization.
 
-## Verification and remaining release work
+## Android
+
+Kotlin and Compose (Material 3 Expressive) in `android/`, on the same Rust core: documents, limits, manifests, page order, late-OCR merging, export plans, page geometry and the `.scannerbackup` format are shared, so libraries and backups move between the two phones unchanged. What differs is the platform half:
+
+- **Capture.** The open edition photographs pages with CameraX: no edge detection or perspective correction (no open-source detector good enough to ship was found); pages can be rotated and adjusted afterwards. Personal and Play editions use Google's ML Kit document scanner through Google Play services (a platform exception, like Play Billing), falling back to CameraX until Play services has its module.
+- **Recognition.** Tesseract 5 with its English model, bundled, in every edition (Vision on iOS). English only; arm64 and x86_64 devices only (32-bit devices save and export scans, but recognition reports that it could not finish).
+- **Searchable PDF.** PdfBox-Android writes the page JPEG and an invisible Helvetica layer (text render mode 3), each line scaled to its recognized bounds; characters Helvetica can't encode become spaces in the layer. Preview renders with PdfRenderer.
+- **Files.** Import, Save to files, backup and restore use the system document pickers; Share uses the share sheet.
+- **Deleting.** Moving a document to Recently Deleted happens at once with Undo in a snackbar (iOS asks first); permanent deletion still confirms. Recently Deleted's actions are a long-press menu plus Restore on each row (no swipe).
+- **Device backup.** Android cloud backup carries only preferences (the library can exceed its 25 MB quota); device-to-device transfer also carries the library.
+
+
 
 Portable tests: `scripts/test-linux apps/scanner/Kit`. Twelve tests cover compatibility, removed-page cleanup, launch housekeeping, persistence, delayed/stale OCR, edits, append limits, stale page ordering, trash, export selection and backup round-trip/corruption rejection. Strict Apple Debug build and native simulator UI checks cover creation/OCR/rename/relaunch, selected export, trash recovery, page adjustment persistence and backup Files-picker presentation with enabled Save. A processing audit exports/imports 50 pages and checks searchable Letter PDF text, rotation and reset. Generated PDFs are inspected with PDFKit, Poppler and visual rendering. Synthetic simulator checks do not establish physical-device performance.
 

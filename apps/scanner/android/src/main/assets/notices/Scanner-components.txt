@@ -1,0 +1,12 @@
+Document Scanner for Android uses these open-source components. Apache-2.0 components are covered
+by Apache-2.0.txt; the others' licences follow in their own files.
+
+- Tesseract OCR 5.5 (Apache-2.0), with the tessdata_fast English model 4.1.0 (Apache-2.0)
+- JavaCPP and JavaCPP Presets for Tesseract and Leptonica, Bytedeco (Apache-2.0)
+- Leptonica 1.87 (BSD-2-Clause style, Leptonica.txt) and its image codecs (Leptonica-codecs.txt)
+- PdfBox-Android 2.0.27 and Apache PDFBox (Apache-2.0, PDFBox-NOTICE.txt)
+- AndroidX CameraX 1.6 and ExifInterface 1.4 (Apache-2.0)
+- Reorderable by Calvin Liang 3.1 (Apache-2.0)
+
+Personal and Google Play editions also use Google's ML Kit document scanner through Google Play
+services, under Google's terms (a platform exception, like Play Billing); the open edition does not.

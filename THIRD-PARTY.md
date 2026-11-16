@@ -93,3 +93,23 @@ On the shared Android base above (Kotlin, Compose, Material 3 1.5.0-rc01, Activi
 | Vico charts | 2.3.6 | Apache-2.0, https://github.com/patrykandpatrick/vico | History's seven-day chart (Swift Charts on iOS), as in Fast |
 
 Apache-2.0 license text and the libraries' copyright lines ship in the app's notices. None of these adds app networking.
+
+## Android Document Scanner
+
+iOS Scanner uses only Apple frameworks (VisionKit, Vision, PDFKit, Core Image). Their Android counterparts below are pinned in `apps/scanner/android/build.gradle.kts`, with resolved versions in its lockfile; the rules, limits and the `.scannerbackup` format come from the shared Rust core (apps/scanner/core).
+
+| Name | Version | Licence, URL | Used for |
+|---|---|---|---|
+| Tesseract OCR, via JavaCPP Presets (org.bytedeco:tesseract) | 5.5.3-1.5.14 | Apache-2.0, https://github.com/tesseract-ocr/tesseract and https://github.com/bytedeco/javacpp-presets | On-device text recognition in every flavor (Vision's counterpart); arm64-v8a and x86_64 builds |
+| Tesseract tessdata_fast English model | 4.1.0 (SHA-256 pinned in the build) | Apache-2.0, https://github.com/tesseract-ocr/tessdata_fast | The bundled recognition model; fetched at build time, never at run time |
+| Leptonica, via JavaCPP Presets (org.bytedeco:leptonica), with libjpeg-turbo, libpng, libtiff, libwebp, OpenJPEG, giflib built in | 1.87.0-1.5.14 | BSD-2-Clause (Leptonica); IJG/BSD-3-Clause/Zlib, libpng, libtiff, BSD-3-Clause, BSD-2-Clause, MIT; https://github.com/DanBloomberg/leptonica | Tesseract's image library |
+| JavaCPP (org.bytedeco:javacpp) | 1.5.14 | Apache-2.0, https://github.com/bytedeco/javacpp | Loads and binds the native OCR libraries |
+| PdfBox-Android (Apache PDFBox port) | 2.0.27.0 | Apache-2.0, https://github.com/TomRoush/PdfBox-Android | Searchable PDF export: page images with an invisible, positioned text layer (text render mode 3). BouncyCastle excluded (no encryption) |
+| AndroidX CameraX (camera2, lifecycle, compose) | 1.6.2 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | The open-source page capture (generic flavor, and the fallback elsewhere) |
+| AndroidX ExifInterface | 1.4.2 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Upright imported and captured photos |
+| Reorderable (sh.calvin.reorderable) | 3.1.0 | Apache-2.0, https://github.com/Calvin-LL/Reorderable | Drag to reorder pages in Arrange |
+| Google ML Kit document scanner (Google Play services) | 16.0.0 | Google APIs terms, https://developers.google.com/ml-kit/vision/doc-scanner | Personal and store flavors only: edge detection and perspective correction when capturing. Platform exception, below |
+
+Leptonica's and the codecs' licence texts and PDFBox's NOTICE ship in the app's `assets/notices`.
+
+Google's ML Kit document scanner is a Google Play services component, not an open-source library, and is used the way Play Billing is: as a platform exception in the personal and store flavors only. Scanning runs on the device inside Google Play services, which may download its scanner module and adds the INTERNET permission to those flavors' manifests; Scanner itself sends nothing and has no network client. The generic flavor has no Google Play services dependency (`:scanner:dependencies --configuration genericReleaseRuntimeClasspath` shows no `play-services`) and no INTERNET permission; it captures with CameraX and recognizes with Tesseract. Text recognition uses Tesseract in every flavor.

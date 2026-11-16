@@ -13,12 +13,14 @@ mod backup;
 mod documents;
 mod export;
 mod json;
+mod layout;
 mod settings;
 mod text;
 
 pub use backup::*;
 pub use documents::*;
 pub use export::*;
+pub use layout::*;
 pub use settings::*;
 
 pub use uuid::Uuid;
