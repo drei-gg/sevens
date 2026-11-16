@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="unmeasured">
+        <item quantity="one">%d item has not been measured.</item>
+        <item quantity="other">%d items have not been measured.</item>
+    </plurals>
+    <plurals name="selected">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <plurals name="queue">
+        <item quantity="one">Queue %d selected item</item>
+        <item quantity="other">Queue %d selected items</item>
+    </plurals>
+    <plurals name="delete">
+        <item quantity="one">Move %d reviewed item to the trash?</item>
+        <item quantity="other">Move %d reviewed items to the trash?</item>
+    </plurals>
+    <plurals name="unreadable">
+        <item quantity="one">%d file could not be read or changed during the scan.</item>
+        <item quantity="other">%d files could not be read or changed during the scan.</item>
+    </plurals>
+</resources>
