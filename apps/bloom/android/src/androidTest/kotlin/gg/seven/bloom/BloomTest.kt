@@ -59,8 +59,11 @@ class BloomTest {
         ui.waitUntil(15000) {
             ui.onAllNodesWithText("Log today").fetchSemanticsNodes().isNotEmpty()
         }
-        if (ui.onAllNodesWithText("Look around first").fetchSemanticsNodes().isNotEmpty())
-            ui.onNodeWithText("Look around first").performClick()
+        for (label in listOf("Done", "Look around first")) {
+            if (ui.onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty())
+                ui.onNodeWithText(label).performClick()
+        }
+        ui.waitForIdle()
         screenshot("android-today")
         ui.onNodeWithText("Care").performClick()
         ui.onNodeWithText("Add pill plan").performClick()
@@ -87,8 +90,11 @@ class BloomTest {
             ui.onAllNodesWithText("Log today").fetchSemanticsNodes().isNotEmpty()
         }
         ui.waitForIdle()
-        if (ui.onAllNodesWithText("Look around first").fetchSemanticsNodes().isNotEmpty())
-            ui.onNodeWithText("Look around first").performClick()
+        for (label in listOf("Done", "Look around first")) {
+            if (ui.onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty())
+                ui.onNodeWithText(label).performClick()
+        }
+        ui.waitForIdle()
         ui.onNodeWithText("Log today").performClick()
         ui.onNodeWithText("Notes").performScrollTo().performTextReplacement("Android journal smoke")
         ui.activityRule.scenario.recreate()
