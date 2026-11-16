@@ -15,7 +15,7 @@ Debug builds only: `adb shell run-as org.example.sevens.vault.debug touch files/
 
 | iOS | Android |
 | --- | --- |
-| `VaultRepository` actor, CryptoKit, AppleArchive | `VaultRepository` (Kotlin, serialized with a mutex) over the core's v2 API: `header_v2_*`, `index_seal`/`index_open`, `file_encrypt(_fd)`/`file_verify`/`file_decrypt`, `data_encrypt`/`data_decrypt`, `backup_v2_write`/`backup_v2_read(_fd)` |
+| `VaultRepository` actor, CryptoKit, AppleArchive | `VaultRepository` (Kotlin, serialized with a mutex; lock wipes the session identity at once and each operation runs on its own `fork()`) over the core's v2 API: `header_v2_*`, `index_seal`/`index_open`, `file_encrypt(_fd)`/`file_verify`/`file_decrypt`, `data_encrypt`/`data_decrypt`, `backup_v2_write`/`backup_v2_read(_fd)` |
 | Application Support / Caches, file protection, excluded from backup | `noBackupFilesDir/Vault` (vault directories) and `cacheDir/Vault-plaintext` (previews, exports, capture), owner-only; Android backup rules include only the trial record |
 | Keychain item, `.biometryCurrentSet` | Android Keystore AES-256-GCM key (StrongBox when present), per-use strong-biometric authentication, invalidated by a new enrollment, wrapping the core's `export_for_custody()`; BiometricPrompt with "Use your secret" instead of a device-credential fallback |
 | `PrivacyShield`, scene phase | FLAG_SECURE on every window (recents thumbnail, screenshots, recording), a "Vault locked" cover while not resumed, lock on `onStop` |

@@ -148,16 +148,34 @@ class VaultRepositoryTest {
     }
 
     @Test
-    fun lockWaitsForAnInFlightImportWhichStillCommits() = runBlocking<Unit> {
+    fun lockWipesAtOnceWhileAnInFlightImportStillCommits() = runBlocking<Unit> {
         val repo = repository().apply { prepare() }
         repo.create("Async", secret, VaultCredentialKind.PASSPHRASE)
-        val big = source("big.bin", ByteArray(20_000_000) { 5 })
-        val import = async { repo.importFile(big.path, "big.bin", "public.data") }
-        val lock = async { repo.lock() }
-        import.await()
-        lock.await()
+        val big = source("big.bin", ByteArray(40_000_000) { 5 })
+        val import = async(kotlinx.coroutines.Dispatchers.IO) { repo.importFile(big.path, "big.bin", "public.data") }
+        Thread.sleep(150) // the import is encrypting
+        val wiping = System.nanoTime()
+        repo.wipeSession()
+        assertTrue("wipe returned at once", System.nanoTime() - wiping < 50_000_000)
+        assertFalse(repo.isUnlocked())
+        assertFalse("still running when the session was wiped", import.isCompleted)
+        import.await() // finishes and commits on its own copy of the identity
         assertThrows(VaultException.Locked::class.java) { runBlocking { repo.snapshot() } }
+        repo.lock()
         assertEquals(1, repo.unlock(secret, false, VaultCredentialKind.PASSPHRASE).items.size)
+    }
+
+    @Test
+    fun anIndexForgedWithOnlyTheRecipientIsRefused() = runBlocking<Unit> {
+        val repo = repository().apply { prepare() }
+        val library = repo.create("Forge", secret, VaultCredentialKind.PASSPHRASE).library
+        repo.lock()
+        val folder = File(repo.root, library.id.upper())
+        val header = headerV2Decode(File(folder, "header.json").readBytes())
+        val forged = File(folder, "forged.age")
+        dataEncrypt(header.recipient, libraryEncode(library.copy(name = "Attacker")), forged.path)
+        forged.renameTo(File(folder, "index.age"))
+        assertThrows(VaultException.Damaged::class.java) { runBlocking { repo.unlock(secret, false, VaultCredentialKind.PASSPHRASE) } }
     }
 
     @Test

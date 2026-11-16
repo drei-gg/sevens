@@ -1975,6 +1975,8 @@ dependencies = [
  "age",
  "base64",
  "caseless",
+ "hkdf",
+ "hmac",
  "rand",
  "serde",
  "serde_json",

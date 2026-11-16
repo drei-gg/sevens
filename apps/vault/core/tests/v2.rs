@@ -47,7 +47,7 @@ fn create(name: &str, kind: VaultCredentialKind, credential: &str) -> Vault {
     let recovery = generate_recovery_key();
     let header = header_v2_new(library.id, &identity, kind, credential.to_string(), recovery.clone()).unwrap();
     fs::write(dir.at("header.json"), header_v2_encode(&header).unwrap()).unwrap();
-    fs::write(dir.at("index.age"), index_seal(&library, header.recipient.clone()).unwrap()).unwrap();
+    fs::write(dir.at("index.age"), index_seal(&library, &identity).unwrap()).unwrap();
     Vault { dir, header, identity, library, recovery }
 }
 
@@ -65,7 +65,7 @@ impl Vault {
         item
     }
     fn save(&self) {
-        fs::write(self.dir.at("index.age"), index_seal(&self.library, self.header.recipient.clone()).unwrap()).unwrap();
+        fs::write(self.dir.at("index.age"), index_seal(&self.library, &self.identity).unwrap()).unwrap();
     }
     fn reopen(&self, credential: &str, kind: VaultCredentialKind, recovery: bool) -> Result<VaultLibrary, VaultError> {
         let header = header_v2_decode(fs::read(self.dir.at("header.json")).unwrap())?;
@@ -179,7 +179,7 @@ fn encryption_is_randomized() {
     let other = create("random2", VaultCredentialKind::Passphrase, SECRET);
     assert_ne!(vault.header.recipient, other.header.recipient);
     assert_ne!(vault.header.password, other.header.password, "fresh scrypt salt per envelope");
-    assert_ne!(index_seal(&vault.library, vault.header.recipient.clone()).unwrap(), index_seal(&vault.library, vault.header.recipient.clone()).unwrap());
+    assert_ne!(index_seal(&vault.library, &vault.identity).unwrap(), index_seal(&vault.library, &vault.identity).unwrap());
     assert_ne!(generate_recovery_key(), generate_recovery_key());
 }
 
@@ -273,9 +273,9 @@ fn identity_wipe_and_custody() {
     assert!(restored.is_wiped());
     assert_eq!(restored.export_for_custody(), Err(VaultError::Locked));
     assert_eq!(index_open(fs::read(vault.dir.at("index.age")).unwrap(), &restored, vault.header.id), Err(VaultError::Locked));
-    // Encryption needs only the recipient, so a commit can finish after the session locked.
+    // Originals need only the recipient; the index needs the identity.
     assert!(data_encrypt(vault.header.recipient.clone(), b"late".to_vec(), vault.dir.s("late.age")).is_ok());
-    assert!(index_seal(&vault.library, vault.header.recipient.clone()).is_ok());
+    assert_eq!(index_seal(&vault.library, &restored), Err(VaultError::Locked));
 }
 
 #[test]
@@ -490,4 +490,108 @@ fn descriptor_variants_read_an_open_file() {
     let lent = fs::File::open(&output).unwrap();
     let names = backup_v2_read_fd(lent.as_raw_fd(), staging.s("")).unwrap();
     assert_eq!(names, backup_v2_entry_names(&vault.library));
+}
+
+// MARK: index authentication (age alone does not authenticate the sender)
+
+/// An index made by someone who has only the public recipient: the attacker's best effort.
+fn forged_index(library: &VaultLibrary, recipient: &str, with_tag: bool) -> Vec<u8> {
+    let json = library_encode(library).unwrap();
+    let mut plaintext = if with_tag { vec![0u8; 32] } else { vec![] };
+    plaintext.extend(json);
+    let recipient = age::x25519::Recipient::from_str(recipient).unwrap();
+    age::encrypt(&recipient, &plaintext).unwrap()
+}
+
+#[test]
+fn an_index_forged_with_only_the_recipient_is_refused() {
+    let mut vault = create("forge", VaultCredentialKind::Passphrase, SECRET);
+    vault.import("real.bin", b"real");
+    let mut forged = vault.library.clone();
+    forged.name = "Attacker's".into();
+    forged.items.clear();
+    for with_tag in [false, true] {
+        fs::write(vault.dir.at("index.age"), forged_index(&forged, &vault.header.recipient, with_tag)).unwrap();
+        assert_eq!(vault.reopen(SECRET, VaultCredentialKind::Passphrase, false), Err(VaultError::Damaged), "tag: {with_tag}");
+    }
+    // A tag made with another vault's identity, for this vault's id, fails too.
+    let other = create("forge-other", VaultCredentialKind::Passphrase, SECRET);
+    let mut renamed = vault.library.clone();
+    renamed.name = "Other".into();
+    let sealed_by_other = index_seal(&renamed, &other.identity).unwrap();
+    fs::write(vault.dir.at("index.age"), sealed_by_other).unwrap();
+    assert_eq!(vault.reopen(SECRET, VaultCredentialKind::Passphrase, false), Err(VaultError::Damaged));
+    // The genuine index still opens.
+    vault.save();
+    assert_eq!(vault.reopen(SECRET, VaultCredentialKind::Passphrase, false).unwrap(), vault.library);
+}
+
+#[test]
+fn a_blob_swapped_in_with_a_forged_index_is_refused() {
+    let mut vault = create("swap", VaultCredentialKind::Passphrase, SECRET);
+    let item = vault.import("photo.jpg", &sample(5_000));
+    // The attacker encrypts their own original to the public recipient and lists it, with its
+    // true size and digest, in an index they forge.
+    let planted = vault.dir.at("planted.bin");
+    fs::write(&planted, b"attacker content").unwrap();
+    let digest = file_encrypt(vault.header.recipient.clone(), planted.to_string_lossy().to_string(), vault.dir.s(&format!("{}.tmp", item.id))).unwrap();
+    fs::rename(vault.dir.at(&format!("{}.tmp", item.id)), vault.dir.at(&blob_name_v2(item.id))).unwrap();
+    let mut forged = vault.library.clone();
+    forged.items[0].bytes = digest.bytes;
+    forged.items[0].digest = digest.digest.clone();
+    fs::write(vault.dir.at("index.age"), forged_index(&forged, &vault.header.recipient, true)).unwrap();
+    assert_eq!(vault.reopen(SECRET, VaultCredentialKind::Passphrase, false), Err(VaultError::Damaged));
+    // With the genuine index, the planted original fails its digest.
+    vault.save();
+    let genuine = vault.reopen(SECRET, VaultCredentialKind::Passphrase, false).unwrap();
+    assert_eq!(vault.export(&genuine.items[0]), Err(VaultError::Damaged));
+}
+
+#[test]
+fn lock_during_a_long_decrypt_returns_at_once() {
+    let mut vault = create("long", VaultCredentialKind::Passphrase, SECRET);
+    let item = vault.import("big.bin", &sample(64 * 1_048_576));
+    let identity = vault.identity.clone();
+    let path = vault.dir.s(&blob_name_v2(item.id));
+    let (bytes, digest) = (item.bytes, item.digest.clone());
+    let started = std::sync::Arc::new(std::sync::Barrier::new(2));
+    let gate = started.clone();
+    let worker = std::thread::spawn(move || {
+        gate.wait();
+        file_verify(&identity, path, bytes, digest)
+    });
+    started.wait();
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    let wiping = std::time::Instant::now();
+    vault.identity.wipe();
+    assert!(wiping.elapsed() < std::time::Duration::from_millis(50), "wipe waited {:?}", wiping.elapsed());
+    assert!(!worker.is_finished(), "the decrypt was still running when the wipe returned");
+    // The running operation finishes on its own copy; every later use is Locked.
+    assert_eq!(worker.join().unwrap(), Ok(()));
+    assert_eq!(file_verify(&vault.identity, vault.dir.s(&blob_name_v2(item.id)), item.bytes, item.digest.clone()), Err(VaultError::Locked));
+    assert_eq!(vault.identity.fork().err(), Some(VaultError::Locked));
+}
+
+#[test]
+fn an_in_flight_commit_after_lock_succeeds_on_its_own_copy() {
+    let mut vault = create("inflight", VaultCredentialKind::Passphrase, SECRET);
+    // The operation forks before it starts; then the session locks.
+    let operation = vault.identity.fork().unwrap();
+    vault.identity.wipe();
+    let source = vault.dir.at("late.bin");
+    fs::write(&source, b"committed after lock").unwrap();
+    let id = Uuid::new_v4();
+    let measured = file_encrypt(operation.recipient(), source.to_string_lossy().to_string(), vault.dir.s(&blob_name_v2(id))).unwrap();
+    let mut item = library_import_item(&vault.library, "late.bin".into(), "public.data".into(), measured.bytes, measured.digest, None);
+    item.id = id;
+    let changed = library_append_item(&vault.library, item);
+    fs::write(vault.dir.at("index.age"), index_seal(&changed, &operation).unwrap()).unwrap();
+    operation.wipe();
+    drop(operation);
+    // The session identity stayed wiped throughout.
+    assert_eq!(vault.identity.export_for_custody(), Err(VaultError::Locked));
+    assert_eq!(index_seal(&changed, &vault.identity), Err(VaultError::Locked));
+    // The next unlock sees the committed item.
+    vault.library = changed.clone();
+    assert_eq!(vault.reopen(SECRET, VaultCredentialKind::Passphrase, false).unwrap(), changed);
 }

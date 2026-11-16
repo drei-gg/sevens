@@ -5,9 +5,11 @@
 //! - Each vault has a random age X25519 identity. Its public recipient is in `header.json`; the
 //!   identity itself is only ever stored sealed with age's scrypt recipient, once under the
 //!   unlock secret's key material and once under the recovery key.
-//! - `index.age` is the library JSON, age-encrypted to the recipient.
+//! - `index.age` is an HMAC-SHA256 tag (keyed from the identity) and the library JSON, age-encrypted
+//!   to the recipient. The tag authenticates the index; the index's digests bind the originals.
 //! - Each original is `<UUID>.age`, age-encrypted to the recipient, streamed file to file.
-//! - Encryption needs only the recipient; decryption needs the unlocked [`VaultIdentity`], an
+//! - Originals need only the recipient to encrypt; the index and every decryption need the
+//!   unlocked [`VaultIdentity`], an
 //!   opaque object that never crosses the boundary as a string except through
 //!   [`VaultIdentity::export_for_custody`].
 
@@ -22,6 +24,8 @@ use age::{Decryptor, Encryptor, x25519};
 use base64::Engine;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
+use hkdf::Hkdf;
+use hmac::{Hmac, Mac};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::fs::{self, File, OpenOptions};
@@ -157,12 +161,17 @@ impl VaultIdentity {
         Arc::new(Self { inner: Mutex::new(Some(identity)), recipient })
     }
 
-    fn with<T>(&self, run: impl FnOnce(&x25519::Identity) -> Result<T, VaultError>) -> Result<T, VaultError> {
+    /// A copy of the secret, taken under a short lock. Work runs on the copy (zeroized when it
+    /// drops), so [`Self::wipe`] never waits for a long decrypt; an operation already running keeps
+    /// its copy until it ends, and every use after the wipe is `Locked`.
+    fn secret(&self) -> Result<x25519::Identity, VaultError> {
         let guard = self.inner.lock().map_err(|_| VaultError::Locked)?;
-        match guard.as_ref() {
-            Some(identity) => run(identity),
-            None => Err(VaultError::Locked),
-        }
+        guard.as_ref().cloned().ok_or(VaultError::Locked)
+    }
+
+    fn with<T>(&self, run: impl FnOnce(&x25519::Identity) -> Result<T, VaultError>) -> Result<T, VaultError> {
+        let secret = self.secret()?;
+        run(&secret)
     }
 }
 
@@ -178,6 +187,13 @@ impl VaultIdentity {
         if let Ok(mut guard) = self.inner.lock() {
             guard.take(); // x25519-dalek's StaticSecret zeroizes on drop.
         }
+    }
+
+    /// An independent copy for one operation: it lets an operation that started unlocked finish
+    /// committing after the session's identity is wiped, without the platform ever holding the
+    /// secret itself. The operation drops (destroys) its copy when it is done.
+    pub fn fork(&self) -> Result<Arc<VaultIdentity>, VaultError> {
+        Ok(VaultIdentity::new(self.secret()?))
     }
 
     pub fn is_wiped(&self) -> bool {
@@ -526,31 +542,67 @@ pub fn data_decrypt(identity: &VaultIdentity, path: String, bytes: i64, digest: 
 
 // MARK: index
 
-/// The index to write as `index.age`: validated and encoded ([`crate::library_encode`]), then
-/// encrypted to the recipient. Needs no secret.
+/// HMAC-SHA256 tag length at the front of the `index.age` plaintext.
+const INDEX_TAG_BYTES: usize = 32;
+
+/// `Vault/index-mac/v2/<UUID>`: the HKDF info for the index's authentication key.
+pub fn index_mac_info_v2(id: Uuid) -> String {
+    format!("Vault/index-mac/v2/{}", uuid_string(&id))
+}
+
+/// HMAC-SHA256 keyed by HKDF-SHA256 from the identity's secret (its `AGE-SECRET-KEY-1…` text as
+/// input key material, no salt, info [`index_mac_info_v2`]). Only an identity holder can make it.
+fn index_mac(secret: &x25519::Identity, id: Uuid) -> Result<Hmac<Sha256>, VaultError> {
+    let ikm = secret.to_string();
+    let mut key = Zeroizing::new([0u8; 32]);
+    Hkdf::<Sha256>::new(None, ikm.expose_secret().as_bytes()).expand(index_mac_info_v2(id).as_bytes(), key.as_mut()).map_err(|_| VaultError::Damaged)?;
+    <Hmac<Sha256> as Mac>::new_from_slice(key.as_ref()).map_err(|_| VaultError::Damaged)
+}
+
+/// The index to write as `index.age`: validated and encoded ([`crate::library_encode`]), then the
+/// plaintext `tag ‖ json` (tag = HMAC-SHA256 over the exact JSON bytes) age-encrypted to the
+/// identity's recipient. age alone only gives confidentiality: anyone with the public recipient
+/// could encrypt an index, so the tag is what makes it the vault's own. Needs the identity (a
+/// [`VaultIdentity::fork`] for a commit that may outlive the session).
 #[uniffi::export]
-pub fn index_seal(library: &VaultLibrary, recipient: String) -> Result<Vec<u8>, VaultError> {
-    let plaintext = Zeroizing::new(crate::format::library_encode(library)?);
+pub fn index_seal(library: &VaultLibrary, identity: &VaultIdentity) -> Result<Vec<u8>, VaultError> {
+    let json = Zeroizing::new(crate::format::library_encode(library)?);
+    let tag = identity.with(|secret| {
+        let mut mac = index_mac(secret, library.id)?;
+        mac.update(&json);
+        Ok(mac.finalize().into_bytes())
+    })?;
+    let mut plaintext = Zeroizing::new(Vec::with_capacity(INDEX_TAG_BYTES + json.len()));
+    plaintext.extend_from_slice(&tag);
+    plaintext.extend_from_slice(&json);
     let mut out = vec![];
-    encrypt_stream(&recipient, &mut &plaintext[..], &mut out)?;
+    encrypt_stream(&identity.recipient(), &mut &plaintext[..], &mut out)?;
     Ok(out)
 }
 
-/// An `index.age` opened with the identity: 1…32,000,000 bytes, then the library and its identity
-/// against the header's ([`crate::library_decode`]).
+/// An `index.age` opened with the identity: 1…32,000,000 bytes, the age decryption, then the tag
+/// verified in constant time over the JSON before anything is decoded (a missing or wrong tag is
+/// damaged), then the library and its identity against the header's ([`crate::library_decode`]).
 #[uniffi::export]
 pub fn index_open(data: Vec<u8>, identity: &VaultIdentity, header_id: Uuid) -> Result<VaultLibrary, VaultError> {
     if data.is_empty() || data.len() as u64 > SEALED_INDEX_MAX_BYTES {
         return Err(VaultError::Damaged);
     }
-    let plaintext = identity.with(|secret| {
+    let json = identity.with(|secret| {
         let decryptor = Decryptor::new_buffered(&data[..]).map_err(|_| VaultError::Damaged)?;
         let mut reader = decryptor.decrypt(iter::once(secret as &dyn age::Identity)).map_err(|_| VaultError::Damaged)?;
         let mut plaintext = Zeroizing::new(vec![]);
         reader.read_to_end(&mut plaintext).map_err(|_| VaultError::Damaged)?;
-        Ok(plaintext)
+        if plaintext.len() < INDEX_TAG_BYTES {
+            return Err(VaultError::Damaged);
+        }
+        let (tag, json) = plaintext.split_at(INDEX_TAG_BYTES);
+        let mut mac = index_mac(secret, header_id)?;
+        mac.update(json);
+        mac.verify_slice(tag).map_err(|_| VaultError::Damaged)?;
+        Ok(Zeroizing::new(json.to_vec()))
     })?;
-    crate::format::library_decode(plaintext.to_vec(), header_id)
+    crate::format::library_decode(json.to_vec(), header_id)
 }
 
 // MARK: files in a vault directory
