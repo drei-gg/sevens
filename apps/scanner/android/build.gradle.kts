@@ -46,7 +46,17 @@ configure<com.android.build.api.dsl.ApplicationExtension> {
     sourceSets.getByName("personal").java.srcDir("src/gms/kotlin")
     sourceSets.getByName("store").java.srcDir("src/gms/kotlin")
     androidResources { noCompress += "traineddata" }
-    packaging { resources.excludes += listOf("META-INF/native-image/**", "META-INF/versions/**") }
+    // Instrumented tests read the Swift-written backup index the core's golden tests use.
+    sourceSets.getByName("androidTest").assets.srcDir("../core/tests/fixtures")
+    // JavaCPP's jars also carry headers, CMake files and the tesseract CLI under lib/<abi>/; only
+    // the shared libraries belong in the APK.
+    packaging {
+        resources.excludes += listOf("META-INF/native-image/**", "META-INF/versions/**")
+        for (abi in listOf("arm64-v8a", "x86_64")) {
+            jniLibs.excludes += listOf("lib/$abi/include/**", "lib/$abi/lib/**", "lib/$abi/tesseract")
+            resources.excludes += listOf("lib/$abi/include/**", "lib/$abi/lib/**", "lib/$abi/tesseract")
+        }
+    }
 }
 
 val tesseract = "5.5.3-1.5.14"

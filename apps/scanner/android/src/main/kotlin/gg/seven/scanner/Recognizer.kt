@@ -78,7 +78,8 @@ class Recognizer private constructor(private val api: TessBaseAPI) : Closeable {
                 if (!partial.renameTo(model)) throw IllegalStateException("Could not prepare text recognition")
             }
             val api = TessBaseAPI()
-            if (api.Init(root.path, "eng") != 0) {
+            // Tesseract 5 takes the tessdata directory itself (4.0 and later), not its parent.
+            if (api.Init(model.parentFile!!.path + "/", "eng") != 0) {
                 api.deallocate()
                 throw IllegalStateException("Could not start text recognition")
             }

@@ -82,27 +82,10 @@ object Processing {
                 postRotate(90f * turns, source.width / 2f, source.height / 2f)
                 postTranslate((w - source.width) / 2f, (h - source.height) / 2f)
             }
-            drawBitmap(source, matrix, Paint(Paint.FILTER_BITMAP_FLAG).apply { colorFilter = ColorMatrixColorFilter(ColorMatrix(colorControls(settings))) })
+            drawBitmap(source, matrix, Paint(Paint.FILTER_BITMAP_FLAG).apply { colorFilter = ColorMatrixColorFilter(ColorMatrix(ColorControls.matrix(settings.contrast.toFloat(), settings.brightness.toFloat(), settings.grayscale))) })
         }
         source.recycle()
         return out
-    }
-
-    /**
-     * CIColorControls as a 4×5 colour matrix on 0…255 channels: saturation mixes toward
-     * Rec. 709 luma, then brightness adds, then contrast scales around mid-grey.
-     */
-    fun colorControls(settings: PageSettings): FloatArray {
-        val s = if (settings.grayscale) 0f else 1f
-        val c = settings.contrast.toFloat()
-        val b = settings.brightness.toFloat() * 255f
-        val (lr, lg, lb) = Triple(0.2126f, 0.7152f, 0.0722f)
-        val offset = c * b + 128f * (1 - c)
-        fun row(r: Float, g: Float, bl: Float) = floatArrayOf(c * r, c * g, c * bl, 0f, offset)
-        return row(lr * (1 - s) + s, lg * (1 - s), lb * (1 - s)) +
-            row(lr * (1 - s), lg * (1 - s) + s, lb * (1 - s)) +
-            row(lr * (1 - s), lg * (1 - s), lb * (1 - s) + s) +
-            floatArrayOf(0f, 0f, 0f, 1f, 0f)
     }
 
     fun jpeg(bitmap: Bitmap, quality: Double = geometry.pageJpegQuality): ByteArray =
@@ -288,4 +271,30 @@ object Processing {
     }
 
     const val EXPORTS = "ScannerExports"
+}
+
+/**
+ * Core Image's CIColorControls as a 4×5 colour matrix on 0…255 channels: saturation mixes toward
+ * Rec. 709 luma, then brightness adds, then contrast scales around mid-grey. Pure, so it is tested
+ * on the JVM.
+ */
+object ColorControls {
+    fun matrix(contrast: Float, brightness: Float, grayscale: Boolean): FloatArray {
+        val s = if (grayscale) 0f else 1f
+        val c = contrast
+        val b = brightness * 255f
+        val (lr, lg, lb) = Triple(0.2126f, 0.7152f, 0.0722f)
+        val offset = c * b + 128f * (1 - c)
+        fun row(r: Float, g: Float, bl: Float) = floatArrayOf(c * r, c * g, c * bl, 0f, offset)
+        return row(lr * (1 - s) + s, lg * (1 - s), lb * (1 - s)) +
+            row(lr * (1 - s), lg * (1 - s) + s, lb * (1 - s)) +
+            row(lr * (1 - s), lg * (1 - s), lb * (1 - s) + s) +
+            floatArrayOf(0f, 0f, 0f, 1f, 0f)
+    }
+
+    /** One pixel through [matrix], clamped as the platform does. */
+    fun apply(matrix: FloatArray, r: Float, g: Float, b: Float): Triple<Float, Float, Float> {
+        fun ch(i: Int) = (matrix[i] * r + matrix[i + 1] * g + matrix[i + 2] * b + matrix[i + 4]).coerceIn(0f, 255f)
+        return Triple(ch(0), ch(5), ch(10))
+    }
 }

@@ -275,7 +275,7 @@ fun LibraryScreen(model: ScannerModel) {
     ) { padding ->
         LazyVerticalGrid(
             columns = GridCells.Adaptive(if (large) 260.dp else 150.dp),
-            modifier = Modifier.padding(padding).fillMaxSize().readable(),
+            modifier = Modifier.padding(padding).fillMaxSize().readable().testTag("scanner.library"),
             contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.s),
             horizontalArrangement = Arrangement.spacedBy(Space.m),
             verticalArrangement = Arrangement.spacedBy(Space.l),
