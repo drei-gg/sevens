@@ -1,23 +1,67 @@
 # vault-core
 
-Vault's shared logic in Rust, for the iOS and Android apps through [UniFFI](https://mozilla.github.io/uniffi-rs/). One implementation, so a credential rule, an index field or a backup frame can't drift between platforms.
+Vault's shared logic in Rust, for the iOS and Android apps through [UniFFI](https://mozilla.github.io/uniffi-rs/). One implementation, so a credential rule, an index field, a backup frame or, from format version 2, the encryption itself can't drift between platforms.
 
-**Source:** ported from the iOS app's `Kit/Sources/VaultCore` and the pure parts of `Kit/Sources/VaultStorage` as committed on 15 November 2026.
+**Source:** ported from the iOS app's `Kit/Sources/VaultCore` and the pure parts of `Kit/Sources/VaultStorage` as committed on 15 November 2026; format version 2 added on 16 November 2026.
 
 **In the core:**
 
 - Credentials (`VaultCredentialKind`): passphrase, PIN and pattern rules, their domain-separated key material, and 5×5 pattern canonicalization (`pattern_append`, `pattern_decode`), crossed dots included.
 - The library index (`VaultLibrary`, `VaultItem`, `VaultFolder`, `VaultOrder`): JSON keys and defaults, validation in Swift's order, search (`localizedStandardContains`) and ordering (`localizedStandardCompare` for names).
 - The repository's library edits without storage: import ordering, notes, rename, favorite, trash, move, folders, preferences, manual reorder, permanent delete, backup stamp.
-- The format around the cryptography: `header.json` (`VaultHeader`, `KeyEnvelope`), the key-derivation parameters and their check, the AES-GCM associated-data strings, the HKDF salt and info for file keys, blob names, size limits (`vault_format`), and which envelope a credential unlocks (`unlock_route`).
-- The `.vault7` backup framing: name rules, the writer's prefixes and an in-memory codec whose reader applies Swift's checks in Swift's order.
+- Format version 1 (the iPhone's current files): `header.json` (`VaultHeader`, `KeyEnvelope`), the key-derivation parameters and their check, the AES-GCM associated-data strings, the HKDF salt and info for file keys, blob names, size limits (`vault_format`), which envelope a credential unlocks (`unlock_route`) and the `.vault7` framing (`7DVAULT1`). Its cryptography stays native on iOS.
+- Format version 2 (cross-platform, below): all of it, cryptography included, built on age.
 
-**Stays native:**
+**Stays native:** randomness for version 1 only, Keychain / Android Keystore custody for biometric unlock, file protection and backup exclusion, directory staging and moves, temporary-file cleanup, the session and lock lifecycle, automatic-backup delivery, document pickers, purchases and every pixel.
 
-- All cryptography: PBKDF2-HMAC-SHA256 (CommonCrypto), AES-GCM key wrapping and index sealing, HKDF-SHA256 file keys and SHA-256 digests (CryptoKit), the Apple Encrypted Archive streams for originals (AppleArchive, profile `hkdf_sha256_aesctr_hmac__symmetric__none`), and randomness for master keys, salts and recovery keys (`SecRandomCopyBytes`).
-- Keychain custody for biometric unlock, iOS file protection and backup exclusion, atomic writes, staging and directory moves, streamed backup reading and writing, temporary-file cleanup, the session actor and lock lifecycle, SevenBackup delivery, purchases and every pixel.
+## Format version 2 (the cross-platform spec)
 
-**Android's crypto, when it comes:** PBKDF2 from `pbkdf2` with `hmac` and `sha2`, AES-256-GCM from `aes-gcm`, HKDF from `hkdf`, SHA-256 from `sha2` (all RustCrypto, audited `aes-gcm`), randomness from `getrandom`, or the platform's `javax.crypto` and `SecureRandom`. The originals are the hard part: Apple Encrypted Archive has no Android or RustCrypto implementation, so Android needs a reimplementation of that profile (HKDF-SHA256, AES-CTR, HMAC per segment) checked against Apple-written files, or a new versioned blob format with a migration.
+Version 2 is one encrypted format for every platform: an Android vault and an iPhone vault are the same files, and a `.vault7` backup from one restores on the other. It is built on [age](https://age-encryption.org/v1) (the C2SP specification `c2sp.org/age`) through the `age` crate (str4d/rage, MIT OR Apache-2.0), so the cryptography is a reviewed, specified format with independent implementations rather than our own composition of primitives. Nothing in this crate implements a cipher, a KDF or a MAC. Randomness is the operating system's CSPRNG (`getrandom`, through `rand::rngs::OsRng` and the `age` crate).
+
+### Keys
+
+- Each vault has a random **age X25519 identity** (`AGE-SECRET-KEY-1…`), generated once (`vault_identity_generate`). It is the vault's master key. Its public **recipient** (`age1…`) is stored in plain text in `header.json`.
+- The identity is never written unsealed. It lives in two **envelopes**, each a complete age file encrypted with age's **scrypt recipient** (a passphrase stanza, `-> scrypt <salt> <log N>`):
+  - `password`, over `credential_kind_material(kind, value)`, the same domain-separated material as version 1 (`Vault/PIN/v1/…`, `Vault/Pattern/5/v1/…`, a passphrase as typed), after the same credential rules (`credential_kind_validate`).
+  - `recovery`, over the recovery key exactly as shown to the person: 32 random bytes, standard Base64 (`generate_recovery_key`), the same shape as version 1.
+- An envelope's plaintext is a context line, a line feed, then the identity's secret (UTF-8, no trailing newline):
+
+  ```text
+  Vault/password/v2/<VAULT UUID>
+  AGE-SECRET-KEY-1…
+  ```
+
+  The recovery envelope's context is `Vault/recovery/v2/<VAULT UUID>`.
+
+  Opening checks that the context names this vault and this role, and that the identity's public key is the header's `recipient`. A wrong secret is `InvalidCredential`; an envelope copied from another vault (even one with the same passphrase), a recovery envelope moved into `password`, or an identity that is not the header's recipient is `Damaged`.
+- **scrypt work factor:** new envelopes use log₂N = **17** (`SCRYPT_LOG_N`), with age's fixed r = 8, p = 1: 128 · N · r = **128 MiB** of memory and roughly 0.3–1 s on a current phone per attempt. That is OWASP's minimum recommendation for scrypt (N = 2¹⁷, r = 8, p = 1), the most a low-memory phone can give one attempt without risking the process, and unlock tries one envelope per vault of the chosen kind, so the cost multiplies with the number of vaults. Opening accepts at most log₂N = **18** (`SCRYPT_MAX_LOG_N`, 256 MiB), refused before any work otherwise, so a crafted backup cannot ask a phone for gigabytes. A later version can raise the factor by rewrapping (below); the cap moves with it.
+- **Why scrypt, not Argon2id:** age specifies exactly one passphrase KDF, scrypt, for its passphrase recipient. Using Argon2id would mean wrapping the identity ourselves (our own KDF-plus-AEAD composition), which is what building on an established format avoids; the envelopes are standard age files any age implementation opens with the material. Argon2id is the stronger memory-hard function per byte of memory, and the difference is acknowledged: short PINs and patterns remain guessable whichever KDF is used (the SPEC says so), and a passphrase's strength dominates. If age adopts an Argon2id stanza, a later format version can rewrap to it without touching content.
+
+### Files in a vault directory
+
+| File | Contents |
+| --- | --- |
+| `header.json` | JSON, at most 16,384 bytes: `version` (2), `id` (upper-case UUID), `recipient` (`age1…`), `credentialKind` (`passphrase`, `pin`, `pattern`; required), `password` and `recovery` (Base64 of the envelope age files). |
+| `index.age` | The library JSON (version 1's `VaultLibrary` coding, `library_encode`), age-encrypted to `recipient`. At most 32,000,000 bytes; opened with the identity, then `library.id` must equal the header's `id`. |
+| `<UUID>.age` | Each original, upper-case item UUID, age-encrypted to `recipient`, streamed file to file in 1 MiB chunks (age's STREAM: 64 KiB authenticated chunks, the last one marked final, so truncation and trailing bytes fail). |
+
+- Decrypting verifies the plaintext's length and SHA-256 against the item's `bytes` and `digest`, so an original swapped for another item's (same vault) is `Damaged`; another vault's file does not decrypt at all.
+- **Encryption needs only the recipient.** Writing an original (`file_encrypt`, `data_encrypt`) or the index (`index_seal`) never needs the secret, so an import, capture or note already in flight can finish committing after the session locks. Starting a new import still needs the decrypted index to append to.
+- The unlocked identity crosses to the platforms only as `VaultIdentity`, an opaque UniFFI object. `wipe()` (call it on lock) drops the secret, which zeroizes it; so does releasing the object. Its one export, `export_for_custody()`, exists solely so the platform can wrap the secret with a hardware-held key for biometric unlock (Android Keystore / StrongBox through androidx.biometric; the iPhone Keychain); `vault_identity_from_custody` takes it back and checks it against the header's recipient.
+- **Changing the unlock method or secret** replaces only the `password` envelope (`header_v2_rewrap_password`); a new recovery key replaces only `recovery` (`header_v2_rewrap_recovery`). The index and originals are untouched. Older backups keep the envelopes they were made with.
+- Automatic backup's revision is SHA-256 (hex) over `header.json` then `index.age` (`vault_revision_v2`).
+
+### Backup (`.vault7`, version 2)
+
+The version 1 framing with a new magic: `7DVAULT2`, a big-endian UInt64 entry count, then per entry a UInt64 name length, the UTF-8 name, a UInt64 payload length and the payload. Entries are `header.json`, `index.age` and every item's `<UUID>.age`, in that order; payloads are the vault's files byte for byte (already authenticated ciphertext). `backup_v2_write` streams a vault directory to a file; `backup_v2_read` streams a backup into an empty staging directory, and `backup_v2_container_decode` is the same reader in memory. Both refuse, before writing anything further: any other magic (`Unsupported`), a version 1 backup (`7DVAULT1`: `OlderBackup`, "made by an older iPhone version; update Vault on the iPhone and back up again", never `Damaged`), fewer than 2 or more than 1,000,000 entries, a name that is empty, over 80 bytes, not UTF-8, not one of the three accepted forms or repeated, a payload past the end of the file, a header over 16,384 or an index over 32,000,000 bytes, trailing bytes, and a missing header or index (all `Damaged`). No path from a backup is used: entries are created only under their validated fixed names, with create-new semantics. The caller then opens the header and index, checks `backup_v2_names_match`, verifies every original, and only then publishes the directory. A version 1 reader (the iPhone today) refuses a version 2 backup as `Unsupported`.
+
+### Errors
+
+`VaultError` keeps Swift's cases in Swift's order; version 2 appends `OlderBackup`.
+
+### Migrating a version 1 vault (iPhone)
+
+The iPhone opens the version 1 vault with its own cryptography as today, then: `vault_identity_generate`; `header_v2_new` with the credential just used to unlock and a new `generate_recovery_key` (version 1's recovery key cannot be recovered from the vault, so the person must save the new one); `index_seal` the library; for each item, decrypt the AppleArchive original to a protected temporary file and `file_encrypt` it to `<UUID>.age` (then `file_verify`), in a staging directory published only when complete; then remove the version 1 files. Version 1 functions stay so older vaults and backups keep opening during and after the migration.
 
 ## Build
 
@@ -33,6 +77,7 @@ Needs Rust (stable), `rustup target add aarch64-linux-android armv7-linux-androi
 ## Tests
 
 - `tests/swift_parity.rs`: every VaultCore test from the iOS app, one to one, under the Swift names. Where a VaultStorage test also checks a rule this crate owns (framing, credential routing, library edits), that part is ported under the Swift name too.
+- `tests/v2.rs`: the SPEC's verification gates on format version 2, against the real encryption: round-trip original bytes across chunk boundaries, wrong credentials and kinds, modified/truncated/extended ciphertext, randomized encryption, independent vaults and envelope swaps, interrupted writes, credential rotation without touching content, identity wipe and custody, header versions and limits, backup restore into clean storage, framing refusals (path traversal, duplicates, trailing data, truncation, oversize, old and foreign magic), trash and restore, revisions; and interoperability with the reference implementation through C2SP CCTV age test vectors made by Go age (`tests/fixtures/age/`: decrypting an X25519 file to its published payload hash, real scrypt stanzas, and a work factor of 2²³ refused before any work).
 - `tests/golden.rs`: files and answers from Swift's real code.
   - The app encodes the index and header with a plain `JSONEncoder()`, whose key order is not fixed on swift-foundation, so those files cannot be byte for byte. Rust must read Swift's files back equal and re-encode the same JSON value (`swift_written_*_read_back_equal`), and Swift must read the files Rust writes (`rust_written_files_are_the_ones_swift_read`).
   - The `.vault7` framing is deterministic: Swift's container must come back byte for byte.
@@ -40,7 +85,7 @@ Needs Rust (stable), `rustup target add aarch64-linux-android armv7-linux-androi
 
 The fixtures were made by `tests/swift-golden/main.swift`, built in `docker.io/library/swift:6.3` with copies of `Credential.swift`, `Library.swift`, `BackupContainer.swift` (CryptoKit guard removed, `ProtectedFiles.protect` stubbed) and the `KeyEnvelope`/`VaultHeader` structs from `Crypto.swift`. It writes the Swift fixtures to `out/`, and checks the Rust files in `rust/` (`tests/fixtures/rust/` plus the committed Swift container) read back equal. All salts and sealed boxes are byte patterns, not secrets. Name order and search were checked on swift-foundation (Linux, ICU), not on Apple's Foundation, and the Rust collation models ICU root order rather than bundling it, so uncommon scripts and symbols may still order differently on a phone.
 
-Platform tests keep covering what stays native (encryption round trips, tampering, truncation, restore without overwrite, lock cleanup, UI).
+Platform tests keep covering what stays native (version 1 encryption on iOS, storage staging, restore without overwrite, lock cleanup, biometric custody, UI).
 
 ## Known differences
 

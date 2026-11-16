@@ -3,7 +3,7 @@ name = "vault-core"
 version = "0.1.0"
 edition = "2024"
 license = "GPL-3.0-only"
-description = "Vault's shared logic: credentials and patterns, the library index and its validation, the vault header, key-derivation parameters and the .vault7 backup framing. Bound to Swift and Kotlin with UniFFI."
+description = "Vault's shared logic: credentials and patterns, the library index and its validation, the version 1 header and .vault7 framing, and format version 2 (age encryption for envelopes, index, originals and backups). Bound to Swift and Kotlin with UniFFI."
 publish = false
 
 [lib]
@@ -29,6 +29,10 @@ caseless = "=0.2.2"
 unicode-segmentation = "=1.13.3"
 unicode-normalization = "=0.1.26"
 thiserror = "=2.0.21"
+age = { version = "=0.12.1", default-features = false }
+zeroize = "=1.9.1"
+sha2 = "=0.10.9"
+rand = "=0.8.8"
 
 [dev-dependencies]
 serde_json = "1"
@@ -42,3 +46,8 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+
+# scrypt and age's ciphers are unusably slow unoptimised; tests and the JVM test library build
+# them optimised (the crate itself stays a normal debug build).
+[profile.dev.package."*"]
+opt-level = 3
