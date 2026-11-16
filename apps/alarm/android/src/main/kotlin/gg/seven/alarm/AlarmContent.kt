@@ -41,17 +41,23 @@ internal val AlarmContent =
                         "Portable backups and exports",
                     ),
             ),
+        // iOS never presents a trial-ended sheet (expiry shows in Settings only, never over a ringing
+        // alarm or mission), so AlarmModel marks it as seen. These lists are SPEC "Trial"'s split,
+        // kept should SevenRoot ever show it.
         trialEnded =
             TrialEndedContent(
                 stillFree =
                     listOf(
                         "Alarms you already enabled keep ringing",
-                        "Stopping alarms",
-                        "Reading, exporting and deleting your history",
+                        "Turning alarms off, deleting them and stopping them",
+                        "Correcting, exporting and deleting your history",
+                        "Importing a backup, with its routines turned off",
                     ),
                 unlockKeeps =
                     listOf(
-                        "New alarms, missions and loops",
+                        "Creating and editing alarms, loops and naps",
+                        "Turning routines back on",
                     ),
             ),
+        notStartedStatus = "Free trial not started. Existing alarms and history remain available.",
     )
