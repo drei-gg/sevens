@@ -210,7 +210,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                     try {
                         val type = Types.identifier(application.contentResolver.getType(uri), name)
                         val descriptor = application.contentResolver.openFileDescriptor(uri, "r") ?: throw VaultException.MissingFile()
-                        descriptor.use { repository.importFile("/proc/self/fd/${it.fd}", name, type, folder) }
+                        descriptor.use { repository.importDescriptor(it.fd, name, type, folder) }
                         successes += 1
                     } catch (e: Exception) {
                         failures += if (fromPhotos) "Item ${index + 1}: ${e.vaultMessage}" else "$name: ${e.vaultMessage}"
@@ -300,7 +300,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
     fun restore(uri: Uri, credential: String, recovery: Boolean, kind: VaultCredentialKind) =
         perform("Verifying backup…") {
             val descriptor = application.contentResolver.openFileDescriptor(uri, "r") ?: throw VaultException.MissingFile()
-            descriptor.use { repository.restore("/proc/self/fd/${it.fd}", credential, recovery, kind) } to null
+            descriptor.use { repository.restoreDescriptor(it.fd, credential, recovery, kind) } to null
         }
 
     fun cleanPresentation() {

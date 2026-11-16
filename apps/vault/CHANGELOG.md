@@ -2,6 +2,11 @@
 
 ## 0.1.0 — unreleased
 
+### Vault for Android, and one encrypted format — 16 November 2026
+
+- Vault runs on Android: independent vaults opened by passphrase, PIN or 5×5 pattern with no vault list, recovery keys, opt-in fingerprint or face unlock for one vault (Android Keystore, StrongBox when present), folders, notes, favorites, search, sorting, list and grid, multi-select, trash with undo, Files and photo-picker imports, in-app camera capture, in-app previews, export, manual and automatic encrypted backup to a chosen folder, and restore that never overwrites. Hidden from screenshots and recents; locks when you leave.
+- Format version 2: vaults and backups are encrypted with age (age-encryption.org/v1) in the shared core, the same files on every platform. Android uses it from the start; the iPhone app keeps version 1 until it migrates, and a version 1 backup on Android is refused as an older iPhone format, never as damaged.
+
 ### One core for both phones — 15 November 2026
 
 - Vault's credential rules, pattern canonicalization, library index and edits, header format, size limits and `.vault7` backup framing now come from one shared core for the iPhone and Android apps. All encryption, key derivation, Keychain custody and file protection stay native on the phone, and recovery keys and note text never enter the core. Existing vaults and backups open unchanged.

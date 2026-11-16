@@ -13,6 +13,7 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview as CameraPreview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -105,10 +106,19 @@ private fun Viewfinder(model: VaultModel, onCaptured: (File) -> Unit, onClose: (
     }
     Box(Modifier.fillMaxSize()) {
         AndroidView({ view }, Modifier.fillMaxSize())
-        IconButton(onClick = onClose, modifier = Modifier.statusBarsPadding().padding(Space.s).align(Alignment.TopStart)) {
-            Icon(Icons.Outlined.Close, "Close camera", tint = Color.White)
+        FilledIconButton(
+            onClick = onClose,
+            colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.Black.copy(alpha = 0.55f), contentColor = Color.White),
+            modifier = Modifier.statusBarsPadding().padding(Space.s).align(Alignment.TopStart),
+        ) {
+            Icon(Icons.Outlined.Close, "Close camera")
         }
-        Column(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = Space.l), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.s)) {
+        // The controls sit on a dark platter so they read over any scene.
+        Column(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color.Black.copy(alpha = 0.55f)).navigationBarsPadding().padding(top = Space.m, bottom = Space.l),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Space.ms),
+        ) {
             Text(failure ?: "The photo goes straight into this vault, not your gallery.", color = Color.White, style = MaterialTheme.typography.bodySmall)
             FilledIconButton(
                 onClick = {

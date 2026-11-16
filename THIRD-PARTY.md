@@ -82,3 +82,20 @@ MIT copyright and permission text and Apache-2.0 license text ship in the app's 
 Google Play services Wearable (the Wear OS Data Layer, the counterpart of Apple's WatchConnectivity) is likewise a platform SDK, not an open-source library. It is in the Wear OS app and in the phone's personal and store flavors only; the generic phone flavor has neither it nor its Google Play services dependencies (`:fast:dependencies --configuration genericReleaseRuntimeClasspath` shows no `play-services`). Only the timer snapshot (revision, start, goal, today's water total, whether records can be added) and the watch's start / end / add-water requests cross it, device to device through Google Play services; journal, weight and reflections never do. It adds no app networking, analytics or backend.
 
 Google Play Billing is a platform SDK, not an open-source library. Its declared dependencies include Google transport and Play services; store builds may contact Google for billing and billing-related diagnostics. No journal, fasting or measurement records are passed to the billing adapter. No developer analytics, advertising SDK, backend or application network client is added. Do not claim that the store binary contains no SDK networking. Generic and personal builds do not have the billing module; generic builds have no Google Play services dependency at all (personal has the Wear OS Data Layer, above).
+
+## Android Vault
+
+Versions are pinned in `apps/vault/android/build.gradle.kts`; resolved versions are locked in its `gradle.lockfile`. The same libraries in every flavor (no Google Play services). Vault's encryption is the Rust core's (age, above); these libraries are platform plumbing and viewers. Their Apache-2.0 text, and the Rust crates' BSD and MIT notices (`Vault-core-crates.txt`), ship in the app's notices.
+
+| Name | Version | Licence, URL | Used for |
+|---|---|---|---|
+| AndroidX Biometric | 1.1.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | BiometricPrompt with a Keystore crypto object for the opt-in biometric unlock |
+| AndroidX Fragment | 1.9.1 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | FragmentActivity, which hosts BiometricPrompt |
+| AndroidX WorkManager | 2.12.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Delivery opportunities for prepared automatic backups (iOS BGProcessingTask) |
+| AndroidX DocumentFile | 1.1.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Writing backups and exports into a chosen Storage Access Framework folder |
+| AndroidX ExifInterface | 1.4.1 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Upright thumbnails and previews before Android 9 |
+| AndroidX CameraX (core, camera2, lifecycle, view) | 1.6.2 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Taking a photo inside the app, straight into the vault, never to MediaStore |
+| AndroidX Media3 ExoPlayer / UI | 1.11.1 | Apache-2.0, https://github.com/androidx/media | Video and audio previews from the temporary decrypted copy |
+| Telephoto zoomable | 0.19.0 | Apache-2.0, https://github.com/saket/telephoto | Pinch-zoom and pan in image previews |
+| org.json | 20250517 | Public domain (JSON License removed; https://github.com/stleary/JSON-java) | Unit tests only: Android's `org.json` on the JVM |
+

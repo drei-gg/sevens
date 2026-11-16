@@ -78,7 +78,7 @@ fun LockScreen(model: VaultModel) {
         SettingsScreen(model, onBack = { settings = false })
         return
     }
-    var credential by rememberSaveable { mutableStateOf("") }
+    var credential by remember { mutableStateOf("") }
     var recovery by rememberSaveable { mutableStateOf(false) }
     var kind by rememberSaveable { mutableStateOf(VaultCredentialKind.PASSPHRASE) }
     var creating by rememberSaveable { mutableStateOf(false) }
@@ -114,13 +114,16 @@ fun LockScreen(model: VaultModel) {
                             kind = it
                             credential = ""
                         }
-                    CredentialInput(if (recovery) VaultCredentialKind.PASSPHRASE else kind, credential, if (recovery) "Recovery key" else kind.title, "vault.credential") { credential = it }
-                    Button(
-                        onClick = {
+                    val unlock = {
+                        if (credential.isNotEmpty() && !model.busy) {
                             val secret = credential
                             credential = ""
                             model.unlock(secret, recovery, kind)
-                        },
+                        }
+                    }
+                    CredentialInput(if (recovery) VaultCredentialKind.PASSPHRASE else kind, credential, if (recovery) "Recovery key" else kind.title, "vault.credential", onSubmit = unlock) { credential = it }
+                    Button(
+                        onClick = unlock,
                         enabled = credential.isNotEmpty() && !model.busy,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("vault.unlock"),
                     ) {
@@ -168,8 +171,8 @@ fun Progress(text: String) {
 @Composable
 fun CreateVaultScreen(model: VaultModel, onClose: () -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
-    var repeated by rememberSaveable { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var repeated by remember { mutableStateOf("") }
     var kind by rememberSaveable { mutableStateOf(VaultCredentialKind.PASSPHRASE) }
     var acknowledged by rememberSaveable { mutableStateOf(false) }
     val ready = name.isNotEmpty() && kind.valid(password) && password == repeated && acknowledged && !model.busy
@@ -267,7 +270,7 @@ fun copySensitive(context: Context, text: String) {
 fun RestoreVaultScreen(model: VaultModel, onClose: () -> Unit) {
     var file by rememberSaveable { mutableStateOf<Uri?>(null) }
     var fileName by rememberSaveable { mutableStateOf<String?>(null) }
-    var credential by rememberSaveable { mutableStateOf("") }
+    var credential by remember { mutableStateOf("") }
     var recovery by rememberSaveable { mutableStateOf(false) }
     var kind by rememberSaveable { mutableStateOf(VaultCredentialKind.PASSPHRASE) }
     val context = LocalContext.current

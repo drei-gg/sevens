@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Visibility
@@ -23,6 +24,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -44,7 +46,7 @@ fun CredentialKindPicker(kind: VaultCredentialKind, onChange: (VaultCredentialKi
 
 /** iOS `CredentialInput`: a secret field (digits for a PIN), or the pattern pad. */
 @Composable
-fun CredentialInput(kind: VaultCredentialKind, value: String, label: String, tag: String, onChange: (String) -> Unit) {
+fun CredentialInput(kind: VaultCredentialKind, value: String, label: String, tag: String, onSubmit: (() -> Unit)? = null, onChange: (String) -> Unit) {
     if (kind == VaultCredentialKind.PATTERN) PatternPad(value, label, tag, onChange)
     else {
         var shown by rememberSaveable { mutableStateOf(false) }
@@ -59,7 +61,9 @@ fun CredentialInput(kind: VaultCredentialKind, value: String, label: String, tag
                 KeyboardOptions(
                     keyboardType = if (kind == VaultCredentialKind.PIN) KeyboardType.NumberPassword else KeyboardType.Password,
                     autoCorrectEnabled = false,
+                    imeAction = if (onSubmit != null) ImeAction.Done else ImeAction.Next,
                 ),
+            keyboardActions = KeyboardActions(onDone = { onSubmit?.invoke() }),
             trailingIcon = {
                 IconButton(onClick = { shown = !shown }) {
                     Icon(if (shown) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, if (shown) "Hide $label" else "Show $label")

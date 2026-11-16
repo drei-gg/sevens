@@ -183,16 +183,23 @@ class VaultRepository(val root: File, val temporary: File) {
     }
 
     /**
-     * Encrypt `source` (a file path, or `/proc/self/fd/N` for a document) into the vault: the
+     * Encrypt `source` (a file path) into the vault: the
      * core streams and measures it, the copy is verified by decrypting it, and only then is it
      * named and the index committed. The source is never changed or deleted.
      */
-    suspend fun importFile(source: String, name: String, type: String, folder: UUID? = null): VaultItem = serial {
+    suspend fun importFile(source: String, name: String, type: String, folder: UUID? = null): VaultItem =
+        importWith(name, type, folder) { recipient, staging -> fileEncrypt(recipient, source, staging) }
+
+    /** [importFile] from an open descriptor (a document or photo-picker item), kept open by the caller. */
+    suspend fun importDescriptor(fd: Int, name: String, type: String, folder: UUID? = null): VaultItem =
+        importWith(name, type, folder) { recipient, staging -> fileEncryptFd(recipient, fd, staging) }
+
+    private suspend fun importWith(name: String, type: String, folder: UUID?, encrypt: (String, String) -> PlainDigest): VaultItem = serial {
         val s = session()
         libraryCheckImport(s.library, name, folder)
         val staging = File(s.directory, STAGING + UUID.randomUUID())
         try {
-            val measured = fileEncrypt(s.header.recipient, source, staging.path)
+            val measured = encrypt(s.header.recipient, staging.path)
             commitImport(s, staging, libraryImportItem(s.library, name, type, measured.bytes, measured.digest, folder))
         } finally {
             staging.delete()
@@ -335,11 +342,18 @@ class VaultRepository(val root: File, val temporary: File) {
      * Restore: the whole backup is read into staging, opened, matched against its index and every
      * original verified before the directory is published. An existing vault is never replaced.
      */
-    suspend fun restore(input: String, credential: String, recovery: Boolean, kind: VaultCredentialKind): VaultLibrary = serial {
+    suspend fun restore(input: String, credential: String, recovery: Boolean, kind: VaultCredentialKind): VaultLibrary =
+        restoreWith(credential, recovery, kind) { backupV2Read(input, it) }
+
+    /** [restore] from an open descriptor (a chosen document), kept open by the caller. */
+    suspend fun restoreDescriptor(fd: Int, credential: String, recovery: Boolean, kind: VaultCredentialKind): VaultLibrary =
+        restoreWith(credential, recovery, kind) { backupV2ReadFd(fd, it) }
+
+    private suspend fun restoreWith(credential: String, recovery: Boolean, kind: VaultCredentialKind, read: (String) -> List<String>): VaultLibrary = serial {
         val staging = File(root, ".stage-" + UUID.randomUUID())
         try {
             protectedDirectory(staging)
-            val names = backupV2Read(input, staging.path)
+            val names = read(staging.path)
             val found = readHeader(staging)
             if (!recovery && found.credentialKind != kind) throw VaultException.InvalidCredential()
             val opened = headerV2Open(found, credential, kind, recovery)

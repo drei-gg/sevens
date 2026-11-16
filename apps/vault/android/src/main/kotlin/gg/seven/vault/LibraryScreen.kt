@@ -284,7 +284,11 @@ fun LibraryScreen(model: VaultModel) {
                                 stateDescription = if (addMenu) "Expanded" else "Collapsed"
                             },
                         ) {
-                            Icon(if (checkedProgress > 0.5f) Icons.Outlined.Close else Icons.Outlined.Add, null)
+                            Icon(
+                                if (checkedProgress > 0.5f) Icons.Outlined.Close else Icons.Outlined.Add,
+                                null,
+                                tint = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.onPrimaryContainer, MaterialTheme.colorScheme.onPrimary, checkedProgress),
+                            )
                         }
                     },
                 ) {
@@ -345,13 +349,16 @@ fun LibraryScreen(model: VaultModel) {
             if (model.importResult.isNotEmpty()) item(span = full) { Caption(model.importResult) }
             if (!paid && !trash)
                 item(span = full) {
-                    Caption("Your free 7 days have ended. Everything here stays readable, exportable and backed up; adding files and notes is part of the unlock.")
+                    Caption(
+                        if (entitlement is Entitlement.NotStarted) "Start your free 7 days to add files and notes. Everything here stays readable and exportable."
+                        else "Your free 7 days have ended. Everything here stays readable, exportable and backed up; adding files and notes is part of the unlock."
+                    )
                 }
             if (!trash && query.isEmpty()) {
                 val children = library.folders.filter { it.parent == folder }
                 if (children.isNotEmpty())
                     item(span = full) {
-                        Section(title = "Folders") {
+                        Section(Modifier.padding(top = Space.s), title = "Folders") {
                             children.forEach { child ->
                                 row { shapes ->
                                     var options by remember { mutableStateOf(false) }
@@ -383,7 +390,7 @@ fun LibraryScreen(model: VaultModel) {
             item(span = full) {
                 Text(
                     if (trash) "Recently Deleted" else "Your files",
-                    Modifier.padding(start = Space.m, top = Space.s).semantics { heading() },
+                    Modifier.padding(start = Space.m, top = Space.m, bottom = Space.xs).semantics { heading() },
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -498,7 +505,7 @@ fun LibraryScreen(model: VaultModel) {
 
 @Composable
 fun Caption(text: String) {
-    Text(text, Modifier.padding(horizontal = Space.m), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(text, Modifier.padding(start = Space.m, end = Space.m, top = Space.xs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 /** iOS `VaultThumbnail`: images get a small decoded thumbnail; the plaintext copy is removed at once. */

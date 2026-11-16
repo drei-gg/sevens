@@ -52,7 +52,10 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        // Debug builds only: `adb shell run-as <package> touch files/allow-screenshots` lets
+        // screenshots through for UI review. Release builds always set the flag.
+        if (!(BuildConfig.DEBUG && java.io.File(filesDir, "allow-screenshots").exists()))
+            window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         enableEdgeToEdge()
         setContent {
             SevenTheme {
