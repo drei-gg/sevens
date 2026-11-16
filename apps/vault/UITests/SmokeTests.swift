@@ -1,6 +1,16 @@
 import XCTest
 
 @MainActor final class VaultSmokeTests: XCTestCase {
+    /// A Form toggle on iOS 26 exposes its control as an inner switch; tapping the row's far edge
+    /// by coordinate can miss it while the keyboard animates.
+    private func turnOn(_ toggle: XCUIElement) {
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        let control = toggle.switches.firstMatch
+        (control.exists ? control : toggle).tap()
+        if (toggle.value as? String) != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap() }
+        let on = expectation(for: NSPredicate(format: "value == '1'"), evaluatedWith: toggle)
+        XCTAssertEqual(XCTWaiter.wait(for: [on], timeout: 3), .completed)
+    }
     func testCreateNoteImportLockAndRecover() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -12,14 +22,14 @@ import XCTest
         let pass = app.secureTextFields["vault.newPassword"]; pass.tap(); pass.typeText("several private testing words")
         let confirm = app.secureTextFields["vault.repeatPassword"]; confirm.tap(); confirm.typeText("several private testing words")
         app.swipeUp()
-        app.switches["vault.acknowledge"].coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
-        XCTAssertTrue(app.buttons["vault.create"].isEnabled)
+        turnOn(app.switches["vault.acknowledge"])
+        XCTAssertTrue(app.buttons["vault.create"].wait(for: \.isEnabled, toEqual: true, timeout: 5))
         app.buttons["vault.create"].tap()
         let key = app.staticTexts["vault.recoveryKey"]
         XCTAssertTrue(key.waitForExistence(timeout: 20))
         let recovery = key.label
         XCTAssertGreaterThan(recovery.count, 30)
-        app.switches["I have saved my recovery key"].coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+        turnOn(app.switches["I have saved my recovery key"])
         app.buttons["Continue to vault"].tap()
         XCTAssertTrue(app.buttons["Import sample files"].waitForExistence(timeout: 10))
         app.buttons["Import sample files"].tap()
@@ -42,7 +52,7 @@ import XCTest
         let credential = app.secureTextFields["vault.credential"]; credential.tap(); credential.typeText("definitely incorrect password")
         app.buttons["vault.unlock"].tap()
         XCTAssertTrue(app.alerts["Could not complete"].waitForExistence(timeout: 15)); app.alerts.buttons["OK"].tap()
-        app.switches["Use a recovery key"].coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap(); credential.tap(); credential.typeText(recovery); app.buttons["vault.unlock"].tap()
+        turnOn(app.switches["Use a recovery key"]); credential.tap(); credential.typeText(recovery); app.buttons["vault.unlock"].tap()
         XCTAssertTrue(app.staticTexts["Recovery plan.txt"].waitForExistence(timeout: 15))
         // An actual process restart must require credentials and preserve encrypted data.
         app.terminate(); app.launchArguments = ["-vault.ui"]; app.launch()

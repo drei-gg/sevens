@@ -115,12 +115,15 @@ struct RecoverySheet: View {
         NavigationStack {
             Form {
                 Section("Keep this key outside Vault") {
+                    if model.recoveryKeyReplacesOld {
+                        Text("Vault updated this vault to its new encryption format, which also opens on Android. Your old recovery key no longer opens it; this one does.").accessibilityIdentifier("vault.migrated")
+                    }
                     Text("This key can open your vault without its usual unlock secret. Store it somewhere private, such as your password manager.")
                     Text(model.recoveryKey ?? "").font(.body.monospaced()).textSelection(.enabled).accessibilityIdentifier("vault.recoveryKey")
                     Text("We do not retain a readable copy. A backup is still needed if the local files are lost.").foregroundStyle(.secondary)
                     Toggle("I have saved my recovery key", isOn: $saved)
                 }
-                Button("Continue to vault") { model.recoveryKey = nil }.disabled(!saved)
+                Button("Continue to vault") { model.recoveryKey = nil; model.recoveryKeyReplacesOld = false }.disabled(!saved)
             }.navigationTitle("Recovery key").interactiveDismissDisabled()
         }
     }

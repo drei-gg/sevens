@@ -25,6 +25,8 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
     var progress = ""
     var error: String?
     var recoveryKey: String?
+    /// The shown recovery key came from a version 1 → 2 migration and replaces the old one.
+    var recoveryKeyReplacesOld = false
     var presentation: PresentedFiles?
     var generation = 0
     var importResult = ""
@@ -76,7 +78,7 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
     }
     func lock() {
         automaticTask?.cancel(); automaticTask = nil; automaticStatus = nil; automaticMessage = nil
-        generation += 1; operation += 1; library = nil; recoveryKey = nil; presentation = nil; error = nil; importResult = ""
+        generation += 1; operation += 1; library = nil; recoveryKey = nil; recoveryKeyReplacesOld = false; presentation = nil; error = nil; importResult = ""
         // Stay busy until the actor has discarded keys and any in-flight operation has finished.
         busy = true; progress = "Locking…"
         let token = operation
@@ -90,7 +92,18 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
         }
     }
     func unlock(_ credential: String, recovery: Bool, kind: VaultCredentialKind = .passphrase) async {
-        await perform("Opening vault…") { (try await self.repository.unlock(credential: credential, recovery: recovery, kind: kind), nil) }
+        await perform("Opening vault…") { try await self.migrated(self.repository.unlock(credential: credential, recovery: recovery, kind: kind)) }
+    }
+    /// After an unlock or restore: when the repository just migrated the vault to version 2, show
+    /// the new recovery key, and re-wrap Face ID's copy (a version 1 key no longer opens it).
+    private func migrated(_ value: VaultLibrary) async throws -> (VaultLibrary, String?) {
+        guard let replacement = await repository.takeMigratedRecoveryKey() else { return (value, nil) }
+        recoveryKeyReplacesOld = true
+        if UserDefaults.standard.string(forKey: "vault.biometricID") == value.id.uuidString {
+            do { let (id, data) = try await repository.biometricMaterial(); try BiometricKey.save(data, id: id) }
+            catch { disableBiometrics() }
+        }
+        return (value, replacement)
     }
     private func perform(_ label: String, action: () async throws -> (VaultLibrary, String?)) async {
         guard !busy else { return }; busy = true; progress = label; operation += 1; let token = operation
@@ -170,7 +183,7 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
     }
     func restore(_ url: URL, credential: String, recovery: Bool, kind: VaultCredentialKind = .passphrase) async {
         let scoped = url.startAccessingSecurityScopedResource(); defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        await perform("Verifying backup…") { (try await self.repository.restore(url, credential: credential, recovery: recovery, kind: kind), nil) }
+        await perform("Verifying backup…") { try await self.migrated(self.repository.restore(url, credential: credential, recovery: recovery, kind: kind)) }
     }
     func cleanPresentation() { presentation = nil; Task { try? await repository.clearTemporary() } }
     func enableBiometrics() async {
