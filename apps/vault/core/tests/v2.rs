@@ -470,3 +470,24 @@ fn reference_scrypt_files_reach_the_envelope_checks() {
     assert_eq!(header_v2_open(&header(file), "password".into(), VaultCredentialKind::Passphrase, false).err(), Some(VaultError::Unsupported));
     assert!(started.elapsed().as_secs() < 2);
 }
+
+#[test]
+fn descriptor_variants_read_an_open_file() {
+    use std::os::fd::AsRawFd;
+    let mut vault = create("fd", VaultCredentialKind::Passphrase, SECRET);
+    let source = vault.dir.at("lent.bin");
+    fs::write(&source, sample(150_000)).unwrap();
+    let lent = fs::File::open(&source).unwrap();
+    let digest = file_encrypt_fd(vault.header.recipient.clone(), lent.as_raw_fd(), vault.dir.s("lent.age")).unwrap();
+    drop(lent);
+    assert_eq!(digest.bytes, 150_000);
+    file_verify(&vault.identity, vault.dir.s("lent.age"), digest.bytes, digest.digest).unwrap();
+    assert_eq!(file_encrypt_fd(vault.header.recipient.clone(), -1, vault.dir.s("none.age")), Err(VaultError::MissingFile));
+    vault.import("b.bin", b"b");
+    let output = vault.dir.s("fd.vault7");
+    backup_v2_write(vault.dir.s(""), &vault.library, output.clone()).unwrap();
+    let staging = Dir::new("fd-staging");
+    let lent = fs::File::open(&output).unwrap();
+    let names = backup_v2_read_fd(lent.as_raw_fd(), staging.s("")).unwrap();
+    assert_eq!(names, backup_v2_entry_names(&vault.library));
+}

@@ -451,6 +451,28 @@ pub fn file_encrypt(recipient: String, source: String, destination: String) -> R
     write_encrypted(&recipient, &mut input, Path::new(&destination))
 }
 
+/// A duplicate of an open descriptor the platform lends for the length of one call (an Android
+/// document or photo-picker `ParcelFileDescriptor`, whose path the app may not open itself).
+#[cfg(unix)]
+fn borrowed_file(fd: i32) -> Result<File, VaultError> {
+    use std::os::fd::BorrowedFd;
+    if fd < 0 {
+        return Err(VaultError::MissingFile);
+    }
+    // SAFETY: the caller keeps `fd` open for the duration of the call; we only duplicate it.
+    let owned = unsafe { BorrowedFd::borrow_raw(fd) }.try_clone_to_owned().map_err(io_error)?;
+    Ok(File::from(owned))
+}
+
+/// [`file_encrypt`] reading from an open descriptor, read once from its current position. The
+/// caller keeps `source_fd` open until this returns and closes it afterwards.
+#[cfg(unix)]
+#[uniffi::export]
+pub fn file_encrypt_fd(recipient: String, source_fd: i32, destination: String) -> Result<PlainDigest, VaultError> {
+    let mut input = BufReader::new(borrowed_file(source_fd)?);
+    write_encrypted(&recipient, &mut input, Path::new(&destination))
+}
+
 /// A note's text (or any small buffer, at most 5 MB) encrypted as a new file at `destination`.
 #[uniffi::export]
 pub fn data_encrypt(recipient: String, data: Vec<u8>, destination: String) -> Result<PlainDigest, VaultError> {
@@ -647,9 +669,19 @@ fn read_number(input: &mut impl Read) -> Result<u64, VaultError> {
 /// [`backup_v2_names_match`] and verifies every original before publishing the directory.
 #[uniffi::export]
 pub fn backup_v2_read(input: String, staging: String) -> Result<Vec<String>, VaultError> {
-    let file = File::open(&input).map_err(io_error)?;
+    read_backup(File::open(&input).map_err(io_error)?, &staging)
+}
+
+/// [`backup_v2_read`] from an open descriptor (kept open by the caller for the call).
+#[cfg(unix)]
+#[uniffi::export]
+pub fn backup_v2_read_fd(input_fd: i32, staging: String) -> Result<Vec<String>, VaultError> {
+    read_backup(borrowed_file(input_fd)?, &staging)
+}
+
+fn read_backup(file: File, staging: &str) -> Result<Vec<String>, VaultError> {
     let total = file.metadata().ok().filter(|m| m.is_file()).map(|m| m.len());
-    let staging = Path::new(&staging);
+    let staging = Path::new(staging);
     let mut reader = BufReader::new(file);
     let mut offset: u64 = 0;
     let magic = read_exact(&mut reader, 8)?;
