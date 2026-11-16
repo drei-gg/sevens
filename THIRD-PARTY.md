@@ -140,3 +140,17 @@ Versions are pinned in `apps/vault/android/build.gradle.kts`; resolved versions 
 | AndroidX Media3 ExoPlayer / UI | 1.11.1 | Apache-2.0, https://github.com/androidx/media | Video and audio previews from the temporary decrypted copy |
 | Telephoto zoomable | 0.19.0 | Apache-2.0, https://github.com/saket/telephoto | Pinch-zoom and pan in image previews |
 | org.json | 20250517 | Public domain (JSON License removed; https://github.com/stleary/JSON-java) | Unit tests only: Android's `org.json` on the JVM |
+
+## Android QR Code Kit
+
+Pinned in `apps/qr/android/build.gradle.kts`; resolved versions are in `apps/qr/android/gradle.lockfile`. Every one is in every flavor (generic, personal, store): the generic build reads and makes codes through the same open-source path as the store build. Credited in the app under Settings › Open-source licenses (`apps/qr/android/src/main/assets/notices`). iOS QR uses Apple's Vision, CoreImage, CryptoKit and URLSession for the same jobs.
+
+| Dependency | Version | License / source | Purpose |
+| --- | --- | --- | --- |
+| AndroidX CameraX (core, camera2, lifecycle, view) | 1.6.2 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Live scanner preview, frame analysis, torch, pinch to zoom (VisionKit's DataScannerViewController counterpart) |
+| zxing-cpp Android wrapper | 3.1.1 | Apache-2.0, https://github.com/zxing-cpp/zxing-cpp | Reading every barcode type from the camera, photos, the clipboard and shared images (Vision's counterpart) |
+| ZXing core | 3.5.4 | Apache-2.0, https://github.com/zxing/zxing | Making QR, Aztec, PDF417 and Code 128 module grids for Make (CoreImage's generators' counterpart) |
+| OkHttp / Okio | 4.12.0 / 3.6.0 | Apache-2.0, https://github.com/square/okhttp | Peek and Check for newer lists only: no cookies, no cache, redirects followed by hand |
+| Bouncy Castle (bcprov-jdk18on) | 1.83 | MIT (Bouncy Castle Licence), https://github.com/bcgit/bc-java | Ed25519 signature check of a downloaded `lists.json` (CryptoKit's Curve25519 counterpart) |
+| AndroidX Browser | 1.10.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Opening links in Custom Tabs (SFSafariViewController's counterpart) |
+| ColorPicker Compose | 1.1.2 | Apache-2.0, https://github.com/skydoves/colorpicker-compose | Make's code and background colour picker (SwiftUI ColorPicker's counterpart) |

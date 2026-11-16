@@ -1,2 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<full-backup-content><include domain="sharedpref" path="seven-trial.xml"/></full-backup-content>
+<!-- History and the addresses you know are backed up like the iPhone's (not excluded); the trial
+     start date is kept so a restore can't restart the trial. Entitlements are never in a backup. -->
+<full-backup-content>
+    <include domain="sharedpref" path="seven-trial.xml" />
+    <include domain="sharedpref" path="qr-settings.xml" />
+    <include domain="file" path="History/" />
+</full-backup-content>

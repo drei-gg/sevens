@@ -1,0 +1,7 @@
+Public Suffix List, from https://publicsuffix.org. Licensed under the Mozilla Public License 2.0 (MPL-2.0), https://mozilla.org/MPL/2.0/. The list ships unmodified inside the app's shared core.
+
+Unicode confusables data, © Unicode, Inc. Used under the Unicode License v3, https://www.unicode.org/license.txt.
+
+IANA RDAP bootstrap for DNS, https://data.iana.org/rdap/dns.json.
+
+QR Code is a registered trademark of DENSO WAVE INCORPORATED.

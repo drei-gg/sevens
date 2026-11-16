@@ -1,0 +1,9 @@
+QR Code Kit for Android uses these open-source libraries, each under the Apache License 2.0 (its full text is in Apache-2.0.txt):
+
+- AndroidX CameraX 1.6.2, The Android Open Source Project: the camera preview, analysis and torch.
+- zxing-cpp 3.1.1 (Android wrapper), Axel Waggershauser and contributors: reading codes from the camera, photos, the clipboard and shared images.
+- ZXing core 3.5.4, ZXing authors: making QR, Aztec, PDF417 and Code 128 codes.
+- OkHttp 4.12.0 and Okio 3.6.0, Square, Inc.: Peek and Check for newer lists, the only two network features.
+- AndroidX Browser 1.10.0, The Android Open Source Project: opening links in the in-app browser.
+- ColorPicker Compose 1.1.2, Jaewoong Eum (skydoves): Make's colour picker.
+- Guava (Android), The Guava Authors: used by CameraX.
