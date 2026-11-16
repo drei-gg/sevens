@@ -71,3 +71,17 @@ MIT copyright and permission text and Apache-2.0 license text ship in the app's 
 Google Play services Wearable (the Wear OS Data Layer, the counterpart of Apple's WatchConnectivity) is likewise a platform SDK, not an open-source library. It is in the Wear OS app and in the phone's personal and store flavors only; the generic phone flavor has neither it nor its Google Play services dependencies (`:fast:dependencies --configuration genericReleaseRuntimeClasspath` shows no `play-services`). Only the timer snapshot (revision, start, goal, today's water total, whether records can be added) and the watch's start / end / add-water requests cross it, device to device through Google Play services; journal, weight and reflections never do. It adds no app networking, analytics or backend.
 
 Google Play Billing is a platform SDK, not an open-source library. Its declared dependencies include Google transport and Play services; store builds may contact Google for billing and billing-related diagnostics. No journal, fasting or measurement records are passed to the billing adapter. No developer analytics, advertising SDK, backend or application network client is added. Do not claim that the store binary contains no SDK networking. Generic and personal builds do not have the billing module; generic builds have no Google Play services dependency at all (personal has the Wear OS Data Layer, above).
+
+## Android QR Code Kit
+
+Pinned in `apps/qr/android/build.gradle.kts`; resolved versions are in `apps/qr/android/gradle.lockfile`. Every one is in every flavor (generic, personal, store): the generic build reads and makes codes through the same open-source path as the store build. Credited in the app under Settings › Open-source licenses (`apps/qr/android/src/main/assets/notices`). iOS QR uses Apple's Vision, CoreImage, CryptoKit and URLSession for the same jobs.
+
+| Dependency | Version | License / source | Purpose |
+| --- | --- | --- | --- |
+| AndroidX CameraX (core, camera2, lifecycle, view) | 1.6.2 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Live scanner preview, frame analysis, torch, pinch to zoom (VisionKit's DataScannerViewController counterpart) |
+| zxing-cpp Android wrapper | 3.1.1 | Apache-2.0, https://github.com/zxing-cpp/zxing-cpp | Reading every barcode type from the camera, photos, the clipboard and shared images (Vision's counterpart) |
+| ZXing core | 3.5.4 | Apache-2.0, https://github.com/zxing/zxing | Making QR, Aztec, PDF417 and Code 128 module grids for Make (CoreImage's generators' counterpart) |
+| OkHttp / Okio | 4.12.0 / 3.6.0 | Apache-2.0, https://github.com/square/okhttp | Peek and Check for newer lists only: no cookies, no cache, redirects followed by hand |
+| Bouncy Castle (bcprov-jdk18on) | 1.83 | MIT (Bouncy Castle Licence), https://github.com/bcgit/bc-java | Ed25519 signature check of a downloaded `lists.json` (CryptoKit's Curve25519 counterpart) |
+| AndroidX Browser | 1.10.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Opening links in Custom Tabs (SFSafariViewController's counterpart) |
+| ColorPicker Compose | 1.1.2 | Apache-2.0, https://github.com/skydoves/colorpicker-compose | Make's code and background colour picker (SwiftUI ColorPicker's counterpart) |
