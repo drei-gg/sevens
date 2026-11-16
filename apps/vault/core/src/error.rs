@@ -1,4 +1,5 @@
-//! Swift's `VaultError`, the same cases in the same order, with its user-facing descriptions.
+//! Swift's `VaultError`, the same cases in the same order, with its user-facing descriptions, and
+//! the cases format version 2 added after them.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error, uniffi::Error)]
 pub enum VaultError {
@@ -26,6 +27,12 @@ pub enum VaultError {
     MissingFile,
     #[error("There is not enough available storage to finish this operation.")]
     NoSpace,
+    /// Added for format version 2 (after Swift's cases, so their order is unchanged): a version 1
+    /// backup, which only the iPhone app can read, offered to a version 2 reader.
+    #[error(
+        "This backup is in an older format made by Vault on iPhone, so it can't be restored here. Update Vault on the iPhone and back up again."
+    )]
+    OlderBackup,
 }
 
 /// The user-facing text for an error (Swift's `errorDescription`).

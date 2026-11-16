@@ -21,10 +21,20 @@ Zlib, Unicode, GPL-3.0-compatible). Nothing that collects data or phones home is
 | caseless | https://github.com/unicode-rs/rust-caseless | MIT | 0.2.2 | Vault core: Unicode case folding for search and name order |
 | PhoneNumberKit | https://github.com/PhoneNumberKit/PhoneNumberKit | MIT | 5.0.14 (ff40a615c71bf3e1785562c86f7e38bdea29660a) | Contact phone candidate normalization; bundled libphonenumber metadata, no network client |
 | thiserror | https://github.com/dtolnay/thiserror | MIT OR Apache-2.0 | 2.0.21 | Rust cores: error types |
+| age | https://github.com/str4d/rage | MIT OR Apache-2.0 | 0.12.1 | Vault core, format version 2: the age file format (age-encryption.org/v1) for vault envelopes, the encrypted index and every original, on iPhone and Android |
+| age-core | https://github.com/str4d/rage | MIT OR Apache-2.0 | 0.12.0 | Vault core: age's stanza and file-key primitives (a dependency of age) |
+| scrypt | https://github.com/RustCrypto/password-hashes | MIT OR Apache-2.0 | 0.11.0 | Vault core: age's passphrase key derivation (through age) |
+| x25519-dalek / curve25519-dalek | https://github.com/dalek-cryptography/curve25519-dalek | BSD-3-Clause | 2.0.1 / 4.1.3 | Vault core: age's X25519 recipients and identities (through age) |
+| chacha20poly1305 | https://github.com/RustCrypto/AEADs | Apache-2.0 OR MIT | 0.10.1 | Vault core: age's payload and stanza encryption (through age) |
+| hkdf / hmac / sha2 | https://github.com/RustCrypto/KDFs | MIT OR Apache-2.0 | 0.12.4 / 0.12.1 / 0.10.9 | Vault core: age's key schedule and header MAC; SHA-256 digests of originals and backup revisions (https://github.com/RustCrypto/MACs, https://github.com/RustCrypto/hashes) |
+| bech32 | https://github.com/rust-bitcoin/rust-bech32 | MIT | 0.11.1 | Vault core: age's `age1…` / `AGE-SECRET-KEY-1…` key encoding (through age) |
+| rand / getrandom | https://github.com/rust-random/rand | MIT OR Apache-2.0 | 0.8.8 / 0.2.17 | Vault core: the operating system's random numbers for identities, salts and recovery keys (https://github.com/rust-random/getrandom) |
+| zeroize / secrecy | https://github.com/RustCrypto/utils | Apache-2.0 OR MIT | 1.9.1 / 0.10.3 | Vault core: wiping keys and credentials from memory (https://github.com/iqlusioninc/crates) |
+| i18n-embed / fluent / rust-embed | https://github.com/kellpossible/cargo-i18n | MIT (fluent: Apache-2.0 OR MIT) | 0.16.0 / 0.17.0 / 8.14.0 | Vault core: age's localized error messages (through age; https://github.com/projectfluent/fluent-rs, https://github.com/pyrossh/rust-embed) |
 
 Their own dependencies are pinned in each core's `Cargo.lock` (`apps/<app>/core/Cargo.lock`).
 
-Vault uses the operating-system CryptoKit, CommonCrypto, Security/Keychain and AppleArchive frameworks, with PhotosUI, ImageIO and Quick Look. No additional third-party code is bundled. AppleArchive provides the authenticated streaming file format; Vault does not implement its own cipher.
+Vault format version 1 (the iPhone app today) uses the operating-system CryptoKit, CommonCrypto, Security/Keychain and AppleArchive frameworks, with PhotosUI, ImageIO and Quick Look. No additional third-party code is bundled. AppleArchive provides the authenticated streaming file format; Vault does not implement its own cipher. Format version 2 (cross-platform, Android first) uses the age crates above, inside the Vault core; again no cipher of our own.
 
 ## Bundled data
 
@@ -35,6 +45,7 @@ Vault uses the operating-system CryptoKit, CommonCrypto, Security/Keychain and A
 | IANA RDAP bootstrap for DNS | https://data.iana.org/rdap/dns.json | IANA public data (no licence restrictions stated) | as dated in the file's `publication` field | Finding the registry to ask a domain's age (`rdap-dns.json`) |
 | Unicode confusables (UTS #39), curated subset | https://www.unicode.org/Public/security/latest/confusables.txt | Unicode | 18.0.0 | Look-alike letters in addresses (`confusables.json`) |
 | Libphonenumber metadata | https://github.com/google/libphonenumber | Apache-2.0 | metadata 9.0.43, as bundled in PhoneNumberKit 5.0.14 | International phone numbering plans, transformed XML to JSON by PhoneNumberKit |
+| C2SP CCTV age test vectors (`x25519`, `scrypt`, `scrypt_work_factor_23`) | https://github.com/C2SP/CCTV/tree/main/age | Licence permits inclusion without attribution (credited anyway) | main, 16 November 2026 | Vault core tests only: files made by the reference Go age implementation (`apps/vault/core/tests/fixtures/age/`) |
 
 Where each data entry comes from is recorded in `apps/qr/Kit/Sources/QRCore/Data/DATA-SOURCES.md`.
 
@@ -113,3 +124,19 @@ iOS Scanner uses only Apple frameworks (VisionKit, Vision, PDFKit, Core Image). 
 Leptonica's and the codecs' licence texts and PDFBox's NOTICE ship in the app's `assets/notices`.
 
 Google's ML Kit document scanner is a Google Play services component, not an open-source library, and is used the way Play Billing is: as a platform exception in the personal and store flavors only. Scanning runs on the device inside Google Play services, which may download its scanner module and adds the INTERNET permission to those flavors' manifests; Scanner itself sends nothing and has no network client. The generic flavor has no Google Play services dependency (`:scanner:dependencies --configuration genericReleaseRuntimeClasspath` shows no `play-services`) and no INTERNET permission; it captures with CameraX and recognizes with Tesseract. Text recognition uses Tesseract in every flavor.
+
+## Android Vault
+
+Versions are pinned in `apps/vault/android/build.gradle.kts`; resolved versions are locked in its `gradle.lockfile`. The same libraries in every flavor (no Google Play services). Vault's encryption is the Rust core's (age, above); these libraries are platform plumbing and viewers. Their Apache-2.0 text, and the Rust crates' BSD and MIT notices (`Vault-core-crates.txt`), ship in the app's notices.
+
+| Name | Version | Licence, URL | Used for |
+|---|---|---|---|
+| AndroidX Biometric | 1.1.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | BiometricPrompt with a Keystore crypto object for the opt-in biometric unlock |
+| AndroidX Fragment | 1.9.1 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | FragmentActivity, which hosts BiometricPrompt |
+| AndroidX WorkManager | 2.12.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Delivery opportunities for prepared automatic backups (iOS BGProcessingTask) |
+| AndroidX DocumentFile | 1.1.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Writing backups and exports into a chosen Storage Access Framework folder |
+| AndroidX ExifInterface | 1.4.1 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Upright thumbnails and previews before Android 9 |
+| AndroidX CameraX (core, camera2, lifecycle, view) | 1.6.2 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Taking a photo inside the app, straight into the vault, never to MediaStore |
+| AndroidX Media3 ExoPlayer / UI | 1.11.1 | Apache-2.0, https://github.com/androidx/media | Video and audio previews from the temporary decrypted copy |
+| Telephoto zoomable | 0.19.0 | Apache-2.0, https://github.com/saket/telephoto | Pinch-zoom and pan in image previews |
+| org.json | 20250517 | Public domain (JSON License removed; https://github.com/stleary/JSON-java) | Unit tests only: Android's `org.json` on the JVM |
