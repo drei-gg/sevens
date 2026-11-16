@@ -1,0 +1,4 @@
+libphonenumber (Java library and numbering-plan metadata)
+Copyright (C) 2009 The Libphonenumber Authors.
+Licensed under the Apache License, Version 2.0 (included in Apache-2.0.txt).
+https://github.com/google/libphonenumber

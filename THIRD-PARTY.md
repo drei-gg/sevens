@@ -66,6 +66,16 @@ Versions are pinned in `android/buildSrc/build.gradle.kts` and module build file
 | Google Play services Wearable | 20.0.1 | Android SDK terms, https://developers.google.com/android/guides/overview | Wear OS Data Layer between watch and phone: the Wear app and the personal/store phone flavors only |
 | JUnit / AndroidX Test | 4.13.2 / runner 1.7.0 / ext 1.3.0 | EPL-1.0 (JUnit, tests only); Apache-2.0 (AndroidX), https://github.com/junit-team/junit4 and https://github.com/android/android-test | Tests only |
 
+## Android Cleaner
+
+Cleaner for Android is on the shared base (the kit and AndroidX pieces above). Its rules come from its Rust core (apps/cleaner/core) through UniFFI. iOS PhoneNumberKit bundles Google's libphonenumber metadata; Android uses the library itself at the same metadata version. All flavors share these; none adds networking.
+
+| Dependency | Version | License / source | Purpose |
+| --- | --- | --- | --- |
+| libphonenumber | 9.0.43 | Apache-2.0, https://github.com/google/libphonenumber | Contact phone candidate normalization (PhoneNumberKit's counterpart); bundled metadata, no network client |
+| AndroidX ExifInterface | 1.4.2 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Reading, copying and checking capture metadata on compressed copies |
+| Telephoto zoomable | 0.18.0 | Apache-2.0, https://github.com/saket/telephoto | Pinch and double-tap zoom for full-resolution inspection |
+
 MIT copyright and permission text and Apache-2.0 license text ship in the app's notices. The calendar's month layout/state and serialization's schema/default behavior were reviewed before integration. These libraries do not add app networking.
 
 Google Play services Wearable (the Wear OS Data Layer, the counterpart of Apple's WatchConnectivity) is likewise a platform SDK, not an open-source library. It is in the Wear OS app and in the phone's personal and store flavors only; the generic phone flavor has neither it nor its Google Play services dependencies (`:fast:dependencies --configuration genericReleaseRuntimeClasspath` shows no `play-services`). Only the timer snapshot (revision, start, goal, today's water total, whether records can be added) and the watch's start / end / add-water requests cross it, device to device through Google Play services; journal, weight and reflections never do. It adds no app networking, analytics or backend.

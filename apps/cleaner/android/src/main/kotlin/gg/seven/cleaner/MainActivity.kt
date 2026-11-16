@@ -13,10 +13,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        ViewModelProvider(this)[CleanerModel::class.java].start()
         setContent {
             SevenTheme {
                 val model: CleanerModel = viewModel()
-                SevenRoot(model.store, CleanerContent) { CleanerApp() }
+                SevenRoot(model.store, CleanerContent) { CleanerApp(model) }
             }
         }
     }

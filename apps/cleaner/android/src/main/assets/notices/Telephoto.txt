@@ -1,0 +1,4 @@
+Telephoto (zoomable)
+Copyright 2023 Saket Narayan.
+Licensed under the Apache License, Version 2.0 (included in Apache-2.0.txt).
+https://github.com/saket/telephoto
