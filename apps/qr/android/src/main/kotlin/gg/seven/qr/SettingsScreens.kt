@@ -216,7 +216,7 @@ fun NetworkContactScreen(nav: QrNav) {
                     }
                 }
                 Text("Anything not listed here doesn’t happen.", style = MaterialTheme.typography.titleMedium)
-                Text("Google Play data safety: no data collected.", style = MaterialTheme.typography.bodyLarge)
+                Text("The Google Play listing says it: no data collected.", style = MaterialTheme.typography.bodyLarge)
             }
         }
     }
