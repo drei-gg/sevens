@@ -380,7 +380,7 @@ fun GroupsScreen(model: CleanerModel) {
     val groups by model.groups.collectAsStateWithLifecycle()
     val media by model.media.collectAsStateWithLifecycle()
     val selected by model.selected.collectAsStateWithLifecycle()
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Space.l)) {
+    LazyColumn(Modifier.fillMaxSize().testTag("groups"), contentPadding = PaddingValues(bottom = Space.l)) {
         item {
             Readable {
                 CleanerHero("A closer look", "%,d".format(groups.size), "Matching groups. You choose what stays.", Icons.Outlined.FilterNone)

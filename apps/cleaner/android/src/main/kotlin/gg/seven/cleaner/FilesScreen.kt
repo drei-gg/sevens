@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,7 +33,7 @@ fun FilesScreen(model: CleanerModel) {
     val current = scan
     val duplicates = current?.groups?.flatMap { it.members }?.toSet().orEmpty()
     val items = current?.items.orEmpty().filter { (!duplicatesOnly || it.id in duplicates) && (query.isEmpty() || it.name.contains(query, ignoreCase = true)) }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Space.l)) {
+    LazyColumn(Modifier.fillMaxSize().testTag("files"), contentPadding = PaddingValues(bottom = Space.l)) {
         item {
             Readable {
                 val summary = current?.let { storageSummary(it.items) }
