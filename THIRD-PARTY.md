@@ -71,3 +71,15 @@ MIT copyright and permission text and Apache-2.0 license text ship in the app's 
 Google Play services Wearable (the Wear OS Data Layer, the counterpart of Apple's WatchConnectivity) is likewise a platform SDK, not an open-source library. It is in the Wear OS app and in the phone's personal and store flavors only; the generic phone flavor has neither it nor its Google Play services dependencies (`:fast:dependencies --configuration genericReleaseRuntimeClasspath` shows no `play-services`). Only the timer snapshot (revision, start, goal, today's water total, whether records can be added) and the watch's start / end / add-water requests cross it, device to device through Google Play services; journal, weight and reflections never do. It adds no app networking, analytics or backend.
 
 Google Play Billing is a platform SDK, not an open-source library. Its declared dependencies include Google transport and Play services; store builds may contact Google for billing and billing-related diagnostics. No journal, fasting or measurement records are passed to the billing adapter. No developer analytics, advertising SDK, backend or application network client is added. Do not claim that the store binary contains no SDK networking. Generic and personal builds do not have the billing module; generic builds have no Google Play services dependency at all (personal has the Wear OS Data Layer, above).
+
+## Android Alarm & Loops
+
+On the shared Android base above (Kotlin, Compose, Material 3 1.5.0-rc01, Activity, Lifecycle, Core, JNA, kotlinx.coroutines). iOS Alarm & Loops has no third-party dependencies; Apple's DataScanner and Swift Charts map to these. The rules, schedules, missions and archive format come from the shared Rust core (apps/alarm/core). Every flavor has the same dependencies: no Google Play services or ML Kit, so scanning works in the generic build.
+
+| Dependency | Version | License / source | Purpose |
+| --- | --- | --- | --- |
+| AndroidX CameraX (camera2, lifecycle, view) | 1.6.2 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Camera preview and frames for the scan-a-code mission (DataScanner's camera half) |
+| ZXing core | 3.5.4 | Apache-2.0, https://github.com/zxing/zxing | Decodes the QR code or barcode in a camera frame (DataScanner's recognition half), on the phone, in every flavor |
+| Vico charts | 2.3.6 | Apache-2.0, https://github.com/patrykandpatrick/vico | History's seven-day chart (Swift Charts on iOS), as in Fast |
+
+Apache-2.0 license text and the libraries' copyright lines ship in the app's notices. None of these adds app networking.

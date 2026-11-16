@@ -1,0 +1,4 @@
+ZXing ("Zebra Crossing") core
+Copyright 2007-2025 ZXing authors.
+Licensed under the Apache License, Version 2.0 (included in Apache-2.0.txt).
+https://github.com/zxing/zxing

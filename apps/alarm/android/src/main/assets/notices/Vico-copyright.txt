@@ -1,0 +1,4 @@
+Vico charts
+Copyright 2025 Patryk Goworowski and Patrick Michalik.
+Licensed under the Apache License, Version 2.0 (included in Apache-2.0.txt).
+https://github.com/patrykandpatrick/vico
