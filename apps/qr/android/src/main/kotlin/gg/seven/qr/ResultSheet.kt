@@ -198,7 +198,7 @@ fun ResultContent(
         val text = if (action == ResultAction.COPY_PASSWORD) wifi?.password else ResultPayloadText.copyText(analysis)
         if (text.isNullOrEmpty()) return
         Handoffs.copy(context, text, sensitive = action == ResultAction.COPY_PASSWORD)
-        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        view.confirmHaptic()
         copied = action
         scope.launch {
             delay(2_000)

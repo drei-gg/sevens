@@ -100,7 +100,7 @@ fun QrCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() ->
 
 /** A titled card (iOS ResultCard): the title in the caption role, as a heading. */
 @Composable
-fun ResultCard(title: String? = null, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun ResultCard(modifier: Modifier = Modifier, title: String? = null, content: @Composable ColumnScope.() -> Unit) {
     QrCard(modifier) {
         title?.let { Caption(it, Modifier.semantics { heading() }) }
         content()
@@ -237,3 +237,8 @@ fun ReadableColumn(modifier: Modifier = Modifier, content: @Composable ColumnSco
 }
 
 val PillShape = RoundedCornerShape(50)
+
+/** "Task finished" (polish guide §3.8): CONFIRM on Android 11+, a plain tap before. */
+fun android.view.View.confirmHaptic() {
+    performHapticFeedback(if (android.os.Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.CONFIRM else android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+}

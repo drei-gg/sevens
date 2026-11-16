@@ -288,7 +288,7 @@ private fun KindChips(kind: MakeFormKind, onSelect: (MakeFormKind) -> Unit) {
             FilterChip(
                 selected = option == kind,
                 onClick = {
-                    if (option != kind) view.performHapticFeedback(HapticFeedbackConstants.SEGMENT_TICK)
+                    if (option != kind) view.performHapticFeedback(if (android.os.Build.VERSION.SDK_INT >= 34) HapticFeedbackConstants.SEGMENT_TICK else HapticFeedbackConstants.CLOCK_TICK)
                     onSelect(option)
                 },
                 label = { Text(option.title) },
@@ -624,7 +624,7 @@ private fun ExportSheet(matrix: BitMatrix, kind: MakeFormKind, symbology: MakeSy
                         val file = withContext(Dispatchers.Default) { runCatching { FileShare.write(context, name, MakeExportWriter.data(png, matrix, foreground, background)) }.getOrNull() } ?: return@launch
                         val uri = FileProvider.getUriForFile(context, context.packageName + ".files", file)
                         context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newUri(context.contentResolver, "QR code", uri))
-                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                        view.confirmHaptic()
                         onUse()
                         copied = true
                         delay(2_000)

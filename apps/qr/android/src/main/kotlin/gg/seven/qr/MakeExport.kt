@@ -1,5 +1,6 @@
 package gg.seven.qr
 
+import androidx.core.graphics.createBitmap
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -109,7 +110,7 @@ object PngRenderer {
         if (matrix.width <= 0 || matrix.height <= 0) return null
         val s = scale(matrix.width.toInt(), pixelSize)
         val rows = MakeGeometry.rows(matrix)
-        val bitmap = Bitmap.createBitmap(matrix.width.toInt() * s, rows * s, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(matrix.width.toInt() * s, rows * s)
         val canvas = Canvas(bitmap)
         canvas.drawColor(background.argb())
         val paint = Paint().apply {

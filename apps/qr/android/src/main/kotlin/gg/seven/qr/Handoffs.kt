@@ -1,5 +1,6 @@
 package gg.seven.qr
 
+import androidx.core.net.toUri
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipDescription
@@ -44,7 +45,7 @@ object Handoffs {
     /** What Open uses: the normalized link, http(s) only. */
     fun openUri(link: LinkInfo): Uri? {
         if (!ResultActionPlan.canOpen(link)) return null
-        val uri = runCatching { Uri.parse(link.normalized) }.getOrNull() ?: return null
+        val uri = runCatching { link.normalized.toUri() }.getOrNull() ?: return null
         val scheme = uri.scheme?.lowercase()
         return uri.takeIf { scheme == "http" || scheme == "https" }
     }
@@ -69,8 +70,9 @@ object Handoffs {
     fun copy(context: Context, text: String, sensitive: Boolean = false) {
         val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
         val clip = ClipData.newPlainText("QR Code Kit", text)
-        if (sensitive && Build.VERSION.SDK_INT >= 24)
-            clip.description.extras = PersistableBundle().apply { putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true) }
+        // The framework constant is Android 13+; the key itself is what the system reads on 12L too.
+        if (sensitive)
+            clip.description.extras = PersistableBundle().apply { putBoolean(if (Build.VERSION.SDK_INT >= 33) ClipDescription.EXTRA_IS_SENSITIVE else "android.content.extra.IS_SENSITIVE", true) }
         clipboard.setPrimaryClip(clip)
     }
 
@@ -111,13 +113,13 @@ object Handoffs {
         val lon = info.longitude.trim()
         val label = info.query?.takeIf { it.isNotEmpty() }?.let { "($it)" }.orEmpty()
         // lat and lon are checked to be plain numbers above; the label is encoded.
-        val uri = Uri.parse("geo:$lat,$lon?q=" + Uri.encode("$lat,$lon$label"))
+        val uri = ("geo:$lat,$lon?q=" + Uri.encode("$lat,$lon$label")).toUri()
         return start(context, Intent(Intent.ACTION_VIEW, uri))
     }
 
     /** "Open in…": the original payload, only when it is URI-shaped (UPI, crypto). */
     fun openPayment(context: Context, text: String?): Boolean {
-        val uri = text?.let { runCatching { Uri.parse(it) }.getOrNull() } ?: return false
+        val uri = text?.let { runCatching { it.toUri() }.getOrNull() } ?: return false
         if (uri.scheme.isNullOrEmpty()) return false
         return start(context, Intent(Intent.ACTION_VIEW, uri))
     }

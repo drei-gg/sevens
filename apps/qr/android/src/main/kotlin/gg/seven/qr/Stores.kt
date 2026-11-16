@@ -1,5 +1,6 @@
 package gg.seven.qr
 
+import androidx.core.content.edit
 import android.content.Context
 import androidx.core.util.AtomicFile
 import gg.seven.qr.core.HistoryDecoded
@@ -285,7 +286,7 @@ class AppSettings(context: Context) {
     val keepHistory: StateFlow<Boolean> = mutableKeep.asStateFlow()
 
     fun setKeepHistory(value: Boolean) {
-        prefs.edit().putBoolean(KEEP_HISTORY, value).apply()
+        prefs.edit { putBoolean(KEEP_HISTORY, value) }
         mutableKeep.value = value
     }
 

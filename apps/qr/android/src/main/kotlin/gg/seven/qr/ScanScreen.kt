@@ -2,6 +2,7 @@
 
 package gg.seven.qr
 
+import androidx.core.content.edit
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -61,7 +62,7 @@ data class ScanCandidate(val index: Int, val analysis: Analysis) {
 
 private fun cameraAsked(context: Context) = context.getSharedPreferences("qr-settings", Context.MODE_PRIVATE).getBoolean("cameraAsked", false)
 
-private fun markCameraAsked(context: Context) = context.getSharedPreferences("qr-settings", Context.MODE_PRIVATE).edit().putBoolean("cameraAsked", true).apply()
+private fun markCameraAsked(context: Context) = context.getSharedPreferences("qr-settings", Context.MODE_PRIVATE).edit { putBoolean("cameraAsked", true) }
 
 @Composable
 fun ScanScreen(model: QrModel, nav: QrNav) {
@@ -98,7 +99,7 @@ fun ScanScreen(model: QrModel, nav: QrNav) {
         val analysis = model.analysis(code)
         model.record(analysis, HistoryKind.SCANNED)
         if (nav.result.value != null || nav.candidates.value != null) return
-        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        view.confirmHaptic()
         nav.showResult(analysis)
     }
 

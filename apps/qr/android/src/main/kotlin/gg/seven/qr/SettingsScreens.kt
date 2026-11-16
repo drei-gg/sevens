@@ -2,6 +2,7 @@
 
 package gg.seven.qr
 
+import androidx.core.net.toUri
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.*
@@ -171,7 +172,7 @@ private fun AboutLinks() {
     if (repository == null && support == null) return
     Section(footer = "QR Code is a registered trademark of DENSO WAVE INCORPORATED.") {
         repository?.let { url ->
-            item("Source code (GPL-3.0)", icon = Icons.Rounded.Language, onClick = { Handoffs.open(context, Uri.parse(url), external = true) })
+            item("Source code (GPL-3.0)", icon = Icons.Rounded.Language, onClick = { Handoffs.open(context, url.toUri(), external = true) })
         }
         support?.let { address ->
             item("Contact support", supporting = address, onClick = {

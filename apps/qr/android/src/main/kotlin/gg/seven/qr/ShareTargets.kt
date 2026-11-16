@@ -207,7 +207,7 @@ private fun CheckCard(analysis: Analysis) {
             analysis.code.text?.let { text ->
                 OutlinedButton(onClick = {
                     Handoffs.copy(context, text)
-                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                    view.confirmHaptic()
                     copied = true
                 }) {
                     Icon(if (copied) Icons.Rounded.Check else Icons.Rounded.ContentCopy, null, Modifier.size(ButtonDefaults.IconSize))
@@ -386,7 +386,7 @@ private fun MakeShareScreen(model: ShareModel, source: ShareMakeSource?, onDone:
                                     val file = FileShare.write(context, "QR code.png", p.png)
                                     val uri = FileProvider.getUriForFile(context, context.packageName + ".files", file)
                                     context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newUri(context.contentResolver, "QR code", uri))
-                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    view.confirmHaptic()
                                     copied = true
                                 },
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),

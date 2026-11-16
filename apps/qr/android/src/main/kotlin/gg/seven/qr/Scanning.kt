@@ -1,5 +1,6 @@
 package gg.seven.qr
 
+import androidx.core.graphics.scale
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Bitmap
@@ -255,7 +256,7 @@ object ImageScanner {
         val long = max(bitmap.width, bitmap.height)
         if (long <= MAX_PIXEL_SIZE) return bitmap
         val scale = MAX_PIXEL_SIZE.toFloat() / long
-        return Bitmap.createScaledBitmap(bitmap, max(1, (bitmap.width * scale).toInt()), max(1, (bitmap.height * scale).toInt()), true)
+        return bitmap.scale(max(1, (bitmap.width * scale).toInt()), max(1, (bitmap.height * scale).toInt()))
     }
 
     /** Applies EXIF orientation (ImageDecoder, Android 9+) and bounds memory. */
