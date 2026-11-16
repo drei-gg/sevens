@@ -46,6 +46,7 @@ import gg.seven.qr.core.Analysis
 import gg.seven.qr.core.HistoryKind
 import gg.seven.qr.core.Payload
 import gg.seven.qr.core.ScannedCode
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /*
@@ -87,7 +88,11 @@ fun ScanScreen(model: QrModel, nav: QrNav) {
         availability = scannerAvailability(context, asked = true)
     }
     // Camera permission is asked when the scanner first opens, not before (SPEC §1).
-    LaunchedEffect(Unit) { if (availability == ScannerAvailability.NOT_ASKED) permission.launch(Manifest.permission.CAMERA) }
+    // Not over Before you buy on the first launch: wait until it has been answered.
+    LaunchedEffect(Unit) {
+        while (!model.store.beforeYouBuyShown) delay(300)
+        if (availability == ScannerAvailability.NOT_ASKED) permission.launch(Manifest.permission.CAMERA)
+    }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { availability = scannerAvailability(context, cameraAsked(context)) }
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { torchOn = false }
     LaunchedEffect(sheetIsUp) { if (sheetIsUp) torchOn = false }

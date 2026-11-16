@@ -7,7 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -177,8 +177,7 @@ fun HistoryScreen(model: QrModel, nav: QrNav) {
                                 EmptyState("No results for “${query.trim()}”", "Check the spelling or try another word.", icon = Icons.Rounded.SearchOff)
                             }
                         val count = shown.size
-                        items(shown, key = { it.id.toString() }) { item ->
-                            val index = shown.indexOf(item)
+                        itemsIndexed(shown, key = { _, it -> it.id.toString() }) { index, item ->
                             val id = item.id.toString()
                             HistoryRow(
                                 item,
