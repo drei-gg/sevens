@@ -11,6 +11,21 @@ import XCTest
         let on = expectation(for: NSPredicate(format: "value == '1'"), evaluatedWith: toggle)
         XCTAssertEqual(XCTWaiter.wait(for: [on], timeout: 3), .completed)
     }
+    /// Type into a secure field and confirm every character arrived: on the iOS 26 simulator, typing
+    /// right after focus moves between secure fields can drop all but the first keystroke.
+    private func typeSecret(_ text: String, into field: XCUIElement) {
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        for _ in 0..<3 {
+            field.tap()
+            let focused = expectation(for: NSPredicate(format: "hasKeyboardFocus == true"), evaluatedWith: field)
+            _ = XCTWaiter.wait(for: [focused], timeout: 3)
+            let current = (field.value as? String)?.count ?? 0
+            if current > 0 && current != text.count { field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current)) }
+            if (field.value as? String)?.count != text.count { field.typeText(text) }
+            if (field.value as? String)?.count == text.count { return }
+        }
+        XCTFail("\(field.identifier) holds \((field.value as? String)?.count ?? -1) of \(text.count) characters")
+    }
     func testCreateNoteImportLockAndRecover() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -19,8 +34,8 @@ import XCTest
         XCTAssertTrue(app.buttons["Create a vault"].waitForExistence(timeout: 20))
         app.buttons["Create a vault"].tap()
         let name = app.textFields["vault.newName"]; XCTAssertTrue(name.waitForExistence(timeout: 5)); name.tap(); name.typeText("Personal")
-        let pass = app.secureTextFields["vault.newPassword"]; pass.tap(); pass.typeText("several private testing words")
-        let confirm = app.secureTextFields["vault.repeatPassword"]; confirm.tap(); confirm.typeText("several private testing words")
+        let pass = app.secureTextFields["vault.newPassword"]; typeSecret("several private testing words", into: pass)
+        let confirm = app.secureTextFields["vault.repeatPassword"]; typeSecret("several private testing words", into: confirm)
         app.swipeUp()
         turnOn(app.switches["vault.acknowledge"])
         XCTAssertTrue(app.buttons["vault.create"].wait(for: \.isEnabled, toEqual: true, timeout: 5))

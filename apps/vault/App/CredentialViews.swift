@@ -9,7 +9,11 @@ struct CredentialInput: View {
     var body: some View {
         if kind == .pattern { PatternPad(value: $value, label: label, identifier: identifier) }
         else {
+            // `.oneTimeCode` keeps iOS from offering "Use Strong Password": a vault secret is meant to
+            // be independent and memorable, not generated and saved to Passwords. (It also took
+            // focus mid-typing, swallowing the passphrase.)
             SecureField(label, text: $value).textInputAutocapitalization(.never).autocorrectionDisabled()
+                .textContentType(.oneTimeCode)
                 .keyboardType(kind == .pin ? .numberPad : .default).accessibilityIdentifier(identifier)
         }
     }
