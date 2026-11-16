@@ -2,7 +2,7 @@
 
 Alarm & Loops' shared logic in Rust, used by the iOS and Android apps through [UniFFI](https://mozilla.github.io/uniffi-rs/). One implementation, so a rule, a schedule or a file format can't drift between platforms.
 
-**In the core:** routines, time slots, receipts, history events and alarm defaults with their validation (same checks, same order, same messages), the JSON archive (byte-identical to what the Swift app's `BackupCodec` wrote), dormant merge-on-import, the CSV history export, the store's validate-encode-size step, schedule compilation (stable registration IDs, weekly slots, overnight windows, the 96-time limit) and occurrences across daylight-saving gaps and folds, and the mission checks: arithmetic, typed phrase, scanned code, colour word, the memory sequence and the shake counter.
+**In the core:** routines, time slots, receipts, history events and alarm defaults with their validation (same checks, same order, same messages), the JSON archive (byte-identical to what the Swift app's `BackupCodec` wrote), dormant merge-on-import, the CSV history export, the store's validate-encode-size step, schedule compilation (stable registration IDs, weekly slots, overnight windows, the 96-time limit) and occurrences across daylight-saving gaps and folds, the mission checks: arithmetic, typed phrase, scanned code, colour word, the memory sequence and the shake counter, and the delivery rules iOS keeps in its app model (`delivery.rs`: the registrations a device should hold with quiet reminders split per weekday and the 60-reminder limit, the next ring of a registration, snooze and wake-up-check registrations, receipt pruning, naps, duplicates, save checks and group names), which the Android app calls because it has no AlarmKit to repeat weekly alarms for it.
 
 **Stays native:** the archive file and its atomic, publish-after-write store (`LoopRepository`, iOS data protection, Android `AtomicFile`), AlarmKit and Android alarm registration and reconciliation, notifications, sensors and the camera feeding the missions, purchases and every pixel.
 
@@ -24,6 +24,7 @@ Needs Rust (stable), `rustup target add aarch64-linux-android armv7-linux-androi
 ## Tests
 
 - `tests/swift_parity.rs`: every AlarmCore test from the iOS app, one to one, under the Swift names. `failedWriteDoesNotPublish` is store-only and stays with the native store; `corruptAndFutureFilesArePreserved` keeps its codec half here.
+- `tests/delivery.rs`: the delivery rules against what iOS's `AlarmModel` does with the same inputs, including the next ring across daylight-saving gaps and folds.
 - `tests/golden.rs`: an archive in the Swift encoder's exact layout (pretty-printed, sorted keys, escaped slashes, whole and fractional dates, every optional) must come back byte for byte; missing optional keys read, missing required keys don't.
 
 Platform tests keep covering what stays native (store atomicity, corrupt-file preservation, alarm reconciliation, UI).

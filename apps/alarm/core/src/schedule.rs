@@ -100,7 +100,7 @@ pub fn schedule_occurrences(routine: &Routine, now: SystemTime, days: i32, calen
 }
 
 /// The first instant strictly after `after` at `minute` past midnight on Foundation `weekday`.
-fn next_date(after: Timestamp, minute: i32, weekday: i32, tz: &TimeZone) -> Option<Timestamp> {
+pub(crate) fn next_date(after: Timestamp, minute: i32, weekday: i32, tz: &TimeZone) -> Option<Timestamp> {
     let today: Date = after.to_zoned(tz.clone()).date();
     for offset in 0..=8 {
         let day = today.checked_add(offset.days()).ok()?;

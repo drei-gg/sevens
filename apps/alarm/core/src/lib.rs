@@ -12,6 +12,7 @@ uniffi::setup_scaffolding!();
 
 mod challenges;
 mod codec;
+mod delivery;
 mod model;
 mod schedule;
 mod text;
@@ -19,6 +20,7 @@ mod time;
 
 pub use challenges::*;
 pub use codec::*;
+pub use delivery::*;
 pub use model::*;
 pub use schedule::*;
 pub use time::*;
