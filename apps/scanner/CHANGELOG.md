@@ -1,5 +1,9 @@
 # Changelog
 
+## Android — in development
+
+- Document Scanner on Android, with the iPhone app's library, document, page editor, PDF export, Recently Deleted and backup. Backups move between the two phones.
+
 ## One core for both phones — 15 November 2026
 
 - Document Scanner's rules, its document files and the backup format now come from one shared core, so the iPhone and Android apps behave the same. Existing documents and backups open unchanged.
