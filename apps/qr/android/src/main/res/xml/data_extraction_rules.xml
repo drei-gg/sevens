@@ -1,2 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<data-extraction-rules><cloud-backup><include domain="sharedpref" path="seven-trial.xml"/></cloud-backup><device-transfer><include domain="sharedpref" path="seven-trial.xml"/></device-transfer></data-extraction-rules>
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="sharedpref" path="seven-trial.xml" />
+        <include domain="sharedpref" path="qr-settings.xml" />
+        <include domain="file" path="History/" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="sharedpref" path="seven-trial.xml" />
+        <include domain="sharedpref" path="qr-settings.xml" />
+        <include domain="file" path="History/" />
+    </device-transfer>
+</data-extraction-rules>

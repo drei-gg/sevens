@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The share-menu names of the two share targets (iOS share extensions). -->
+    <string name="share_check">Check this code</string>
+    <string name="share_make">Make QR code</string>
+</resources>
