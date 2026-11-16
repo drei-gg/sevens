@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0 — Android, 16 November 2026
+
+- Alarm & Loops on Android: Alarms, Loops, History and Settings as on the iPhone, with every mission, naps, groups, wake-up checks, snooze, backups and exports. Alarms are the phone's own alarm clocks, ring over the lock screen with Stop and Open, and come back after a restart or a time-zone change.
+
 ## 0.1.0 — one core for both phones, 15 November 2026
 
 - Alarm & Loops' rules, schedules, missions and backup format now come from one shared core, so the iPhone and Android apps behave the same. Existing records and backups open unchanged.

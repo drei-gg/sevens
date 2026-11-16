@@ -193,7 +193,9 @@ class RingingService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
-            .setSilent(true)
+            // Not silent: a silent notification suppresses its own full-screen intent. The channel
+            // has no sound or vibration; the service plays both.
+            .setOnlyAlertOnce(true)
             .setFullScreenIntent(screen, true)
             .setContentIntent(screen)
             .addAction(0, "Stop", stop)

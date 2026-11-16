@@ -46,7 +46,7 @@ Alarms, Loops, History and Settings. Native controls in the Sevens' look (SevenK
 
 Implemented local development scope: weekly/one-off/window schedules, eight missions, in-app snooze and one follow-up, history, backup/import/export and SevenKit integration. Native alarm delivery and mission actions require physical iPhone acceptance; a simulator build is not that evidence. Camera scanning is unavailable on unsupported hardware/simulator.
 
-Skip-next, date-specific overrides, independently moved weekday times within a shared slot, user-imported audio, completion-relative schedules, multistage timer sequences, template sharing, widgets and a Watch app are not implemented. Per-slot weekday inclusion/exclusion is implemented and covers the original Time Loops example. Fasting and its journal remain in Fast Tracker. Android is not built.
+Skip-next, date-specific overrides, independently moved weekday times within a shared slot, user-imported audio, completion-relative schedules, multistage timer sequences, template sharing, widgets and a Watch app are not implemented. Per-slot weekday inclusion/exclusion is implemented and covers the original Time Loops example. Fasting and its journal remain in Fast Tracker. The Android app (`android/`, its README lists the platform differences) runs on the same core.
 
 ## Verification
 
