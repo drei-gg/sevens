@@ -12,6 +12,8 @@ data class PurchaseState(
     val pending: Boolean = false,
     val message: String? = null,
     val busy: Boolean = false,
+    /** The source has answered once (owned or not), so launch decisions can be made. */
+    val loaded: Boolean = false,
 )
 
 interface PurchaseSource {
@@ -27,7 +29,10 @@ interface PurchaseSource {
 class LocalPurchaseSource : PurchaseSource {
     override val state =
         MutableStateFlow(
-            PurchaseState(message = "Purchases are available in the Google Play edition.")
+            PurchaseState(
+                message = "Purchases are available in the Google Play edition.",
+                loaded = true,
+            )
         )
 
     override fun refresh() = Unit

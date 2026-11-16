@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.Seven" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#121110</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>

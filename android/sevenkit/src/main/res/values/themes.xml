@@ -1,0 +1,8 @@
+<resources>
+    <!-- The window behind Compose: paper, so launch and the first frame match (no splash). -->
+    <style name="Theme.Seven" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F3EFE6</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>

@@ -78,7 +78,29 @@ android/gradlew -p android :core:test :fast:assembleGenericDebug --write-locks
 scripts/check-android-variants
 ```
 
-The `seven.android-app` Gradle convention supplies flavors, signing gates, version flags, SDK levels, shrinker and lint defaults for future app modules. `sevenkit` supplies theme/access contracts. `billing` supplies the isolated Play implementation. `core` is Fast's Rust core seen from Kotlin: UniFFI bindings generated from `apps/fast/core` at build time plus a small façade (`Fast.kt`). Building it needs Rust, the Android targets and cargo-ndk (`apps/fast/core/README.md`). Other apps add their own crate and binding module the same way.
+The `seven.android-app` Gradle convention supplies flavors, signing gates, version flags, SDK levels, shrinker and lint defaults for future app modules. `sevenkit` supplies theme/access contracts. `billing` supplies the isolated Play implementation. `core` is Fast's Rust core seen from Kotlin: UniFFI bindings generated from `apps/fast/core` at build time plus a small façade (`Fast.kt`). Building it needs Rust, the Android targets and cargo-ndk (`apps/fast/core/README.md`). Other apps get theirs from `seven.rust-core` (below).
+
+## The shared base: adding a Seven
+
+QR, Alarm, Scanner, Cleaner and Vault start from the shared base; Fast predates it and still wires these pieces by hand. An app on the base is three short files and its UI:
+
+```text
+apps/<app>/android/
+  build.gradle.kts         extra["sevenApp"], extra["sevenGenericName"], apply(plugin = "seven.base-app")
+  proguard-rules.pro       keeps JNA and gg.seven.<app>.core
+  core/build.gradle.kts    plugins { id("seven.rust-core") }   (Gradle :<app>-core)
+  src/main/…               manifest, generic icon, backup rules, MainActivity, <App>Model, <App>Content, screens
+```
+
+- `seven.rust-core` (`buildSrc/SevenRustCorePlugin.kt`) is the crate seen from Kotlin: it generates the UniFFI bindings from `apps/<app>/core` before compiling and runs JVM tests against the crate's host build. Put a façade there only when Kotlin needs one; rules stay in Rust.
+- `seven.base-app` (`buildSrc/SevenBasePlugin.kt`) applies Android, Kotlin, Compose and `seven.android-app`, sets the namespace `gg.seven.<app>`, builds the crate's Android libraries before `preBuild`, and adds `:<app>-core`, `sevenkit`, JNA and the AndroidX basics. It adds `android/flavors/<flavor>/kotlin` to each distribution, so `gg.seven.flavor.sevenPurchases` is the local trial in generic/personal and Play Billing in store, with `:billing` in the store graph only.
+- `sevenkit` carries the brand moments, ported from iOS SevenKit: `SevenStore` (trial, purchase and launch flags as one `Entitlement`), `SevenRoot` (Before you buy on first launch, the trial-ended sheet once, the unlock sheet on demand), `LocalSevenGate` (`gate.run("Peek") { … }` runs a paid action or offers the unlock), `SevenAbout` (Settings' trial/unlock and about sections, with the notices under `assets/notices`), `SevenTopBar` and `Theme.Seven` (the paper window background). Each app supplies its words in `<App>Content.kt`; "Before you buy" names what Android does built in, so it differs from the iOS copy.
+- Register the app in `settings.gradle.kts` (the loop near the end), add its library notices under `src/main/assets/notices`, and its data files to `res/xml/backup_rules.xml` and `data_extraction_rules.xml`.
+
+```sh
+android/gradlew -p android :qr-core:test :qr:lintGenericDebug :qr:assembleGenericDebug
+scripts/android qr generic debug
+```
 
 Fast uses AndroidX `AtomicFile` with serialized IO; a failed write does not publish state. A corrupt/newer archive remains intact and blocks edits. JSON import validates and previews a stable-ID merge, keeping local settings. CSV includes every record type. Reminders use Android's inexact, idle-capable alarms and reconcile after boot, clock/timezone changes, app updates and edits; delayed water reminders outside the chosen window are dropped. Permission denial does not affect tracking.
 

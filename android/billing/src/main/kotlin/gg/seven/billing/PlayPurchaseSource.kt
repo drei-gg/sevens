@@ -91,6 +91,7 @@ class PlayPurchaseSource(
                             state.update {
                                 it.copy(
                                     busy = false,
+                                    loaded = true,
                                     message =
                                         "Google Play is unavailable. Saved access still works offline.",
                                 )
@@ -140,6 +141,7 @@ class PlayPurchaseSource(
                 state.update {
                     it.copy(
                         busy = false,
+                        loaded = true,
                         message = "Could not refresh purchases. Try Restore again when online.",
                     )
                 }
@@ -164,6 +166,7 @@ class PlayPurchaseSource(
                     owned = owned != null,
                     pending = pending,
                     busy = false,
+                    loaded = true,
                     message =
                         if (pending) "Payment pending. Access starts when Google Play confirms it."
                         else it.message,

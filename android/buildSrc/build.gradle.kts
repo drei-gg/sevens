@@ -19,5 +19,13 @@ gradlePlugin {
             id = "seven.android-app"
             implementationClass = "SevenAppPlugin"
         }
+        register("sevenBase") {
+            id = "seven.base-app"
+            implementationClass = "SevenBasePlugin"
+        }
+        register("sevenRustCore") {
+            id = "seven.rust-core"
+            implementationClass = "SevenRustCorePlugin"
+        }
     }
 }
