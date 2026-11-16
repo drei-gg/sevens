@@ -77,7 +77,13 @@ class Recognizer private constructor(private val api: TessBaseAPI) : Closeable {
                 context.assets.open(MODEL).use { input -> partial.outputStream().use { input.copyTo(it) } }
                 if (!partial.renameTo(model)) throw IllegalStateException("Could not prepare text recognition")
             }
-            val api = TessBaseAPI()
+            // Tesseract ships for arm64 and x86_64; elsewhere loading it fails with an Error.
+            val api =
+                try {
+                    TessBaseAPI()
+                } catch (_: Throwable) {
+                    throw IllegalStateException("Text recognition isn’t available on this device. Turn off Searchable text to export.")
+                }
             // Tesseract 5 takes the tessdata directory itself (4.0 and later), not its parent.
             if (api.Init(model.parentFile!!.path + "/", "eng") != 0) {
                 api.deallocate()
