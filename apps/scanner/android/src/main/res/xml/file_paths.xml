@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Prepared PDFs shared through the app's file provider; nothing else is exposed. -->
+<paths>
+    <cache-path name="exports" path="ScannerExports/" />
+</paths>

@@ -1,2 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<data-extraction-rules><cloud-backup><include domain="sharedpref" path="seven-trial.xml"/></cloud-backup><device-transfer><include domain="sharedpref" path="seven-trial.xml"/></device-transfer></data-extraction-rules>
+<!-- Cloud backup: the trial start and preferences only (the library can exceed the 25 MB quota).
+     Device-to-device transfer also moves the document library. Exports and OCR data are never included. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="sharedpref" path="seven-trial.xml"/>
+        <include domain="sharedpref" path="scanner.xml"/>
+    </cloud-backup>
+    <device-transfer>
+        <include domain="sharedpref" path="seven-trial.xml"/>
+        <include domain="sharedpref" path="scanner.xml"/>
+        <include domain="file" path="Scanner/"/>
+    </device-transfer>
+</data-extraction-rules>

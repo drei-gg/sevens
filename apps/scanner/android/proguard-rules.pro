@@ -3,3 +3,16 @@
 -keep class * implements com.sun.jna.** { *; }
 -keep class gg.seven.scanner.core.** { *; }
 -dontwarn java.awt.**
+
+# Tesseract through JavaCPP: native code calls back into these classes by name.
+-keep class org.bytedeco.** { *; }
+-keepclassmembers class * extends org.bytedeco.javacpp.Pointer { *; }
+-dontwarn org.bytedeco.**
+-dontwarn java.awt.**
+-dontwarn javax.**
+
+# PDFBox: fonts and resources load by name; BouncyCastle (encryption) is intentionally absent.
+-keep class com.tom_roush.pdfbox.** { *; }
+-keep class com.tom_roush.fontbox.** { *; }
+-dontwarn org.bouncycastle.**
+-dontwarn com.gemalto.jp2.**

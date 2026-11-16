@@ -1,0 +1,51 @@
+package gg.seven.scanner
+
+import android.app.Activity
+import android.net.Uri
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
+import gg.seven.scanner.core.scanLimits
+
+/**
+ * Personal and store: Google's ML Kit document scanner (Google Play services, a documented
+ * platform exception like Play Billing), VisionKit's closest counterpart: edge detection,
+ * perspective correction and cleanup, all on the device. Where Play services or the scanner
+ * module is unavailable, the open-source CameraX capture takes over.
+ */
+@Composable
+fun rememberPlatformScanner(onPages: (List<Uri>) -> Unit, onCamera: () -> Unit): () -> Unit {
+    val activity = LocalActivity.current
+    val pages = rememberUpdatedState(onPages)
+    val camera = rememberUpdatedState(onCamera)
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+            if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
+            val uris = GmsDocumentScanningResult.fromActivityResultIntent(result.data)?.pages?.map { it.imageUri }.orEmpty()
+            if (uris.isNotEmpty()) pages.value(uris)
+        }
+    return {
+        val options =
+            GmsDocumentScannerOptions.Builder()
+                .setGalleryImportAllowed(false)
+                .setPageLimit(scanLimits().maxPages.toInt())
+                .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
+                .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
+                .build()
+        if (activity == null) camera.value()
+        else
+            GmsDocumentScanning.getClient(options)
+                .getStartScanIntent(activity)
+                .addOnSuccessListener { launcher.launch(IntentSenderRequest.Builder(it).build()) }
+                .addOnFailureListener { camera.value() }
+    }
+}
+
+/** Which scanner this build uses, for the privacy note in Settings. */
+const val SCANNER_ENGINE = "ML Kit"
