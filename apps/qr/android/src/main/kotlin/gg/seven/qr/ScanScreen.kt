@@ -119,8 +119,9 @@ fun ScanScreen(model: QrModel, nav: QrNav) {
 
     LaunchedEffect(pending) {
         val code = pending ?: return@LaunchedEffect
-        model.pendingCode.value = null
+        // Cleared only once shown: a launch can recompose this screen away mid-analysis.
         present(code)
+        model.pendingCode.value = null
     }
 
     val photo = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->

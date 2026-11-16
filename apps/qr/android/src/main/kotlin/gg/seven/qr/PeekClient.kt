@@ -66,7 +66,9 @@ class PeekClient(
             .build()
 
     /** Hops, the final page's first bytes and headers, the TLS version and why it stopped. */
-    suspend fun capture(link: LinkInfo): PeekCapture {
+    suspend fun capture(link: LinkInfo): PeekCapture = withContext(Dispatchers.IO) { captureOnIo(link) }
+
+    private suspend fun captureOnIo(link: LinkInfo): PeekCapture {
         val first = PeekHop(link.normalized, null)
         when (link.scheme.lowercase()) {
             "https" -> Unit
@@ -157,7 +159,9 @@ class PeekClient(
     }
 
     /** Whole days since registration, or null when unknown (no service, non-200, no event, timeout). */
-    suspend fun registrationAge(link: LinkInfo, data: BundledData, now: Instant = Instant.now()): Long? {
+    suspend fun registrationAge(link: LinkInfo, data: BundledData, now: Instant = Instant.now()): Long? = withContext(Dispatchers.IO) { ageOnIo(link, data, now) }
+
+    private suspend fun ageOnIo(link: LinkInfo, data: BundledData, now: Instant): Long? {
         val domain = rdapDomain(link, data) ?: return null
         val query = data.rdapQueryUrl(domain)?.takeIf { it.lowercase().startsWith("https://") } ?: return null
         if (query.toHttpUrlOrNull()?.isHttps != true) return null

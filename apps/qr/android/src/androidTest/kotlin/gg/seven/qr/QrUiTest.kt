@@ -27,6 +27,8 @@ class QrUiTest {
 
     @Before
     fun prepare() {
+        // The camera prompt would pause the activity; the permission flow is checked by hand.
+        InstrumentationRegistry.getInstrumentation().uiAutomation.grantRuntimePermission(ui.activity.packageName, android.Manifest.permission.CAMERA)
         model.store.beforeYouBuyShown = true
         ui.activity.getSharedPreferences("seven-trial", 0).edit().clear().commit()
         runBlocking { model.clearHistory() }
@@ -53,7 +55,7 @@ class QrUiTest {
         ui.waitUntil(10_000) { model.historyState.value.items.isNotEmpty() }
         ui.onNodeWithTag("result.done").performClick()
         ui.onNodeWithTag("scan.history").performClick()
-        ui.onNodeWithText("example.org").assertExists()
+        ui.onNode(hasContentDescription("example.org", substring = true)).assertExists()
     }
 
     @Test
@@ -61,8 +63,9 @@ class QrUiTest {
         model.store.startTrial()
         ui.onNodeWithTag("scan.make").performClick()
         ui.onNodeWithTag("make.field.link").performTextInput("https://example.org")
-        ui.waitUntil(10_000) { ui.onAllNodesWithTag("make.export").fetchSemanticsNodes().isNotEmpty() }
-        ui.onNodeWithTag("make.code", useUnmergedTree = true).assertExists()
+        // Export hides while the keyboard is up; the code itself shows as soon as it is made.
+        ui.waitUntil(10_000) { ui.onAllNodesWithTag("make.code", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithTag("make.code", useUnmergedTree = true).assertContentDescriptionContains("QR code for https://example.org")
     }
 }
 

@@ -128,11 +128,6 @@ fun CameraScanner(
     }
 
     DisposableEffect(lifecycleOwner) {
-        controller.bindToLifecycle(lifecycleOwner)
-        controller.initializationFuture.addListener(
-            { onTorchAvailable(controller.cameraInfo?.hasFlashUnit() == true) },
-            ContextCompat.getMainExecutor(context),
-        )
         onDispose {
             controller.clearImageAnalysisAnalyzer()
             controller.unbind()
@@ -143,6 +138,12 @@ fun CameraScanner(
     // Active: analyse frames; inactive (a sheet is up, the app is away): stop, and pause the timing.
     LaunchedEffect(active) {
         if (active) {
+            // Bound only while scanning, so the camera (and its privacy dot) is off under a sheet.
+            controller.bindToLifecycle(lifecycleOwner)
+            controller.initializationFuture.addListener(
+                { onTorchAvailable(controller.cameraInfo?.hasFlashUnit() == true) },
+                ContextCompat.getMainExecutor(context),
+            )
             debouncer.resume(SystemClock.uptimeMillis())
             val reader = ScanDecoding.reader(stills = false)
             val main = ContextCompat.getMainExecutor(context)
@@ -175,6 +176,7 @@ fun CameraScanner(
         } else {
             debouncer.pause()
             controller.clearImageAnalysisAnalyzer()
+            controller.unbind()
             outlines = emptyList()
             setMultiple(false)
             wake = null

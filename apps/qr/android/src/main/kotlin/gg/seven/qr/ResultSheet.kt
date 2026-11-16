@@ -84,7 +84,7 @@ fun ResultSheet(model: QrModel, initial: Analysis, onDismiss: () -> Unit, onMake
         onDismissRequest = onDismiss,
         sheetState = state,
         containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = { WindowInsets(0) },
+        contentWindowInsets = { WindowInsets.statusBars },
     ) {
         BackHandler(pages.isNotEmpty()) { pages = pages.dropLast(1) }
         val page = pages.lastOrNull()
