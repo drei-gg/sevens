@@ -47,8 +47,8 @@ for url in $(printf '%s\n' "$deps" | grep -oE 'https?://[^"]+' | sed -E 's/\.git
 done
 
 # G7: user-facing text. String catalogs, plists and string literals in UI code.
-ui_swift=$(swift_files | grep -E '^(apps/alarm/Kit/Sources/AlarmUI|apps/alarm/App|apps/scanner/App|apps/cleaner/App|apps/vault/App|apps/fast/Kit/Sources/FastUI|apps/fast/App|apps/fast/Widgets|apps/fast/Watch|apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
-ui_text=$(git ls-files --cached --others --exclude-standard -- '*.xcstrings' '*.strings' 'apps/qr/*Info.plist' 'apps/qr/**/Info.plist' 'apps/qr/Config/*.plist' 'apps/fast/Config/*.plist' 'apps/alarm/Config/*.plist' 'apps/scanner/Config/*.plist' 'apps/cleaner/Config/*.plist' 'apps/vault/Config/*.plist' || true)
+ui_swift=$(swift_files | grep -E '^(apps/alarm/Kit/Sources/AlarmUI|apps/alarm/App|apps/scanner/App|apps/cleaner/App|apps/vault/App|apps/bloom/Kit/Sources/BloomUI|apps/bloom/App|apps/fast/Kit/Sources/FastUI|apps/fast/App|apps/fast/Widgets|apps/fast/Watch|apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
+ui_text=$(git ls-files --cached --others --exclude-standard -- '*.xcstrings' '*.strings' 'apps/qr/*Info.plist' 'apps/qr/**/Info.plist' 'apps/qr/Config/*.plist' 'apps/fast/Config/*.plist' 'apps/alarm/Config/*.plist' 'apps/scanner/Config/*.plist' 'apps/cleaner/Config/*.plist' 'apps/vault/Config/*.plist' 'apps/bloom/Config/*.plist' || true)
 hits=$( { [ -z "$ui_swift" ] || echo "$ui_swift" | xargs grep -nP '"(?:[^"\\]|\\.)*\bsafe(ly|ty|r|st)?\b(?:[^"\\]|\\.)*"' -i; \
           [ -z "$ui_text" ] || echo "$ui_text" | xargs grep -nPi '\bsafe(ly|ty|r|st)?\b'; } 2>/dev/null || true)
 [ -z "$hits" ] || bad "G7 the word \"safe\" in user-facing text:" "$hits"
@@ -66,6 +66,7 @@ hits=$(git ls-files | grep -E '(^|/)(PLAN(-.*)?|BUILD-REPORT.*|REVIEW.*)\.md$' |
 generic_icon() { case "$1" in
   qr) echo e3c19931272107b262037ab35e4b8bf61b8da859d2052824d842c053b6897fc6;;
   fast) echo 3b75033fce9f3dc592ed48bec5ab2657262005faa2f5bf69600f6e92f081e809;;
+  bloom) echo 3b75033fce9f3dc592ed48bec5ab2657262005faa2f5bf69600f6e92f081e809;;
   alarm) echo 3b75033fce9f3dc592ed48bec5ab2657262005faa2f5bf69600f6e92f081e809;;
   scanner) echo 2dab1742c50a9875533694a7479cd98eeb0341c5297d2fe88a6aad1358730d30;;
   vault) echo 5a4164b1e9896c252763ad5609ebe59ef5cec1d04af7a4c1dc488a6b5ce0d614;;
@@ -92,7 +93,7 @@ hits=$(git ls-files --cached --others --exclude-standard -- '*.pbxproj' '*.xccon
 # The colors and the tint are set in SevenKit; app code uses Tokens and SevenKit's helpers.
 # The iPhone apps only: Fast's Watch app and widgets aren't on the look yet, nor is Vault. Screen tours
 # and the processing audit are test tools, not screens.
-look_swift=$(swift_files | grep -vE '^apps/scanner/App/ProcessingAudit\.swift$|/CleanerTour\.swift$' | grep -E '^(apps/alarm/Kit/Sources/AlarmUI|apps/alarm/App|apps/scanner/App|apps/cleaner/App|apps/fast/Kit/Sources/FastUI|apps/fast/App|apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
+look_swift=$(swift_files | grep -vE '^apps/scanner/App/ProcessingAudit\.swift$|/CleanerTour\.swift$' | grep -E '^(apps/alarm/Kit/Sources/AlarmUI|apps/alarm/App|apps/scanner/App|apps/cleaner/App|apps/bloom/Kit/Sources/BloomUI|apps/bloom/App|apps/fast/Kit/Sources/FastUI|apps/fast/App|apps/qr/Kit/Sources/QRUI|SevenKit/Sources/SevenKit|apps/qr/App|apps/qr/MakeExtension|apps/qr/CheckExtension)/' || true)
 look() { [ -z "$look_swift" ] || echo "$look_swift" | grep -vE "$1" | xargs -r grep -nE "$2" || true; }
 hits=$(look '^$' '(foregroundStyle|foregroundColor)\(\s*\.(secondary|tertiary)\b|Color\.(secondary|tertiary)\b|\?\s*\.secondary\b|:\s*\.secondary\b')
 [ -z "$hits" ] || bad "system secondary/tertiary text color (3.25:1 on paper): use Tokens.muted:" "$hits"
@@ -123,6 +124,8 @@ hits=$(look '^$' '\.shadow\(')
 # Typographic punctuation in English UI strings: …, not ...; no em dashes.
 hits=$( { [ -z "$look_swift" ] || echo "$look_swift" | xargs grep -nP '(defaultValue:|seven\("[^"]*",|\bf\()\s*"(?:[^"\\]|\\.)*(\.\.\.|—|--|[A-Za-z]'"'"'[A-Za-z])(?:[^"\\]|\\.)*"'; } 2>/dev/null || true)
 [ -z "$hits" ] || bad "UI string with ..., an em dash or a straight apostrophe: use …, a full stop or colon, and ’:" "$hits"
+
+"$root/scripts/check-family-sharing" || fail=1
 
 [ $fail = 0 ] && echo "check-rules: G6, G7, the look, type and spacing pass"
 exit $fail

@@ -27,6 +27,8 @@ jobs:
         run: swift test --package-path apps/scanner/Kit
       - name: CleanerKit
         run: swift test --package-path apps/cleaner/Kit
+      - name: BloomWire
+        run: swift test --package-path apps/bloom/Kit
       - name: Rules (G6, G7)
         run: scripts/check-rules
 
@@ -36,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Each Seven's shared core
-        run: for app in fast qr alarm scanner cleaner vault; do scripts/rust-core "$app" test; done
+        run: for app in fast qr alarm scanner cleaner vault bloom; do scripts/rust-core "$app" test; done
 
   macos:
     name: macOS (xcodebuild test)
@@ -63,7 +65,7 @@ jobs:
       - name: Rust cores for iOS
         run: |
           rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
-          for app in fast qr alarm scanner cleaner vault; do scripts/rust-core "$app" apple; done
+          for app in fast qr alarm scanner cleaner vault bloom; do scripts/rust-core "$app" apple; done
       - name: Install Watch platform for the embedded companion
         run: xcodebuild -downloadPlatform watchOS
       - name: Build and test Fast Tracker
@@ -132,3 +134,15 @@ jobs:
           -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
           CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
           build test
+
+      - name: Test Bloom core and reports
+        working-directory: apps/bloom/Kit
+        run: >
+          xcodebuild -scheme BloomKit-Package
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
+      - name: Build and test Bloom
+        run: >
+          xcodebuild -project apps/bloom/Bloom.xcodeproj -scheme Bloom
+          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
+          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES build test

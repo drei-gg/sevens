@@ -26,7 +26,7 @@ project(":wear").projectDir = file("../apps/fast/wear")
 project(":fast-wire").projectDir = file("../apps/fast/wear/wire")
 
 // The other Sevens, on the shared base (seven.base-app): each app and its Rust core's bindings.
-for (app in listOf("qr", "alarm", "scanner", "cleaner", "vault")) {
+for (app in listOf("qr", "alarm", "scanner", "cleaner", "vault", "bloom")) {
     include(":$app", ":$app-core")
     project(":$app").projectDir = file("../apps/$app/android")
     project(":$app-core").projectDir = file("../apps/$app/android/core")

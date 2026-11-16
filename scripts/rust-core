@@ -43,6 +43,10 @@ run_android() {
 }
 
 run_apple() {
+  if [ "$app" = bloom ] && [ "$(uname)" != Darwin ]; then
+    "$root/scripts/bloom-apple" core
+    return
+  fi
   [ -f "$out/swift/${lib}FFI.h" ] || run_bindings
   # Simulator slices: Apple silicon and Intel Macs both run it, so ship both in one fat library.
   local build="set -e; export PATH=\$HOME/.cargo/bin:\$PATH

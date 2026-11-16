@@ -1,0 +1,721 @@
+// !$*UTF8*$!
+{
+	"classes" = {
+	};
+	"objectVersion" = "77";
+	"archiveVersion" = "1";
+	"objects" = {
+		"91339408208ECF8A407F313A" = {
+			"isa" = "XCConfigurationList";
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+			"buildConfigurations" = (
+				"6BF1DEF7F3031CAF0C9055B2",
+				"CF6F8EB2FCE478738059C5CF",
+			);
+		};
+		"476EC7A07A6F73D7828692D9" = {
+			"isa" = "PBXFileSystemSynchronizedRootGroup";
+			"path" = "UITests";
+			"sourceTree" = "<group>";
+		};
+		"4A92FABEE34763F48399EB44" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"TEST_TARGET_NAME" = "Bloom";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).uitests";
+				"SWIFT_EMIT_LOC_STRINGS" = "NO";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+			};
+			"name" = "Release";
+		};
+		"60DFD8F25875C573547ACF7C" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "847D9AA32B0AC9597FA8F13F";
+		};
+		"FBC2360D0E188F86BB54997A" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents" = "YES";
+				"INFOPLIST_FILE" = "Config/Bloom-Info.plist";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "$(SEVENS_DISPLAY_NAME)";
+				"CODE_SIGN_ENTITLEMENTS" = "Config/Bloom.entitlements";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"INFOPLIST_KEY_LSApplicationCategoryType" = "public.app-category.healthcare-fitness";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID)";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+			};
+			"name" = "Release";
+		};
+		"FC5ED7FA143945F93BDF3F2D" = {
+			"path" = "Base.xcconfig";
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.xcconfig";
+			"sourceTree" = "<group>";
+		};
+		"C58A0EAC9263B9A24FDAA336" = {
+			"fileSystemSynchronizedGroups" = (
+				"A43DC8579C4344DF97EF9577",
+			);
+			"productType" = "com.apple.product-type.app-extension";
+			"productReference" = "2F1EA0A7B220918020E3DBE9";
+			"buildConfigurationList" = "1BBE4FF84ABFD167297F5CC6";
+			"packageProductDependencies" = (
+				"82E9EFF67EEE07E89E6D5962",
+				"963390B8B901E47D87D211CB",
+			);
+			"productName" = "BloomWidgets";
+			"isa" = "PBXNativeTarget";
+			"buildPhases" = (
+				"08817146715C9AD62C1DC4E7",
+				"5BAD4E63CE8342D5859FA2DD",
+				"F71A030C7C6C951F0BB2079F",
+			);
+			"dependencies" = (
+			);
+			"name" = "BloomWidgets";
+			"buildRules" = (
+			);
+		};
+		"F678C352892AE24C85F504A6" = {
+			"path" = "Bloom.storekit";
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text";
+			"sourceTree" = "<group>";
+		};
+		"47705AA0A37E57D790DA1518" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "963390B8B901E47D87D211CB";
+		};
+		"D6EE0F2AB9464CAD9395FD67" = {
+			"baseConfigurationReference" = "0462E5556301BB380E2C8DF1";
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"CODE_SIGN_ENTITLEMENTS" = "Config/Widgets.entitlements";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"INFOPLIST_FILE" = "Config/Widgets-Info.plist";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).widgets";
+				"SKIP_INSTALL" = "YES";
+				"APPLICATION_EXTENSION_API_ONLY" = "YES";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+			};
+			"name" = "Release";
+		};
+		"1F2CB1A78502780335EAC2EF" = {
+			"path" = "Config";
+			"isa" = "PBXGroup";
+			"children" = (
+				"FC5ED7FA143945F93BDF3F2D",
+				"66086CB6C899815C33ECF2CD",
+				"5028FB1D19B817FF991C7D5E",
+				"0462E5556301BB380E2C8DF1",
+				"9DA1DC2966E418D9D50A86CE",
+				"95B582F1D48F2D1ECE09C2A8",
+			);
+			"sourceTree" = "<group>";
+		};
+		"984940A6B53763461516B39F" = {
+			"path" = "Bloom.app";
+			"isa" = "PBXFileReference";
+			"includeInIndex" = "0";
+			"explicitFileType" = "wrapper.application";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"5BAD4E63CE8342D5859FA2DD" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"A803BCA94D9FE4787A6C307B" = {
+			"isa" = "XCConfigurationList";
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+			"buildConfigurations" = (
+				"78061E89174E575E1CB709E0",
+				"4A92FABEE34763F48399EB44",
+			);
+		};
+		"82E9EFF67EEE07E89E6D5962" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "BloomWire";
+		};
+		"5C3818A1FC1FC3619E76F423" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "C58A0EAC9263B9A24FDAA336";
+			"targetProxy" = "E7D252C9B384308C78918437";
+		};
+		"F71A030C7C6C951F0BB2079F" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"08FB7BF40F20EAEF17426B1C" = {
+			"isa" = "PBXFileSystemSynchronizedRootGroup";
+			"path" = "Brand";
+			"sourceTree" = "<group>";
+		};
+		"08817146715C9AD62C1DC4E7" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"20E29881A7294749CD0CCA6B",
+				"47705AA0A37E57D790DA1518",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"D45E17E45C7C3172663C8A51" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"95B582F1D48F2D1ECE09C2A8" = {
+			"path" = "Bloom.entitlements";
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.entitlements";
+			"sourceTree" = "<group>";
+		};
+		"CF6F8EB2FCE478738059C5CF" = {
+			"baseConfigurationReference" = "0462E5556301BB380E2C8DF1";
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+			};
+			"name" = "Release";
+		};
+		"EA84DE616D8CBF6E5F28D0BA" = {
+			"buildActionMask" = "2147483647";
+			"dstSubfolderSpec" = "13";
+			"isa" = "PBXCopyFilesBuildPhase";
+			"runOnlyForDeploymentPostprocessing" = "0";
+			"dstPath" = "";
+			"files" = (
+				"1A36FEEC36D9AA8E8708588B",
+			);
+			"name" = "Embed App Extensions";
+		};
+		"20E29881A7294749CD0CCA6B" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "82E9EFF67EEE07E89E6D5962";
+		};
+		"B666FD381EF0DB0286E2B86C" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"DE1CA77BE513E3ACC8CDAE65" = {
+			"name" = "BloomSmokeUITests";
+			"buildConfigurationList" = "A803BCA94D9FE4787A6C307B";
+			"productReference" = "8BA674758970176A2F86E305";
+			"productType" = "com.apple.product-type.bundle.ui-testing";
+			"packageProductDependencies" = (
+			);
+			"productName" = "BloomSmokeUITests";
+			"isa" = "PBXNativeTarget";
+			"fileSystemSynchronizedGroups" = (
+				"476EC7A07A6F73D7828692D9",
+			);
+			"dependencies" = (
+				"6DC3E4EAB206590670207522",
+			);
+			"buildPhases" = (
+				"0A61FE0FA8EA03D483E86E0C",
+				"D45E17E45C7C3172663C8A51",
+				"B666FD381EF0DB0286E2B86C",
+			);
+			"buildRules" = (
+			);
+		};
+		"47F7A16B4A4A5DA50F4F08A7" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "11D86C02E99C0D687FB1CECB";
+			"remoteGlobalIDString" = "066DC18C249F54B39289CF0A";
+			"remoteInfo" = "Bloom";
+			"proxyType" = "1";
+		};
+		"099881925BE9D4EB11932FFF" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents" = "YES";
+				"INFOPLIST_FILE" = "Config/Bloom-Info.plist";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "$(SEVENS_DISPLAY_NAME)";
+				"CODE_SIGN_ENTITLEMENTS" = "Config/Bloom.entitlements";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"INFOPLIST_KEY_LSApplicationCategoryType" = "public.app-category.healthcare-fitness";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID)";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+			};
+			"name" = "Debug";
+		};
+		"963390B8B901E47D87D211CB" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "BloomSurfaces";
+		};
+		"6BF1DEF7F3031CAF0C9055B2" = {
+			"baseConfigurationReference" = "5028FB1D19B817FF991C7D5E";
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+			};
+			"name" = "Debug";
+		};
+		"A0E02F31DF92278329A35C11" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"879CCA7B21084EB6CE7DF1EB",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"11D86C02E99C0D687FB1CECB" = {
+			"buildConfigurationList" = "91339408208ECF8A407F313A";
+			"targets" = (
+				"066DC18C249F54B39289CF0A",
+				"DE1CA77BE513E3ACC8CDAE65",
+				"C58A0EAC9263B9A24FDAA336",
+				"D87CABA05D90965FAB7859D6",
+			);
+			"minimizedProjectReferenceProxies" = "1";
+			"developmentRegion" = "en";
+			"knownRegions" = (
+				"en",
+				"Base",
+			);
+			"isa" = "PBXProject";
+			"productRefGroup" = "68EC0353C057F58199C5FCEE";
+			"projectDirPath" = "";
+			"attributes" = {
+				"LastSwiftUpdateCheck" = "2660";
+				"BuildIndependentTargetsInParallel" = "1";
+				"LastUpgradeCheck" = "2660";
+				"TargetAttributes" = {
+					"066DC18C249F54B39289CF0A" = {
+						"CreatedOnToolsVersion" = "26.6";
+					};
+					"DE1CA77BE513E3ACC8CDAE65" = {
+						"TestTargetID" = "066DC18C249F54B39289CF0A";
+						"CreatedOnToolsVersion" = "26.6";
+					};
+				};
+			};
+			"hasScannedForEncodings" = "0";
+			"projectRoot" = "";
+			"preferredProjectObjectVersion" = "77";
+			"mainGroup" = "686E248E049253F9D30C3F4C";
+		};
+		"0462E5556301BB380E2C8DF1" = {
+			"path" = "Release.xcconfig";
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.xcconfig";
+			"sourceTree" = "<group>";
+		};
+		"9DA1DC2966E418D9D50A86CE" = {
+			"path" = "Bloom-Info.plist";
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.xml";
+			"sourceTree" = "<group>";
+		};
+		"847D9AA32B0AC9597FA8F13F" = {
+			"path" = "CHANGELOG.md";
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "net.daringfireball.markdown";
+			"sourceTree" = "<group>";
+		};
+		"1A36FEEC36D9AA8E8708588B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "2F1EA0A7B220918020E3DBE9";
+			"settings" = {
+				"ATTRIBUTES" = (
+					"RemoveHeadersOnCopy",
+				);
+			};
+		};
+		"6DC3E4EAB206590670207522" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "066DC18C249F54B39289CF0A";
+			"targetProxy" = "47F7A16B4A4A5DA50F4F08A7";
+		};
+		"0A61FE0FA8EA03D483E86E0C" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"066DC18C249F54B39289CF0A" = {
+			"name" = "Bloom";
+			"buildConfigurationList" = "9ED377900986B03F62D90F26";
+			"productReference" = "984940A6B53763461516B39F";
+			"productType" = "com.apple.product-type.application";
+			"packageProductDependencies" = (
+				"FC956963D93E4776F5B7BEE1",
+			);
+			"productName" = "Bloom";
+			"isa" = "PBXNativeTarget";
+			"fileSystemSynchronizedGroups" = (
+				"4F75FC58D2120E07D49C8446",
+				"08FB7BF40F20EAEF17426B1C",
+			);
+			"dependencies" = (
+				"5C3818A1FC1FC3619E76F423",
+				"545E50AE2FE7625C8369BFC1",
+			);
+			"buildPhases" = (
+				"4E6A9FB79F74BE865D78A65C",
+				"A0E02F31DF92278329A35C11",
+				"F54BDE30D29FD49040F5D82D",
+				"EA84DE616D8CBF6E5F28D0BA",
+				"C391B72CCCBA4B8AD56B4109",
+			);
+			"buildRules" = (
+			);
+		};
+		"2F1EA0A7B220918020E3DBE9" = {
+			"path" = "BloomWidgets.appex";
+			"isa" = "PBXFileReference";
+			"includeInIndex" = "0";
+			"explicitFileType" = "wrapper.app-extension";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"78061E89174E575E1CB709E0" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"TEST_TARGET_NAME" = "Bloom";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).uitests";
+				"SWIFT_EMIT_LOC_STRINGS" = "NO";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+			};
+			"name" = "Debug";
+		};
+		"9ED377900986B03F62D90F26" = {
+			"isa" = "XCConfigurationList";
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+			"buildConfigurations" = (
+				"099881925BE9D4EB11932FFF",
+				"FBC2360D0E188F86BB54997A",
+			);
+		};
+		"1BBE4FF84ABFD167297F5CC6" = {
+			"isa" = "XCConfigurationList";
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+			"buildConfigurations" = (
+				"7A0AF290ED9540742A53993E",
+				"D6EE0F2AB9464CAD9395FD67",
+			);
+		};
+		"C6B42E4D8A0E33524D9A827A" = {
+			"path" = "Kit";
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "wrapper";
+			"sourceTree" = "<group>";
+		};
+		"66086CB6C899815C33ECF2CD" = {
+			"path" = "Brand.xcconfig";
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.xcconfig";
+			"sourceTree" = "<group>";
+		};
+		"F54BDE30D29FD49040F5D82D" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"60DFD8F25875C573547ACF7C",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"A43DC8579C4344DF97EF9577" = {
+			"isa" = "PBXFileSystemSynchronizedRootGroup";
+			"path" = "Widgets";
+			"sourceTree" = "<group>";
+		};
+		"879CCA7B21084EB6CE7DF1EB" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "FC956963D93E4776F5B7BEE1";
+		};
+		"686E248E049253F9D30C3F4C" = {
+			"isa" = "PBXGroup";
+			"sourceTree" = "<group>";
+			"children" = (
+				"4F75FC58D2120E07D49C8446",
+				"08FB7BF40F20EAEF17426B1C",
+				"476EC7A07A6F73D7828692D9",
+				"C6B42E4D8A0E33524D9A827A",
+				"EEC2E4063DA2F5DFD1BC1963",
+				"847D9AA32B0AC9597FA8F13F",
+				"1F2CB1A78502780335EAC2EF",
+				"F678C352892AE24C85F504A6",
+				"68EC0353C057F58199C5FCEE",
+				"A43DC8579C4344DF97EF9577",
+				"D53611B138EAAB5B46ADDAB5",
+			);
+		};
+		"E7D252C9B384308C78918437" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "11D86C02E99C0D687FB1CECB";
+			"remoteGlobalIDString" = "C58A0EAC9263B9A24FDAA336";
+			"remoteInfo" = "BloomWidgets";
+			"proxyType" = "1";
+		};
+		"5028FB1D19B817FF991C7D5E" = {
+			"path" = "Debug.xcconfig";
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.xcconfig";
+			"sourceTree" = "<group>";
+		};
+		"EEC2E4063DA2F5DFD1BC1963" = {
+			"path" = "../../SevenKit";
+			"isa" = "PBXFileReference";
+			"name" = "SevenKit";
+			"lastKnownFileType" = "wrapper";
+			"sourceTree" = "<group>";
+		};
+		"4E6A9FB79F74BE865D78A65C" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"4F75FC58D2120E07D49C8446" = {
+			"isa" = "PBXFileSystemSynchronizedRootGroup";
+			"path" = "App";
+			"sourceTree" = "<group>";
+		};
+		"8BA674758970176A2F86E305" = {
+			"path" = "BloomSmokeUITests.xctest";
+			"isa" = "PBXFileReference";
+			"includeInIndex" = "0";
+			"explicitFileType" = "wrapper.cfbundle";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"FC956963D93E4776F5B7BEE1" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "BloomUI";
+		};
+		"68EC0353C057F58199C5FCEE" = {
+			"isa" = "PBXGroup";
+			"name" = "Products";
+			"children" = (
+				"984940A6B53763461516B39F",
+				"8BA674758970176A2F86E305",
+				"2F1EA0A7B220918020E3DBE9",
+				"20FA42B6683980E509AE7296",
+			);
+			"sourceTree" = "<group>";
+		};
+		"7A0AF290ED9540742A53993E" = {
+			"baseConfigurationReference" = "5028FB1D19B817FF991C7D5E";
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"CODE_SIGN_ENTITLEMENTS" = "Config/Widgets.entitlements";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"INFOPLIST_FILE" = "Config/Widgets-Info.plist";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).widgets";
+				"SKIP_INSTALL" = "YES";
+				"APPLICATION_EXTENSION_API_ONLY" = "YES";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+			};
+			"name" = "Debug";
+		};
+		"20FA42B6683980E509AE7296" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.application";
+			"includeInIndex" = "0";
+			"path" = "BloomWatch.app";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"D53611B138EAAB5B46ADDAB5" = {
+			"isa" = "PBXFileSystemSynchronizedRootGroup";
+			"path" = "Watch";
+			"sourceTree" = "<group>";
+		};
+		"4ABB415FC52F9246453A3AC4" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "BloomWire";
+		};
+		"14DB0428D36705E3937D36F7" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "4ABB415FC52F9246453A3AC4";
+		};
+		"E72E79F7589142800903E757" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "SevenCompanion";
+		};
+		"8F11F8AAE7814FE123CD52AF" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "E72E79F7589142800903E757";
+		};
+		"96FC3BB219C1ADD266103B1F" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"F93138EDF1588B8EAAC176DD" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"9066D453BDA4D7C9CCBFE96C" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"14DB0428D36705E3937D36F7",
+				"8F11F8AAE7814FE123CD52AF",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"81D0D9DFF94B130F8C4DCD52" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"baseConfigurationReference" = "5028FB1D19B817FF991C7D5E";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).watchkitapp";
+				"SDKROOT" = "watchos";
+				"SUPPORTED_PLATFORMS" = "watchos watchsimulator";
+				"TARGETED_DEVICE_FAMILY" = "4";
+				"WATCHOS_DEPLOYMENT_TARGET" = "10.0";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_KEY_WKApplication" = "YES";
+				"INFOPLIST_KEY_WKCompanionAppBundleIdentifier" = "$(SEVENS_BUNDLE_ID)";
+				"INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp" = "NO";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "$(SEVENS_DISPLAY_NAME)";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				"SKIP_INSTALL" = "YES";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+			};
+		};
+		"82065CF173523F9D515947A5" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"baseConfigurationReference" = "0462E5556301BB380E2C8DF1";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).watchkitapp";
+				"SDKROOT" = "watchos";
+				"SUPPORTED_PLATFORMS" = "watchos watchsimulator";
+				"TARGETED_DEVICE_FAMILY" = "4";
+				"WATCHOS_DEPLOYMENT_TARGET" = "10.0";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_KEY_WKApplication" = "YES";
+				"INFOPLIST_KEY_WKCompanionAppBundleIdentifier" = "$(SEVENS_BUNDLE_ID)";
+				"INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp" = "NO";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "$(SEVENS_DISPLAY_NAME)";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				"SKIP_INSTALL" = "YES";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+			};
+		};
+		"19655252014B5E4F1DF5EDDD" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"81D0D9DFF94B130F8C4DCD52",
+				"82065CF173523F9D515947A5",
+			);
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+		};
+		"D87CABA05D90965FAB7859D6" = {
+			"isa" = "PBXNativeTarget";
+			"name" = "BloomWatch";
+			"productName" = "BloomWatch";
+			"productType" = "com.apple.product-type.application";
+			"productReference" = "20FA42B6683980E509AE7296";
+			"buildConfigurationList" = "19655252014B5E4F1DF5EDDD";
+			"buildPhases" = (
+				"96FC3BB219C1ADD266103B1F",
+				"F93138EDF1588B8EAAC176DD",
+				"9066D453BDA4D7C9CCBFE96C",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+			"fileSystemSynchronizedGroups" = (
+				"D53611B138EAAB5B46ADDAB5",
+			);
+			"packageProductDependencies" = (
+				"4ABB415FC52F9246453A3AC4",
+				"E72E79F7589142800903E757",
+			);
+		};
+		"2841FA48DD110B8328D56506" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "11D86C02E99C0D687FB1CECB";
+			"proxyType" = "1";
+			"remoteGlobalIDString" = "D87CABA05D90965FAB7859D6";
+			"remoteInfo" = "BloomWatch";
+		};
+		"545E50AE2FE7625C8369BFC1" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "D87CABA05D90965FAB7859D6";
+			"targetProxy" = "2841FA48DD110B8328D56506";
+		};
+		"F71F5192CA8846829A7CB94A" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "20FA42B6683980E509AE7296";
+			"settings" = {
+				"ATTRIBUTES" = (
+					"RemoveHeadersOnCopy",
+				);
+			};
+		};
+		"C391B72CCCBA4B8AD56B4109" = {
+			"isa" = "PBXCopyFilesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"dstPath" = "$(CONTENTS_FOLDER_PATH)/Watch";
+			"dstSubfolderSpec" = "16";
+			"files" = (
+				"F71F5192CA8846829A7CB94A",
+			);
+			"name" = "Embed Watch Content";
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+	};
+	"rootObject" = "11D86C02E99C0D687FB1CECB";
+}

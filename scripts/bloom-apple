@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Bloom's repeatable Apple build. Two simulator slots authorized by Drei, 2026-11-16.
+# One source copy and one DerivedData directory for this app; never shuts down a simulator.
+set -euo pipefail
+root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+cmd=${1:-build}
+remote=src/sevens-personal-bloom
+mkdir -p "$HOME/.cache/sevens/logs"
+exec 9>"$HOME/.cache/sevens/bloom-build.lock"
+flock 9
+ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe "mkdir -p $remote/apps/bloom $remote/apps/alarm/core"
+rsync -a --delete --exclude .build --exclude target --exclude android --exclude generated/jniLibs --exclude generated/kotlin --exclude xcuserdata --exclude '*.xcresult' "$root/apps/bloom/" "tahoe:$remote/apps/bloom/"
+rsync -a --delete --exclude target --exclude generated "$root/apps/alarm/core/" "tahoe:$remote/apps/alarm/core/"
+rsync -a --delete --exclude .build "$root/SevenKit/" "tahoe:$remote/SevenKit/"
+# Optional private overlay, applied only to the stable guest build copy.
+if [ -n "${SEVENS_BRAND_DIR:-}" ] && [ "$cmd" != core ]; then
+  brand="$SEVENS_BRAND_DIR/bloom"
+  [ -d "$brand/Brand.xcassets/AppIcon.appiconset" ] || { echo "Missing Bloom icon catalog" >&2; exit 2; }
+  rsync -a --delete "$brand/Brand.xcassets/AppIcon.appiconset/" "tahoe:$remote/apps/bloom/Brand/Brand.xcassets/AppIcon.appiconset/"
+  [ ! -f "$brand/Brand.xcconfig" ] || rsync -a "$brand/Brand.xcconfig" "tahoe:$remote/apps/bloom/Config/Brand.xcconfig"
+  [ ! -d "$brand/Watch.xcassets" ] || rsync -a --delete "$brand/Watch.xcassets/" "tahoe:$remote/apps/bloom/Watch/Assets.xcassets/"
+fi
+if [ "$cmd" = core ]; then
+  "$root/scripts/rust-core" bloom bindings
+  rsync -a "$root/apps/bloom/core/generated/swift/" "tahoe:$remote/apps/bloom/core/generated/swift/"
+  ssh tahoe "cd $remote/apps/bloom/core && export PATH=\$HOME/.cargo/bin:\$PATH && cargo build --locked --release --lib --target aarch64-apple-ios --target aarch64-apple-ios-sim --target x86_64-apple-ios"
+  ssh tahoe "cd $remote/apps/bloom && mkdir -p core/generated/apple/headers core/generated/apple/sim Kit/Generated Kit/Sources/BloomCore/Generated && cp core/generated/swift/bloom_coreFFI.h core/generated/apple/headers/ && cp core/generated/swift/bloom_coreFFI.modulemap core/generated/apple/headers/module.modulemap && lipo -create core/target/aarch64-apple-ios-sim/release/libbloom_core.a core/target/x86_64-apple-ios/release/libbloom_core.a -output core/generated/apple/sim/libbloom_core.a && rm -rf Kit/Generated/bloom_coreFFI.xcframework && xcodebuild -create-xcframework -library core/target/aarch64-apple-ios/release/libbloom_core.a -headers core/generated/apple/headers -library core/generated/apple/sim/libbloom_core.a -headers core/generated/apple/headers -output Kit/Generated/bloom_coreFFI.xcframework && cp core/generated/swift/BloomCoreFFI.swift Kit/Sources/BloomCore/Generated/"
+  mkdir -p "$root/apps/bloom/Kit/Generated" "$root/apps/bloom/Kit/Sources/BloomCore/Generated"
+  rsync -a "tahoe:$remote/apps/bloom/Kit/Generated/" "$root/apps/bloom/Kit/Generated/"
+  rsync -a "tahoe:$remote/apps/bloom/Kit/Sources/BloomCore/Generated/" "$root/apps/bloom/Kit/Sources/BloomCore/Generated/"
+  exit 0
+fi
+if [ "$cmd" = device ]; then
+  destination='generic/platform=iOS'
+else
+  exec 8>"$HOME/.cache/sevens/vm-sim2.lock"
+  flock 8
+  ssh tahoe 'SIM_SLOT=2 ~/bin/sim-ensure --wait'
+  sim=$(ssh tahoe 'SIM_SLOT=2 ~/bin/sim-ensure --print')
+  destination="platform=iOS Simulator,id=$sim"
+fi
+base="xcodebuild -project apps/bloom/Bloom.xcodeproj -scheme Bloom -derivedDataPath \$HOME/src/dd-personal-bloom -destination '$destination' -parallel-testing-enabled NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES CODE_SIGNING_ALLOWED=NO"
+case "$cmd" in
+ build|device) action="$base build";;
+ ui) action="$base test -only-testing:BloomSmokeUITests";;
+ test) action="cd apps/bloom/Kit && xcodebuild -scheme BloomKit-Package -derivedDataPath \$HOME/src/dd-personal-bloom -destination 'platform=iOS Simulator,id=$sim' -parallel-testing-enabled NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES CODE_SIGNING_ALLOWED=NO test";;
+ *) echo 'usage: scripts/bloom-apple core|build|device|test|ui' >&2; exit 2;;
+esac
+log="$HOME/.cache/sevens/logs/bloom-$cmd.log"
+ssh tahoe "cd $remote && $action" >"$log" 2>&1 || { tail -100 "$log"; exit 1; }
+rg 'error:|warning:|SUCCEEDED|Executed |passed|failed' "$log" | tail -50 || true
