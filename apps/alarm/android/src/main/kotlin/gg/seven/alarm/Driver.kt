@@ -1,19 +1,18 @@
 package gg.seven.alarm
 
-import android.Manifest
-import android.app.AlarmManager
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import gg.seven.alarm.core.CalendarSpec
 import gg.seven.alarm.core.Delivery
 import gg.seven.alarm.core.Registration
 import gg.seven.alarm.core.registrationNext
+import gg.seven.kit.schedule.Precision
+import gg.seven.kit.schedule.ScheduleAccess
+import gg.seven.kit.schedule.SystemWakes
+import gg.seven.kit.schedule.WakeId
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
@@ -54,28 +53,34 @@ interface AlarmDriver {
     fun stop(row: Registration)
 }
 
+/**
+ * The real driver, on SevenKit's scheduler (`gg.seven.kit.schedule`): one wake per registration,
+ * identified exactly as before the move (AlarmReceiver, [AlarmReceiver.ACTION_FIRE] and the
+ * registration's data URI, request code 0), so alarms armed by an earlier version stay live and are
+ * never duplicated.
+ */
 class NativeAlarmDriver(private val context: Context) : AlarmDriver {
-    private val alarms = context.getSystemService(AlarmManager::class.java)
+    private val wakes = SystemWakes(context)
+    private val access = ScheduleAccess(context)
 
     val exactAllowed
-        get() = Build.VERSION.SDK_INT < 31 || alarms.canScheduleExactAlarms()
+        get() = access.exactAllowed
 
     val notificationsAllowed
-        get() = NotificationManagerCompat.from(context).areNotificationsEnabled()
+        get() = access.notificationsAllowed
 
     val fullScreenAllowed
-        get() =
-            Build.VERSION.SDK_INT < 34 ||
-                context.getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
+        get() = access.fullScreenAllowed
+
+    /** Whether the user left the ringing alarm's channel audible (not set to "None"). */
+    val alarmChannelOn
+        get() = access.channelEnabled(Ringing.ALARM_CHANNEL)
 
     private val notificationsAsked
         get() =
-            Build.VERSION.SDK_INT < 33 ||
-                context
-                    .getSharedPreferences("alarm-permissions", Context.MODE_PRIVATE)
-                    .getBoolean("asked", false) ||
-                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-                    PackageManager.PERMISSION_GRANTED
+            context
+                .getSharedPreferences("alarm-permissions", Context.MODE_PRIVATE)
+                .getBoolean("asked", false) || access.postPermissionGranted
 
     override val status: String
         get() =
@@ -83,16 +88,18 @@ class NativeAlarmDriver(private val context: Context) : AlarmDriver {
                 !exactAllowed -> "Alarms blocked in Settings"
                 !notificationsAllowed && !notificationsAsked -> "Alarm permission not requested"
                 !notificationsAllowed -> "Notifications blocked in Settings"
+                !alarmChannelOn -> "Alarm notifications muted in Settings"
                 !fullScreenAllowed -> "Full-screen alarms blocked in Settings"
                 else -> "Alarms allowed"
             }
 
-    override fun isLive(row: Registration) = pending(row.id, PendingIntent.FLAG_NO_CREATE) != null
+    override fun isLive(row: Registration) = wakes.isArmed(wake(row.id))
 
     override fun widgetIsLive(row: Registration): Boolean =
         isLive(row) &&
             notificationsAllowed &&
-            (row.routine.delivery == Delivery.REMINDER || (exactAllowed && fullScreenAllowed))
+            (row.routine.delivery == Delivery.REMINDER ||
+                (exactAllowed && fullScreenAllowed && alarmChannelOn))
 
     override fun schedule(row: Registration) {
         if (row.routine.delivery == Delivery.REMINDER) {
@@ -101,50 +108,32 @@ class NativeAlarmDriver(private val context: Context) : AlarmDriver {
         } else if (!exactAllowed)
             throw LoopFailure("Allow alarms in Settings before relying on this schedule.")
         val next = registrationNext(row, Instant.now(), deviceCalendar())
-        val existed = pending(row.id, PendingIntent.FLAG_NO_CREATE) != null
-        val operation = pending(row.id, PendingIntent.FLAG_UPDATE_CURRENT)!!
         if (next == null) {
             // A one-off whose time has passed: nothing is left to ring.
-            alarms.cancel(operation)
-            operation.cancel()
+            wakes.cancel(wake(row.id))
             return
         }
-        val at = next.toEpochMilli()
-        try {
-            when {
-                row.routine.delivery == Delivery.ALARM -> {
-                    // A real alarm clock: exact in Doze, shown as the next alarm in the status bar
-                    // and
-                    // on the lock screen; tapping that opens the app.
-                    val show =
-                        PendingIntent.getActivity(
-                            context,
-                            0,
-                            Intent(context, MainActivity::class.java),
-                            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-                        )
-                    alarms.setAlarmClock(AlarmManager.AlarmClockInfo(at, show), operation)
-                }
-                // Quiet reminders are notifications: exact while idle when allowed, otherwise as
-                // close
-                // as Android lets an idle phone wake.
-                exactAllowed ->
-                    alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
-                else -> alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
+        val precision =
+            if (row.routine.delivery == Delivery.ALARM) {
+                // A real alarm clock: exact in Doze, shown as the next alarm in the status bar and
+                // on the lock screen; tapping that opens the app.
+                val show =
+                    PendingIntent.getActivity(
+                        context,
+                        0,
+                        Intent(context, MainActivity::class.java),
+                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                    )
+                Precision.AlarmClock(show)
             }
-        } catch (error: Exception) {
-            // A newly created PendingIntent is not evidence that setAlarmClock succeeded. Keep
-            // pre-existing registrations on replacement failure, but discard a new orphan token.
-            if (!existed) operation.cancel()
-            throw error
-        }
+            // Quiet reminders are notifications: exact while idle when allowed, otherwise as close
+            // as Android lets an idle phone wake.
+            else Precision.ExactIfAllowed
+        wakes.arm(wake(row.id), next.toEpochMilli(), precision)
     }
 
     override fun cancel(row: Registration) {
-        pending(row.id, PendingIntent.FLAG_NO_CREATE)?.let {
-            alarms.cancel(it)
-            it.cancel()
-        }
+        wakes.cancel(wake(row.id))
         NotificationManagerCompat.from(context).cancel(row.id.toString(), REMINDER_NOTIFICATION)
     }
 
@@ -153,22 +142,19 @@ class NativeAlarmDriver(private val context: Context) : AlarmDriver {
             RingingService.silence(context)
     }
 
-    private fun pending(id: UUID, flag: Int): PendingIntent? =
-        PendingIntent.getBroadcast(
-            context,
-            0,
-            fireIntent(context, id),
-            flag or PendingIntent.FLAG_IMMUTABLE,
-        )
-
     companion object {
         const val REMINDER_NOTIFICATION = 7
 
-        /** One intent per registration: the data URI tells them apart. */
-        fun fireIntent(context: Context, id: UUID) =
-            Intent(context, AlarmReceiver::class.java)
-                .setAction(AlarmReceiver.ACTION_FIRE)
-                .setData("alarm-loops://registration/$id".toUri())
+        /** A registration's wake: the data URI tells them apart. */
+        fun wake(id: UUID) =
+            WakeId(
+                AlarmReceiver::class.java,
+                AlarmReceiver.ACTION_FIRE,
+                "alarm-loops://registration/$id".toUri(),
+            )
+
+        /** One intent per registration (the Stop action and the ringing notification reuse it). */
+        fun fireIntent(context: Context, id: UUID) = wake(id).intent(context)
 
         fun fireId(intent: Intent): UUID? =
             intent.data?.lastPathSegment?.let { runCatching { UUID.fromString(it) }.getOrNull() }

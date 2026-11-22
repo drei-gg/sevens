@@ -260,6 +260,51 @@ class EngineTest {
     }
 
     @Test
+    fun alarmsArmedBeforeTheSharedSchedulerStayLiveAndAreReplacedInPlace() {
+        // Exactly what the pre-2026-11-22 driver created: AlarmReceiver, ACTION_FIRE, the
+        // registration's data URI, request code 0, immutable.
+        val r = alarm().copy(timing = Timing.ONCE, once = Instant.now().plusSeconds(7200))
+        val row = newRegistration(UUID.randomUUID(), r).copy(date = r.once)
+        val legacy =
+            android.app.PendingIntent.getBroadcast(
+                context,
+                0,
+                android.content.Intent(context, AlarmReceiver::class.java)
+                    .setAction(AlarmReceiver.ACTION_FIRE)
+                    .setData(android.net.Uri.parse("alarm-loops://registration/${row.id}")),
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                    android.app.PendingIntent.FLAG_IMMUTABLE,
+            )
+        val alarms = context.getSystemService(android.app.AlarmManager::class.java)
+        alarms.setAlarmClock(
+            android.app.AlarmManager.AlarmClockInfo(r.once.toEpochMilli(), null),
+            legacy,
+        )
+        val driver = NativeAlarmDriver(context)
+        try {
+            assertTrue("An alarm armed by the old driver must read as live", driver.isLive(row))
+            driver.schedule(row)
+            assertTrue(driver.isLive(row))
+            // One token: cancelling through the new driver removes the old one too.
+            driver.cancel(row)
+            assertFalse(driver.isLive(row))
+            assertNull(
+                android.app.PendingIntent.getBroadcast(
+                    context,
+                    0,
+                    android.content.Intent(context, AlarmReceiver::class.java)
+                        .setAction(AlarmReceiver.ACTION_FIRE)
+                        .setData(android.net.Uri.parse("alarm-loops://registration/${row.id}")),
+                    android.app.PendingIntent.FLAG_NO_CREATE or
+                        android.app.PendingIntent.FLAG_IMMUTABLE,
+                )
+            )
+        } finally {
+            driver.cancel(row)
+        }
+    }
+
+    @Test
     fun clockPartsFollowTheTwelveHourSetting() {
         ClockFormat.h24 = true
         assertEquals(

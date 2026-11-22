@@ -10,6 +10,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import gg.seven.alarm.core.Delivery
+import gg.seven.kit.schedule.restoreReason
 import java.io.File
 import java.time.Instant
 import kotlinx.coroutines.CoroutineScope
@@ -115,20 +116,13 @@ class AlarmReceiver : BroadcastReceiver() {
 
 /** Puts every alarm back after a reboot, an update, or a clock or time-zone change. */
 class RestoreReceiver : BroadcastReceiver() {
+    @android.annotation.SuppressLint("UnsafeProtectedBroadcastReceiver") // restoreReason checks it.
     override fun onReceive(context: Context, intent: Intent) {
-        val rearm =
-            when (intent.action) {
-                Intent.ACTION_TIME_CHANGED,
-                Intent.ACTION_TIMEZONE_CHANGED -> true
-                Intent.ACTION_LOCKED_BOOT_COMPLETED,
-                Intent.ACTION_BOOT_COMPLETED,
-                Intent.ACTION_MY_PACKAGE_REPLACED -> false
-                "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" -> false
-                else -> return
-            }
+        val reason = restoreReason(intent) ?: return
         work(context) { engine ->
             if (!engine.ready.value) engine.reload()
-            engine.synchronize(rearm = rearm)
+            // After a clock or zone change an armed alarm's instant is stale, even if it looks live.
+            engine.synchronize(rearm = reason.clockMoved)
         }
     }
 }

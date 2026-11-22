@@ -356,12 +356,17 @@ fun rememberAllowAlarms(onDone: () -> Unit): () -> Unit {
         val fullScreen = !driver.fullScreenAllowed
         val intent =
             when {
-                exact -> Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, app)
+                exact && Build.VERSION.SDK_INT >= 31 ->
+                    Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, app)
                 fullScreen && Build.VERSION.SDK_INT >= 34 ->
                     Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, app)
                 !driver.notificationsAllowed ->
                     Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                         .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                !driver.alarmChannelOn ->
+                    Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        .putExtra(Settings.EXTRA_CHANNEL_ID, Ringing.ALARM_CHANNEL)
                 else -> null
             }
         intent?.let { runCatching { context.startActivity(it) } }

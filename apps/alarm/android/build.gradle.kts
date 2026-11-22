@@ -12,6 +12,8 @@ configure<com.android.build.api.dsl.ApplicationExtension> {
 }
 
 dependencies {
+    // Wakes, delivery access and boot/clock recovery, shared with Fast and Bloom.
+    "implementation"(project(":sevenschedule"))
     "implementation"("androidx.glance:glance-appwidget:1.2.0")
     "implementation"("androidx.glance:glance-material3:1.2.0")
     // Match Fast/Bloom: Glance's old transitive WorkManager/Room cannot construct
