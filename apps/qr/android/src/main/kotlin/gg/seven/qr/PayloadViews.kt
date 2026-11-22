@@ -27,7 +27,6 @@ import gg.seven.qr.core.GeoInfo
 import gg.seven.qr.core.LinkInfo
 import gg.seven.qr.core.Payload
 import gg.seven.qr.core.PaymentChecksum
-import gg.seven.qr.core.PaymentFormat
 import gg.seven.qr.core.PaymentInfo
 import gg.seven.qr.core.PaymentParty
 import gg.seven.qr.core.PhoneInfo
@@ -81,7 +80,10 @@ private fun AppLinkView(info: AppLinkInfo) {
     }
 }
 
-/** Payment codes (SPEC §5): who gets paid, in large type, then the amount, and the rest. */
+/**
+ * Payment codes (SPEC §5): who gets paid, in large type, then the amount and the fields the spec
+ * names, each with a human label (PaymentText); everything else under More details.
+ */
 @Composable
 private fun PaymentView(info: PaymentInfo) {
     val payee = info.payeeName?.takeIf { it.isNotEmpty() } ?: info.payeeAccount?.takeIf { it.isNotEmpty() } ?: "No name in this code"
@@ -91,33 +93,7 @@ private fun PaymentView(info: PaymentInfo) {
             PaymentParty.BUSINESS -> "Business"
             PaymentParty.UNKNOWN -> null
         }
-    val amount = info.amount?.takeIf { it.isNotEmpty() }?.let { listOfNotNull(info.currency, it).joinToString(" ") } ?: "No amount in the code; you enter it"
-    val kind = info.isDynamic?.let { if (it) "Dynamic code, made for one payment" else "Static code, the same every time" }
-    val checksum =
-        when (info.checksum) {
-            PaymentChecksum.VALID -> "Checksum matches"
-            PaymentChecksum.INVALID -> "Checksum doesn’t match. The code may be damaged or altered."
-            PaymentChecksum.ABSENT -> if (info.format == PaymentFormat.EMV) "This code has no checksum" else null
-        }
-    val format =
-        when (info.format) {
-            PaymentFormat.EMV -> "EMVCo"
-            PaymentFormat.UPI -> "UPI"
-            PaymentFormat.EPC -> "SEPA (EPC)"
-            PaymentFormat.SWISS -> "Swiss QR-bill"
-        }
-    val extras = buildList {
-        fun add(label: String, value: String?) {
-            if (!value.isNullOrEmpty()) add(label to value)
-        }
-        add("Account", info.payeeAccount)
-        add("City", info.city)
-        add("Country", info.country)
-        add("Reference", info.reference)
-        add("Note", info.note)
-        add("Format", format)
-        info.extra.keys.sorted().filter { it != "alternateName" }.forEach { add(it, info.extra[it]) }
-    }
+    val accountLabel = PaymentText.accountLabel(info.format)
     ResultCard(title = "Who you would pay") {
         Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
             PayloadTitle(payee)
@@ -125,18 +101,18 @@ private fun PaymentView(info: PaymentInfo) {
                 SelectionContainer { Text(it, style = MaterialTheme.typography.bodyLarge, color = QrColors.muted) }
             }
         }
-        Text(party ?: "Check that this is who you meant to pay.", style = MaterialTheme.typography.titleMedium)
-        ResultField("Amount", amount)
-        info.network?.takeIf { it.isNotEmpty() }?.let { ResultField("Network", it) }
-        kind?.let { Caption(it) }
-        checksum?.let {
+        Text(party ?: PaymentText.CHECK_MATCH, style = MaterialTheme.typography.titleMedium)
+        ResultField("Amount", PaymentText.amount(info))
+        PaymentText.rows(info).forEach { row -> ResultField(row.label, row.value, monospaced = row.label == accountLabel) }
+        PaymentText.kind(info)?.let { Caption(it) }
+        PaymentText.checksum(info)?.let {
             Row(Modifier.semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.spacedBy(Space.xs), verticalAlignment = Alignment.CenterVertically) {
                 val invalid = info.checksum == PaymentChecksum.INVALID
                 Icon(if (invalid) Icons.Rounded.Dangerous else Icons.Rounded.CheckCircleOutline, null, Modifier.size(18.dp), tint = if (invalid) QrColors.danger else QrColors.muted)
                 Text(it, style = MaterialTheme.typography.bodySmall)
             }
         }
-        if (extras.isNotEmpty()) MoreDetails(extras)
+        MoreDetails(PaymentText.moreDetails(info).map { it.label to it.value })
     }
 }
 

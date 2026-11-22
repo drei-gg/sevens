@@ -6,9 +6,14 @@ import gg.seven.qr.core.Level
 import gg.seven.qr.core.LinkInfo
 import gg.seven.qr.core.MakeRequest
 import gg.seven.qr.core.Payload
+import gg.seven.qr.core.PaymentChecksum
 import gg.seven.qr.core.PaymentFormat
 import gg.seven.qr.core.PaymentInfo
+import gg.seven.qr.core.PeekReport
+import gg.seven.qr.core.Severity
+import gg.seven.qr.core.Signal
 import gg.seven.qr.core.SignalId
+import gg.seven.qr.core.analysisAllSignals
 import gg.seven.qr.core.WiFiInfo
 import gg.seven.qr.core.knownAddressesListBased
 import gg.seven.qr.core.wifiIsEnterprise
@@ -80,12 +85,18 @@ object ResultActionPlan {
         return ResultActionLayout(main.getOrNull(0), main.getOrNull(1), finalChips)
     }
 
-    /** The buttons for a payload, in display order. */
-    fun actions(payload: Payload, capabilities: ResultCapabilities, hasText: Boolean = true): List<ResultAction> {
+    /**
+     * The buttons for a payload, in display order. [canPeek] is the core's `peekAvailable` for the
+     * scan; null (tests of the payload alone) offers Peek wherever Open is.
+     */
+    fun actions(payload: Payload, capabilities: ResultCapabilities, hasText: Boolean = true, canPeek: Boolean? = null): List<ResultAction> {
         val list = mutableListOf<ResultAction>()
         when (payload) {
             is Payload.Link -> {
-                if (canOpen(payload.info)) list += listOf(ResultAction.PEEK, ResultAction.OPEN)
+                if (canOpen(payload.info)) {
+                    if (canPeek ?: true) list += ResultAction.PEEK
+                    list += ResultAction.OPEN
+                }
                 list += listOf(ResultAction.COPY, ResultAction.SHARE)
             }
             is Payload.AppLink -> list += listOf(ResultAction.COPY, ResultAction.SHARE)
@@ -148,6 +159,13 @@ object ResultActionPlan {
 
     /** D8: a likely scam asks first, naming the registrable domain. */
     fun needsOpenConfirmation(level: Level) = level == Level.LIKELY_SCAM
+
+    /** The verdict shown and acted on: the offline level, raised (never lowered) by a finished Peek. */
+    fun effectiveLevel(offline: Level, peek: PeekReport?): Level =
+        if (peek != null && peek.level.ordinal > offline.ordinal) peek.level else offline
+
+    /** Open asks first when the result is a likely scam, offline or after Peek. */
+    fun needsOpenConfirmation(offline: Level, peek: PeekReport?) = needsOpenConfirmation(effectiveLevel(offline, peek))
 
     /** Only http(s) links with a host can be opened or Peeked. */
     fun canOpen(link: LinkInfo): Boolean {
@@ -352,3 +370,211 @@ object ResultEventFormat {
 
 /** Digits, `+`, `*`, `#` and pause characters only. */
 fun dialable(number: String): String = number.filter { it in "0123456789+*#,;" }
+
+/**
+ * The words of a payment result (SPEC §5, iOS ResultPaymentText): the first-class rows for each
+ * format and a human label for every key the core puts in `PaymentInfo.extra`. Never a raw key.
+ */
+object PaymentText {
+    data class Row(val label: String, val value: String)
+
+    /** D11's fallback when the network doesn't say person or business. Exactly as the spec words it. */
+    const val CHECK_MATCH = "Check this matches where you are."
+
+    /** An IBAN for SEPA and Swiss QR-bill, a payee address (UPI ID) for UPI, the account for EMVCo. */
+    fun accountLabel(format: PaymentFormat): String =
+        when (format) {
+            PaymentFormat.EPC, PaymentFormat.SWISS -> "IBAN"
+            PaymentFormat.UPI -> "Payee address"
+            PaymentFormat.EMV -> "Account"
+        }
+
+    /**
+     * The rows under the payee and the amount, in SPEC §5's order: city, country, network, account
+     * (IBAN or payee address), reference, note. Empty values are left out.
+     */
+    fun rows(info: PaymentInfo, locale: Locale = Locale.getDefault()): List<Row> = buildList {
+        fun add(label: String, value: String?) {
+            value?.trim()?.takeIf { it.isNotEmpty() }?.let { add(Row(label, it)) }
+        }
+        add("City", info.city)
+        add("Country", country(info.country, locale))
+        add("Network", info.network)
+        add(accountLabel(info.format), info.payeeAccount)
+        add("Reference", info.reference)
+        add("Note", info.note)
+    }
+
+    /** "PHP 250.00", or the line saying the payer types it. */
+    fun amount(info: PaymentInfo): String =
+        info.amount?.trim()?.takeIf { it.isNotEmpty() }?.let { listOfNotNull(info.currency?.trim()?.takeIf { c -> c.isNotEmpty() }, it).joinToString(" ") }
+            ?: "No amount in the code; you enter it"
+
+    fun kind(info: PaymentInfo): String? =
+        info.isDynamic?.let { if (it) "Dynamic code, made for one payment" else "Static code, the same every time" }
+
+    fun checksum(info: PaymentInfo): String? =
+        when (info.checksum) {
+            PaymentChecksum.VALID -> "Checksum matches"
+            PaymentChecksum.INVALID -> "Checksum doesn’t match. The code may be damaged or altered."
+            PaymentChecksum.ABSENT -> if (info.format == PaymentFormat.EMV) "This code has no checksum" else null
+        }
+
+    /** More details: the format, then every extra with a human label. `alternateName` shows under the payee. */
+    fun moreDetails(info: PaymentInfo): List<Row> = buildList {
+        add(Row("Format", formatName(info.format)))
+        info.extra.keys.filter { it != "alternateName" }.sortedBy(::order).forEach { key ->
+            val raw = info.extra[key]?.trim()
+            if (!raw.isNullOrEmpty()) add(Row(label(key), value(key, raw)))
+        }
+    }
+
+    fun formatName(format: PaymentFormat): String =
+        when (format) {
+            PaymentFormat.EMV -> "EMVCo merchant QR"
+            PaymentFormat.UPI -> "UPI"
+            PaymentFormat.EPC -> "SEPA credit transfer (EPC)"
+            PaymentFormat.SWISS -> "Swiss QR-bill"
+        }
+
+    /** "PH" → "Philippines (PH)"; anything the system doesn't know stays as written. */
+    fun country(code: String?, locale: Locale = Locale.getDefault()): String? {
+        val c = code?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        if (c.length != 2 || !c.all { it.isLetter() }) return c
+        val upper = c.uppercase(Locale.ROOT)
+        val name = runCatching { Locale.Builder().setRegion(upper).build().getDisplayCountry(locale) }.getOrNull()
+        return if (name.isNullOrEmpty() || name == upper) c else "$name ($upper)"
+    }
+
+    /** A label for every key `apps/qr/core/src/payments.rs` writes; an unknown key still reads as words. */
+    fun label(key: String): String =
+        when (key) {
+            "mcc" -> "Merchant category code"
+            "currencyNumeric" -> "Currency code"
+            "networkID" -> "Network identifier"
+            "alternateName" -> "Name in another language"
+            "alternateCity" -> "City in another language"
+            "alternateLanguage" -> "Other language"
+            "bic" -> "Bank (BIC)"
+            "purpose" -> "Purpose code"
+            "information" -> "Message to the payer"
+            "creditorAddress" -> "Payee’s address"
+            "debtorName" -> "Payer"
+            "referenceType" -> "Reference type"
+            "billingInfo" -> "Billing information"
+            "kind" -> "Request"
+            "mode" -> "Initiation mode"
+            "url" -> "Link"
+            else ->
+                if (key.startsWith("additional.")) additional(key.removePrefix("additional.")) else readable(key)
+        }
+
+    /** EMVCo merchant-presented QR, ID 62 (Additional Data Field Template). */
+    private fun additional(tag: String): String =
+        when (tag) {
+            "01" -> "Bill number"
+            "02" -> "Mobile number"
+            "03" -> "Store"
+            "04" -> "Loyalty number"
+            "05" -> "Reference"
+            "06" -> "Customer label"
+            "07" -> "Terminal"
+            "08" -> "Purpose"
+            "09" -> "Details the payer is asked for"
+            "10" -> "Merchant tax ID"
+            "11" -> "Merchant channel"
+            else -> "Additional data $tag"
+        }
+
+    fun value(key: String, raw: String): String =
+        when (key to raw.lowercase(Locale.ROOT)) {
+            "kind" to "pay" -> "One payment"
+            "kind" to "mandate" -> "Mandate (repeating payments)"
+            "referenceType" to "qrr" -> "QR reference"
+            "referenceType" to "scor" -> "Creditor reference"
+            "referenceType" to "non" -> "No reference"
+            else -> raw
+        }
+
+    /** "debtorName" → "Debtor name"; "some_key.x" → "Some key x". Never a dotted or camel-cased key. */
+    fun readable(key: String): String {
+        val words = mutableListOf<String>()
+        val current = StringBuilder()
+        for (ch in key) {
+            when {
+                ch == '.' || ch == '_' || ch == '-' || ch == ' ' -> {
+                    if (current.isNotEmpty()) words += current.toString()
+                    current.clear()
+                }
+                ch.isUpperCase() && current.isNotEmpty() && !current.last().isUpperCase() -> {
+                    words += current.toString()
+                    current.clear()
+                    current.append(ch)
+                }
+                else -> current.append(ch)
+            }
+        }
+        if (current.isNotEmpty()) words += current.toString()
+        val joined = words.joinToString(" ") { if (it.length > 1 && it == it.uppercase(Locale.ROOT)) it else it.lowercase(Locale.ROOT) }
+        if (joined.isEmpty()) return "Other detail"
+        return joined.replaceFirstChar { it.uppercase(Locale.ROOT) }
+    }
+
+    private val knownOrder =
+        listOf("kind", "mode", "url", "networkID", "mcc", "currencyNumeric", "bic", "purpose", "information", "creditorAddress", "debtorName", "referenceType", "billingInfo", "alternateCity", "alternateLanguage")
+
+    private fun order(key: String): String = knownOrder.indexOf(key).let { if (it >= 0) "0%03d".format(Locale.ROOT, it) else "1$key" }
+}
+
+/** One reason under a verdict: a plain sentence (SPEC §4.1). Info reasons are drawn quieter. */
+data class ResultReason(val sentence: String, val isInfo: Boolean)
+
+/**
+ * Every reason that drives a verdict, in the order shown (iOS ResultReasons): the payload's own,
+ * then each link found inside it, named, so a text, contact or event whose verdict comes from a
+ * link says which one; then what Peek found. Identical sentences appear once.
+ */
+object ResultReasons {
+    fun rows(analysis: Analysis, allSignals: (Analysis) -> List<Signal> = ::analysisAllSignals): List<ResultReason> {
+        val rows = analysis.signals.map { ResultReason(SignalText.sentence(it), it.severity == Severity.INFO) }.toMutableList()
+        for (item in analysis.embedded) {
+            val domain = ResultEmbedded.domain(item)
+            allSignals(item).filter { it.severity != Severity.INFO }.forEach { rows += ResultReason(inLink(domain, SignalText.sentence(it)), false) }
+        }
+        return rows.distinctBy { it.sentence }
+    }
+
+    /** Peek's own signals, then the warning signals of each redirect that isn't the scanned link. */
+    fun peekRows(report: PeekReport, original: Analysis, allSignals: (Analysis) -> List<Signal> = ::analysisAllSignals): List<ResultReason> {
+        val rows = report.signals.map { ResultReason(SignalText.sentence(it), it.severity == Severity.INFO) }.toMutableList()
+        val scanned = (original.payload as? Payload.Link)?.info?.normalized
+        for (hop in report.hopAnalyses) {
+            val link = (hop.payload as? Payload.Link)?.info ?: continue
+            if (link.normalized == scanned) continue
+            val domain = ResultLinkDisplay.headline(link)
+            allSignals(hop).filter { it.severity != Severity.INFO }.forEach { rows += ResultReason(redirect(domain, SignalText.sentence(it)), false) }
+        }
+        return rows.distinctBy { it.sentence }
+    }
+
+    fun rows(analysis: Analysis, peek: PeekReport?): List<ResultReason> =
+        (rows(analysis) + (peek?.let { peekRows(it, analysis) }.orEmpty())).distinctBy { it.sentence }
+
+    fun inLink(domain: String, sentence: String) = "Link to $domain: $sentence"
+
+    fun redirect(domain: String, sentence: String) = "Redirect to $domain: $sentence"
+}
+
+/** "Links inside": worst first, the first [VISIBLE] shown until the person asks for all. */
+object ResultEmbedded {
+    const val VISIBLE = 10
+
+    fun domain(item: Analysis): String =
+        (item.payload as? Payload.Link)?.info?.let(ResultLinkDisplay::headline) ?: item.code.text.orEmpty()
+
+    /** Likely scam, then careful, then normal; the order found within each. */
+    fun ordered(embedded: List<Analysis>): List<Analysis> = embedded.sortedByDescending { it.level.ordinal }
+
+    fun visible(embedded: List<Analysis>, showAll: Boolean): List<Analysis> =
+        ordered(embedded).let { if (showAll) it else it.take(VISIBLE) }
+}

@@ -36,6 +36,20 @@ class BatchDraft {
 internal fun batchFileName(at: java.time.LocalDateTime): String =
     "qr-batch-" + java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmm", java.util.Locale.ROOT).format(at) + ".pdf"
 
+/** The batch's words (iOS BatchMakeScreen): the core says what is wrong, the app says it. */
+object BatchText {
+    fun issue(kind: BatchIssue): String =
+        when (kind) {
+            is BatchIssue.TooLarge -> "The batch is too large. Use at most ${kind.maxKilobytes} KB of text."
+            is BatchIssue.LineTooLong -> "Line ${kind.line} is too long for a code."
+            is BatchIssue.TooManyLines -> "Use at most ${kind.max} nonblank lines per batch."
+            BatchIssue.Empty -> "Enter one code’s text or link per line."
+        }
+
+    /** The worded issue, or the core's English sentence from an older core that has no kind. */
+    fun issue(review: BatchReview): String? = review.issueKind?.let(::issue) ?: review.issue
+}
+
 internal fun batchPdf(items: List<String>, grid: SheetGrid, paper: PaperSize): ByteArray {
     val matrices =
         items.mapIndexed { index, text ->
@@ -89,8 +103,8 @@ fun BatchMakeForm(draft: BatchDraft, close: () -> Unit) {
             if (prepared != null) share(prepared)
             else if (items == null) {
                 val review = batchReview(draft.input)
-                draft.issue = review.issue
-                if (review.issue == null) draft.items = review.items
+                draft.issue = BatchText.issue(review)
+                if (review.issue == null && review.issueKind == null) draft.items = review.items
             } else
                 scope.launch {
                     busy = true

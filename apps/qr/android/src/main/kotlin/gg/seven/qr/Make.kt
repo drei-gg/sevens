@@ -414,6 +414,7 @@ private fun Field(
     caps: KeyboardCapitalization = KeyboardCapitalization.None,
     autocorrect: Boolean = false,
     multiline: Boolean = false,
+    hint: String? = null,
 ) {
     var reveal by remember { mutableStateOf(false) }
     val password = keyboard == KeyboardType.Password
@@ -438,7 +439,7 @@ private fun Field(
                 })
             else null,
         isError = shown != null,
-        supportingText = shown?.let { { Text(it.message) } },
+        supportingText = (shown?.message ?: hint)?.let { { Text(it) } },
         singleLine = !multiline,
         minLines = if (multiline) 2 else 1,
         maxLines = if (multiline) 8 else 3,
@@ -451,6 +452,9 @@ private fun Field(
             ),
     )
 }
+
+/** Phone and Text message codes need an international number (SPEC §8). */
+private const val INTERNATIONAL_HINT = "Include + and the country code."
 
 /** The fields of whichever form is chosen. Pure input: MakeFormState validates. */
 @Composable
@@ -680,6 +684,7 @@ private fun MakeFields(
                 issue,
                 MakeFormField.SMS_NUMBER,
                 KeyboardType.Phone,
+                hint = INTERNATIONAL_HINT,
             )
             Field(
                 "Message (optional)",
@@ -700,6 +705,7 @@ private fun MakeFields(
                 issue,
                 MakeFormField.PHONE,
                 KeyboardType.Phone,
+                hint = INTERNATIONAL_HINT,
             )
         MakeFormKind.LOCATION -> {
             Field(

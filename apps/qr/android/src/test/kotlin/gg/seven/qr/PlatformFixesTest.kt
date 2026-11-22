@@ -107,4 +107,37 @@ class PlatformFixesTest {
         val long = CodeInViewLabel.of(code("a".repeat(100)))
         assertEquals("QR code: " + "a".repeat(CodeInViewLabel.PREVIEW_LENGTH) + "…", long)
     }
+
+    @Test
+    fun paymentRowsHaveHumanLabelsAndNoRawKeys() {
+        val info =
+            gg.seven.qr.core.PaymentInfo(
+                format = gg.seven.qr.core.PaymentFormat.EMV,
+                payeeName = "Sari Store",
+                payeeAccount = "09171234567",
+                city = "Manila",
+                country = "PH",
+                amount = "250.00",
+                currency = "PHP",
+                network = "QR Ph",
+                isDynamic = false,
+                reference = "INV-1",
+                party = gg.seven.qr.core.PaymentParty.UNKNOWN,
+                checksum = gg.seven.qr.core.PaymentChecksum.VALID,
+                extra = mapOf("mcc" to "5411", "networkID" to "ph.ppmi", "additional.05" to "R-9", "additional.42" to "x", "someNewKey" to "y", "alternateName" to "Tindahan"),
+            )
+        val rows = PaymentText.rows(info, java.util.Locale.ENGLISH)
+        assertEquals(listOf("City", "Country", "Network", "Account", "Reference"), rows.map { it.label })
+        assertEquals("Philippines (PH)", rows[1].value)
+        assertEquals("PHP 250.00", PaymentText.amount(info))
+        val more = PaymentText.moreDetails(info).map { it.label }
+        assertEquals("Format", more.first())
+        assertTrue(more.containsAll(listOf("Merchant category code", "Network identifier", "Reference", "Additional data 42", "Some new key")))
+        assertTrue(more.none { it == "mcc" || it == "networkID" || it.contains('.') || it == "Name in another language" })
+        assertEquals("IBAN", PaymentText.accountLabel(gg.seven.qr.core.PaymentFormat.EPC))
+        assertEquals("Payee address", PaymentText.accountLabel(gg.seven.qr.core.PaymentFormat.UPI))
+        assertEquals("Check this matches where you are.", PaymentText.CHECK_MATCH)
+        assertEquals("Mandate (repeating payments)", PaymentText.value("kind", "MANDATE"))
+        assertEquals("XK1", PaymentText.country("XK1"))
+    }
 }

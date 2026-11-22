@@ -7,7 +7,7 @@ import gg.seven.qr.core.HistoryDecoded
 import gg.seven.qr.core.HistoryItem
 import gg.seven.qr.core.KnownAddresses
 import gg.seven.qr.core.KnownAddressesDecoded
-import gg.seven.qr.core.historyExportCsv
+import gg.seven.qr.core.historyExportCsvWithKnown
 import gg.seven.qr.core.historyExportJson
 import gg.seven.qr.core.historyFileDecode
 import gg.seven.qr.core.historyFileEncode
@@ -153,9 +153,10 @@ class HistoryStore(
         historyExportJson(mutableState.value.items, known)
     }
 
-    suspend fun exportCsv(): String = mutex.withLock {
+    /** CSV with each row's verdict as it stands with [known] (SPEC §4.4), as the JSON export does. */
+    suspend fun exportCsv(known: KnownAddresses?): String = mutex.withLock {
         loadLocked()
-        historyExportCsv(mutableState.value.items)
+        historyExportCsvWithKnown(mutableState.value.items, known)
     }
 
     /** Writes now if a change is waiting for the timer (the app going to the background). */

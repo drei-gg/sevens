@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -44,9 +45,11 @@ import gg.seven.kit.Space
 import gg.seven.qr.core.Analysis
 import gg.seven.qr.core.MakeRequest
 import gg.seven.qr.core.Payload
+import gg.seven.qr.core.PeekReport
 import gg.seven.qr.core.Severity
 import gg.seven.qr.core.analysisAllSignals
 import gg.seven.qr.core.knownAddressesOffer
+import gg.seven.qr.core.peekAvailable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -82,6 +85,12 @@ fun ResultSheet(
     var pages by remember(initial) { mutableStateOf<List<ResultPage>>(emptyList()) }
     val known by model.knownAddresses.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    /**
+     * Each analysis's one Peek, made when its page is opened and kept after it closes, so the
+     * verdict and Open's confirmation keep what a finished Peek found.
+     */
+    val peeks = remember(initial) { mutableStateMapOf<Analysis, PeekModel>() }
+    fun peekFor(target: Analysis): PeekModel = peeks.getOrPut(target) { PeekModel(target, known) }
     val state =
         rememberBottomSheetState(SheetValue.Hidden, setOf(SheetValue.Hidden, SheetValue.Expanded))
 
@@ -130,6 +139,7 @@ fun ResultSheet(
                         key(generation) {
                             ResultContent(
                                 analysis = analysis,
+                                peek = peeks[analysis],
                                 quietPrimary = offer != null,
                                 afterSignals =
                                     offer?.let { domain ->
@@ -151,18 +161,25 @@ fun ResultSheet(
                                         }
                                     },
                                 onEmbedded = { pages = pages + ResultPage.Embedded(it) },
-                                onPeek = { pages = pages + ResultPage.Peek(it) },
+                                onPeek = {
+                                peekFor(it)
+                                pages = pages + ResultPage.Peek(it)
+                            },
                                 onMake = onMake,
                             )
                         }
                     is ResultPage.Embedded ->
                         ResultContent(
                             analysis = shown.analysis,
+                            peek = peeks[shown.analysis],
                             onEmbedded = { pages = pages + ResultPage.Embedded(it) },
-                            onPeek = { pages = pages + ResultPage.Peek(it) },
+                            onPeek = {
+                                peekFor(it)
+                                pages = pages + ResultPage.Peek(it)
+                            },
                             onMake = onMake,
                         )
-                    is ResultPage.Peek -> PeekPage(shown.analysis)
+                    is ResultPage.Peek -> peeks[shown.analysis]?.let { PeekPage(it) }
                 }
             }
         }
@@ -173,6 +190,7 @@ fun ResultSheet(
 @Composable
 fun ResultContent(
     analysis: Analysis,
+    peek: PeekModel? = null,
     onEmbedded: (Analysis) -> Unit,
     onPeek: (Analysis) -> Unit,
     onMake: (MakeRequest) -> Unit,
@@ -189,13 +207,22 @@ fun ResultContent(
             canAddEvent = Handoffs.canAddEvent(context),
         )
     }
+    // A finished Peek raises the verdict for this result: shown, ordered and asked about on Open.
+    val peekReport by
+        produceState<PeekReport?>(null, peek) {
+            value = null
+            peek?.state?.collect { value = (it as? PeekState.Finished)?.report }
+        }
+    val level = ResultActionPlan.effectiveLevel(analysis.level, peekReport)
+    val canPeek = remember(analysis) { peekAvailable(analysis) }
     val actions =
         ResultActionPlan.actions(
             analysis.payload,
             capabilities,
             hasText = analysis.code.text != null,
+            canPeek = canPeek,
         )
-    val layout = ResultActionPlan.layout(actions, analysis.level)
+    val layout = ResultActionPlan.layout(actions, level)
     val pins = !largeText()
     var copied by remember { mutableStateOf<ResultAction?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
@@ -227,7 +254,7 @@ fun ResultContent(
     fun open(external: Boolean) {
         val link = (analysis.payload as? Payload.Link)?.info ?: return
         val uri = Handoffs.openUri(link) ?: return
-        if (ResultActionPlan.needsOpenConfirmation(analysis.level)) pendingOpen = uri to external
+        if (ResultActionPlan.needsOpenConfirmation(analysis.level, peekReport)) pendingOpen = uri to external
         else Handoffs.open(context, uri, external)
     }
 
@@ -299,12 +326,12 @@ fun ResultContent(
         ) {
             ReadableColumn {
                 VerdictHeader(
-                    analysis.level,
+                    level,
                     QrText.typeName(analysis.payload.typeId),
-                    analysisAllSignals(analysis),
+                    analysisAllSignals(analysis) + peekReport?.signals.orEmpty(),
                     Modifier.testTag("result.verdict"),
                 )
-                SignalList(analysis.signals)
+                ReasonList(ResultReasons.rows(analysis, peekReport))
                 afterSignals?.invoke()
                 PayloadView(analysis.payload, wifiPlan)
                 if (pins && layout.chips.isNotEmpty())
@@ -554,12 +581,14 @@ private fun ActionButton(
 
 /** The reasons behind a verdict, one plain sentence each. Info signals are quieter. */
 @Composable
-fun SignalList(signals: List<gg.seven.qr.core.Signal>) {
-    if (signals.isEmpty()) return
-    val rows =
-        signals
-            .map { SignalText.sentence(it) to (it.severity == Severity.INFO) }
-            .distinctBy { it.first }
+fun SignalList(signals: List<gg.seven.qr.core.Signal>) =
+    ReasonList(signals.map { ResultReason(SignalText.sentence(it), it.severity == Severity.INFO) }.distinctBy { it.sentence })
+
+/** Reasons under a verdict, warnings in body colour and info quieter. */
+@Composable
+fun ReasonList(reasons: List<ResultReason>) {
+    if (reasons.isEmpty()) return
+    val rows = reasons.map { it.sentence to it.isInfo }
     Column(
         Modifier.padding(horizontal = Space.xs),
         verticalArrangement = Arrangement.spacedBy(Space.s),
@@ -589,16 +618,16 @@ fun SignalList(signals: List<gg.seven.qr.core.Signal>) {
 @Composable
 private fun EmbeddedList(embedded: List<Analysis>, onOpen: (Analysis) -> Unit) {
     if (embedded.isEmpty()) return
+    var showAll by rememberSaveable(embedded.size) { mutableStateOf(false) }
+    val shown = remember(embedded, showAll) { ResultEmbedded.visible(embedded, showAll) }
     Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
         Caption("Links inside", Modifier.padding(start = Space.xs))
         Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
-            embedded.forEachIndexed { index, item ->
-                val domain =
-                    (item.payload as? Payload.Link)?.info?.let(ResultLinkDisplay::headline)
-                        ?: item.code.text.orEmpty()
+            shown.forEachIndexed { index, item ->
+                val domain = ResultEmbedded.domain(item)
                 SegmentedListItem(
                     onClick = { onOpen(item) },
-                    shapes = ListItemDefaults.segmentedShapes(index, embedded.size),
+                    shapes = ListItemDefaults.segmentedShapes(index, shown.size),
                     supportingContent = { VerdictLabel(item.level) },
                     trailingContent = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null) },
                 ) {
@@ -606,6 +635,10 @@ private fun EmbeddedList(embedded: List<Analysis>, onOpen: (Analysis) -> Unit) {
                 }
             }
         }
+        if (!showAll && embedded.size > shown.size)
+            TextButton(onClick = { showAll = true }, modifier = Modifier.testTag("result.embedded.showAll")) {
+                Text("Show all ${embedded.size}")
+            }
     }
 }
 

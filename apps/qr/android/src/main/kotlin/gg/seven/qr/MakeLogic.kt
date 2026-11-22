@@ -17,6 +17,7 @@ import gg.seven.qr.core.WiFiInfo
 import gg.seven.qr.core.bitMatrixNew
 import gg.seven.qr.core.quietZoneAdd
 import gg.seven.qr.core.quietZoneModules
+import gg.seven.qr.core.phoneNumberInternational
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -291,7 +292,14 @@ object MakeFormValidation {
         return domain.contains('.') && !domain.startsWith('.') && !domain.endsWith('.') && !domain.contains("..")
     }
 
-    /** Digits plus `+ ( ) - . * # ,` and spaces, 3 to 20 digits. */
+    /**
+     * Make's Phone and Text message numbers (SPEC §8, written as `TEL:+…`): an international number,
+     * `+` or a leading `00` and the country code. A local number can't be made international
+     * offline, so the person is asked for the country code. The core decides (and writes it).
+     */
+    fun isInternationalPhone(raw: String): Boolean = phoneNumberInternational(raw) != null
+
+    /** A contact's phone stays lenient: digits plus `+ ( ) - . * # ,` and spaces, 3 to 20 digits. */
     fun isPlausiblePhone(raw: String): Boolean {
         val s = trimmed(raw)
         if (s.isEmpty() || !s.all { it in "0123456789+()-.*#, " }) return false
@@ -345,7 +353,9 @@ sealed class MakeFormIssue(val field: MakeFormField) {
             when (this) {
                 is Required -> "Fill in this field to make a code."
                 is BadEmail -> "This doesn’t look like an email address. Use the form name@example.com."
-                is BadPhone -> "Use digits, and + ( ) - . or spaces. At least 3 digits."
+                is BadPhone ->
+                    if (this.field == MakeFormField.CONTACT_PHONE) "Use digits, and + ( ) - . or spaces. At least 3 digits."
+                    else "Start with + and the country code, then the number. Spaces, dashes and brackets are fine."
                 BadLatitude -> "Latitude is a number from -90 to 90."
                 BadLongitude -> "Longitude is a number from -180 to 180."
                 EndBeforeStart -> "The event can’t end before it starts."
@@ -450,12 +460,12 @@ data class MakeFormState(
             }
             MakeFormKind.SMS -> {
                 need(smsNumber, MakeFormField.SMS_NUMBER)?.let { return bad(it) }
-                if (!MakeFormValidation.isPlausiblePhone(smsNumber)) return bad(MakeFormIssue.BadPhone(MakeFormField.SMS_NUMBER))
+                if (!MakeFormValidation.isInternationalPhone(smsNumber)) return bad(MakeFormIssue.BadPhone(MakeFormField.SMS_NUMBER))
                 MakeOutcome.Request(MakeRequest.Sms(SmsInfo(smsNumber.trim(), nonEmpty(smsBody))))
             }
             MakeFormKind.PHONE -> {
                 need(phone, MakeFormField.PHONE)?.let { return bad(it) }
-                if (!MakeFormValidation.isPlausiblePhone(phone)) return bad(MakeFormIssue.BadPhone(MakeFormField.PHONE))
+                if (!MakeFormValidation.isInternationalPhone(phone)) return bad(MakeFormIssue.BadPhone(MakeFormField.PHONE))
                 MakeOutcome.Request(MakeRequest.Phone(phone.trim()))
             }
             MakeFormKind.LOCATION -> {

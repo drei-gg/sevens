@@ -109,7 +109,7 @@ class QrModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun exportHistoryJson(): ByteArray = history.exportJson(knownAddresses.value)
 
-    suspend fun exportHistoryCsv(): String = history.exportCsv()
+    suspend fun exportHistoryCsv(): String = history.exportCsv(knownAddresses.value)
 
     /** The app went to the background: write any pending History change now. */
     fun flush() {

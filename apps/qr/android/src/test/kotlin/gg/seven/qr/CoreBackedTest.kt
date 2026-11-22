@@ -129,4 +129,98 @@ class CoreBackedTest {
         val joinable = ResultActionPlan.actions(wpa, ResultCapabilities(wifiJoinAvailable = true))
         assertTrue(ResultAction.WIFI_SETTINGS !in joinable)
     }
+
+    private val data = gg.seven.qr.core.bundledDataLoad(null)
+
+    @Test
+    fun peekIsOfferedForWebLinksOnly() {
+        assertTrue(gg.seven.qr.core.peekAvailable(analyzeOffline("https://example.com/a")))
+        assertTrue(gg.seven.qr.core.peekAvailable(analyzeOffline("http://example.com/a")))
+        assertTrue(!gg.seven.qr.core.peekAvailable(analyzeOffline("hello there")))
+        val text = analyzeOffline("hello there")
+        assertTrue(ResultAction.PEEK !in ResultActionPlan.actions(text.payload, ResultCapabilities(), canPeek = false))
+        val link = analyzeOffline("https://example.com/a")
+        val noPeek = ResultActionPlan.actions(link.payload, ResultCapabilities(), canPeek = false)
+        assertTrue(ResultAction.PEEK !in noPeek && ResultAction.OPEN in noPeek)
+    }
+
+    @Test
+    fun anUnfinishedOrPlainHttpPeekStillLooksUpTheScannedDomain() {
+        val original = analyzeOffline("http://shop.example.com/x")
+        val notFetched = gg.seven.qr.core.PeekCapture(listOf(gg.seven.qr.core.PeekHop("http://shop.example.com/x", null)), gg.seven.qr.core.StopReason.HTTP_TARGET)
+        assertEquals("example.com", gg.seven.qr.core.peekAgeLink(original, notFetched, data)?.registrableDomain)
+        assertTrue(PeekText.notFetched(notFetched)!!.startsWith("Peek doesn’t open pages that aren’t encrypted"))
+        val timedOut = gg.seven.qr.core.PeekCapture(listOf(gg.seven.qr.core.PeekHop("https://shop.example.com/x", null)), gg.seven.qr.core.StopReason.TIMEOUT)
+        assertEquals("example.com", gg.seven.qr.core.peekAgeLink(analyzeOffline("https://shop.example.com/x"), timedOut, data)?.registrableDomain)
+        assertEquals(null, PeekText.notFetched(timedOut))
+        // A page reached on another domain is the one whose age counts.
+        val moved = gg.seven.qr.core.PeekCapture(
+            listOf(gg.seven.qr.core.PeekHop("https://shop.example.com/x", 301), gg.seven.qr.core.PeekHop("https://other.org/y", 200)),
+            gg.seven.qr.core.StopReason.FINISHED,
+        )
+        assertEquals("other.org", gg.seven.qr.core.peekAgeLink(analyzeOffline("https://shop.example.com/x"), moved, data)?.registrableDomain)
+        // The app's analyzer takes the known addresses and still reports.
+        val report = gg.seven.qr.core.PeekAnalyzer.withKnown(data, gg.seven.qr.core.KnownAddresses()).use { it.report(original, notFetched, 400) }
+        assertEquals(ResultActionPlan.effectiveLevel(original.level, report), maxOf(original.level, report.level))
+    }
+
+    @Test
+    fun aRaisedPeekVerdictAsksBeforeOpening() {
+        val original = analyzeOffline("https://example.com/a")
+        val raised = gg.seven.qr.core.PeekReport(null, emptyList(), null, emptyList(), Level.LIKELY_SCAM)
+        assertEquals(Level.LIKELY_SCAM, ResultActionPlan.effectiveLevel(original.level, raised))
+        assertTrue(ResultActionPlan.needsOpenConfirmation(original.level, raised))
+        assertTrue(!ResultActionPlan.needsOpenConfirmation(original.level, null))
+        // Peek never lowers an offline verdict.
+        val scam = analyzeOffline("http://paypa1-verify.help/login")
+        val calm = gg.seven.qr.core.PeekReport(null, emptyList(), null, emptyList(), Level.NORMAL)
+        assertEquals(Level.LIKELY_SCAM, ResultActionPlan.effectiveLevel(scam.level, calm))
+    }
+
+    @Test
+    fun aTextWhoseVerdictComesFromALinkNamesItInTheReasons() {
+        val analysis = analyzeOffline("Your parcel is waiting: http://paypa1-verify.help/login")
+        assertTrue(analysis.embedded.isNotEmpty())
+        val reasons = ResultReasons.rows(analysis)
+        assertTrue(reasons.toString(), reasons.any { it.sentence.startsWith("Link to ") && !it.isInfo })
+        assertEquals(reasons.size, reasons.map { it.sentence }.distinct().size)
+    }
+
+    @Test
+    fun manyLinksInsideShowTheWorstFirstAndCapAtTen() {
+        val links = "Our shops: " + (1..12).joinToString(" ") { "https://site$it.example.com/" } + " and http://paypa1-verify.help/login"
+        val analysis = analyzeOffline(links)
+        assertTrue("${analysis.payload.typeId} ${analysis.embedded.size}", analysis.embedded.size > ResultEmbedded.VISIBLE)
+        val shown = ResultEmbedded.visible(analysis.embedded, showAll = false)
+        assertEquals(ResultEmbedded.VISIBLE, shown.size)
+        assertEquals(analysis.embedded.maxOf { it.level }, shown.first().level)
+        assertEquals(analysis.embedded.size, ResultEmbedded.visible(analysis.embedded, showAll = true).size)
+    }
+
+    @Test
+    fun phoneAndTextMessageCodesNeedACountryCode() {
+        val local = MakeFormState(phone = "0917 123 4567").result(MakeFormKind.PHONE)
+        assertTrue(local is MakeOutcome.Invalid && local.issue is MakeFormIssue.BadPhone)
+        assertTrue((local as MakeOutcome.Invalid).issue.message.contains("country code"))
+        assertTrue(MakeFormState(phone = "+63 917 123 4567").result(MakeFormKind.PHONE) is MakeOutcome.Request)
+        assertTrue(MakeFormState(smsNumber = "0063 (917) 123-4567").result(MakeFormKind.SMS) is MakeOutcome.Request)
+        assertTrue(MakeFormState(smsNumber = "555-0100").result(MakeFormKind.SMS) is MakeOutcome.Invalid)
+        // A contact's phone stays lenient.
+        assertTrue(MakeFormState(givenName = "Ana", contactPhone = "0917 123 4567").result(MakeFormKind.CONTACT) is MakeOutcome.Request)
+    }
+
+    @Test
+    fun batchIssuesAreWordedHere() {
+        assertEquals("Enter one code’s text or link per line.", BatchText.issue(gg.seven.qr.core.batchReview("   \n")))
+        val tooMany = gg.seven.qr.core.batchReview((1..500).joinToString("\n") { "line $it" })
+        assertTrue(tooMany.issueKind is gg.seven.qr.core.BatchIssue.TooManyLines)
+        assertTrue(BatchText.issue(tooMany)!!.startsWith("Use at most "))
+        assertEquals(null, BatchText.issue(gg.seven.qr.core.batchReview("one\ntwo")))
+    }
+
+    @Test
+    fun theCsvExportReadsKnownAddresses() {
+        val csv = gg.seven.qr.core.historyExportCsvWithKnown(emptyList(), gg.seven.qr.core.KnownAddresses())
+        assertTrue(csv.isNotEmpty())
+    }
 }
