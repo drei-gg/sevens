@@ -1,268 +1,165 @@
 package gg.seven.bloom
 
-import android.app.*
+import android.app.Application
+import android.app.PendingIntent
 import android.content.*
-import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.work.*
+import androidx.work.WorkerParameters
 import gg.seven.bloom.core.bloomDashboard
 import gg.seven.bloom.core.bloomDueReminders
+import gg.seven.kit.schedule.DueReminder
+import gg.seven.kit.schedule.Precision
+import gg.seven.kit.schedule.ReminderChannel
+import gg.seven.kit.schedule.ReminderConfig
+import gg.seven.kit.schedule.ReminderHost
+import gg.seven.kit.schedule.ReminderPlan
+import gg.seven.kit.schedule.ReminderRecovery
+import gg.seven.kit.schedule.ReminderRecoveryWorker
+import gg.seven.kit.schedule.ReminderScheduler
+import gg.seven.kit.schedule.ReminderState
+import gg.seven.kit.schedule.ScheduleAccess
+import gg.seven.kit.schedule.WakeId
+import gg.seven.kit.schedule.finishAsync
+import gg.seven.kit.schedule.restoreReason
 import java.time.Instant
 import java.time.ZoneId
-import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
 
-class BloomApplication : Application() {
+class BloomApplication : Application(), ReminderHost {
     val repository by lazy { BloomRepository(this) }
+    override val reminderScheduler by lazy {
+        ReminderScheduler(this, BloomReminders.config()) {
+            BloomReminders.Plan(this, repository.read(), ZoneId.systemDefault().id)
+        }
+    }
 }
 
 /**
- * One rolling alarm; the Rust schedule is re-read after delivery, edits, boot and clock changes.
+ * Bloom's care reminders on SevenKit's rolling scheduler (gg.seven.kit.schedule), which grew out of
+ * this file: one wake re-read from the Rust schedule after delivery, edits, boot and clock changes.
+ * Its identities are the ones Bloom shipped (the `gg.seven.bloom.DUE` wake, the `bloom-reminders`
+ * ledger, the recovery work names and worker class), so an upgrade keeps everything armed.
  */
-// Synchronous preference commits happen on IO: the alarm and replay watermark must survive
-// process death before returning from a receiver. KTX edit does not expose commit failure.
-@android.annotation.SuppressLint("ApplySharedPref", "UseKtx")
 object BloomReminders {
     const val CHANNEL = "care-reminders"
-    private val lock = Mutex()
 
-    private fun prefs(c: Context) = c.getSharedPreferences("bloom-reminders", Context.MODE_PRIVATE)
-
-    private fun alarm(c: Context) =
-        PendingIntent.getBroadcast(
-            c,
-            0,
-            Intent(c, BloomReminderReceiver::class.java).setAction("gg.seven.bloom.DUE"),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    fun config() =
+        ReminderConfig(
+            wake = WakeId(BloomReminderReceiver::class.java, "gg.seven.bloom.DUE"),
+            preferences = "bloom-reminders",
+            channel =
+                ReminderChannel(
+                    CHANNEL,
+                    "Care reminders",
+                    "Reminders you choose for plans and appointments",
+                ),
+            tagPrefix = "bloom.",
+            precision = Precision.ExactIfAllowed,
+            recovery =
+                ReminderRecovery(
+                    periodicName = "bloom-reminder-recovery",
+                    restoreName = "bloom-restore",
+                    worker = BloomReminderWorker::class.java,
+                ),
         )
 
-    fun enabled(c: Context): Boolean {
-        val manager = c.getSystemService(NotificationManager::class.java)
-        return manager.areNotificationsEnabled() &&
-            (manager.getNotificationChannel(CHANNEL)?.importance ?: 3) !=
-                NotificationManager.IMPORTANCE_NONE
-    }
+    private fun scheduler(c: Context) = (c.applicationContext as BloomApplication).reminderScheduler
 
-    fun exact(c: Context) =
-        Build.VERSION.SDK_INT < 31 ||
-            c.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+    fun enabled(c: Context): Boolean = ScheduleAccess(c).canNotify(CHANNEL)
+
+    fun exact(c: Context): Boolean = ScheduleAccess(c).exactAllowed
 
     fun status(c: Context): String =
-        when {
-            !enabled(c) -> "Notifications are off. Allow them to receive your care reminders."
-            prefs(c).getString("failure", null) != null ->
+        when (scheduler(c).state()) {
+            ReminderState.NOTIFICATIONS_OFF ->
+                "Notifications are off. Allow them to receive your care reminders."
+            ReminderState.FAILED ->
                 "Reminders need attention. Open the journal again to retry scheduling."
-            prefs(c).getLong("next", 0) == 0L ->
-                "No upcoming reminders. Add or enable a plan in Care."
-            !exact(c) ->
+            ReminderState.NONE_UPCOMING -> "No upcoming reminders. Add or enable a plan in Care."
+            ReminderState.APPROXIMATE ->
                 "Approximate delivery. Android may delay alerts; allow precise alarms for time-sensitive reminders."
-            else -> "Precise alarms enabled. Your next reminder is scheduled."
+            ReminderState.PRECISE -> "Precise alarms enabled. Your next reminder is scheduled."
         }
 
-    fun maintain(c: Context) {
-        WorkManager.getInstance(c)
-            .enqueueUniquePeriodicWork(
-                "bloom-reminder-recovery",
-                ExistingPeriodicWorkPolicy.KEEP,
-                PeriodicWorkRequestBuilder<BloomReminderWorker>(12, TimeUnit.HOURS).build(),
-            )
-    }
+    fun maintain(c: Context) = scheduler(c).maintain()
 
+    /** Posts what is due (with [deliver]), removes stale alerts and arms the next wake. */
     suspend fun reconcile(
         c: Context,
         deliver: Boolean = false,
         now: Long = Instant.now().epochSecond,
-    ) =
-        withContext(Dispatchers.IO) {
-            lock.withLock {
-                val manager = c.getSystemService(AlarmManager::class.java)
-                val notifications = c.getSystemService(NotificationManager::class.java)
-                notifications.createNotificationChannel(
-                    NotificationChannel(
-                            CHANNEL,
-                            "Care reminders",
-                            NotificationManager.IMPORTANCE_DEFAULT,
-                        )
-                        .apply {
-                            description = "Reminders you choose for plans and appointments"
-                            lockscreenVisibility = android.app.Notification.VISIBILITY_PRIVATE
-                        }
-                )
-                val store = prefs(c)
-                try {
-                    val repository = (c.applicationContext as BloomApplication).repository
-                    val archiveText = repository.read()
-                    val zone = ZoneId.systemDefault().id
-                    val scheduled = store.getLong("next", 0)
-                    val delivered = JSONObject(store.getString("delivered", "{}")!!)
-                    if (deliver && scheduled in 1..now && enabled(c)) {
-                        val lookback = maxOf(scheduled - 1, now - 86400)
-                        val rows = JSONArray(bloomDueReminders(archiveText, lookback, now, zone))
-                        val due = (0 until rows.length()).map { rows.getJSONObject(it) }
-                        for (event in due) {
-                            val tag = event.getString("id")
-                            val at = event.getLong("at")
-                            if (delivered.optLong(tag) == at) continue
-                            val open =
-                                PendingIntent.getActivity(
-                                    c,
-                                    0,
-                                    Intent(c, MainActivity::class.java)
-                                        .putExtra("open_care", true)
-                                        .addFlags(
-                                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                                Intent.FLAG_ACTIVITY_SINGLE_TOP
-                                        ),
-                                    PendingIntent.FLAG_UPDATE_CURRENT or
-                                        PendingIntent.FLAG_IMMUTABLE,
-                                )
-                            val text = event.getString("body")
-                            val notification =
-                                NotificationCompat.Builder(c, CHANNEL)
-                                    .setSmallIcon(R.drawable.ic_reminder)
-                                    .setContentTitle(event.getString("title"))
-                                    .setContentText(text)
-                                    .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-                                    .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-                                    .setAutoCancel(true)
-                                    .setContentIntent(open)
-                                    .setOnlyAlertOnce(true)
-                                    .setWhen(at * 1000)
-                                    .build()
-                            notifications.notify(tag, 1, notification)
-                            delivered.put(tag, at)
-                        }
-                    }
-                    // Re-evaluate the current archive: paused/deleted plans, corrected doses and
-                    // edited
-                    // appointments must remove their stale delivered alerts, even with other active
-                    // plans.
-                    val recent = JSONArray(bloomDueReminders(archiveText, now - 86400, now, zone))
-                    val validTimes =
-                        (0 until recent.length()).associate { index ->
-                            val event = recent.getJSONObject(index)
-                            event.getString("id") to event.getLong("at")
-                        }
-                    for (notification in notifications.activeNotifications) {
-                        val tag = notification.tag ?: continue
-                        if (
-                            tag.startsWith("bloom.") &&
-                                validTimes[tag] != notification.notification.`when` / 1000
-                        )
-                            notifications.cancel(tag, 1)
-                    }
-                    BloomGlanceWidget.refresh(c)
-                    val next =
-                        JSONObject(bloomDashboard(archiveText, now, zone))
-                            .rows("reminders")
-                            .firstOrNull()
-                            ?.getLong("at")
-                    val retained = JSONObject()
-                    delivered.keys().forEach { id ->
-                        if (delivered.getLong(id) > now - 86400)
-                            retained.put(id, delivered.getLong(id))
-                    }
-                    manager.cancel(alarm(c))
-                    check(
-                        store
-                            .edit()
-                            .putLong("next", next ?: 0)
-                            .putString("delivered", retained.toString())
-                            .remove("failure")
-                            .commit()
-                    ) {
-                        "Could not persist reminder schedule."
-                    }
-                    if (next != null && enabled(c)) {
-                        try {
-                            if (exact(c))
-                                manager.setExactAndAllowWhileIdle(
-                                    AlarmManager.RTC_WAKEUP,
-                                    next * 1000,
-                                    alarm(c),
-                                )
-                            else
-                                manager.setAndAllowWhileIdle(
-                                    AlarmManager.RTC_WAKEUP,
-                                    next * 1000,
-                                    alarm(c),
-                                )
-                        } catch (_: SecurityException) {
-                            // Permission may change between the capability check and scheduling.
-                            manager.setAndAllowWhileIdle(
-                                AlarmManager.RTC_WAKEUP,
-                                next * 1000,
-                                alarm(c),
-                            )
-                        }
-                    }
-                } catch (cancel: CancellationException) {
-                    throw cancel
-                } catch (error: Exception) {
-                    manager.cancel(alarm(c))
-                    store.edit().putString("failure", "schedule").commit()
-                    throw error
-                }
+    ) {
+        try {
+            scheduler(c).reconcile(deliver, now)
+        } finally {
+            BloomGlanceWidget.refresh(c)
+        }
+    }
+
+    suspend fun clear(c: Context) = scheduler(c).clear()
+
+    /** The current journal's reminders, from the Rust core. */
+    class Plan(private val context: Context, private val archive: String, private val zone: String) :
+        ReminderPlan {
+        override fun due(after: Long, now: Long): List<DueReminder> {
+            val rows = JSONArray(bloomDueReminders(archive, after, now, zone))
+            return (0 until rows.length()).map { index ->
+                val row = rows.getJSONObject(index)
+                DueReminder(row.getString("id"), row.getLong("at"), payload = row)
             }
         }
 
-    suspend fun clear(c: Context) =
-        withContext(Dispatchers.IO) {
-            c.getSystemService(AlarmManager::class.java).cancel(alarm(c))
-            c.getSystemService(NotificationManager::class.java).cancelAll()
-            check(prefs(c).edit().clear().commit()) { "Could not clear reminder state." }
+        override fun next(now: Long): Long? =
+            JSONObject(bloomDashboard(archive, now, zone)).rows("reminders").firstOrNull()?.getLong("at")
+
+        override fun build(reminder: DueReminder, builder: NotificationCompat.Builder) {
+            val row = reminder.payload as JSONObject
+            val open =
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    Intent(context, MainActivity::class.java)
+                        .putExtra("open_care", true)
+                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            val text = row.getString("body")
+            builder
+                .setSmallIcon(R.drawable.ic_reminder)
+                .setContentTitle(row.getString("title"))
+                .setContentText(text)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+                .setContentIntent(open)
         }
+    }
 }
 
 class BloomReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != "gg.seven.bloom.DUE") return
-        val pending = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                BloomReminders.reconcile(context, deliver = true)
-            } catch (_: Exception) {
-                /* Recovery worker retries; Care shows a failure state. */
-            } finally {
-                pending.finish()
-            }
-        }
+        // A failure is saved and retried by the scheduler; Care shows it.
+        finishAsync { runCatching { BloomReminders.reconcile(context, deliver = true) } }
     }
 }
 
 class BloomRestoreReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (
-            intent.action !in
-                setOf(
-                    Intent.ACTION_BOOT_COMPLETED,
-                    Intent.ACTION_MY_PACKAGE_REPLACED,
-                    Intent.ACTION_TIME_CHANGED,
-                    Intent.ACTION_TIMEZONE_CHANGED,
-                    AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED,
-                )
-        )
-            return
+        restoreReason(intent.action) ?: return
         // WorkManager holds the background execution lease beyond the receiver's short lifetime.
-        WorkManager.getInstance(context)
-            .enqueueUniqueWork(
-                "bloom-restore",
-                ExistingWorkPolicy.REPLACE,
-                OneTimeWorkRequestBuilder<BloomReminderWorker>().build(),
-            )
+        (context.applicationContext as BloomApplication).reminderScheduler.restoreLater()
     }
 }
 
+/** Kept under the class name Bloom shipped: WorkManager stores it with enqueued work. */
 class BloomReminderWorker(context: Context, parameters: WorkerParameters) :
-    CoroutineWorker(context, parameters) {
+    ReminderRecoveryWorker(context, parameters) {
     override suspend fun doWork(): Result =
         try {
-            BloomReminders.reconcile(applicationContext, deliver = true)
+            BloomReminders.reconcile(applicationContext, deliver = true) // and the widget
             Result.success()
+        } catch (cancel: kotlinx.coroutines.CancellationException) {
+            throw cancel
         } catch (_: Exception) {
             Result.retry()
         }

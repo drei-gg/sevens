@@ -15,6 +15,8 @@ dependencies {
     "implementation"("androidx.glance:glance-material3:1.2.0")
     "implementation"("com.kizitonwose.calendar:compose:2.9.0")
     "implementation"("com.patrykandpatrick.vico:compose-m3:2.3.6")
+    // Reminders, wakes and boot/clock recovery, shared with Alarm and Fast.
+    "implementation"(project(":sevenschedule"))
     "implementation"("androidx.work:work-runtime-ktx:2.11.0")
 }
 
