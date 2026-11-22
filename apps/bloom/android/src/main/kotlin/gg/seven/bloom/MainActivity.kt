@@ -32,6 +32,12 @@ class MainActivity : FragmentActivity() {
         ) {
             model.picked(it)
         }
+    private val openDocument =
+        registerForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+        ) {
+            model.importPicked(it)
+        }
     private val authenticators: Int
         get() =
             (if (android.os.Build.VERSION.SDK_INT >= 30)
@@ -76,6 +82,11 @@ class MainActivity : FragmentActivity() {
                     for (name in model.launches)
                         if (model.appLock.locked.value) model.picked(null)
                         else createDocument.launch(name)
+                }
+                launch {
+                    for (request in model.importLaunches)
+                        if (model.appLock.locked.value) model.importPicked(null)
+                        else openDocument.launch(arrayOf("*/*"))
                 }
                 launch {
                     for (intent in model.intents)

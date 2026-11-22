@@ -3,8 +3,6 @@
 package gg.seven.bloom
 
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -628,10 +626,6 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject, openGuides: (
     var contacts by rememberSaveable { mutableStateOf(false) }
     var notes by rememberSaveable { mutableStateOf(false) }
     var erase by rememberSaveable { mutableStateOf(false) }
-    val open =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri != null) model.importFile(uri, if (encrypted) password else null)
-        }
     LayoutPreferences()
     JournalLockSettings(model)
     HealthFlowSettings(model)
@@ -776,7 +770,10 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject, openGuides: (
             }
         }
     Toggle("Import is encrypted", encrypted) { encrypted = it }
-    OutlinedButton(onClick = { open.launch(arrayOf("*/*")) }) { Text("Choose backup to review") }
+    // The picker's answer is handled by the Activity, so locking meanwhile does not lose it.
+    OutlinedButton(onClick = { model.requestImport(if (encrypted) password else null) }) {
+        Text("Choose backup to review")
+    }
     Text(
         "Health Connect transfer is manual and permission-based. Care reminders use Android notifications and your alarm permissions."
     )

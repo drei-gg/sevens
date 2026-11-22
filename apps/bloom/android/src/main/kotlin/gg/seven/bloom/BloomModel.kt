@@ -55,7 +55,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
 
     private val exportMarker =
         object : ExportMarker {
-            private val prefs =
+            val prefs =
                 app.getSharedPreferences("bloom-exports", android.content.Context.MODE_PRIVATE)
 
             override fun read(): String? = prefs.getString("writing", null)
@@ -96,6 +96,17 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
         run { reload() }
         // A document whose write never finished (the process died) is removed on the next start.
         viewModelScope.launch { finish(exports.recover()) }
+        // A backup held for a locked journal that was never unlocked: give its access back.
+        exportMarker.prefs.getString("import", null)?.let { releaseHeldImport(it.toUri()) }
+        viewModelScope.launch {
+            appLock.locked.collect { locked ->
+                if (!locked)
+                    heldImport?.let { (uri, password) ->
+                        heldImport = null
+                        inspectImport(uri, password, held = true)
+                    }
+            }
+        }
         viewModelScope.launch {
             repository.changes.drop(1).collect {
                 try { reload() } catch (cancel: CancellationException) { throw cancel }
@@ -162,14 +173,67 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
         reload()
     }
 
-    fun importFile(uri: Uri, password: String?) = run {
-        val bytes =
-            withContext(Dispatchers.IO) {
-                getApplication<Application>().contentResolver.openInputStream(uri)!!.use {
-                    it.readBytesBounded(17_000_000)
-                }
+    /** The passphrase chosen when the import picker opened; memory only, until it answers. */
+    private class ImportRequest(val password: String?)
+
+    private var importRequest: ImportRequest? = null
+    /** A picked backup whose answer arrived while locked: previewed right after unlock. */
+    private var heldImport: Pair<Uri, String?>? = null
+    /** Requests for the Activity's open-document picker, collected only while it is started. */
+    internal val importLaunches = Channel<Unit>(Channel.BUFFERED)
+
+    fun requestImport(password: String?) {
+        importRequest = ImportRequest(password)
+        importLaunches.trySend(Unit)
+    }
+
+    /**
+     * The open-document picker's answer, delivered at Activity level. While locked the document is
+     * held with persisted read access and previewed after unlock, never over the lock screen.
+     */
+    fun importPicked(uri: Uri?) {
+        val request = importRequest
+        importRequest = null
+        if (uri == null) return
+        if (request == null) {
+            // The process was recreated while the picker was open; its passphrase is gone.
+            error.value = "The import was interrupted. Choose the backup again."
+            return
+        }
+        if (appLock.locked.value) {
+            retain(uri, write = false)
+            exportMarker.prefs.edit(commit = true) { putString("import", uri.toString()) }
+            heldImport = uri to request.password
+        } else inspectImport(uri, request.password)
+    }
+
+    private fun inspectImport(uri: Uri, password: String?, held: Boolean = false) {
+        viewModelScope.launch {
+            busy.value = true
+            try {
+                val bytes =
+                    withContext(Dispatchers.IO) {
+                        getApplication<Application>().contentResolver.openInputStream(uri)!!.use {
+                            it.readBytesBounded(17_000_000)
+                        }
+                    }
+                val reviewed = repository.inspect(bytes, password)
+                // A review never appears over the lock; the person can choose the file again.
+                if (!appLock.locked.value) preview.value = reviewed
+            } catch (cancel: CancellationException) {
+                throw cancel
+            } catch (failure: Exception) {
+                error.value = failure.sentence
+            } finally {
+                if (held) releaseHeldImport(uri)
+                busy.value = false
             }
-        preview.value = repository.inspect(bytes, password)
+        }
+    }
+
+    private fun releaseHeldImport(uri: Uri) {
+        release(uri, write = false)
+        exportMarker.prefs.edit(commit = true) { remove("import") }
     }
 
     fun confirmImport() = run {
@@ -274,27 +338,25 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Keeps access to the picked document across process death until it is written or deleted. */
-    private fun retain(uri: Uri) {
+    private fun retain(uri: Uri, write: Boolean = true) {
         try {
             getApplication<Application>()
                 .contentResolver
-                .takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
-                )
+                .takePersistableUriPermission(uri, access(write))
         } catch (_: Exception) {
             /* Not every provider offers persistable access; the current grant still applies. */
         }
     }
 
-    private fun release(uri: Uri) {
+    private fun access(write: Boolean) =
+        if (write) Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        else Intent.FLAG_GRANT_READ_URI_PERMISSION
+
+    private fun release(uri: Uri, write: Boolean = true) {
         try {
             getApplication<Application>()
                 .contentResolver
-                .releasePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
-                )
+                .releasePersistableUriPermission(uri, access(write))
         } catch (_: Exception) {
             /* Nothing was retained. */
         }
