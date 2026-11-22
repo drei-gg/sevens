@@ -28,6 +28,18 @@ Each app lives in `apps/<name>/` and starts with a `SPEC.md`, which describes wh
 
 Plans, build reports and reviews are kept outside this repository. What is public here is each app's `SPEC.md`, its `CHANGELOG.md`, the code and the tests.
 
+## Checks
+
+Tests run locally, not on GitHub. One command runs everything:
+
+```sh
+scripts/check                # rules, every Rust core, every Swift package (Linux container), Android baseline
+scripts/check --no-android   # skip the Android baseline
+scripts/check --apple        # also the Apple unit tests in the macOS VM
+```
+
+GitHub Actions runs only the cheap Linux part (Swift packages, rules, Rust cores), when `main` moves or when started by hand. Feature branches and pull requests run nothing. The lists publisher (`.github/workflows/lists.yml`) is manual until its signing key exists.
+
 ## License
 
 Code: GPL-3.0, see [LICENSE](LICENSE). The GPL covers the code, not the $7&D name, wordmark or icons; see [TRADEMARKS.md](TRADEMARKS.md). Builds from this repo are unbranded; official builds add the brand from a private repo.

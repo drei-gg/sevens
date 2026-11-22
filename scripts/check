@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# The whole local check: everything GitHub CI used to run, on this machine. Nothing is uploaded.
+# usage: scripts/check [--no-android] [--apple]
+#   default       rules (G6, G7), cargo test for every Rust core, swift test for every Swift package
+#                 (Linux container via scripts/test-linux), and the Android baseline (Fast and Bloom:
+#                 core tests, lint, debug and release builds, then scripts/check-android-variants)
+#   --no-android  skip the Android baseline (the slowest part)
+#   --apple       also the Apple unit tests in the macOS VM (scripts/vm test, scripts/bloom-apple test).
+#                 Boots the shared tahoe simulator if it is not up; leave it off when nothing Apple changed.
+# Every step runs even if an earlier one fails; logs land in ~/.cache/sevens/check/<step>.log and
+# the summary at the end says which failed. Exits non-zero if any did.
+set -uo pipefail
+root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+cd "$root"
+android=1 apple=0
+for arg in "$@"; do
+  case "$arg" in
+    --no-android) android=0;;
+    --apple) apple=1;;
+    -h|--help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+    *) echo "check: unknown option $arg" >&2; exit 2;;
+  esac
+done
+
+logs="${XDG_CACHE_HOME:-$HOME/.cache}/sevens/check"
+mkdir -p "$logs"
+rm -f "$logs"/*.log
+results=() failed=0
+step() {   # step <name> <command...>
+  local name=$1; shift
+  local log="$logs/${name//\//_}.log" start=$SECONDS
+  printf '%-28s ' "$name"
+  if "$@" >"$log" 2>&1; then
+    printf 'ok    %4ss\n' $((SECONDS - start)); results+=("ok    $name")
+  else
+    printf 'FAIL  %4ss  %s\n' $((SECONDS - start)) "$log"; results+=("FAIL  $name  ($log)"); failed=1
+  fi
+}
+
+step rules scripts/check-rules
+for app in fast qr alarm scanner cleaner vault bloom; do
+  step "rust/$app" scripts/rust-core "$app" test
+done
+for pkg in SevenKit apps/fast/Kit apps/qr/Kit apps/alarm/Kit apps/scanner/Kit apps/cleaner/Kit apps/bloom/Kit; do
+  step "swift/$(basename "${pkg%/Kit}")" scripts/test-linux "$pkg"
+done
+
+if [ "$android" = 1 ]; then
+  # The build wants a JDK 21 (android/README.md) and check-android-variants reads JAVA_HOME. When it is
+  # unset, take mise's Temurin 21; the system `java` may be a newer runtime without a compiler.
+  if [ -z "${JAVA_HOME:-}" ] && command -v mise >/dev/null; then
+    JAVA_HOME=$(mise where java@temurin-21 2>/dev/null) || JAVA_HOME=
+    [ -z "$JAVA_HOME" ] || export JAVA_HOME PATH="$JAVA_HOME/bin:$PATH"
+  fi
+  [ -n "${JAVA_HOME:-}" ] || echo "check: JAVA_HOME is unset and mise has no temurin-21; Android steps will likely fail" >&2
+  step android/gradle android/gradlew -p android --console=plain --continue \
+    :core:test :fast:lintGenericDebug :fast:assembleGenericDebug :fast:assembleGenericRelease \
+    :bloom-core:test :bloom:lintGenericDebug :bloom:assembleGenericDebug :bloom:assembleGenericRelease
+  step android/variants scripts/check-android-variants
+fi
+
+if [ "$apple" = 1 ]; then
+  for app in qr fast alarm scanner cleaner vault; do
+    step "apple/$app" env SEVENS_APP="$app" scripts/vm test
+  done
+  step apple/bloom scripts/bloom-apple test
+fi
+
+echo
+printf '%s\n' "${results[@]}" | grep -c '^ok' | xargs printf '%s passed, '
+printf '%s\n' "${results[@]}" | grep -c '^FAIL' | xargs printf '%s failed\n'
+[ "$failed" = 0 ] || printf '%s\n' "${results[@]}" | grep '^FAIL'
+exit "$failed"
