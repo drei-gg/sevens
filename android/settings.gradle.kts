@@ -16,7 +16,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "SevensAndroid"
 
-include(":core", ":sevenkit", ":sevenocr", ":billing", ":fast", ":fast-wire", ":wear")
+include(":core", ":sevenkit", ":sevenschedule", ":sevenocr", ":billing", ":fast", ":fast-wire", ":wear")
 
 project(":fast").projectDir = file("../apps/fast/android")
 
