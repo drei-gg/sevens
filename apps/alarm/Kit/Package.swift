@@ -13,7 +13,7 @@ targets += [
     .binaryTarget(name: "alarm_coreFFI", path: "Generated/alarm_coreFFI.xcframework"),
     .target(name: "AlarmCore", dependencies: ["AlarmStore", "alarm_coreFFI"]),
     .testTarget(name: "AlarmCoreTests", dependencies: ["AlarmCore"]),
-    .target(name: "AlarmUI", dependencies: ["AlarmCore", .product(name: "SevenKit", package: "SevenKit")], resources: [.process("Resources")]),
+    .target(name: "AlarmUI", dependencies: ["AlarmCore", .product(name: "SevenKit", package: "SevenKit"), .product(name: "SevenSchedule", package: "SevenKit")], resources: [.process("Resources")]),
     .testTarget(name: "AlarmUITests", dependencies: ["AlarmUI"]),
 ]
 #endif

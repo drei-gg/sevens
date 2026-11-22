@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import Observation
 import SevenKit
+import SevenSchedule
 import AlarmCore
 import AlarmKit
 import AppIntents
@@ -21,36 +22,33 @@ public extension AlarmDriver {
     func widgetIdentifiers() async throws -> Set<UUID> { try await identifiers() }
 }
 @MainActor public final class NativeAlarmDriver: AlarmDriver {
+    /// Quiet reminders, on SevenKit's notification scheduler. Their identifiers are the
+    /// registrations' bare UUIDs, as they always were, so pending reminders survive the upgrade.
+    private let reminders = NotificationScheduler(owns: { UUID(uuidString: $0) != nil })
     public init() {}
     public var status: String { switch AlarmManager.shared.authorizationState { case .authorized: "Alarms allowed"; case .denied: "Alarms blocked in Settings"; case .notDetermined: "Alarm permission not requested"; @unknown default: "Alarm permission unknown" } }
     public func request() async throws {
         _ = try await AlarmManager.shared.requestAuthorization()
-        _ = try await UNUserNotificationCenter.current().requestAuthorization(options:[.alert,.sound,.badge])
+        _ = try await reminders.requestAuthorization([.alert,.sound,.badge])
     }
     public func identifiers() async throws -> Set<UUID> {
         let alarms = try AlarmManager.shared.alarms
-        let reminders = await UNUserNotificationCenter.current().pendingNotificationRequests()
-        return Set(alarms.map(\.id) + reminders.compactMap { UUID(uuidString:$0.identifier) })
+        let pending = await reminders.pendingIDs()
+        return Set(alarms.map(\.id) + pending.compactMap { UUID(uuidString:$0) })
     }
     public func widgetIdentifiers() async throws -> Set<UUID> {
         let alarms = AlarmManager.shared.authorizationState == .authorized ? try AlarmManager.shared.alarms.map(\.id) : []
-        let settings = await UNUserNotificationCenter.current().notificationSettings()
-        let notifications = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional
-            ? await UNUserNotificationCenter.current().pendingNotificationRequests().compactMap { UUID(uuidString: $0.identifier) } : []
+        let notifications = await reminders.authorized() ? await reminders.pendingIDs().compactMap { UUID(uuidString: $0) } : []
         return Set(alarms + notifications)
     }
     public func schedule(_ r: Registration) async throws {
         if r.routine.delivery == .reminder {
-            let settings = await UNUserNotificationCenter.current().notificationSettings()
-            guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { throw LoopFailure.invalid("Allow notifications in Settings to deliver quiet reminders.") }
-            let content = UNMutableNotificationContent(); content.title = r.routine.name; content.body = "Time for your routine."; content.sound = .default
-            // Each weekday gets its own native notification. AlarmDriver receipt ID is the root.
-            // A weekly registration is split upstream for notification delivery.
+            guard await reminders.authorized() else { throw LoopFailure.invalid("Allow notifications in Settings to deliver quiet reminders.") }
+            // Each weekday gets its own native notification (the core splits weekly reminders).
             var c = DateComponents()
             if let date = r.date { c = Calendar.current.dateComponents([.year,.month,.day,.hour,.minute,.second],from:date) }
             else { let minute = Int(r.minute ?? 0); c.hour = minute/60; c.minute = minute%60; c.weekday = r.weekdays.first.map(Int.init) }
-            let trigger = UNCalendarNotificationTrigger(dateMatching:c,repeats:r.date == nil)
-            try await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier:r.id.uuidString,content:content,trigger:trigger)); return
+            try await reminders.add(ScheduledNotification(id: r.id.uuidString, title: r.routine.name, body: "Time for your routine.", trigger: .wallClock(c, repeats: r.date == nil))); return
         }
         guard AlarmManager.shared.authorizationState == .authorized else { throw LoopFailure.invalid("Allow alarms in Settings before relying on this schedule.") }
         let schedule: Alarm.Schedule
@@ -73,7 +71,7 @@ public extension AlarmDriver {
         }
     }
     public func cancel(_ r: Registration) async throws {
-        if r.routine.delivery == .reminder { UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers:[r.id.uuidString]) }
+        if r.routine.delivery == .reminder { await reminders.remove([r.id.uuidString]) }
         else { try AlarmManager.shared.cancel(id:r.id) }
     }
     public func stop(_ r: Registration) async throws {
@@ -232,7 +230,7 @@ public struct StopLoopIntent: LiveActivityIntent {
     public func save(_ r: Routine) async -> Bool {
         guard store.paidFeaturesAvailable else { error = "Start the trial or unlock in Settings to create or edit schedules. Existing enabled alarms keep running."; return false }
         guard !busy else { return false }; busy = true; defer { busy = false }
-        do { try r.validate(); _ = try ScheduleCompiler.registrations(r); if r.timing == .once && r.enabled && r.once <= Date() { throw LoopFailure.invalid("Choose a future date for this alarm.") } }
+        do { try LoopFailure.sentence { try routineCheckSave(routine: r, now: Date()) } }
         catch { self.error = error.localizedDescription; return false }
         guard await mutate({ a in a.routines.removeAll { $0.id == r.id }; a.routines.append(r) }) else { return false }
         await synchronize(); return true
@@ -242,8 +240,7 @@ public struct StopLoopIntent: LiveActivityIntent {
         _ = await mutate { a in if let i = a.routines.firstIndex(where:{$0.id == r.id}) { a.routines[i].enabled = enabled } }; await synchronize()
     }
     public func duplicate(_ r: Routine) async {
-        var copy = r; copy.id = UUID(); copy.name = String((r.name + " copy").prefix(100)); copy.enabled = false
-        _ = await save(copy)
+        _ = await save(duplicateRoutine(routine: r))
     }
     public func newRoutine(kind: RoutineKind = .alarm) -> Routine {
         (archive.alarmDefaults ?? AlarmDefaults()).routine(kind:kind)
@@ -252,9 +249,8 @@ public struct StopLoopIntent: LiveActivityIntent {
         await mutate { $0.alarmDefaults = defaults }
     }
     @discardableResult public func nap(minutes: Int) async -> Bool {
-        guard (1...720).contains(minutes) else { error = "Choose a nap between 1 and 720 minutes."; return false }
-        var r = newRoutine(); r.name = "\(minutes)-minute nap"; r.timing = .once; r.once = Date().addingTimeInterval(Double(minutes) * 60)
-        return await save(r)
+        do { return await save(try LoopFailure.sentence { try napRoutine(defaults: archive.alarmDefaults, minutes: Int32(clamping: minutes), now: Date()) }) }
+        catch { self.error = error.localizedDescription; return false }
     }
     public func toggleGroup(_ name: String, enabled: Bool) async {
         guard !enabled || store.paidFeaturesAvailable else { error = "Unlock to re-enable routines."; return }
@@ -273,18 +269,10 @@ public struct StopLoopIntent: LiveActivityIntent {
         } catch { self.error = error.localizedDescription }
     }
     public func delete(_ r: Routine) async { _ = await mutate { $0.routines.removeAll { $0.id == r.id } }; await synchronize() }
+    /// Every routine's registrations, weekly quiet reminders split per weekday, refusing more than
+    /// 60 reminders rather than dropping some (the core's `desired_registrations`).
     public func desired() throws -> [Registration] {
-        var rows: [Registration] = []
-        for r in archive.routines {
-            for row in try ScheduleCompiler.registrations(r) {
-                if r.delivery == .reminder && row.date == nil {
-                    for day in row.weekdays { var copy = row; copy.id = ScheduleCompiler.identifier(row.id,key:"weekday:\(day)"); copy.weekdays = [day]; rows.append(copy) }
-                } else { rows.append(row) }
-            }
-        }
-        // Notification APIs have a bounded queue. Refuse truncation before touching it.
-        guard rows.filter({$0.routine.delivery == .reminder}).count <= 60 else { throw LoopFailure.invalid("These routines need more than 60 quiet reminders. Reduce their times or weekdays; no reminders were silently dropped.") }
-        return rows
+        try LoopFailure.sentence { try desiredRegistrations(archive: archive, now: Date()) }
     }
     public func synchronize() async {
         guard ready else { return }
@@ -295,8 +283,8 @@ public struct StopLoopIntent: LiveActivityIntent {
             do {
                 // A one-off that has rung is finished: show it as off rather than enabled with a past date.
                 let now = Date()
-                if archive.routines.contains(where: { $0.timing == .once && $0.enabled && $0.once <= now }) {
-                    _ = await mutate { a in for i in a.routines.indices where a.routines[i].timing == .once && a.routines[i].enabled && a.routines[i].once <= now { a.routines[i].enabled = false } }
+                if routinesFinishPastOnce(routines: archive.routines, now: now) != archive.routines {
+                    _ = await mutate { a in a.routines = routinesFinishPastOnce(routines: a.routines, now: now) }
                 }
                 let desired = try desired()
                 let liveIDs = try await driver.identifiers()
@@ -314,13 +302,10 @@ public struct StopLoopIntent: LiveActivityIntent {
                 }
                 let wanted = Set(desired.map(\.id))
                 for row in archive.installed where !wanted.contains(row.id) && failures.isEmpty {
-                    let enabled = archive.routines.contains(where:{$0.id == row.routine.id && $0.enabled}) || row.purpose == "test"
-                    let activeExtra = enabled && ((row.purpose != "schedule" && (row.date ?? .distantPast) > Date()) || (row.date != nil && liveIDs.contains(row.id)))
-                    // Keep a receipt that just rang (or whose mission is open) so the Open and Stop intents,
-                    // which may run right after this launch's reconcile, can still find it, and so a one-off
-                    // that is still alerting is never cancelled out from under its mission. Pruned after an hour.
-                    let justRang = row.date.map { $0 <= Date() && Date().timeIntervalSince($0) < 3600 } ?? false
-                    if activeExtra || archive.pending?.id == row.id || justRang { continue }
+                    // Keep a live extra of an enabled routine, the open mission's row, and anything that
+                    // rang within the hour, so the Open and Stop intents that may run right after this
+                    // launch's reconcile can still find it (the core's `receipt_keep`).
+                    if receiptKeep(row: row, archive: archive, live: liveIDs.contains(row.id), now: Date()) { continue }
                     do {
                         if liveIDs.contains(row.id) { try await driver.cancel(row) }
                         _ = await mutate { $0.installed.removeAll { $0.id == row.id } }
@@ -355,7 +340,7 @@ public struct StopLoopIntent: LiveActivityIntent {
         if row.purpose != "followUp" && row.routine.followUpMinutes > 0 { try await extra(row,minutes:Int(row.routine.followUpMinutes),purpose:"followUp") }
     }
     public func extra(_ row: Registration, minutes: Int, purpose: String) async throws {
-        var extra = row; extra.id = ScheduleCompiler.identifier(row.occurrenceID ?? row.id,key:"\(purpose):\(row.snoozes)"); extra.date = Date().addingTimeInterval(Double(minutes)*60); extra.minute = nil; extra.weekdays = []; extra.purpose = purpose; extra.occurrenceID = row.occurrenceID ?? row.id; extra.snoozes = purpose == "snooze" ? row.snoozes + 1 : row.snoozes
+        let extra = followOnRegistration(row: row, minutes: Int32(clamping: minutes), purpose: purpose, now: Date())
         let saved = extra
         guard await mutate({ a in a.installed.removeAll { $0.id == saved.id }; a.installed.append(saved) }) else { throw LoopFailure.invalid("Could not save follow-up alarm.") }
         do { try await driver.schedule(extra); await publishVerifiedWidget() } catch { _ = await mutate { $0.installed.removeAll { $0.id == saved.id } }; throw error }
