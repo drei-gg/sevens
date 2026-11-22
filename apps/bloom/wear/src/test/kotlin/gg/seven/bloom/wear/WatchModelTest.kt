@@ -48,7 +48,7 @@ class WatchModelTest {
         val model = WatchModel(disk, link) { now }
         model.record(dose, "taken")
         val pending = model.state.value.pending!!
-        assertTrue(model.message.value!!.contains("Not confirmed"))
+        assertEquals(WatchMessage.Local.NotConfirmed, model.message.value)
         val restarted = WatchModel(disk, link) { now }
         link.answer = {
             WatchCodec.encode(
@@ -88,7 +88,7 @@ class WatchModelTest {
         }
         model.sync()
         assertEquals(pending, model.state.value.pending)
-        assertEquals("Phone changed. Review history.", model.message.value)
+        assertEquals(WatchMessage.Phone("Phone changed. Review history."), model.message.value)
     }
 
     @Test
@@ -117,7 +117,7 @@ class WatchModelTest {
         model.record(dose, "taken")
         assertNull(model.state.value.pending)
         assertTrue(link.sent.isEmpty())
-        assertTrue(model.message.value!!.contains("Could not keep"))
+        assertEquals(WatchMessage.Local.CouldNotKeep, model.message.value)
     }
 
     @Test
@@ -173,6 +173,6 @@ class WatchModelTest {
         disk.fail = true
         model.discardPending()
         assertEquals(pending, model.state.value.pending)
-        assertEquals("Could not clear the pending action. It remains queued.", model.message.value)
+        assertEquals(WatchMessage.Local.CouldNotClear, model.message.value)
     }
 }

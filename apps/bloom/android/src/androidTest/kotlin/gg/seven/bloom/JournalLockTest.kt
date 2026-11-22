@@ -17,7 +17,7 @@ class JournalLockTest {
         val writes = mutableListOf<Boolean>()
         var writable = false
         val lock =
-            JournalLock(true) {
+            JournalLock(true, "Not saved") {
                 writes += it
                 writable
             }

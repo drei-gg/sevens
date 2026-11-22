@@ -42,7 +42,16 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
 
     val repository = (app as BloomApplication).repository
     internal val appLock = JournalLock.stored(app)
-    val reminderStatus = MutableStateFlow("Checking reminder delivery…")
+    private fun words(@androidx.annotation.StringRes id: Int, vararg args: Any): String =
+        getApplication<Application>().getString(id, *args)
+
+    private fun counted(@androidx.annotation.PluralsRes id: Int, count: Int): String =
+        getApplication<Application>().resources.getQuantityString(id, count, count)
+
+    private val Throwable.sentence: String
+        get() = sentence(getApplication())
+
+    val reminderStatus = MutableStateFlow(words(R.string.reminders_checking))
     val openCare = MutableStateFlow(false)
     val archive = MutableStateFlow<String?>(null)
     val dashboard = MutableStateFlow<String?>(null)
@@ -73,10 +82,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
     /** Share sheets for the Activity to start, collected only while it is started. */
     internal val intents = Channel<Intent>(Channel.BUFFERED)
 
-    val healthNote =
-        MutableStateFlow(
-            "Nothing is shared automatically. Choose a direction to request its permission."
-        )
+    val healthNote = MutableStateFlow(words(R.string.health_nothing_shared))
 
     internal fun protectJournal() {
         appLock.protect()
@@ -197,7 +203,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
         if (uri == null) return
         if (request == null) {
             // The process was recreated while the picker was open; its passphrase is gone.
-            error.value = "The import was interrupted. Choose the backup again."
+            error.value = words(R.string.import_interrupted)
             return
         }
         if (appLock.locked.value) {
@@ -251,9 +257,8 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
         val count = JSONObject(reviewed).rows("days").size
         healthPreview.value = reviewed.takeIf { count > 0 }
         healthNote.value =
-            if (count == 0) "No new readable flow days. Existing journal dates were skipped."
-            else
-                "Review $count new days. Multiple flow samples on one date use the highest recorded flow."
+            if (count == 0) words(R.string.health_no_new)
+            else counted(R.plurals.health_review_count, count)
     }
 
     fun importHealth() = run {
@@ -261,32 +266,35 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
         repository.importHealth(reviewed)
         reload()
         healthPreview.value = null
-        healthNote.value =
-            "Reviewed flow days imported. Any dates added to your journal during review were kept."
+        healthNote.value = words(R.string.health_imported)
     }
 
     fun shareHealth() = run {
         if (appLock.locked.value) return@run
         val count = writeHealthFlow(getApplication(), repository.read())
         healthNote.value =
-            if (count == 0) "No light, medium or heavy flow entries to share."
-            else
-                "Shared $count flow entries. Later journal deletions do not delete Health Connect copies; manage those in Health Connect."
+            if (count == 0) words(R.string.health_nothing_to_share)
+            else counted(R.plurals.health_shared, count)
     }
 
     /** The reviewed report lives here, never in a saved-state Bundle, and disappears on lock. */
     val report = MutableStateFlow<String?>(null)
 
+    /** Text and PDF reports print temperatures in the unit the app shows; CSV stays in Celsius. */
     fun buildReport(from: String, to: String, contacts: Boolean, notes: Boolean) = run {
         val archive = repository.read()
+        val fahrenheit = BloomTemperature.fahrenheit
         report.value =
-            withContext(Dispatchers.Default) { bloomReport(archive, from, to, contacts, notes) }
+            withContext(Dispatchers.Default) {
+                bloomReport(archive, from, to, contacts, notes, fahrenheit)
+            }
     }
 
     /** Prepares the reviewed report's bytes, then asks the Activity to open the picker. */
     fun exportReport(kind: String) = run {
         val text = report.value ?: return@run
-        val bytes = withContext(Dispatchers.Default) { reportBytes(text, kind) }
+        val page = words(R.string.report_page)
+        val bytes = withContext(Dispatchers.Default) { reportBytes(text, kind, page) }
         launches.send(exports.prepare(PendingExport("cycle-report.$kind", bytes)))
     }
 
@@ -332,7 +340,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
                 release(uri)
                 exports.finished(step.uri)
                 if (step.interrupted)
-                    error.value = "The export was interrupted, so nothing was saved. Try again."
+                    error.value = words(R.string.export_interrupted)
             }
         }
     }
@@ -365,6 +373,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
     /** Shares the reviewed report: text directly, a PDF through this app's file provider. */
     fun shareReport(kind: String) = run {
         val text = report.value ?: return@run
+        val page = words(R.string.report_page)
         val send =
             if (kind == "pdf") {
                 val file =
@@ -373,7 +382,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
                         folder.deleteRecursively()
                         folder.mkdirs()
                         java.io.File(folder, "cycle-report.pdf").also { file ->
-                            file.writeBytes(reportBytes(text, "pdf"))
+                            file.writeBytes(reportBytes(text, "pdf", page))
                         }
                     }
                 val uri =
@@ -389,7 +398,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
                     .apply { clipData = android.content.ClipData.newRawUri(null, uri) }
             } else
                 Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
-        intents.send(Intent.createChooser(send, "Share report"))
+        intents.send(Intent.createChooser(send, words(R.string.report_share_title)))
     }
 
     /** Doses scheduled on a calendar day, from the Rust dashboard evaluated at that day's noon. */
@@ -452,11 +461,12 @@ internal data class EditorDraft(
     val revision: Long,
 )
 
-internal fun reportBytes(text: String, kind: String): ByteArray =
-    java.io.ByteArrayOutputStream().also { writeReport(it, text, kind) }.toByteArray()
+/** [page] is the localized page-footer pattern ([R.string.report_page]), with one number. */
+internal fun reportBytes(text: String, kind: String, page: String): ByteArray =
+    java.io.ByteArrayOutputStream().also { writeReport(it, text, kind, page) }.toByteArray()
 
 /** Plain text, or an A4 PDF paginated from the same reviewed text. */
-private fun writeReport(stream: java.io.OutputStream, text: String, kind: String) {
+private fun writeReport(stream: java.io.OutputStream, text: String, kind: String, page: String) {
     if (kind != "pdf") {
         stream.write(text.toByteArray())
         return
@@ -479,17 +489,17 @@ private fun writeReport(stream: java.io.OutputStream, text: String, kind: String
             val top = layout.getLineTop(first)
             while (line < layout.lineCount && layout.getLineBottom(line) - top <= 720) line++
             if (line == first) line++
-            val page =
+            val sheet =
                 pdf.startPage(
                     android.graphics.pdf.PdfDocument.PageInfo.Builder(595, 842, pageNumber).create()
                 )
-            page.canvas.save()
-            page.canvas.clipRect(48f, 48f, 547f, (48 + layout.getLineTop(line) - top).toFloat())
-            page.canvas.translate(48f, (48 - top).toFloat())
-            layout.draw(page.canvas)
-            page.canvas.restore()
-            page.canvas.drawText("Page $pageNumber", 48f, 810f, paint)
-            pdf.finishPage(page)
+            sheet.canvas.save()
+            sheet.canvas.clipRect(48f, 48f, 547f, (48 + layout.getLineTop(line) - top).toFloat())
+            sheet.canvas.translate(48f, (48 - top).toFloat())
+            layout.draw(sheet.canvas)
+            sheet.canvas.restore()
+            sheet.canvas.drawText(page.format(pageNumber), 48f, 810f, paint)
+            pdf.finishPage(sheet)
             pageNumber++
         }
         pdf.writeTo(stream)

@@ -241,6 +241,11 @@ struct CalendarScreen: View {
             v.day = selectedDay
             day = v
           }.disabled(selectedDay > BloomDate.day(Date()))
+          if let start = model.dashboard?.cycles.first(where: {
+            $0.joined?.contains(selectedDay) == true
+          })?.start {
+            Text(joinedStartNote(start)).textRole(.secondary).foregroundStyle(Tokens.muted)
+          }
         }
       }
       BloomSection("Journal") {
@@ -517,6 +522,11 @@ struct InsightsScreen: View {
       }
     }.navigationTitle("Insights").sevenScreenBackground()
   }
+}
+/// An explicit start soon after another is counted in that period by the core; say so on its day.
+func joinedStartNote(_ start: String) -> String {
+  let date = BloomDate.date(start).formatted(.dateTime.day().month(.abbreviated))
+  return String(localized: "Counted as part of the period that started \(date).", bundle: .module)
 }
 func prettyDay(_ day: String) -> String {
   BloomDate.date(day).formatted(date: .abbreviated, time: .omitted)

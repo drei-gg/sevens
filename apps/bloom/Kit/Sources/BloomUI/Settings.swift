@@ -261,7 +261,8 @@ struct ReportScreen: View {
           Task {
             do {
               report = try await model.repository.report(
-                from: BloomDate.day(from), to: BloomDate.day(to), contacts: contacts, notes: notes)
+                from: BloomDate.day(from), to: BloomDate.day(to), contacts: contacts, notes: notes,
+                fahrenheit: BloomTemperature.fahrenheit)
             } catch { model.message = explain(error) }
           }
         }

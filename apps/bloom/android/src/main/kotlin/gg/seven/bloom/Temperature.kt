@@ -35,13 +35,12 @@ internal object BloomTemperature {
         val text = field.trim().replace(',', '.')
         if (text.isEmpty()) return null
         val value =
-            text.toDoubleOrNull()
-                ?: throw IllegalArgumentException("Enter a valid temperature in $unit.")
+            text.toDoubleOrNull() ?: throw BloomProblem(R.string.temperature_invalid, unit)
         return bloomTemperatureCelsius(value, fahrenheit)
     }
 
     /** The reason a draft cannot be saved: an entered temperature that did not convert. */
-    fun problem(kind: String, row: JSONObject): String? {
+    fun problem(context: android.content.Context, kind: String, row: JSONObject): String? {
         val key =
             when {
                 kind == "day" -> "bbt"
@@ -49,8 +48,8 @@ internal object BloomTemperature {
                 else -> return null
             }
         val raw = row.opt(key) as? String ?: return null
-        return runCatching { celsius(raw) }.exceptionOrNull()?.sentence
-            ?: "Enter a valid temperature in $unit."
+        return runCatching { celsius(raw) }.exceptionOrNull()?.sentence(context)
+            ?: context.getString(R.string.temperature_invalid, unit)
     }
 }
 
@@ -71,7 +70,11 @@ internal fun TemperatureField(label: String, row: JSONObject, key: String, chang
                 }
             )
         }
-    Field("$label, ${BloomTemperature.unit}", text, number = true) { value ->
+    Field(
+        androidx.compose.ui.res.stringResource(R.string.temperature_field, label, BloomTemperature.unit),
+        text,
+        number = true,
+    ) { value ->
         text = value
         val stored: Any =
             try {

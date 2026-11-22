@@ -42,7 +42,7 @@ object WearBridge {
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (error: Exception) {
-            failure = error.sentence
+            failure = error.sentence(app)
         }
         return WatchCodec.encode(
             WatchReply(request_id = id, snapshot = snapshot(app), error = failure)

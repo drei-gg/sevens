@@ -23,11 +23,22 @@ import org.json.JSONObject
 internal fun JSONObject.rows(key: String): List<JSONObject> =
     optJSONArray(key)?.let { a -> (0 until a.length()).map { a.getJSONObject(it) } } ?: emptyList()
 
-internal val Throwable.sentence: String
-    get() =
-        (this as? gg.seven.bloom.core.Exception.Invalid)?.reason
-            ?: message
-            ?: "The change could not be saved."
+/** A failure this app words itself, as a string resource, so it follows the device language. */
+internal class BloomProblem(@param:androidx.annotation.StringRes val words: Int, vararg val args: Any) :
+    IllegalStateException()
+
+/** Throws [BloomProblem] with [words] unless [ok]. */
+internal fun ensure(ok: Boolean, @androidx.annotation.StringRes words: Int) {
+    if (!ok) throw BloomProblem(words)
+}
+
+/** The sentence to show for a failure. The core's validation reasons are still English. */
+internal fun Throwable.sentence(context: Context): String =
+    when (this) {
+        is BloomProblem -> context.getString(words, *args)
+        is gg.seven.bloom.core.Exception.Invalid -> reason
+        else -> message ?: context.getString(R.string.error_not_saved)
+    }
 
 /** One serialized owner; validation and durable encrypted replacement precede publication. */
 class BloomRepository(context: Context, private val name: String = "records") {
@@ -43,7 +54,7 @@ class BloomRepository(context: Context, private val name: String = "records") {
         (store.getKey(alias, null) as? SecretKey)?.let {
             return it
         }
-        check(create) { "The records key is unavailable. Existing data has not been changed." }
+        ensure(create, R.string.storage_key_missing)
         return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").run {
             init(
                 KeyGenParameterSpec.Builder(
@@ -66,9 +77,7 @@ class BloomRepository(context: Context, private val name: String = "records") {
         if (!file.exists() && !File(file.path + ".bak").exists())
             return bloomEmpty().also { cache = it }
         val bytes = atomic.openRead().use { stream -> stream.readBytesBounded(17_000_000) }
-        check(bytes.size >= 29 && bytes[0] == 1.toByte()) {
-            "Unsupported or damaged encrypted journal. Nothing was changed."
-        }
+        ensure(bytes.size >= 29 && bytes[0] == 1.toByte(), R.string.storage_damaged)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(
             Cipher.DECRYPT_MODE,
@@ -88,17 +97,16 @@ class BloomRepository(context: Context, private val name: String = "records") {
         cipher.init(Cipher.ENCRYPT_MODE, key(!file.exists() && !File(file.path + ".bak").exists()))
         cipher.updateAAD("bloom.records.v1".toByteArray())
         val bytes = byteArrayOf(1) + cipher.iv + cipher.doFinal(normalized.toByteArray())
-        check(file.parentFile!!.isDirectory || file.parentFile!!.mkdirs()) {
-            "Could not create the journal folder."
-        }
+        ensure(file.parentFile!!.isDirectory || file.parentFile!!.mkdirs(), R.string.storage_folder)
         val output = atomic.startWrite()
         try {
             output.write(bytes)
             output.fd.sync()
             atomic.finishWrite(output)
-            check(atomic.openRead().use { it.readBytesBounded(17_000_000) }.contentEquals(bytes)) {
-                "The encrypted journal could not be committed. Please retry."
-            }
+            ensure(
+                atomic.openRead().use { it.readBytesBounded(17_000_000) }.contentEquals(bytes),
+                R.string.storage_commit,
+            )
         } catch (error: Throwable) {
             atomic.failWrite(output)
             throw error
@@ -132,12 +140,13 @@ class BloomRepository(context: Context, private val name: String = "records") {
     suspend fun watchRequest(request: String): String =
         withContext(Dispatchers.IO) {
             lock.withLock {
-                check(request.length <= 512_000) { "The watch request is too large." }
+                ensure(request.length <= 512_000, R.string.storage_watch_large)
                 val parsed = JSONObject(request)
                 val command = parsed.optJSONObject("command")
-                check(command == null || command.optString("op") == "dose") {
-                    "This action is not available from Wear OS."
-                }
+                ensure(
+                    command == null || command.optString("op") == "dose",
+                    R.string.storage_watch_action,
+                )
                 val current = readLocked()
                 val next =
                     bloomWatchApply(
@@ -191,7 +200,7 @@ class BloomRepository(context: Context, private val name: String = "records") {
 
     suspend fun inspect(bytes: ByteArray, password: String?): String =
         withContext(Dispatchers.IO) {
-            check(bytes.size <= 17_000_000) { "The backup is too large." }
+            ensure(bytes.size <= 17_000_000, R.string.storage_backup_large)
             if (password == null) bloomValidate(String(bytes, Charsets.UTF_8))
             else bloomOpen(bytes, password)
         }
@@ -203,7 +212,7 @@ internal fun java.io.InputStream.readBytesBounded(limit: Int): ByteArray {
     while (true) {
         val n = read(buffer)
         if (n < 0) break
-        check(out.size() + n <= limit) { "The file is too large." }
+        ensure(out.size() + n <= limit, R.string.storage_file_large)
         out.write(buffer, 0, n)
     }
     return out.toByteArray()

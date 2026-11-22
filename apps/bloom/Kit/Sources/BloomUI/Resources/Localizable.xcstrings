@@ -1,0 +1,17 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Counted as part of the period that started %@." : {
+      "comment" : "Calendar day note: an explicit period start fewer than 10 days after the previous start joins that period. The argument is the earlier start, a short localized day and month.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Counted as part of the period that started %@."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

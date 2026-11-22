@@ -46,3 +46,10 @@
 - Android: repeated backup passphrase checked before the file picker opens, partial export files removed on failure, report text kept out of saved state, report sharing as text or PDF alongside saving, usual cycle and period settings, Guides and sources, recording past scheduled doses from Calendar, search limited to visible fields, named editors and worded libido/pain levels.
 - Android exports survive the app lock: the export is prepared before the system picker opens and the picker's answer is handled at Activity level, so the file is written even if the journal locked meanwhile. Cancelling leaves nothing; a write interrupted by process death is removed on the next start. Editor drafts are held in memory only and close on lock and erase.
 - Android imports work the same way: a backup picked while the journal locks is held with read access and reviewed after unlock; its access is released on the next start if the journal is never unlocked.
+
+### Close starts, report units and localization groundwork — 22 November 2026
+
+- A period start marked fewer than 10 days after the previous start now counts as part of that period instead of a new cycle, so it no longer blanks estimates. The record is kept as entered; Calendar says "Counted as part of the period that started …" on that day and reports list it under its period.
+- Text and PDF reports print temperatures in °C or °F, as the app shows them. CSV keeps Celsius and names it in a `temperature_c` column.
+- Android and Wear OS words now live in `strings.xml`, with plurals and locale-aware dates, times, weekdays and lists, ready for community translations. iOS gains a String Catalog for new strings.
+- Android: Android 11 or newer; strong biometrics or the device credential unlock the journal. The generic build is fully unlocked.

@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bloom's English words. Translations arrive as community pull requests: copy this file to
+  values-<language>/strings.xml and translate the text, keeping every %1$s/%1$d placeholder.
+  Record values (flow codes, symptom names, plan names) are data and stay as stored.
+-->
+<resources>
+    <!-- Navigation and common actions -->
+    <string name="tab_today">Today</string>
+    <string name="tab_calendar">Calendar</string>
+    <string name="tab_care">Care</string>
+    <string name="tab_patterns">Patterns</string>
+    <string name="tab_settings">Settings</string>
+    <string name="action_close">Close</string>
+    <string name="action_back">Back</string>
+    <string name="action_save">Save</string>
+    <string name="action_ok">OK</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_done">Done</string>
+    <string name="gate_add_record">Add a record</string>
+    <!-- Two parts of one line, such as a date and an activity. -->
+    <string name="pair">%1$s · %2$s</string>
+
+    <!-- Journal shell -->
+    <string name="journal_opening">Opening your journal…</string>
+    <string name="journal_open_failed">Your journal could not be opened. Existing data has not been changed.</string>
+    <string name="error_title">Could not complete</string>
+    <string name="error_not_saved">The change could not be saved.</string>
+    <string name="confirm_pause_plan">Pause plan?</string>
+    <string name="confirm_delete_record">Delete record?</string>
+    <string name="confirm_delete_body">This changes your local journal. Export a backup first if you need to keep the current record.</string>
+
+    <!-- Reviewing a backup before merging -->
+    <string name="import_review_title">Review backup</string>
+    <plurals name="import_days">
+        <item quantity="one">%d journal day</item>
+        <item quantity="other">%d journal days</item>
+    </plurals>
+    <plurals name="import_observations">
+        <item quantity="one">%d timed observation</item>
+        <item quantity="other">%d timed observations</item>
+    </plurals>
+    <plurals name="import_exclusions">
+        <item quantity="one">%d exclusion</item>
+        <item quantity="other">%d exclusions</item>
+    </plurals>
+    <plurals name="import_contacts">
+        <item quantity="one">%d contact</item>
+        <item quantity="other">%d contacts</item>
+    </plurals>
+    <plurals name="import_plans">
+        <item quantity="one">%d plan</item>
+        <item quantity="other">%d plans</item>
+    </plurals>
+    <plurals name="import_doses">
+        <item quantity="one">%d dose record</item>
+        <item quantity="other">%d dose records</item>
+    </plurals>
+    <plurals name="import_refills">
+        <item quantity="one">%d refill</item>
+        <item quantity="other">%d refills</item>
+    </plurals>
+    <plurals name="import_pregnancies">
+        <item quantity="one">%d pregnancy</item>
+        <item quantity="other">%d pregnancies</item>
+    </plurals>
+    <plurals name="import_appointments">
+        <item quantity="one">%d appointment</item>
+        <item quantity="other">%d appointments</item>
+    </plurals>
+    <!-- %1$s is the list of record counts above, joined for the language. -->
+    <string name="import_review_body">%1$s. Merge keeps existing records and rejects conflicting IDs. Imported plans and appointment reminders start inactive. Your current preferences stay in place.</string>
+    <string name="import_merge">Merge backup</string>
+    <string name="import_interrupted">The import was interrupted. Choose the backup again.</string>
+
+    <!-- Record values shown as words -->
+    <string name="value_not_recorded">Not recorded</string>
+    <string name="value_none">None</string>
+    <string name="value_spotting">Spotting</string>
+    <string name="value_light">Light</string>
+    <string name="value_medium">Medium</string>
+    <string name="value_heavy">Heavy</string>
+    <string name="value_dry">Dry</string>
+    <string name="value_sticky">Sticky</string>
+    <string name="value_creamy">Creamy</string>
+    <string name="value_watery">Watery</string>
+    <string name="value_egg_white">Egg white</string>
+    <string name="value_negative">Negative</string>
+    <string name="value_positive">Positive</string>
+    <string name="value_unclear">Unclear</string>
+    <string name="value_partly_full">Partly full</string>
+    <string name="value_full">Full</string>
+    <string name="value_overflow">Overflow</string>
+    <string name="value_symptom">Symptom</string>
+    <string name="value_flow">Flow</string>
+    <string name="value_temperature">Temperature</string>
+    <string name="value_ovulation_test">Ovulation test</string>
+    <string name="value_pregnancy_test">Pregnancy test</string>
+    <string name="value_product">Product</string>
+    <string name="value_pill">Pill</string>
+    <string name="value_ring">Ring</string>
+    <string name="value_patch">Patch</string>
+    <string name="value_injection">Injection</string>
+    <string name="value_implant">Implant</string>
+    <string name="value_iud">IUD</string>
+    <string name="value_medication">Medication</string>
+    <string name="value_emergency">Emergency</string>
+    <string name="value_pack">Pack</string>
+    <string name="value_daily">Daily</string>
+    <string name="value_interval">Interval</string>
+    <string name="value_weekly">Weekly</string>
+    <string name="value_once">Once</string>
+    <string name="value_taken">Taken</string>
+    <string name="value_skipped">Skipped</string>
+    <string name="value_snoozed">Snoozed</string>
+    <string name="value_pending">Pending</string>
+    <string name="value_active">Active</string>
+    <string name="value_break">Break</string>
+    <string name="value_scheduled">Scheduled</string>
+    <string name="value_break_placebo">Break / placebo</string>
+    <string name="value_cycle">Cycle</string>
+    <string name="value_conceive">Conceive</string>
+    <string name="value_pregnancy">Pregnancy</string>
+    <string name="value_postpartum">Postpartum</string>
+    <string name="value_perimenopause">Perimenopause</string>
+    <string name="value_unlogged">Unlogged</string>
+    <string name="value_yes">Yes</string>
+    <string name="value_no">No</string>
+    <string name="value_pregnancy_interval">Pregnancy interval</string>
+    <string name="value_hormonal_contraception">Hormonal contraception</string>
+    <string name="level_low">Low</string>
+    <string name="level_high">High</string>
+    <string name="pain_mild">Mild</string>
+    <string name="pain_moderate">Moderate</string>
+    <string name="pain_severe">Severe</string>
+    <string name="flow_title_none">No flow</string>
+    <string name="flow_title_spotting">Spotting</string>
+    <string name="flow_title_light">Light flow</string>
+    <string name="flow_title_medium">Medium flow</string>
+    <string name="flow_title_heavy">Heavy flow</string>
+
+    <!-- Doses -->
+    <string name="doses_today_title">Today’s doses</string>
+    <string name="doses_none_today">No doses scheduled today.</string>
+    <!-- Time, phase and status of a scheduled dose. -->
+    <string name="dose_line">%1$s · %2$s · %3$s</string>
+    <string name="dose_future">You can record this dose on its scheduled day.</string>
+    <string name="dose_snooze">Snooze 10 min</string>
+    <!-- A dose record: its date and the time it was scheduled for. -->
+    <string name="dose_scheduled">%1$s · scheduled %2$s</string>
+
+    <!-- Editor titles -->
+    <string name="editor_day">Daily journal</string>
+    <string name="editor_observation">Timed observation</string>
+    <string name="editor_contact">Sex and contact</string>
+    <string name="editor_plan">Reminder plan</string>
+    <string name="editor_dose">Dose record</string>
+    <string name="editor_refill">Record refill</string>
+    <string name="editor_appointment">Appointment</string>
+    <string name="editor_pregnancy">Pregnancy record</string>
+    <string name="editor_exclusion">Estimate exclusion</string>
+
+    <!-- Plan editor -->
+    <string name="plan_name">Plan name</string>
+    <string name="plan_method">Method</string>
+    <string name="plan_end_date">End date</string>
+    <string name="plan_ends">Ends</string>
+    <string name="plan_supply">Starting supply (optional)</string>
+    <string name="plan_start">Start date</string>
+    <string name="plan_schedule">Schedule</string>
+    <string name="plan_time">Scheduled time</string>
+    <string name="plan_active_days">Active days</string>
+    <string name="plan_remind_break">Remind during break/placebo</string>
+    <string name="plan_break_days">Break days</string>
+    <string name="plan_every">Every N days</string>
+    <string name="plan_zone">Time zone: %1$s</string>
+    <string name="plan_fixed_zone">Keep this time zone when travelling</string>
+    <string name="plan_hormonal">Hormonal contraception</string>
+    <string name="plan_enabled">Plan active</string>
+
+    <!-- Day and contact editors -->
+    <string name="field_date">Date</string>
+    <string name="field_flow">Flow</string>
+    <string name="field_notes">Notes</string>
+    <string name="day_period_start">Period starts today</string>
+    <string name="contact_time">Contact time</string>
+    <string name="contact_libido">Libido</string>
+    <string name="contact_pain">Pain</string>
+    <string name="contact_orgasm">Orgasm</string>
+    <string name="contact_activity">Activity</string>
+    <string name="contact_protection">Protection</string>
+
+    <!-- Timed observation, exclusion, refill, dose, appointment and pregnancy editors -->
+    <string name="observation_when">When</string>
+    <string name="observation_zone">Recorded time zone: %1$s</string>
+    <string name="observation_type">Type</string>
+    <string name="observation_product">Product, e.g. pad or cup</string>
+    <string name="observation_name">Observation name</string>
+    <string name="observation_level_field">Level</string>
+    <string name="observation_period_start">Start of a new period</string>
+    <string name="observation_result">Result</string>
+    <string name="observation_fullness">Fullness</string>
+    <string name="observation_temperature">Temperature</string>
+    <string name="observation_amount">Measured amount, mL (optional)</string>
+    <string name="observation_note">Multiple entries keep their own times. Daily summaries use the highest flow or symptom level; every entry stays in the timeline.</string>
+    <string name="observation_level">Level %1$d/3</string>
+    <string name="observation_ml">%1$s mL</string>
+    <string name="exclusion_reason">Reason</string>
+    <string name="field_from">From</string>
+    <string name="field_through">Through</string>
+    <string name="exclusion_ongoing">Ongoing</string>
+    <string name="exclusion_note">Overlapping cycles stay in history but are not used for estimates. Correcting this interval never deletes observations.</string>
+    <string name="refill_quantity">Quantity added</string>
+    <string name="dose_status">Status</string>
+    <string name="appointment_title">Title</string>
+    <string name="appointment_reminder">Reminder</string>
+    <string name="appointment_off">Off</string>
+    <string name="appointment_at">At the appointment</string>
+    <string name="appointment_15">15 minutes before</string>
+    <string name="appointment_60">1 hour before</string>
+    <string name="appointment_day">1 day before</string>
+    <string name="appointment_week">1 week before</string>
+    <string name="pregnancy_start">Record starts</string>
+    <string name="pregnancy_due">Estimated due date</string>
+    <string name="pregnancy_due_note">Use the date from your care team. The counter cannot confirm dating or pregnancy health.</string>
+    <string name="pregnancy_ended_toggle">This pregnancy has ended</string>
+    <string name="pregnancy_ended">Ended</string>
+    <string name="pregnancy_outcome">Outcome (optional)</string>
+    <string name="pregnancy_ended_note">The record stays in history. Choose postpartum or lactation in Settings if that fits your current tracking needs.</string>
+
+    <!-- How you feel -->
+    <string name="feel_title">How you feel</string>
+    <string name="feel_pinned">Only pinned observations</string>
+    <string name="feel_more">More observations</string>
+    <string name="feel_custom">Custom observation</string>
+    <string name="feel_add">Add observation</string>
+    <string name="feel_scale">0 none · 1 low · 2 medium · 3 high. Unlogged is different from none.</string>
+    <string name="feel_details_hide">Hide optional details</string>
+    <string name="feel_details_show">Temperature, tests &amp; tags</string>
+    <string name="feel_bbt">Basal temperature</string>
+    <string name="feel_mucus">Cervical mucus</string>
+    <string name="feel_tags">Tags, comma separated</string>
+    <!-- A temperature field: its name and the unit, °C or °F. -->
+    <string name="temperature_field">%1$s, %2$s</string>
+    <!-- %1$s is °C or °F. -->
+    <string name="temperature_invalid">Enter a valid temperature in %1$s.</string>
+
+    <!-- Layout preferences -->
+    <string name="layout_title">Make it yours</string>
+    <string name="layout_contacts">Show sex/contact shortcut on Today</string>
+    <string name="layout_favorites_done">Done choosing favorites</string>
+    <string name="layout_favorites">Choose quick-log favorites</string>
+    <string name="layout_note">Hiding a category never removes its records. Contact history stays available in Calendar.</string>
+
+    <!-- Settings -->
+    <string name="passphrase_hint">Use at least 12 characters for an encrypted backup.</string>
+    <string name="settings_mode">Mode</string>
+    <string name="settings_lactating">Lactating</string>
+    <string name="settings_usual_cycle">Usual cycle</string>
+    <string name="settings_usual_period">Usual period</string>
+    <plurals name="days_count">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <string name="settings_usual_note">Estimates use your recorded cycles first; the usual cycle fills in until there is enough history.</string>
+    <string name="settings_discreet">Discreet reminders and widgets</string>
+    <string name="settings_period_reminder">Estimated period reminder</string>
+    <string name="settings_widgets">Enable home-screen widget</string>
+    <string name="settings_watch">Enable watch companion</string>
+    <string name="settings_widget_setup">Shows a reminder time only. Turn off discreet mode to also show the cycle day. Journal text and contact records never appear.</string>
+    <string name="settings_device_title">Your data stays on this device</string>
+    <string name="settings_device_body">Encrypted with an Android Keystore key. System cloud and device-transfer backups are excluded. Export a portable backup before changing devices.</string>
+    <string name="settings_exports_body">Encrypted backups and JSON include all records, including sex/contact and notes. CSV includes them only when selected.</string>
+    <string name="passphrase">Backup passphrase</string>
+    <string name="passphrase_hide">Hide backup passphrase</string>
+    <string name="passphrase_show">Show backup passphrase</string>
+    <string name="passphrase_repeat">Repeat backup passphrase</string>
+    <string name="passphrase_mismatch">The passphrases do not match.</string>
+    <string name="csv_contacts">Include contacts in CSV</string>
+    <string name="csv_notes">Include notes in CSV</string>
+    <string name="export_age">Encrypted backup</string>
+    <string name="export_json">Full JSON export</string>
+    <string name="export_csv">CSV export</string>
+    <string name="export_interrupted">The export was interrupted, so nothing was saved. Try again.</string>
+    <string name="import_encrypted">Import is encrypted</string>
+    <string name="import_choose">Choose backup to review</string>
+    <string name="settings_transfer_note">Health Connect transfer is manual and permission-based. Care reminders use Android notifications and your alarm permissions.</string>
+    <string name="erase_action">Erase local journal</string>
+    <string name="erase_title">Erase this journal?</string>
+    <string name="erase_body">All local records will be removed. Export a backup first if you want to recover them.</string>
+    <string name="erase_confirm">Erase</string>
+
+    <!-- Guides -->
+    <string name="guides_title">Guides and sources</string>
+    <string name="guides_records">Know your records</string>
+    <string name="guides_cycle_day">Cycle day starts with the first day of a period. Log a new period start when needed; spotting is recorded separately. Missing days are unknown, not symptom-free days.</string>
+    <string name="guides_estimates">Your estimates use recent logged cycles. Variable cycles, hormonal contraception and life-stage changes make calendar predictions less useful. No date in this app can establish contraceptive protection.</string>
+    <string name="guides_reports">Use symptom and dose reports to prepare for a conversation with a clinician. This app does not assess PCOS, endometriosis, pregnancy health or menopause.</string>
+    <string name="guides_sources">Read the source</string>
+    <string name="guide_periods">NHS · Periods and the menstrual cycle</string>
+    <string name="guide_problems">NHS · Period problems and when to seek care</string>
+    <string name="guide_missed">NHS · Missed or late periods</string>
+    <string name="guide_tests">NHS · Pregnancy tests</string>
+    <string name="guide_perimenopause">NHS · Perimenopause symptoms</string>
+    <string name="guides_opens_browser">Opens in your browser</string>
+    <string name="guides_medication">Medication reminders</string>
+    <string name="guides_medication_body">Use the medicine leaflet or your clinician’s instructions to configure your schedule. Follow the leaflet or ask a pharmacist about missed doses, interactions or a change of time zone. Reminders record your choices; they do not prescribe a dose.</string>
+    <string name="guides_private">Private lives</string>
+    <string name="guides_private_body">Each person keeps a separate journal on their own device. There is no family dashboard, parent access or automatic partner sharing.</string>
+
+    <!-- Today -->
+    <string name="today_your_cycle">YOUR CYCLE</string>
+    <string name="today_week">Week %1$d</string>
+    <string name="today_today">Today</string>
+    <plurals name="today_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <string name="today_day">Day %1$d</string>
+    <string name="today_start">Start here</string>
+    <string name="today_from_due">From your recorded due date</string>
+    <string name="today_until_estimate">Until your next period estimate</string>
+    <string name="today_since_period">Since your last recorded period</string>
+    <string name="today_context">A little context, at your own pace.</string>
+    <plurals name="today_cycles_used">
+        <item quantity="one">%d completed cycle used</item>
+        <item quantity="other">%d completed cycles used</item>
+    </plurals>
+    <!-- %2$s is the "completed cycles used" phrase. -->
+    <string name="today_cycle_day_basis">Cycle day %1$d · %2$s</string>
+    <string name="today_no_forecast">Your observations, without a forecast</string>
+    <string name="day_flow_recorded">%1$s, flow recorded</string>
+    <string name="day_observation_recorded">%1$s, observation recorded</string>
+    <string name="day_entry_recorded">%1$s, entry recorded</string>
+    <string name="day_period_estimate">%1$s, period estimate</string>
+    <string name="day_unlogged">%1$s, unlogged</string>
+    <string name="today_strip_legend">Last 7 days · taller bars show recorded flow</string>
+    <string name="today_estimate_hide">Hide estimate details</string>
+    <string name="today_estimate_about">About this estimate</string>
+    <string name="today_estimate_disclaimer">Estimates are not contraception or a diagnosis.</string>
+    <string name="today_log">Log today</string>
+    <string name="add_timed_observation">Add timed observation</string>
+    <string name="today_log_contact">Log sex/contact</string>
+    <string name="today_pack_progress">Pack progress</string>
+    <string name="today_recent">Recently recorded</string>
+    <string name="today_review_entry">Review entry</string>
+    <string name="today_supply">Your supply</string>
+    <plurals name="supply_named">
+        <item quantity="one">%1$s · %2$d remaining</item>
+        <item quantity="other">%1$s · %2$d remaining</item>
+    </plurals>
+    <plurals name="supply_remaining">
+        <item quantity="one">%d remaining</item>
+        <item quantity="other">%d remaining</item>
+    </plurals>
+    <string name="today_private">A private space</string>
+    <string name="today_private_body">Log what matters to you. Blank days stay unknown; reminders never mark a dose as taken.</string>
+
+    <!-- Pill pack progress -->
+    <string name="pack_day">Day %1$d of %2$d · %3$s</string>
+    <string name="pack_position">Pack position, day %1$d of %2$d</string>
+    <plurals name="pack_split">
+        <item quantity="one">%1$d active · %2$d break/placebo day</item>
+        <item quantity="other">%1$d active · %2$d break/placebo days</item>
+    </plurals>
+
+    <!-- Calendar -->
+    <string name="calendar_month">Month</string>
+    <string name="calendar_all">All entries</string>
+    <string name="calendar_previous">Previous month</string>
+    <string name="calendar_next">Next month</string>
+    <string name="calendar_legend">Drop: recorded flow · dot: entry · ring: estimate</string>
+    <string name="calendar_search">Search notes, dates or observations</string>
+    <string name="calendar_entries">Your entries</string>
+    <string name="calendar_log_day">Log this day</string>
+    <!-- An explicit period start fewer than 10 days after the previous start is counted in that period. %1$s is the earlier start, such as 3 Nov. -->
+    <string name="calendar_joined_start">Counted as part of the period that started %1$s.</string>
+    <string name="calendar_empty">Nothing recorded here yet. Blank days stay unknown.</string>
+    <string name="calendar_more">Show more entries</string>
+    <string name="calendar_scheduled">Scheduled on this day</string>
+    <string name="calendar_contacts">Show private contact entries</string>
+    <string name="calendar_add_contact">Add contact</string>
+
+    <!-- Reminder delivery -->
+    <string name="reminders_title">Reminder delivery</string>
+    <string name="reminders_checking">Checking reminder delivery…</string>
+    <string name="reminders_allow">Allow notifications</string>
+    <string name="reminders_precise">Allow precise reminders</string>
+    <string name="reminders_settings">Notification settings</string>
+    <string name="reminders_note">Android can delay alerts under device restrictions. After force-stopping the app, reopen it to restore reminders. Alerts never mark a dose as taken.</string>
+    <string name="reminders_off">Notifications are off. Allow them to receive your care reminders.</string>
+    <string name="reminders_failed">Reminders need attention. Open the journal again to retry scheduling.</string>
+    <string name="reminders_none">No upcoming reminders. Add or enable a plan in Care.</string>
+    <string name="reminders_approximate">Approximate delivery. Android may delay alerts; allow precise alarms for time-sensitive reminders.</string>
+    <string name="reminders_exact">Precise alarms enabled. Your next reminder is scheduled.</string>
+    <string name="channel_name">Care reminders</string>
+    <string name="channel_description">Reminders you choose for plans and appointments</string>
+
+    <!-- Care -->
+    <string name="care_plans">Plans &amp; supply</string>
+    <string name="care_add_plan">Add pill plan</string>
+    <string name="care_no_plans">Make a plan from your prescription. Your schedule stays yours to adjust.</string>
+    <string name="plan_state_active">Active</string>
+    <string name="plan_state_paused">Paused</string>
+    <string name="care_edit_plan">Edit plan</string>
+    <string name="care_pause">Pause</string>
+    <string name="care_refill">Record refill</string>
+    <string name="care_refills_hide">Hide refill history</string>
+    <string name="care_refills_show">Refill history</string>
+    <!-- A refill: its date and the quantity added. -->
+    <string name="care_refill_line">%1$s · +%2$d</string>
+    <string name="care_pregnancy_title">Pregnancy &amp; appointments</string>
+    <string name="care_add_pregnancy">Add pregnancy record</string>
+    <string name="care_current_pregnancy">Current pregnancy</string>
+    <string name="care_pregnancy_history">Pregnancy history</string>
+    <string name="care_due">Due %1$s</string>
+    <string name="care_add_appointment">Add appointment</string>
+    <string name="care_dose_history">Dose history</string>
+    <string name="care_archived_plan">Archived plan</string>
+    <string name="care_more_doses">More dose history</string>
+    <string name="care_missed_note">For missed-dose instructions, check your medicine’s leaflet or ask a pharmacist. This app does not calculate replacement doses.</string>
+
+    <!-- Patterns -->
+    <string name="chart_temperatures">Recorded temperatures. Exact values are available below.</string>
+    <string name="chart_cycles">Cycle lengths. Every cycle and exclusion is listed below.</string>
+    <string name="patterns_rhythm">Your recorded rhythm</string>
+    <string name="patterns_cycles_used">Completed cycles used for estimates</string>
+    <string name="patterns_history_hide">Hide cycle history</string>
+    <string name="patterns_history_show">Show cycle history</string>
+    <string name="patterns_current">Current</string>
+    <plurals name="patterns_bleeding">
+        <item quantity="one">%d bleeding</item>
+        <item quantity="other">%d bleeding</item>
+    </plurals>
+    <!-- A cycle: its start, its length (or Current) and its bleeding days. -->
+    <string name="patterns_cycle">%1$s · %2$s · %3$s</string>
+    <string name="patterns_excluded">Excluded: %1$s</string>
+    <string name="patterns_more">More cycles</string>
+    <string name="patterns_feel">How you feel · 180 days</string>
+    <string name="patterns_feel_empty">Record how you feel to start seeing patterns. Missing days are never counted as symptom-free.</string>
+    <plurals name="patterns_symptom_days">
+        <item quantity="one">%1$d of %2$d logged day</item>
+        <item quantity="other">%1$d of %2$d logged days</item>
+    </plurals>
+    <!-- %1$s is an average level out of 3, such as 1.5; %2$d counts days within a week before a period. -->
+    <plurals name="patterns_symptom_detail">
+        <item quantity="one">Average when present %1$s/3 · %2$d within 7 days before a recorded period</item>
+        <item quantity="other">Average when present %1$s/3 · %2$d within 7 days before a recorded period</item>
+    </plurals>
+    <string name="patterns_temperature">Recorded temperature · %1$s</string>
+    <string name="patterns_temperature_note">Latest 90 measurements, in entry order. Lines connect observations; they do not confirm ovulation.</string>
+    <string name="patterns_measurements_hide">Hide measurements</string>
+    <string name="patterns_measurements_show">Show measurements</string>
+    <string name="patterns_measurement_daily">%1$s · daily summary · %2$s</string>
+    <string name="patterns_measurement_timed">%1$s · %2$s · %3$s</string>
+    <string name="patterns_exclusions">Estimate exclusions</string>
+    <string name="patterns_exclusions_note">Pregnancy and dated hormonal plans are excluded automatically. Add an interval for missing records or other context; observations stay intact.</string>
+    <string name="patterns_exclude">Exclude an interval</string>
+    <string name="patterns_range">%1$s – %2$s</string>
+    <string name="patterns_reports">Reports &amp; selected sharing</string>
+
+    <!-- Reports -->
+    <string name="report_contacts">Include sex/contact</string>
+    <string name="report_notes">Include private notes</string>
+    <string name="report_preview">Preview report</string>
+    <string name="report_note">Review what leaves your device. Family purchases never grant access to these records.</string>
+    <string name="report_ready">Preview ready</string>
+    <string name="report_text_hide">Hide report text</string>
+    <string name="report_text_show">Read report text</string>
+    <string name="report_share_pdf">Share PDF</string>
+    <string name="report_share_text">Share text</string>
+    <string name="report_save_pdf">Save PDF</string>
+    <string name="report_save_text">Save text</string>
+    <string name="report_copy_note">Only this reviewed report is shared. The person who receives it gets a copy, not access to your journal.</string>
+    <string name="report_share_title">Share report</string>
+    <string name="report_page">Page %1$d</string>
+
+    <!-- Health Connect -->
+    <string name="health_explanation">Only light, medium and heavy menstrual flow is transferred, when you request it. Read and write permissions are separate. Notes, symptoms, spotting, tests, temperatures, medication and contact records stay in the journal. Health Connect has no period-start flag; those markers are not transferred. There is no background sync or server. Imported days become local records in your backups. Revoking access does not delete copies; manage Health Connect copies there and journal copies here.</string>
+    <string name="health_denied">Flow permission was not granted. Your journal is unchanged.</string>
+    <string name="health_granted_locked">Permission granted. Unlock your journal and choose the transfer again.</string>
+    <string name="health_title">Health Connect · flow only</string>
+    <string name="health_review_note">Review available records from the last 30 days. Existing journal dates, including timed observations, are skipped.</string>
+    <string name="health_flow_note">No automatic sync. Only light, medium and heavy flow is transferred; notes and contacts stay here. Read and write permissions are separate.</string>
+    <string name="health_unavailable">Health Connect is unavailable here. Manual logging still works.</string>
+    <string name="health_read">Read flow for review</string>
+    <string name="health_share">Share journal flow</string>
+    <string name="health_privacy">Privacy and permissions</string>
+    <string name="health_share_title">Share flow to Health Connect?</string>
+    <string name="health_share_body">Share logged light, medium and heavy flow from daily entries and timed observations. Notes and contacts stay here. Later journal deletions do not delete Health Connect copies.</string>
+    <string name="health_share_confirm">Share flow</string>
+    <string name="health_review_title">Review flow</string>
+    <string name="health_import">Import</string>
+    <plurals name="health_new_days">
+        <item quantity="one">%d new day</item>
+        <item quantity="other">%d new days</item>
+    </plurals>
+    <string name="health_review_footer">Existing dates are checked again when saving. Your local entries and edits are kept.</string>
+    <string name="health_nothing_shared">Nothing is shared automatically. Choose a direction to request its permission.</string>
+    <string name="health_no_new">No new readable flow days. Existing journal dates were skipped.</string>
+    <plurals name="health_review_count">
+        <item quantity="one">Review %d new day. Multiple flow samples on one date use the highest recorded flow.</item>
+        <item quantity="other">Review %d new days. Multiple flow samples on one date use the highest recorded flow.</item>
+    </plurals>
+    <string name="health_imported">Reviewed flow days imported. Any dates added to your journal during review were kept.</string>
+    <string name="health_nothing_to_share">No light, medium or heavy flow entries to share.</string>
+    <plurals name="health_shared">
+        <item quantity="one">Shared %d flow entry. Later journal deletions do not delete Health Connect copies; manage those in Health Connect.</item>
+        <item quantity="other">Shared %d flow entries. Later journal deletions do not delete Health Connect copies; manage those in Health Connect.</item>
+    </plurals>
+    <string name="health_too_many">Too many Health entries to review at once. Nothing was imported.</string>
+    <string name="health_repeated_page">Health Connect repeated a page. Nothing was imported; try again.</string>
+    <plurals name="health_stopped">
+        <item quantity="one">Health Connect stopped after %d flow entry. Check flow permission and retry; stable record IDs prevent duplicate copies.</item>
+        <item quantity="other">Health Connect stopped after %d flow entries. Check flow permission and retry; stable record IDs prevent duplicate copies.</item>
+    </plurals>
+    <string name="health_records_title">Your health records</string>
+
+    <!-- App lock -->
+    <string name="lock_save_failed">The app-lock setting could not be saved. Try again.</string>
+    <string name="lock_title">App lock</string>
+    <string name="lock_footer">Use your device authentication when opening the journal. Leaving the app locks it and closes unsaved editor drafts. Reminders and widgets keep their own privacy settings.</string>
+    <string name="lock_require">Require device authentication</string>
+    <string name="lock_now">Lock now</string>
+    <string name="lock_locked">Your records are locked</string>
+    <string name="lock_authenticate">Authenticate to open your private journal.</string>
+    <string name="lock_authenticating">Authenticating…</string>
+    <string name="lock_unlock">Unlock records</string>
+    <string name="lock_device_settings">Device security settings</string>
+    <string name="lock_late">Your records remain locked. Open the app and try again.</string>
+    <string name="lock_error">Device authentication did not complete. Your protection setting is unchanged.</string>
+    <string name="lock_interrupted">Authentication was interrupted. Try again.</string>
+    <string name="lock_no_screen_lock">Set up a screen lock in Android device settings, then try again. Your records are unchanged.</string>
+    <string name="lock_prompt_unlock">Unlock your journal</string>
+    <string name="lock_prompt_change">Change journal protection</string>
+    <string name="lock_prompt_subtitle">Use your device’s fingerprint, face or screen lock</string>
+
+    <!-- Storage errors -->
+    <string name="storage_key_missing">The records key is unavailable. Existing data has not been changed.</string>
+    <string name="storage_damaged">Unsupported or damaged encrypted journal. Nothing was changed.</string>
+    <string name="storage_folder">Could not create the journal folder.</string>
+    <string name="storage_commit">The encrypted journal could not be committed. Please retry.</string>
+    <string name="storage_watch_large">The watch request is too large.</string>
+    <string name="storage_watch_action">This action is not available from Wear OS.</string>
+    <string name="storage_backup_large">The backup is too large.</string>
+    <string name="storage_file_large">The file is too large.</string>
+
+    <!-- Widget -->
+    <string name="widget_open_app">Open the app</string>
+    <string name="widget_cycle_day">Cycle day %1$d</string>
+    <string name="widget_next">Next reminder</string>
+    <string name="widget_open_journal">Open your journal</string>
+
+    <!-- Brand moments: before you buy, unlock and after the trial. {price} is filled in by the app. -->
+    <string name="brand_app_name">Cycle &amp; Health</string>
+    <string name="brand_title">Your phone already has a calendar.</string>
+    <string name="brand_built_in">Calendar, Clock and Notes can keep dates, reminders and a journal. If that covers you, keep your money.</string>
+    <string name="brand_adds">This brings your cycle, symptom and private contact records together, with portable encrypted backups. Try everything for seven days, then {price}, once. Nothing renews.</string>
+    <string name="brand_adds_no_price">Try the journal for seven days, then unlock once. Nothing renews.</string>
+    <string name="brand_platform">Care reminders use Android notifications and your chosen alarm permissions. Health Connect flow transfer is manual and permission-based; the watch companion is optional in supported editions. Calendar predictions are not contraception or a diagnosis.</string>
+    <string name="brand_look_around">Look around first</string>
+    <string name="brand_feature_journal">Period and symptom journal</string>
+    <string name="brand_feature_contacts">Private sex/contact records</string>
+    <string name="brand_feature_plans">Pill plans and dose history</string>
+    <string name="brand_feature_exports">Exports and encrypted backups</string>
+    <string name="brand_free_records">Reading, correcting, deleting and exporting records</string>
+    <string name="brand_free_doses">Dose records on existing plans</string>
+    <string name="brand_unlock_adds">Adding new records and plans</string>
+    <string name="brand_not_started">Trial not started. Your records remain yours.</string>
+</resources>

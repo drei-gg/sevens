@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The watch companion's English words. Translations: copy to values-<language>/strings.xml. -->
+<resources>
+    <string name="watch_title">Care</string>
+    <string name="watch_not_set_up">Open the phone app and enable the watch companion in tracking and privacy settings.</string>
+    <string name="watch_off">Watch companion is off. Enable it on your phone to share a snapshot.</string>
+    <string name="watch_cycle_day">Cycle day %1$d</string>
+    <string name="watch_stale">This snapshot is old. Sync before recording.</string>
+    <string name="watch_no_reminders">No reminders in this snapshot.</string>
+    <!-- A reminder's time and status. -->
+    <string name="watch_dose_line">%1$s · %2$s</string>
+    <string name="watch_taken">Taken</string>
+    <string name="watch_skip">Skip</string>
+    <string name="watch_pending">Pending. Not saved on phone yet.</string>
+    <string name="watch_clear">Clear pending action</string>
+    <string name="watch_syncing">Syncing…</string>
+    <string name="watch_sync">Sync with phone</string>
+    <string name="watch_clear_title">Clear pending action?</string>
+    <string name="watch_clear_body">This only clears the watch queue. Check phone history in case the action was saved before the connection dropped.</string>
+    <string name="watch_refresh_first">Refresh from your phone before recording.</string>
+    <string name="watch_could_not_keep">Could not keep this action. Check your phone before trying again.</string>
+    <string name="watch_up_to_date">Up to date with phone.</string>
+    <string name="watch_disconnected">Open both apps to connect and refresh.</string>
+    <string name="watch_not_confirmed">Not confirmed. Your action stays pending; open both apps and retry.</string>
+    <string name="watch_cleared">Pending action cleared here. Check phone history in case the reply was interrupted.</string>
+    <string name="watch_could_not_clear">Could not clear the pending action. It remains queued.</string>
+    <string name="status_pending">Pending</string>
+    <string name="status_taken">Taken</string>
+    <string name="status_skipped">Skipped</string>
+    <string name="status_snoozed">Snoozed</string>
+</resources>

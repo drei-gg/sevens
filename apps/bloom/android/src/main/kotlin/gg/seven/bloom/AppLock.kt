@@ -12,13 +12,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.kit.*
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** Device-local UI protection. Background reminders still use the encrypted repository. */
-internal class JournalLock(initiallyEnabled: Boolean, private val persist: (Boolean) -> Boolean) {
+internal class JournalLock(
+    initiallyEnabled: Boolean,
+    /** Shown when the setting could not be stored. */
+    private val unsaved: String,
+    private val persist: (Boolean) -> Boolean,
+) {
     val enabled = MutableStateFlow(initiallyEnabled)
     val locked = MutableStateFlow(initiallyEnabled)
     val authenticating = MutableStateFlow(false)
@@ -45,7 +51,7 @@ internal class JournalLock(initiallyEnabled: Boolean, private val persist: (Bool
         authenticating.value = false
         if (request is Request.Change) {
             if (!persist(request.enabled)) {
-                message.value = "The app-lock setting could not be saved. Try again."
+                message.value = unsaved
                 return
             }
             enabled.value = request.enabled
@@ -69,7 +75,10 @@ internal class JournalLock(initiallyEnabled: Boolean, private val persist: (Bool
         @android.annotation.SuppressLint("UseKtx")
         fun stored(context: Context): JournalLock {
             val preferences = context.getSharedPreferences("bloom-device-protection", 0)
-            return JournalLock(preferences.getBoolean("enabled", false)) {
+            return JournalLock(
+                preferences.getBoolean("enabled", false),
+                context.getString(R.string.lock_save_failed),
+            ) {
                 preferences.edit().putBoolean("enabled", it).commit()
             }
         }
@@ -82,15 +91,16 @@ internal fun JournalLockSettings(model: BloomModel) {
     val working by model.appLock.authenticating.collectAsStateWithLifecycle()
     val message by model.appLock.message.collectAsStateWithLifecycle()
     val activity = LocalActivity.current as? MainActivity
+    val require = stringResource(R.string.lock_require)
+    val lockNow = stringResource(R.string.lock_now)
     Section(
-        title = "App lock",
-        footer =
-            "Use your device authentication when opening the journal. Leaving the app locks it and closes unsaved editor drafts. Reminders and widgets keep their own privacy settings.",
+        title = stringResource(R.string.lock_title),
+        footer = stringResource(R.string.lock_footer),
     ) {
-        switch("Require device authentication", enabled, enabled = !working) {
+        switch(require, enabled, enabled = !working) {
             activity?.requestJournalAuthentication(it)
         }
-        if (enabled) action("Lock now", Icons.Outlined.Lock) { model.protectJournal() }
+        if (enabled) action(lockNow, Icons.Outlined.Lock) { model.protectJournal() }
         message?.let { content { Text(it, color = MaterialTheme.colorScheme.error) } }
     }
 }
@@ -110,22 +120,22 @@ internal fun LockedJournal(lock: JournalLock, unlock: () -> Unit, deviceSettings
         ) {
             Icon(Icons.Outlined.Lock, null, Modifier.size(48.dp))
             Spacer(Modifier.height(Space.m))
-            Text("Your records are locked", style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.lock_locked), style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(Space.s))
-            Text("Authenticate to open your private journal.")
+            Text(stringResource(R.string.lock_authenticate))
             Spacer(Modifier.height(Space.l))
             Button(
                 onClick = unlock,
                 enabled = !working,
                 modifier = Modifier.testTag("journal.unlock"),
             ) {
-                Text(if (working) "Authenticating…" else "Unlock records")
+                Text(stringResource(if (working) R.string.lock_authenticating else R.string.lock_unlock))
             }
             message?.let {
                 Spacer(Modifier.height(Space.m))
                 Text(it, color = MaterialTheme.colorScheme.error)
                 TextButton(onClick = deviceSettings, enabled = !working) {
-                    Text("Device security settings")
+                    Text(stringResource(R.string.lock_device_settings))
                 }
             }
         }

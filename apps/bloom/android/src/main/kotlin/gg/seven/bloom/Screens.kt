@@ -4,7 +4,6 @@ package gg.seven.bloom
 
 import android.Manifest
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,7 @@ import com.kizitonwose.calendar.core.daysOfWeek
 import gg.seven.kit.SevenColors
 import java.time.*
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
@@ -62,9 +64,6 @@ internal val categories =
         "Pelvic pain",
         "Dryness",
     )
-
-internal fun pretty(day: String) =
-    LocalDate.parse(day).format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
 
 @Composable
 internal fun timeLabel(at: Long): String =
@@ -118,39 +117,38 @@ internal fun BloomToday(
     val context = LocalContext.current
     Panel {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("YOUR CYCLE", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.today_your_cycle), style = MaterialTheme.typography.labelLarge)
             Text(pretty(d.getString("today")), style = MaterialTheme.typography.labelMedium)
         }
         val estimate = if (d.isNull("estimate_days")) null else d.getInt("estimate_days")
         val cycle = if (d.isNull("cycle_day")) null else d.getInt("cycle_day")
         Text(
             when {
-                !d.isNull("pregnancy_week") -> "Week ${d.getInt("pregnancy_week")}"
+                !d.isNull("pregnancy_week") ->
+                    stringResource(R.string.today_week, d.getInt("pregnancy_week"))
                 estimate != null && estimate >= 0 ->
-                    if (estimate == 0) "Today"
-                    else "$estimate ${if (estimate == 1) "day" else "days"}"
-                cycle != null -> "Day $cycle"
-                else -> "Start here"
+                    if (estimate == 0) stringResource(R.string.today_today)
+                    else pluralStringResource(R.plurals.today_days, estimate, estimate)
+                cycle != null -> stringResource(R.string.today_day, cycle)
+                else -> stringResource(R.string.today_start)
             },
             style = MaterialTheme.typography.displayLarge,
         )
         Text(
             when {
-                !d.isNull("pregnancy_week") -> "From your recorded due date"
-                estimate != null && estimate >= 0 -> "Until your next period estimate"
-                cycle != null -> "Since your last recorded period"
-                else -> "A little context, at your own pace."
+                !d.isNull("pregnancy_week") -> stringResource(R.string.today_from_due)
+                estimate != null && estimate >= 0 -> stringResource(R.string.today_until_estimate)
+                cycle != null -> stringResource(R.string.today_since_period)
+                else -> stringResource(R.string.today_context)
             },
             style = MaterialTheme.typography.titleMedium,
         )
+        val used = d.getInt("sample_size")
+        val usedText = pluralStringResource(R.plurals.today_cycles_used, used, used)
         Muted(
-            if (estimate != null)
-                listOfNotNull(
-                        cycle?.let { "Cycle day $it" },
-                        "${d.getInt("sample_size")} completed cycles used",
-                    )
-                    .joinToString(" · ")
-            else "Your observations, without a forecast"
+            if (estimate == null) stringResource(R.string.today_no_forecast)
+            else if (cycle != null) stringResource(R.string.today_cycle_day_basis, cycle, usedText)
+            else usedText
         )
         val today = LocalDate.parse(d.getString("today"))
         val observed = d.rows("observed_days").associateBy { it.getString("day") }
@@ -159,11 +157,15 @@ internal fun BloomToday(
                 val date = today.minusDays(offset.toLong())
                 val row = observed[date.toString()]
                 val flow = row != null && row.getString("flow") != "none"
+                val described =
+                    stringResource(
+                        if (flow) R.string.day_flow_recorded
+                        else if (row != null) R.string.day_observation_recorded
+                        else R.string.day_unlogged,
+                        pretty(date.toString()),
+                    )
                 Column(
-                    Modifier.weight(1f).clearAndSetSemantics {
-                        contentDescription =
-                            "${pretty(date.toString())}, ${if (flow) "flow recorded" else if (row != null) "observation recorded" else "unlogged"}"
-                    },
+                    Modifier.weight(1f).clearAndSetSemantics { contentDescription = described },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -194,15 +196,19 @@ internal fun BloomToday(
             }
         }
         Text(
-            "Last 7 days · taller bars show recorded flow",
+            stringResource(R.string.today_strip_legend),
             style = MaterialTheme.typography.bodySmall,
         )
         TextButton(onClick = { explanation = !explanation }) {
-            Text(if (explanation) "Hide estimate details" else "About this estimate")
+            Text(
+                stringResource(
+                    if (explanation) R.string.today_estimate_hide else R.string.today_estimate_about
+                )
+            )
         }
         if (explanation) {
             Muted(d.getString("prediction_note"))
-            Muted("Estimates are not contraception or a diagnosis.")
+            Muted(stringResource(R.string.today_estimate_disclaimer))
         }
         Button(
             shapes = ButtonDefaults.shapesFor(56.dp),
@@ -214,19 +220,21 @@ internal fun BloomToday(
             },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Log today")
+            Text(stringResource(R.string.today_log))
         }
         TextButton(onClick = { edit("observation", null) }) {
             Icon(Icons.Outlined.Add, null)
             Spacer(Modifier.width(8.dp))
-            Text("Add timed observation")
+            Text(stringResource(R.string.add_timed_observation))
         }
         if (preference(context).getBoolean("contacts", false))
-            TextButton(onClick = { edit("contact", null) }) { Text("Log sex/contact") }
+            TextButton(onClick = { edit("contact", null) }) {
+                Text(stringResource(R.string.today_log_contact))
+            }
     }
     DoseList(model, a, d)
     if (d.rows("plan_positions").isNotEmpty()) {
-        SectionTitle("Pack progress")
+        SectionTitle(stringResource(R.string.today_pack_progress))
         Panel {
             d.rows("plan_positions").forEach { position ->
                 a.rows("plans")
@@ -241,26 +249,34 @@ internal fun BloomToday(
     a.rows("observations")
         .maxByOrNull { it.getLong("at") }
         ?.let { event ->
-            SectionTitle("Recently recorded")
+            SectionTitle(stringResource(R.string.today_recent))
             Panel {
                 ObservationSummary(event)
-                TextButton(onClick = { edit("observation", event) }) { Text("Review entry") }
+                TextButton(onClick = { edit("observation", event) }) {
+                    Text(stringResource(R.string.today_review_entry))
+                }
             }
         }
     if (d.rows("stock").isNotEmpty()) {
-        SectionTitle("Your supply")
+        SectionTitle(stringResource(R.string.today_supply))
         Panel {
             d.rows("stock").forEach {
-                Text("${it.getString("name")} · ${it.getInt("remaining")} remaining")
+                val remaining = it.getInt("remaining")
+                Text(
+                    pluralStringResource(
+                        R.plurals.supply_named,
+                        remaining,
+                        it.getString("name"),
+                        remaining,
+                    )
+                )
             }
         }
     }
-    SectionTitle("A private space")
+    SectionTitle(stringResource(R.string.today_private))
     Panel {
-        Muted(
-            "Log what matters to you. Blank days stay unknown; reminders never mark a dose as taken."
-        )
-        TextButton(onClick = openGuides) { Text("Guides and sources") }
+        Muted(stringResource(R.string.today_private_body))
+        TextButton(onClick = openGuides) { Text(stringResource(R.string.guides_title)) }
     }
 }
 
@@ -271,40 +287,43 @@ internal fun PackProgress(position: JSONObject) {
     val total = position.getInt("total")
     val active = position.getInt("active")
     Text(
-        "Day $day of $total · ${position.getString("phase")}",
+        stringResource(R.string.pack_day, day, total, valueText(position.getString("phase"))),
         style = MaterialTheme.typography.titleMedium,
     )
+    val described = stringResource(R.string.pack_position, day, total)
     LinearProgressIndicator(
         progress = { day.toFloat() / total },
-        modifier =
-            Modifier.fillMaxWidth().semantics {
-                contentDescription = "Pack position, day $day of $total"
-            },
+        modifier = Modifier.fillMaxWidth().semantics { contentDescription = described },
         color = SevenColors.water,
     )
-    Muted("$active active · ${total - active} break/placebo days")
+    Muted(pluralStringResource(R.plurals.pack_split, total - active, active, total - active))
 }
 
 @Composable
 internal fun ObservationSummary(row: JSONObject) {
     Text(
-        row.getString("label").ifBlank {
-            row.getString("kind").replace('_', ' ').replaceFirstChar(Char::uppercase)
-        },
+        row.getString("label").ifBlank { valueText(row.getString("kind")) },
         style = MaterialTheme.typography.titleMedium,
     )
+    val value = row.getString("value")
     Muted(
         listOf(
                 Instant.ofEpochSecond(row.getLong("at"))
                     .atZone(ZoneId.of(row.getString("zone")))
-                    .format(DateTimeFormatter.ofPattern("HH:mm")),
+                    .format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)),
                 row.getString("zone"),
-                row.getString("value").replace('_', ' '),
-                if (!row.isNull("level")) "Level ${row.getInt("level")}/3" else "",
+                if (value.isEmpty()) "" else valueText(value),
+                if (!row.isNull("level"))
+                    stringResource(R.string.observation_level, row.getInt("level"))
+                else "",
                 if (row.isNull("number")) ""
                 else if (row.getString("kind") == "temperature")
                     BloomTemperature.text(row.getDouble("number"))
-                else "${row.getDouble("number")} mL",
+                else
+                    stringResource(
+                        R.string.observation_ml,
+                        java.text.NumberFormat.getInstance().format(row.getDouble("number")),
+                    ),
             )
             .filter { it.isNotBlank() }
             .joinToString(" · ")
@@ -341,7 +360,13 @@ internal fun BloomCalendar(
         )
     val scope = rememberCoroutineScope()
     val observed = d.rows("observed_days").associateBy { it.getString("day") }
-    gg.seven.kit.ConnectedChoice(listOf(false to "Month", true to "All entries"), agenda) {
+    gg.seven.kit.ConnectedChoice(
+        listOf(
+            false to stringResource(R.string.calendar_month),
+            true to stringResource(R.string.calendar_all),
+        ),
+        agenda,
+    ) {
         agenda = it
     }
     if (!agenda && query.isBlank())
@@ -357,10 +382,13 @@ internal fun BloomCalendar(
                         }
                     }
                 ) {
-                    Icon(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, "Previous month")
+                    Icon(
+                        Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
+                        stringResource(R.string.calendar_previous),
+                    )
                 }
                 Text(
-                    month.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                    month.format(localPattern("yMMMM", LocalConfiguration.current.locales[0])),
                     Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleMedium,
@@ -372,7 +400,10 @@ internal fun BloomCalendar(
                         }
                     }
                 ) {
-                    Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, "Next month")
+                    Icon(
+                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        stringResource(R.string.calendar_next),
+                    )
                 }
             }
             Row {
@@ -404,6 +435,14 @@ internal fun BloomCalendar(
                             day.date.toString() >= start &&
                             day.date.toString() <= end
                     val isSelected = day.date.toString() == selected
+                    val described =
+                        stringResource(
+                            if (flow) R.string.day_flow_recorded
+                            else if (row != null) R.string.day_entry_recorded
+                            else if (estimate) R.string.day_period_estimate
+                            else R.string.day_unlogged,
+                            pretty(day.date.toString()),
+                        )
                     Column(
                         Modifier.fillMaxWidth()
                             .heightIn(min = 64.dp)
@@ -415,8 +454,7 @@ internal fun BloomCalendar(
                             )
                             .clickable { selected = day.date.toString() }
                             .semantics {
-                                contentDescription =
-                                    "${pretty(day.date.toString())}, ${if (flow) "flow recorded" else if (row != null) "entry recorded" else if (estimate) "period estimate" else "unlogged"}"
+                                contentDescription = described
                                 this.selected = isSelected
                             },
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -454,13 +492,29 @@ internal fun BloomCalendar(
                 },
             )
             Text(
-                "Drop: recorded flow · dot: entry · ring: estimate",
+                stringResource(R.string.calendar_legend),
                 style = MaterialTheme.typography.bodySmall,
             )
         }
     LaunchedEffect(query) { limit = 30 }
-    gg.seven.kit.SearchInput("Search notes, dates or observations", state = search)
-    SectionTitle(if (agenda || query.isNotBlank()) "Your entries" else pretty(selected))
+    gg.seven.kit.SearchInput(stringResource(R.string.calendar_search), state = search)
+    SectionTitle(
+        if (agenda || query.isNotBlank()) stringResource(R.string.calendar_entries)
+        else pretty(selected)
+    )
+    // An explicit start that the core counted in an earlier period says so on its day.
+    if (!agenda && query.isBlank())
+        d.rows("cycles")
+            .firstOrNull { cycle ->
+                cycle.optJSONArray("joined")?.let { joined ->
+                    (0 until joined.length()).any { joined.getString(it) == selected }
+                } == true
+            }
+            ?.let { cycle ->
+                Muted(
+                    stringResource(R.string.calendar_joined_start, shortDay(cycle.getString("start")))
+                )
+            }
     if (!agenda && selected <= LocalDate.now().toString()) {
         Button(
             shapes = ButtonDefaults.shapesFor(56.dp),
@@ -472,7 +526,7 @@ internal fun BloomCalendar(
                 )
             },
         ) {
-            Text("Log this day")
+            Text(stringResource(R.string.calendar_log_day))
         }
         TextButton(
             onClick = {
@@ -490,7 +544,7 @@ internal fun BloomCalendar(
                 edit("observation", event)
             }
         ) {
-            Text("Add timed observation")
+            Text(stringResource(R.string.add_timed_observation))
         }
     }
     // Search the words people see and write, as iOS does; never the raw record JSON.
@@ -514,26 +568,26 @@ internal fun BloomCalendar(
         (a.rows("days").filter { matches("day", it) }.map { "day" to it } +
                 a.rows("observations").filter { matches("observation", it) }.map { "observation" to it })
             .sortedByDescending { it.second.getString("day") + it.second.optLong("at", 0) }
-    if (rows.isEmpty()) Muted("Nothing recorded here yet. Blank days stay unknown.")
+    if (rows.isEmpty()) Muted(stringResource(R.string.calendar_empty))
     rows.take(limit).forEach { (kind, row) ->
         Panel {
             Text(pretty(row.getString("day")), style = MaterialTheme.typography.labelMedium)
             if (kind == "observation") ObservationSummary(row)
             else {
-                Text(
-                    "${row.getString("flow").replaceFirstChar(Char::uppercase)} flow",
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Text(flowTitle(row.getString("flow")), style = MaterialTheme.typography.titleMedium)
                 if (row.optString("notes").isNotBlank()) Muted(row.getString("notes"))
                 Muted(row.getJSONObject("symptoms").keys().asSequence().joinToString(", "))
             }
             Row {
-                TextButton(onClick = { edit(kind, row) }) { Text("Edit") }
-                TextButton(onClick = { remove("$kind:${row.getString("id")}") }) { Text("Remove") }
+                TextButton(onClick = { edit(kind, row) }) { Text(stringResource(R.string.action_edit)) }
+                TextButton(onClick = { remove("$kind:${row.getString("id")}") }) {
+                    Text(stringResource(R.string.action_remove))
+                }
             }
         }
     }
-    if (rows.size > limit) TextButton(onClick = { limit += 30 }) { Text("Show more entries") }
+    if (rows.size > limit)
+        TextButton(onClick = { limit += 30 }) { Text(stringResource(R.string.calendar_more)) }
     if (!agenda && query.isBlank()) {
         // Past doses that were never recorded can still be recorded from their day.
         val revision = a.getLong("revision")
@@ -549,20 +603,22 @@ internal fun BloomCalendar(
                     }
             }
         if (scheduled.isNotEmpty()) {
-            SectionTitle("Scheduled on this day")
+            SectionTitle(stringResource(R.string.calendar_scheduled))
             scheduled.forEach { DoseCard(model, a, it) }
         }
     }
-    Toggle("Show private contact entries", contacts) { contacts = it }
+    Toggle(stringResource(R.string.calendar_contacts), contacts) { contacts = it }
     if (contacts) {
-        TextButton(onClick = { edit("contact", null) }) { Text("Add contact") }
+        TextButton(onClick = { edit("contact", null) }) {
+            Text(stringResource(R.string.calendar_add_contact))
+        }
         a.rows("contacts")
             .filter { matches("contact", it) }
             .sortedByDescending { it.getLong("at") }
             .take(limit)
             .forEach { row ->
                 RecordCard(
-                    "${pretty(row.getString("day"))} · ${row.getString("activity")}",
+                    stringResource(R.string.pair, pretty(row.getString("day")), row.getString("activity")),
                     row.getString("protection"),
                     { edit("contact", row) },
                     { remove("contact:${row.getString("id")}") },
@@ -580,13 +636,13 @@ internal fun ReminderControls(model: BloomModel) {
             model.refresh()
         }
     Panel {
-        Text("Reminder delivery", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.reminders_title), style = MaterialTheme.typography.titleMedium)
         Muted(status)
         if (!BloomReminders.enabled(context))
             OutlinedButton(
                 onClick = {
                     if (
-                        Build.VERSION.SDK_INT >= 33 &&
+                        android.os.Build.VERSION.SDK_INT >= 33 &&
                             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
                                 android.content.pm.PackageManager.PERMISSION_GRANTED
                     )
@@ -598,9 +654,9 @@ internal fun ReminderControls(model: BloomModel) {
                         )
                 }
             ) {
-                Text("Allow notifications")
+                Text(stringResource(R.string.reminders_allow))
             }
-        if (Build.VERSION.SDK_INT >= 31 && !BloomReminders.exact(context))
+        if (android.os.Build.VERSION.SDK_INT >= 31 && !BloomReminders.exact(context))
             OutlinedButton(
                 onClick = {
                     context.startActivity(
@@ -611,7 +667,7 @@ internal fun ReminderControls(model: BloomModel) {
                     )
                 }
             ) {
-                Text("Allow precise reminders")
+                Text(stringResource(R.string.reminders_precise))
             }
         TextButton(
             onClick = {
@@ -621,10 +677,10 @@ internal fun ReminderControls(model: BloomModel) {
                 )
             }
         ) {
-            Text("Notification settings")
+            Text(stringResource(R.string.reminders_settings))
         }
         Text(
-            "Android can delay alerts under device restrictions. After force-stopping the app, reopen it to restore reminders. Alerts never mark a dose as taken.",
+            stringResource(R.string.reminders_note),
             style = MaterialTheme.typography.bodySmall,
         )
     }
@@ -639,10 +695,9 @@ internal fun BloomCare(
     remove: (String) -> Unit,
 ) {
     DoseList(model, a, d)
-    SectionTitle("Plans & supply")
-    Button(onClick = { edit("plan", null) }) { Text("Add pill plan") }
-    if (a.rows("plans").isEmpty())
-        Muted("Make a plan from your prescription. Your schedule stays yours to adjust.")
+    SectionTitle(stringResource(R.string.care_plans))
+    Button(onClick = { edit("plan", null) }) { Text(stringResource(R.string.care_add_plan)) }
+    if (a.rows("plans").isEmpty()) Muted(stringResource(R.string.care_no_plans))
     a.rows("plans").forEach { plan ->
         Panel {
             Text(plan.getString("name"), style = MaterialTheme.typography.titleLarge)
@@ -651,33 +706,47 @@ internal fun BloomCare(
             if (position != null) PackProgress(position)
             else
                 Muted(
-                    "${plan.getString("pattern")} · ${if (plan.getBoolean("enabled")) "active" else "paused"}"
+                    stringResource(
+                        R.string.pair,
+                        valueText(plan.getString("pattern")),
+                        stringResource(
+                            if (plan.getBoolean("enabled")) R.string.plan_state_active
+                            else R.string.plan_state_paused
+                        ),
+                    )
                 )
             d.rows("stock")
                 .firstOrNull { it.getString("plan_id") == plan.getString("id") }
                 ?.let {
+                    val remaining = it.getInt("remaining")
                     Text(
-                        "${it.getInt("remaining")} remaining",
+                        pluralStringResource(R.plurals.supply_remaining, remaining, remaining),
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { edit("plan", plan) }) { Text("Edit plan") }
+                TextButton(onClick = { edit("plan", plan) }) {
+                    Text(stringResource(R.string.care_edit_plan))
+                }
                 if (plan.getBoolean("enabled"))
                     TextButton(onClick = { remove("plan:${plan.getString("id")}") }) {
-                        Text("Pause")
+                        Text(stringResource(R.string.care_pause))
                     }
                 TextButton(
                     onClick = {
                         edit("refill", newRecord("refill").put("plan_id", plan.getString("id")))
                     }
                 ) {
-                    Text("Record refill")
+                    Text(stringResource(R.string.care_refill))
                 }
             }
             var history by rememberSaveable(plan.getString("id")) { mutableStateOf(false) }
             TextButton(onClick = { history = !history }) {
-                Text(if (history) "Hide refill history" else "Refill history")
+                Text(
+                    stringResource(
+                        if (history) R.string.care_refills_hide else R.string.care_refills_show
+                    )
+                )
             }
             if (history)
                 a.rows("refills")
@@ -685,7 +754,11 @@ internal fun BloomCare(
                     .sortedByDescending { it.getString("day") }
                     .forEach { refill ->
                         RecordCard(
-                            "${pretty(refill.getString("day"))} · +${refill.getInt("quantity")}",
+                            stringResource(
+                                R.string.care_refill_line,
+                                pretty(refill.getString("day")),
+                                refill.getInt("quantity"),
+                            ),
                             "",
                             { edit("refill", refill) },
                             { remove("refill:${refill.getString("id")}") },
@@ -694,17 +767,30 @@ internal fun BloomCare(
         }
     }
     ReminderControls(model)
-    SectionTitle("Pregnancy & appointments")
-    TextButton(onClick = { edit("pregnancy", null) }) { Text("Add pregnancy record") }
+    SectionTitle(stringResource(R.string.care_pregnancy_title))
+    TextButton(onClick = { edit("pregnancy", null) }) {
+        Text(stringResource(R.string.care_add_pregnancy))
+    }
     a.rows("pregnancies").forEach { row ->
         RecordCard(
-            if (row.isNull("ended")) "Current pregnancy" else "Pregnancy history",
-            "Due ${pretty(row.getString("due"))}",
+            stringResource(
+                if (row.isNull("ended")) R.string.care_current_pregnancy
+                else R.string.care_pregnancy_history
+            ),
+            stringResource(R.string.care_due, pretty(row.getString("due"))),
             { edit("pregnancy", row) },
             { remove("pregnancy:${row.getString("id")}") },
         )
     }
-    TextButton(onClick = { edit("appointment", null) }) { Text("Add appointment") }
+    TextButton(onClick = { edit("appointment", null) }) {
+        Text(stringResource(R.string.care_add_appointment))
+    }
+    val appointmentFormat =
+        localPattern(
+            if (android.text.format.DateFormat.is24HourFormat(LocalContext.current)) "MMMdHm"
+            else "MMMdhm",
+            LocalConfiguration.current.locales[0],
+        )
     a.rows("appointments")
         .sortedBy { it.getLong("at") }
         .forEach { row ->
@@ -712,12 +798,12 @@ internal fun BloomCare(
                 row.getString("title"),
                 Instant.ofEpochSecond(row.getLong("at"))
                     .atZone(ZoneId.systemDefault())
-                    .format(DateTimeFormatter.ofPattern("MMM d, HH:mm")),
+                    .format(appointmentFormat),
                 { edit("appointment", row) },
                 { remove("appointment:${row.getString("id")}") },
             )
         }
-    SectionTitle("Dose history")
+    SectionTitle(stringResource(R.string.care_dose_history))
     var limit by rememberSaveable { mutableIntStateOf(20) }
     a.rows("doses")
         .sortedByDescending { it.getLong("recorded") }
@@ -726,15 +812,17 @@ internal fun BloomCare(
             val plan =
                 a.rows("plans").firstOrNull { it.getString("id") == row.getString("plan_id") }
             RecordCard(
-                "${pretty(row.getString("day"))} · ${row.getString("status")}",
-                plan?.getString("name") ?: "Archived plan",
+                stringResource(
+                    R.string.pair,
+                    pretty(row.getString("day")),
+                    valueText(row.getString("status")),
+                ),
+                plan?.getString("name") ?: stringResource(R.string.care_archived_plan),
                 { edit("dose", row) },
                 { remove("dose:${row.getString("id")}") },
             )
         }
     if (a.rows("doses").size > limit)
-        TextButton(onClick = { limit += 20 }) { Text("More dose history") }
-    Muted(
-        "For missed-dose instructions, check your medicine’s leaflet or ask a pharmacist. This app does not calculate replacement doses."
-    )
+        TextButton(onClick = { limit += 20 }) { Text(stringResource(R.string.care_more_doses)) }
+    Muted(stringResource(R.string.care_missed_note))
 }

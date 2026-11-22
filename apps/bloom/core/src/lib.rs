@@ -2,12 +2,12 @@ uniffi::setup_scaffolding!();
 mod commands;
 mod export;
 mod health;
-mod watch;
 pub mod insights;
 pub mod model;
 pub mod observations;
 pub mod schedule;
 pub mod time;
+mod watch;
 use age::secrecy::SecretString;
 use model::*;
 use std::io::{Read, Write};
@@ -126,6 +126,7 @@ pub fn bloom_report(
     to: String,
     include_contacts: bool,
     include_notes: bool,
+    fahrenheit: bool,
 ) -> Result<String> {
     export::report(
         &decode(&archive)?,
@@ -133,6 +134,7 @@ pub fn bloom_report(
         &to,
         include_contacts,
         include_notes,
+        fahrenheit,
     )
 }
 #[uniffi::export]
@@ -200,7 +202,13 @@ pub fn bloom_watch_snapshot(archive: String, now: i64, zone: String, paid: bool)
     json(&watch::snapshot(&decode(&archive)?, now, &zone, paid)?)
 }
 #[uniffi::export]
-pub fn bloom_watch_apply(archive: String, request: String, now: i64, zone: String, paid: bool) -> Result<String> {
+pub fn bloom_watch_apply(
+    archive: String,
+    request: String,
+    now: i64,
+    zone: String,
+    paid: bool,
+) -> Result<String> {
     let mut archive = decode(&archive)?;
     watch::apply(&mut archive, &request, now, &zone, paid)?;
     json(&archive)
@@ -210,7 +218,11 @@ pub fn bloom_watch_apply(archive: String, request: String, now: i64, zone: Strin
 /// which keeps a basal reading's precision in either scale.
 #[uniffi::export]
 pub fn bloom_temperature_display(celsius: f64, fahrenheit: bool) -> f64 {
-    let value = if fahrenheit { celsius * 9.0 / 5.0 + 32.0 } else { celsius };
+    let value = if fahrenheit {
+        celsius * 9.0 / 5.0 + 32.0
+    } else {
+        celsius
+    };
     (value * 100.0).round() / 100.0
 }
 /// An entered temperature, in the person's unit, as the stored Celsius value. Fahrenheit entries keep

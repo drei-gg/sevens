@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -73,36 +74,41 @@ fun WatchHome(model: WatchModel) {
                                 Modifier.fillMaxWidth().transformedHeight(this, transformation),
                             transformation = SurfaceTransformation(transformation),
                         ) {
-                            Text("Care")
+                            Text(stringResource(R.string.watch_title))
                         }
                     }
                     if (snapshot == null)
                         item {
-                            Text(
-                                "Open the phone app and enable the watch companion in tracking and privacy settings."
-                            )
+                            Text(stringResource(R.string.watch_not_set_up))
                         }
                     else if (!snapshot.enabled)
                         item {
-                            Text(
-                                "Watch companion is off. Enable it on your phone to share a snapshot."
-                            )
+                            Text(stringResource(R.string.watch_off))
                         }
                     else {
                         snapshot.cycle_day?.let { day ->
                             item {
-                                Text("Cycle day $day", style = MaterialTheme.typography.titleLarge)
+                                Text(
+                                    stringResource(R.string.watch_cycle_day, day),
+                                    style = MaterialTheme.typography.titleLarge,
+                                )
                             }
                         }
                         if (!snapshot.fresh(now))
-                            item { Text("This snapshot is old. Sync before recording.") }
+                            item { Text(stringResource(R.string.watch_stale)) }
                         if (snapshot.doses.isEmpty())
-                            item { Text("No reminders in this snapshot.") }
+                            item { Text(stringResource(R.string.watch_no_reminders)) }
                         snapshot.doses.forEach { dose ->
                             item { Text(dose.title, style = MaterialTheme.typography.titleMedium) }
                             item {
                                 Text(
-                                    "${DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withZone(ZoneId.systemDefault()).format(Instant.ofEpochSecond(dose.at))} · ${dose.status.replaceFirstChar(Char::uppercase)}"
+                                    stringResource(
+                                        R.string.watch_dose_line,
+                                        DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
+                                            .withZone(ZoneId.systemDefault())
+                                            .format(Instant.ofEpochSecond(dose.at)),
+                                        statusText(dose.status),
+                                    )
                                 )
                             }
                             item {
@@ -113,7 +119,7 @@ fun WatchHome(model: WatchModel) {
                                         Modifier.fillMaxWidth()
                                             .transformedHeight(this, transformation),
                                     transformation = SurfaceTransformation(transformation),
-                                    label = { Text("Taken") },
+                                    label = { Text(stringResource(R.string.watch_taken)) },
                                 )
                             }
                             item {
@@ -124,13 +130,13 @@ fun WatchHome(model: WatchModel) {
                                         Modifier.fillMaxWidth()
                                             .transformedHeight(this, transformation),
                                     transformation = SurfaceTransformation(transformation),
-                                    label = { Text("Skip") },
+                                    label = { Text(stringResource(R.string.watch_skip)) },
                                 )
                             }
                         }
                     }
                     if (state.pending != null) {
-                        item { Text("Pending. Not saved on phone yet.") }
+                        item { Text(stringResource(R.string.watch_pending)) }
                         item {
                             OutlinedButton(
                                 onClick = { discard = true },
@@ -138,12 +144,12 @@ fun WatchHome(model: WatchModel) {
                                 modifier =
                                     Modifier.fillMaxWidth().transformedHeight(this, transformation),
                                 transformation = SurfaceTransformation(transformation),
-                                label = { Text("Clear pending action") },
+                                label = { Text(stringResource(R.string.watch_clear)) },
                             )
                         }
                     }
                     message?.let { value ->
-                        item { Text(value, style = MaterialTheme.typography.bodySmall) }
+                        item { Text(messageText(value), style = MaterialTheme.typography.bodySmall) }
                     }
                     item {
                         Button(
@@ -152,7 +158,13 @@ fun WatchHome(model: WatchModel) {
                             modifier =
                                 Modifier.fillMaxWidth().transformedHeight(this, transformation),
                             transformation = SurfaceTransformation(transformation),
-                            label = { Text(if (busy) "Syncing…" else "Sync with phone") },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        if (busy) R.string.watch_syncing else R.string.watch_sync
+                                    )
+                                )
+                            },
                         )
                     }
                 }
@@ -160,7 +172,7 @@ fun WatchHome(model: WatchModel) {
             AlertDialog(
                 visible = discard,
                 onDismissRequest = { discard = false },
-                title = { Text("Clear pending action?") },
+                title = { Text(stringResource(R.string.watch_clear_title)) },
                 confirmButton = {
                     AlertDialogDefaults.ConfirmButton(
                         modifier = Modifier.testTag("clear-pending-confirm"),
@@ -177,11 +189,34 @@ fun WatchHome(model: WatchModel) {
                     )
                 },
                 text = {
-                    Text(
-                        "This only clears the watch queue. Check phone history in case the action was saved before the connection dropped."
-                    )
+                    Text(stringResource(R.string.watch_clear_body))
                 },
             )
         }
     }
 }
+
+@Composable
+private fun messageText(message: WatchMessage): String =
+    when (message) {
+        is WatchMessage.Phone -> message.text
+        WatchMessage.Local.RefreshFirst -> stringResource(R.string.watch_refresh_first)
+        WatchMessage.Local.Pending -> stringResource(R.string.watch_pending)
+        WatchMessage.Local.CouldNotKeep -> stringResource(R.string.watch_could_not_keep)
+        WatchMessage.Local.UpToDate -> stringResource(R.string.watch_up_to_date)
+        WatchMessage.Local.Disconnected -> stringResource(R.string.watch_disconnected)
+        WatchMessage.Local.NotConfirmed -> stringResource(R.string.watch_not_confirmed)
+        WatchMessage.Local.Cleared -> stringResource(R.string.watch_cleared)
+        WatchMessage.Local.CouldNotClear -> stringResource(R.string.watch_could_not_clear)
+    }
+
+/** A dose status code from the phone's snapshot, in words; unknown codes are shown as sent. */
+@Composable
+private fun statusText(status: String): String =
+    when (status) {
+        "pending" -> stringResource(R.string.status_pending)
+        "taken" -> stringResource(R.string.status_taken)
+        "skipped" -> stringResource(R.string.status_skipped)
+        "snoozed" -> stringResource(R.string.status_snoozed)
+        else -> status
+    }

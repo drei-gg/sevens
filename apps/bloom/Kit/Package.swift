@@ -25,9 +25,10 @@ var targets: [Target] = [
         "BloomCore", "BloomSurfaces", .product(name: "SevenKit", package: "SevenKit"),
         .product(name: "SevenCompanion", package: "SevenKit"),
         .product(name: "SevenSchedule", package: "SevenKit"),
-      ]),
+      ],
+      resources: [.process("Resources")]),
   ]
 #endif
 let package = Package(
-  name: "BloomKit", platforms: [.iOS(.v17), .macOS(.v14), .watchOS(.v10)], products: products,
+  name: "BloomKit", defaultLocalization: "en", platforms: [.iOS(.v17), .macOS(.v14), .watchOS(.v10)], products: products,
   dependencies: dependencies, targets: targets)

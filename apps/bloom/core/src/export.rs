@@ -8,23 +8,34 @@ pub fn cell(s: &str) -> String {
     };
     format!("\"{}\"", s.replace('"', "\"\""))
 }
+/// A temperature in the person's unit, as reports print it.
+fn temperature(celsius: f64, fahrenheit: bool) -> String {
+    format!(
+        "{:.2} {}",
+        crate::bloom_temperature_display(celsius, fahrenheit),
+        if fahrenheit { "°F" } else { "°C" }
+    )
+}
+/// CSV is for tools, not reading: temperatures stay in Celsius, named by the `temperature_c` header.
 pub fn csv(a: &Archive, contacts: bool, notes: bool) -> String {
-    let mut rows = vec!["type,id,date_or_time,details,notes".to_string()];
-    let mut row = |kind: &str, id: &str, date: &str, detail: String, note: &str| {
-        rows.push(
-            [
-                kind.to_string(),
-                id.into(),
-                date.into(),
-                detail,
-                if notes { note.into() } else { String::new() },
-            ]
-            .iter()
-            .map(|s| cell(s))
-            .collect::<Vec<_>>()
-            .join(","),
-        )
-    };
+    let mut rows = vec!["type,id,date_or_time,details,temperature_c,notes".to_string()];
+    let mut row =
+        |kind: &str, id: &str, date: &str, detail: String, temp: Option<f64>, note: &str| {
+            rows.push(
+                [
+                    kind.to_string(),
+                    id.into(),
+                    date.into(),
+                    detail,
+                    temp.map(|t| t.to_string()).unwrap_or_default(),
+                    if notes { note.into() } else { String::new() },
+                ]
+                .iter()
+                .map(|s| cell(s))
+                .collect::<Vec<_>>()
+                .join(","),
+            )
+        };
     for d in &a.days {
         let mut detail = d.clone();
         detail.notes.clear();
@@ -33,6 +44,7 @@ pub fn csv(a: &Archive, contacts: bool, notes: bool) -> String {
             &d.id,
             &d.day,
             serde_json::to_string(&detail).unwrap_or_default(),
+            d.bbt,
             &d.notes,
         );
     }
@@ -44,6 +56,7 @@ pub fn csv(a: &Archive, contacts: bool, notes: bool) -> String {
             &o.id,
             &o.at.to_string(),
             serde_json::to_string(&detail).unwrap_or_default(),
+            o.number.filter(|_| o.kind == "temperature"),
             &o.notes,
         );
     }
@@ -57,6 +70,7 @@ pub fn csv(a: &Archive, contacts: bool, notes: bool) -> String {
                 e.end.as_deref().unwrap_or("ongoing"),
                 e.reason
             ),
+            None,
             "",
         );
     }
@@ -69,6 +83,7 @@ pub fn csv(a: &Archive, contacts: bool, notes: bool) -> String {
                 &c.id,
                 &c.at.to_string(),
                 serde_json::to_string(&detail).unwrap_or_default(),
+                None,
                 &c.notes,
             );
         }
@@ -82,6 +97,7 @@ pub fn csv(a: &Archive, contacts: bool, notes: bool) -> String {
                 "{}; {}; scheduled {}; recorded {}",
                 d.plan_id, d.status, d.scheduled, d.recorded
             ),
+            None,
             &d.notes,
         );
     }
@@ -96,6 +112,7 @@ pub fn csv(a: &Archive, contacts: bool, notes: bool) -> String {
                 p.ended.clone().unwrap_or_default(),
                 p.outcome
             ),
+            None,
             &p.notes,
         );
     }
@@ -105,12 +122,21 @@ pub fn csv(a: &Archive, contacts: bool, notes: bool) -> String {
             &p.id,
             &p.at.to_string(),
             p.title.clone(),
+            None,
             &p.notes,
         );
     }
     rows.join("\r\n") + "\r\n"
 }
-pub fn report(a: &Archive, from: &str, to: &str, contacts: bool, notes: bool) -> Result<String> {
+/// Reports are for reading, so temperatures follow the unit the app shows.
+pub fn report(
+    a: &Archive,
+    from: &str,
+    to: &str,
+    contacts: bool,
+    notes: bool,
+    fahrenheit: bool,
+) -> Result<String> {
     time::date(from)?;
     time::date(to)?;
     crate::ensure(from <= to, "Choose a valid report date range.")?;
@@ -131,6 +157,11 @@ pub fn report(a: &Archive, from: &str, to: &str, contacts: bool, notes: bool) ->
                 .map(|n| format!("{n} days"))
                 .unwrap_or("not yet known".into())
         ));
+        for day in &c.joined {
+            text.push_str(&format!(
+                "  {day}: marked start counted as part of this period\n"
+            ));
+        }
     }
     for c in &cs {
         if let Some(reason) = &c.excluded_reason {
@@ -165,7 +196,11 @@ pub fn report(a: &Archive, from: &str, to: &str, contacts: bool, notes: bool) ->
             o.value,
             o.level.map(|v| format!(" level {v}/3")).unwrap_or_default(),
             o.number
-                .map(|v| format!(" measured {v}"))
+                .map(|v| if o.kind == "temperature" {
+                    format!(" measured {}", temperature(v, fahrenheit))
+                } else {
+                    format!(" measured {v}")
+                })
                 .unwrap_or_default()
         ));
         if notes && !o.notes.is_empty() {
@@ -194,7 +229,7 @@ pub fn report(a: &Archive, from: &str, to: &str, contacts: bool, notes: bool) ->
             text.push_str(&format!("  {k}: {v}/3\n"));
         }
         if let Some(t) = d.bbt {
-            text.push_str(&format!("  BBT: {t:.2} °C\n"));
+            text.push_str(&format!("  BBT: {}\n", temperature(t, fahrenheit)));
         }
         if d.mucus != "none" {
             text.push_str(&format!("  Cervical mucus: {}\n", d.mucus));

@@ -29,7 +29,7 @@ import org.json.JSONObject
 class BloomApplication : Application(), ReminderHost {
     val repository by lazy { BloomRepository(this) }
     override val reminderScheduler by lazy {
-        ReminderScheduler(this, BloomReminders.config()) {
+        ReminderScheduler(this, BloomReminders.config(this)) {
             BloomReminders.Plan(this, repository.read(), ZoneId.systemDefault().id)
         }
     }
@@ -44,15 +44,15 @@ class BloomApplication : Application(), ReminderHost {
 object BloomReminders {
     const val CHANNEL = "care-reminders"
 
-    fun config() =
+    fun config(c: Context) =
         ReminderConfig(
             wake = WakeId(BloomReminderReceiver::class.java, "gg.seven.bloom.DUE"),
             preferences = "bloom-reminders",
             channel =
                 ReminderChannel(
                     CHANNEL,
-                    "Care reminders",
-                    "Reminders you choose for plans and appointments",
+                    c.getString(R.string.channel_name),
+                    c.getString(R.string.channel_description),
                 ),
             tagPrefix = "bloom.",
             precision = Precision.ExactIfAllowed,
@@ -71,16 +71,15 @@ object BloomReminders {
     fun exact(c: Context): Boolean = ScheduleAccess(c).exactAllowed
 
     fun status(c: Context): String =
-        when (scheduler(c).state()) {
-            ReminderState.NOTIFICATIONS_OFF ->
-                "Notifications are off. Allow them to receive your care reminders."
-            ReminderState.FAILED ->
-                "Reminders need attention. Open the journal again to retry scheduling."
-            ReminderState.NONE_UPCOMING -> "No upcoming reminders. Add or enable a plan in Care."
-            ReminderState.APPROXIMATE ->
-                "Approximate delivery. Android may delay alerts; allow precise alarms for time-sensitive reminders."
-            ReminderState.PRECISE -> "Precise alarms enabled. Your next reminder is scheduled."
-        }
+        c.getString(
+            when (scheduler(c).state()) {
+                ReminderState.NOTIFICATIONS_OFF -> R.string.reminders_off
+                ReminderState.FAILED -> R.string.reminders_failed
+                ReminderState.NONE_UPCOMING -> R.string.reminders_none
+                ReminderState.APPROXIMATE -> R.string.reminders_approximate
+                ReminderState.PRECISE -> R.string.reminders_exact
+            }
+        )
 
     fun maintain(c: Context) = scheduler(c).maintain()
 

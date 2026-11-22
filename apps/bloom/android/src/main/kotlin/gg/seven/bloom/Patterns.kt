@@ -6,6 +6,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
@@ -43,14 +45,18 @@ private fun RecordChart(values: List<Pair<String, Double>>, temperature: Boolean
         }
     }
     val color = if (temperature) SevenColors.water else SevenColors.time
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     val formatter =
-        remember(values) {
+        remember(values, locale) {
+            val numeric = localPattern("Md", locale)
             CartesianValueFormatter { _, value, _ ->
                 values.getOrNull(value.toInt())?.first?.take(10)?.let {
-                    LocalDate.parse(it).let { date -> "${date.monthValue}/${date.dayOfMonth}" }
+                    LocalDate.parse(it).format(numeric)
                 } ?: ""
             }
         }
+    val described =
+        stringResource(if (temperature) R.string.chart_temperatures else R.string.chart_cycles)
     val low = values.minOf { it.second }
     val high = values.maxOf { it.second }
     val padding = maxOf((high - low) * .1, .5)
@@ -103,9 +109,7 @@ private fun RecordChart(values: List<Pair<String, Double>>, temperature: Boolean
             animateIn = false,
             modifier =
                 Modifier.fillMaxWidth().height(200.dp).clearAndSetSemantics {
-                    contentDescription =
-                        if (temperature) "Recorded temperatures. Exact values are available below."
-                        else "Cycle lengths. Every cycle and exclusion is listed below."
+                    contentDescription = described
                 },
         )
     }
@@ -122,9 +126,12 @@ internal fun BloomPatterns(
     var history by rememberSaveable { mutableStateOf(false) }
     var limit by rememberSaveable { mutableIntStateOf(30) }
     Panel {
-        Text("Your recorded rhythm", style = MaterialTheme.typography.titleLarge)
-        Text("${d.getInt("sample_size")}", style = MaterialTheme.typography.displayLarge)
-        Muted("Completed cycles used for estimates")
+        Text(stringResource(R.string.patterns_rhythm), style = MaterialTheme.typography.titleLarge)
+        Text(
+            java.text.NumberFormat.getIntegerInstance().format(d.getInt("sample_size")),
+            style = MaterialTheme.typography.displayLarge,
+        )
+        Muted(stringResource(R.string.patterns_cycles_used))
         val cycles =
             d.rows("cycles")
                 .filter { !it.isNull("length") && it.isNull("excluded_reason") }
@@ -132,27 +139,41 @@ internal fun BloomPatterns(
         RecordChart(cycles.map { it.getString("start") to it.getDouble("length") })
         Muted(d.getString("history_note"))
         TextButton(onClick = { history = !history }) {
-            Text(if (history) "Hide cycle history" else "Show cycle history")
+            Text(
+                stringResource(
+                    if (history) R.string.patterns_history_hide else R.string.patterns_history_show
+                )
+            )
         }
         if (history)
             d.rows("cycles").asReversed().take(limit).forEach { cycle ->
+                val bleeding = cycle.getInt("bleeding_days")
                 Text(
-                    "${pretty(cycle.getString("start"))} · ${if (cycle.isNull("length")) "Current" else "${cycle.getInt("length")} days"} · ${cycle.getInt("bleeding_days")} bleeding",
+                    stringResource(
+                        R.string.patterns_cycle,
+                        pretty(cycle.getString("start")),
+                        if (cycle.isNull("length")) stringResource(R.string.patterns_current)
+                        else
+                            cycle.getInt("length").let {
+                                pluralStringResource(R.plurals.days_count, it, it)
+                            },
+                        pluralStringResource(R.plurals.patterns_bleeding, bleeding, bleeding),
+                    ),
                     style = MaterialTheme.typography.titleMedium,
                 )
                 if (!cycle.isNull("excluded_reason"))
-                    Muted("Excluded: ${cycle.getString("excluded_reason")}")
+                    Muted(
+                        stringResource(
+                            R.string.patterns_excluded,
+                            valueText(cycle.getString("excluded_reason")),
+                        )
+                    )
             }
         if (history && d.rows("cycles").size > limit)
-            TextButton(onClick = { limit += 30 }) { Text("More cycles") }
+            TextButton(onClick = { limit += 30 }) { Text(stringResource(R.string.patterns_more)) }
     }
-    SectionTitle("How you feel · 180 days")
-    if (d.rows("symptoms").isEmpty())
-        Panel {
-            Muted(
-                "Record how you feel to start seeing patterns. Missing days are never counted as symptom-free."
-            )
-        }
+    SectionTitle(stringResource(R.string.patterns_feel))
+    if (d.rows("symptoms").isEmpty()) Panel { Muted(stringResource(R.string.patterns_feel_empty)) }
     d.rows("symptoms").take(20).forEach { row ->
         Panel {
             Text(row.getString("name"), style = MaterialTheme.typography.titleMedium)
@@ -161,9 +182,23 @@ internal fun BloomPatterns(
                 color = SevenColors.time,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Text("${row.getInt("count")} of ${row.getInt("logged_days")} logged days")
+            val logged = row.getInt("logged_days")
+            Text(
+                pluralStringResource(
+                    R.plurals.patterns_symptom_days,
+                    logged,
+                    row.getInt("count"),
+                    logged,
+                )
+            )
+            val before = row.getInt("preperiod_count")
             Muted(
-                "Average when present ${"%.1f".format(row.getDouble("average"))}/3 · ${row.getInt("preperiod_count")} within 7 days before a recorded period"
+                pluralStringResource(
+                    R.plurals.patterns_symptom_detail,
+                    before,
+                    "%.1f".format(row.getDouble("average")),
+                    before,
+                )
             )
         }
     }
@@ -171,7 +206,7 @@ internal fun BloomPatterns(
     if (temperatures.isNotEmpty())
         Panel {
             Text(
-                "Recorded temperature · ${BloomTemperature.unit}",
+                stringResource(R.string.patterns_temperature, BloomTemperature.unit),
                 style = MaterialTheme.typography.titleLarge,
             )
             RecordChart(
@@ -180,34 +215,52 @@ internal fun BloomPatterns(
                 },
                 true,
             )
-            Muted(
-                "Latest 90 measurements, in entry order. Lines connect observations; they do not confirm ovulation."
-            )
+            Muted(stringResource(R.string.patterns_temperature_note))
             var values by rememberSaveable { mutableStateOf(false) }
             TextButton(onClick = { values = !values }) {
-                Text(if (values) "Hide measurements" else "Show measurements")
+                Text(
+                    stringResource(
+                        if (values) R.string.patterns_measurements_hide
+                        else R.string.patterns_measurements_show
+                    )
+                )
             }
             if (values)
                 temperatures.asReversed().forEach {
+                    val day = pretty(it.getString("day"))
+                    val reading = BloomTemperature.text(it.getDouble("value"))
                     Text(
-                        "${pretty(it.getString("day"))}${if (it.isNull("at")) " · daily summary" else " · ${timeLabel(it.getLong("at"))}"} · ${BloomTemperature.text(it.getDouble("value"))}"
+                        if (it.isNull("at"))
+                            stringResource(R.string.patterns_measurement_daily, day, reading)
+                        else
+                            stringResource(
+                                R.string.patterns_measurement_timed,
+                                day,
+                                timeLabel(it.getLong("at")),
+                                reading,
+                            )
                     )
                 }
         }
-    SectionTitle("Estimate exclusions")
-    Muted(
-        "Pregnancy and dated hormonal plans are excluded automatically. Add an interval for missing records or other context; observations stay intact."
-    )
-    OutlinedButton(onClick = { edit("exclusion", null) }) { Text("Exclude an interval") }
+    SectionTitle(stringResource(R.string.patterns_exclusions))
+    Muted(stringResource(R.string.patterns_exclusions_note))
+    OutlinedButton(onClick = { edit("exclusion", null) }) {
+        Text(stringResource(R.string.patterns_exclude))
+    }
     a.rows("exclusions").forEach { row ->
         RecordCard(
             row.getString("reason"),
-            "${pretty(row.getString("start"))} – ${if (row.isNull("end")) "Ongoing" else pretty(row.getString("end"))}",
+            stringResource(
+                R.string.patterns_range,
+                pretty(row.getString("start")),
+                if (row.isNull("end")) stringResource(R.string.exclusion_ongoing)
+                else pretty(row.getString("end")),
+            ),
             { edit("exclusion", row) },
             { remove("exclusion:${row.getString("id")}") },
         )
     }
-    SectionTitle("Reports & selected sharing")
+    SectionTitle(stringResource(R.string.patterns_reports))
     ReportPanel(model)
 }
 
@@ -225,56 +278,54 @@ private fun ReportPanel(model: BloomModel) {
         model.report.value = null
     }
     Panel {
-        DateField("From", from) {
+        DateField(stringResource(R.string.field_from), from) {
             from = it
             changed()
         }
-        DateField("Through", to) {
+        DateField(stringResource(R.string.field_through), to) {
             to = it
             changed()
         }
-        Check("Include sex/contact", contacts) {
+        Check(stringResource(R.string.report_contacts), contacts) {
             contacts = it
             changed()
         }
-        Check("Include private notes", notes) {
+        Check(stringResource(R.string.report_notes), notes) {
             notes = it
             changed()
         }
         Button(enabled = !busy, onClick = { model.buildReport(from, to, contacts, notes) }) {
-            Text("Preview report")
+            Text(stringResource(R.string.report_preview))
         }
-        Muted(
-            "Review what leaves your device. Family purchases never grant access to these records."
-        )
+        Muted(stringResource(R.string.report_note))
         if (preview != null) {
-            Text("Preview ready", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.report_ready), style = MaterialTheme.typography.titleMedium)
             var show by rememberSaveable { mutableStateOf(false) }
             TextButton(onClick = { show = !show }) {
-                Text(if (show) "Hide report text" else "Read report text")
+                Text(stringResource(if (show) R.string.report_text_hide else R.string.report_text_show))
             }
             if (show) Text(preview!!, style = MaterialTheme.typography.bodySmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("pdf" to "PDF", "txt" to "text").forEach { (format, label) ->
-                    FilledTonalButton(
-                        enabled = !busy,
-                        onClick = { model.shareReport(format) },
-                    ) {
-                        Text("Share $label")
+                listOf("pdf" to R.string.report_share_pdf, "txt" to R.string.report_share_text)
+                    .forEach { (format, label) ->
+                        FilledTonalButton(
+                            enabled = !busy,
+                            onClick = { model.shareReport(format) },
+                        ) {
+                            Text(stringResource(label))
+                        }
                     }
-                }
-                listOf("pdf" to "PDF", "txt" to "text").forEach { (format, label) ->
-                    TextButton(
-                        enabled = !busy,
-                        onClick = { model.exportReport(format) },
-                    ) {
-                        Text("Save $label")
+                listOf("pdf" to R.string.report_save_pdf, "txt" to R.string.report_save_text)
+                    .forEach { (format, label) ->
+                        TextButton(
+                            enabled = !busy,
+                            onClick = { model.exportReport(format) },
+                        ) {
+                            Text(stringResource(label))
+                        }
                     }
-                }
             }
-            Muted(
-                "Only this reviewed report is shared. The person who receives it gets a copy, not access to your journal."
-            )
+            Muted(stringResource(R.string.report_copy_note))
         }
     }
 }

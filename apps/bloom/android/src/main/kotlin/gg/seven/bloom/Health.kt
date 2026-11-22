@@ -1,7 +1,6 @@
 package gg.seven.bloom
 
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
@@ -38,9 +39,6 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal const val healthFlowExplanation =
-    "Only light, medium and heavy menstrual flow is transferred, when you request it. Read and write permissions are separate. Notes, symptoms, spotting, tests, temperatures, medication and contact records stay in the journal. Health Connect has no period-start flag; those markers are not transferred. There is no background sync or server. Imported days become local records in your backups. Revoking access does not delete copies; manage Health Connect copies there and journal copies here."
-
 @Composable
 internal fun HealthFlowSettings(model: BloomModel) {
     val context = LocalContext.current
@@ -49,9 +47,9 @@ internal fun HealthFlowSettings(model: BloomModel) {
     val preview by model.healthPreview.collectAsStateWithLifecycle()
     var pending by rememberSaveable { mutableStateOf("") }
     var confirmShare by rememberSaveable { mutableStateOf(false) }
-    val supported =
-        Build.VERSION.SDK_INT >= 28 &&
-            HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+    val supported = HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+    val denied = stringResource(R.string.health_denied)
+    val grantedLocked = stringResource(R.string.health_granted_locked)
     val request =
         rememberLauncherForActivityResult(
             PermissionController.createRequestPermissionResultContract()
@@ -63,11 +61,9 @@ internal fun HealthFlowSettings(model: BloomModel) {
                     HealthPermission.getWritePermission(MenstruationFlowRecord::class)
                 else HealthPermission.getReadPermission(MenstruationFlowRecord::class)
             if (permission !in granted)
-                model.healthNote.value =
-                    "Flow permission was not granted. Your journal is unchanged."
+                model.healthNote.value = denied
             else if (model.appLock.locked.value)
-                model.healthNote.value =
-                    "Permission granted. Unlock your journal and choose the transfer again."
+                model.healthNote.value = grantedLocked
             else if (operation == "write") model.shareHealth()
             else if (operation == "read") model.readHealth()
         }
@@ -81,33 +77,35 @@ internal fun HealthFlowSettings(model: BloomModel) {
             )
         )
     }
+    val read = stringResource(R.string.health_read)
+    val share = stringResource(R.string.health_share)
+    val privacy = stringResource(R.string.health_privacy)
     Section(
-        title = "Health Connect · flow only",
+        title = stringResource(R.string.health_title),
         footer =
             listOfNotNull(
-                    "Review available records from the last 30 days. Existing journal dates, including timed observations, are skipped.",
-                    "No automatic sync. Only light, medium and heavy flow is transferred; notes and contacts stay here. Read and write permissions are separate.",
-                    "Health Connect is unavailable here. Manual logging still works."
-                        .takeIf { !supported },
+                    stringResource(R.string.health_review_note),
+                    stringResource(R.string.health_flow_note),
+                    stringResource(R.string.health_unavailable).takeIf { !supported },
                     note,
                 )
                 .joinToString("\n\n"),
     ) {
         action(
-            "Read flow for review",
+            read,
             Icons.Outlined.Download,
             enabled = supported && !busy && pending.isEmpty(),
         ) {
             transfer("read")
         }
         action(
-            "Share journal flow",
+            share,
             Icons.Outlined.Upload,
             enabled = supported && !busy && pending.isEmpty(),
         ) {
             confirmShare = true
         }
-        action("Privacy and permissions", Icons.Outlined.PrivacyTip) {
+        action(privacy, Icons.Outlined.PrivacyTip) {
             context.startActivity(
                 android.content.Intent(context, HealthRationaleActivity::class.java)
             )
@@ -116,12 +114,8 @@ internal fun HealthFlowSettings(model: BloomModel) {
     if (confirmShare)
         AlertDialog(
             onDismissRequest = { confirmShare = false },
-            title = { Text("Share flow to Health Connect?") },
-            text = {
-                Text(
-                    "Share logged light, medium and heavy flow from daily entries and timed observations. Notes and contacts stay here. Later journal deletions do not delete Health Connect copies."
-                )
-            },
+            title = { Text(stringResource(R.string.health_share_title)) },
+            text = { Text(stringResource(R.string.health_share_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -129,31 +123,31 @@ internal fun HealthFlowSettings(model: BloomModel) {
                         transfer("write")
                     }
                 ) {
-                    Text("Share flow")
+                    Text(stringResource(R.string.health_share_confirm))
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmShare = false }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { confirmShare = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
         )
     preview?.let { reviewed ->
-        val days = remember(reviewed) { JSONObject(reviewed).rows("days") }
+        val days =
+            remember(reviewed) { JSONObject(reviewed).rows("days") }
+                .map { pretty(it.getString("day")) to valueText(it.getString("flow")) }
         FullScreenForm(
-            title = "Review flow",
+            title = stringResource(R.string.health_review_title),
             onClose = { model.healthPreview.value = null },
             onSave = model::importHealth,
             busy = busy,
-            saveLabel = "Import",
+            saveLabel = stringResource(R.string.health_import),
         ) {
             Section(
-                title = if (days.size == 1) "1 new day" else "${days.size} new days",
-                footer =
-                    "Existing dates are checked again when saving. Your local entries and edits are kept.",
+                title = pluralStringResource(R.plurals.health_new_days, days.size, days.size),
+                footer = stringResource(R.string.health_review_footer),
             ) {
-                days.forEach { day ->
-                    item(
-                        day.getString("day"),
-                        day.getString("flow").replaceFirstChar { it.uppercase() },
-                    )
-                }
+                days.forEach { (day, flow) -> item(day, flow) }
             }
         }
     }
@@ -161,7 +155,6 @@ internal fun HealthFlowSettings(model: BloomModel) {
 
 internal suspend fun readHealthFlow(context: Context): String =
     withContext(Dispatchers.IO) {
-        check(Build.VERSION.SDK_INT >= 28) { "Health Connect requires Android 9 or newer." }
         val client = HealthConnectClient.getOrCreate(context)
         val now = Instant.now()
         val samples = JSONArray()
@@ -179,9 +172,7 @@ internal suspend fun readHealthFlow(context: Context): String =
                     )
                 )
             count += response.records.size
-            check(count <= 50_000) {
-                "Too many Health entries to review at once. Nothing was imported."
-            }
+            ensure(count <= 50_000, R.string.health_too_many)
             response.records.forEach { record ->
                 if (record.metadata.dataOrigin.packageName == context.packageName) return@forEach
                 val flow =
@@ -201,16 +192,13 @@ internal suspend fun readHealthFlow(context: Context): String =
                 )
             }
             page = response.pageToken?.takeIf { it.isNotEmpty() }
-            check(page == null || seen.add(page!!)) {
-                "Health Connect repeated a page. Nothing was imported; try again."
-            }
+            ensure(page == null || seen.add(page!!), R.string.health_repeated_page)
         } while (page != null)
         samples.toString()
     }
 
 internal suspend fun writeHealthFlow(context: Context, archive: String): Int =
     withContext(Dispatchers.IO) {
-        check(Build.VERSION.SDK_INT >= 28) { "Health Connect requires Android 9 or newer." }
         val client = HealthConnectClient.getOrCreate(context)
         val projected = JSONArray(bloomHealthExport(archive))
         val records =
@@ -249,7 +237,7 @@ internal suspend fun writeHealthFlow(context: Context, archive: String): Int =
             throw cancel
         } catch (failure: Exception) {
             throw IllegalStateException(
-                "Health Connect stopped after $accepted flow entries. Check flow permission and retry; stable record IDs prevent duplicate copies.",
+                context.resources.getQuantityString(R.plurals.health_stopped, accepted, accepted),
                 failure,
             )
         }
@@ -269,9 +257,12 @@ class HealthRationaleActivity : ComponentActivity() {
                             .padding(Space.l),
                         verticalArrangement = Arrangement.spacedBy(Space.m),
                     ) {
-                        Text("Your health records", style = MaterialTheme.typography.headlineMedium)
-                        Text(healthFlowExplanation)
-                        Button(onClick = { finish() }) { Text("Done") }
+                        Text(
+                            stringResource(R.string.health_records_title),
+                            style = MaterialTheme.typography.headlineMedium,
+                        )
+                        Text(stringResource(R.string.health_explanation))
+                        Button(onClick = { finish() }) { Text(stringResource(R.string.action_done)) }
                     }
                 }
             }

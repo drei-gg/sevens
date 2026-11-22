@@ -8,6 +8,7 @@ A local-first period, wellbeing and birth-control journal. iOS 17+ with a watchO
 - Separate sex/contact events, protection, libido, pain, orgasm and private notes.
 - Paper/ink Today context with a seven-day observation strip, configurable pinned quick logs, optional contact shortcuts, pack progress and refill context. Monthly observation calendar, search and corrections; cycle-length and temperature charts; symptom frequency with explicit denominators and pre-period counts.
 - Conservative period estimates, stopped for pregnancy, postpartum, lactation and enabled hormonal plans. Completed cycles overlapping pregnancy, explicit exclusions or dated hormonal plans remain visible but are omitted from estimate samples. Postpartum/lactation mode transitions create dated exclusions; users can correct intervals with missing records. Optional conception window requires at least three stable completed cycles. No prediction is contraception, confirmation of ovulation or diagnosis.
+- An explicit period start fewer than 10 days after the previous period's start joins that period instead of beginning a new cycle (as Clue and Apple Health do), so a mistaken or early mark never produces a sub-10-day cycle that blanks estimates. The record stays exactly as entered; only cycle derivation in the core merges, and edits that move either start are re-derived. Calendar shows a one-line note on that day ("Counted as part of the period that started 3 Nov.", localized date) and reports list it under its period.
 - Pill packs with configurable active/break days, daily/weekly/interval/one-time schedules, home-zone or travelling local time, start/end dates, explicit taken/skipped/snoozed actions, historical corrections, refills and remaining supply.
 - Pregnancy history and due-date-based week counter; appointments with optional reminders. Postpartum and perimenopause tracking modes.
 - iOS on-device notification queue (up to 56, with displayed horizon). Reopening extends coverage. No guarantee of delivery under Focus, disabled permissions, a powered-off device or OS restrictions. No medicine-specific missed-dose advice.
@@ -15,7 +16,8 @@ A local-first period, wellbeing and birth-control journal. iOS 17+ with a watchO
 - Opt-in Watch snapshot and durable pending dose actions. An acknowledgement from the phone is required before an action is presented as saved. Stale requests fail visibly; replay is idempotent.
 - Opt-in privacy-sensitive widget. Discreet mode is the default; names and cycle day stay out of external surfaces.
 - App lock through device authentication. Keychain-backed AES-GCM local persistence with file protection, atomic replacement, authenticated content and exclusion from device backup. No account or journal backend.
-- Passphrase-encrypted age backups; JSON and CSV export; all-or-nothing conflict-checked import with new schedules dormant. Reports exclude private notes and contacts by default, preview exactly what will be shared, and export as text or paginated PDF.
+- Passphrase-encrypted age backups; JSON and CSV export; all-or-nothing conflict-checked import with new schedules dormant. Reports exclude private notes and contacts by default, preview exactly what will be shared, and export as text or paginated PDF. Text and PDF reports print temperatures in the unit the app shows (°C or °F by regional preference, converted by the core); CSV stays in Celsius with an explicit `temperature_c` column.
+- Localization: English at launch, with string catalogs from day one and translations by community pull requests. Android keeps every user-facing string in `res/values/strings.xml` (phone and Wear) with positional arguments, plurals and locale-aware date, time, weekday and list formats; iOS strings added since 22 November use the BloomUI String Catalog. Record values (symptom names, plan names, defaults such as "Sex") are data and stay as stored. Text the core still supplies in English: estimate and history notes, notification titles and bodies, validation messages, exclusion reasons and pack phases (Android words the known phases and reasons itself).
 - SevenKit trial/unlock/restore. Family Sharing shares the purchase only. Existing records, corrections, deletion, exports and ongoing dose logging remain available after expiry.
 
 ## Data and reuse
@@ -43,7 +45,7 @@ Before release: real-device notification/time-zone, Health, app-lock, paired-Wat
 
 ## Android
 
-The native app uses the same Rust archive, calculations and Alarm-backed scheduling rules through UniFFI. Today, monthly calendar/search/agenda, configurable quick logs, timed observations, complete contact fields, pill packs with Today pack progress, dose history/corrections including past scheduled doses from Calendar, refills, pregnancy/appointment editors, estimate exclusions, cycle/symptom/temperature charts, report preview with text/PDF sharing or saving, usual cycle/period settings and the NHS guides are included. Calendar and charts reuse Kizitonwose Calendar and Vico.
+Android 11 (API 30) or newer. The native app uses the same Rust archive, calculations and Alarm-backed scheduling rules through UniFFI. Today, monthly calendar/search/agenda, configurable quick logs, timed observations, complete contact fields, pill packs with Today pack progress, dose history/corrections including past scheduled doses from Calendar, refills, pregnancy/appointment editors, estimate exclusions, cycle/symptom/temperature charts, report preview with text/PDF sharing or saving, usual cycle/period settings and the NHS guides are included. Calendar and charts reuse Kizitonwose Calendar and Vico.
 
 Records use AES-GCM with an Android Keystore key, authenticated versioned content, serialized operations and AtomicFile replacement in the no-backup directory. Malformed or undecryptable files remain intact. SevenKit supplies trial/unlock, generic/personal/store distribution separation and store-only Play Billing. Unlocks on Android are per account; there is no Google family unlock.
 
@@ -65,7 +67,9 @@ New-schema records are included in encrypted backup, conflict-checked merge and 
 # JDK 21, Android SDK/NDK and Rust Android targets required (android/README.md).
 android/gradlew -p android :bloom-core:test :bloom:lintGenericDebug :bloom:assembleGenericDebug :bloom:assembleGenericRelease
 scripts/android bloom personal debug -Psevens.brandDir=/path/to/private-brand
-# Local unlocked fixture only:
+# The generic build is fully unlocked, so instrumentation tests need no fixture:
+android/gradlew -p android :bloom:connectedGenericDebugAndroidTest
+# Personal build with the explicit local unlock:
 android/gradlew -p android :bloom:connectedPersonalDebugAndroidTest -Psevens.brandDir=/path/to/private-brand -Psevens.personalUnlock=true
 ```
 

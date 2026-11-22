@@ -185,6 +185,8 @@ public struct Cycle: Codable, Sendable, Identifiable {
   public var length: Int?
   public var bleeding_days: Int
   public var excluded_reason: String?
+  /// Explicit starts counted as part of this period (absent in older payloads).
+  public var joined: [String]?
 }
 public struct SymptomStat: Codable, Sendable, Identifiable {
   public var id: String { name }

@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.edit
 import java.time.*
 import org.json.JSONObject
@@ -19,7 +20,8 @@ internal fun DetailEditor(kind: String, row: JSONObject, change: (String) -> Uni
     }
     when (kind) {
         "observation" -> {
-            TimestampField("When", row.getLong("at"), row.getString("zone")) { at ->
+            TimestampField(stringResource(R.string.observation_when), row.getLong("at"), row.getString("zone")) {
+                at ->
                 row.put("at", at)
                     .put(
                         "day",
@@ -30,9 +32,9 @@ internal fun DetailEditor(kind: String, row: JSONObject, change: (String) -> Uni
                     )
                 change(row.toString())
             }
-            Muted("Recorded time zone: ${row.getString("zone")}")
+            Muted(stringResource(R.string.observation_zone, row.getString("zone")))
             Choice(
-                "Type",
+                stringResource(R.string.observation_type),
                 row.getString("kind"),
                 listOf(
                     "symptom",
@@ -58,24 +60,32 @@ internal fun DetailEditor(kind: String, row: JSONObject, change: (String) -> Uni
             val type = row.getString("kind")
             if (type in listOf("symptom", "product"))
                 Field(
-                    if (type == "product") "Product, e.g. pad or cup" else "Observation name",
+                    stringResource(
+                        if (type == "product") R.string.observation_product
+                        else R.string.observation_name
+                    ),
                     row.getString("label"),
                 ) {
                     put("label", it)
                 }
             if (type == "symptom")
-                Choice("Level", row.optInt("level", 1).toString(), listOf("0", "1", "2", "3")) {
+                Choice(
+                    stringResource(R.string.observation_level_field),
+                    row.optInt("level", 1).toString(),
+                    listOf("0", "1", "2", "3"),
+                ) {
                     put("level", it.toInt())
                 }
             if (type == "flow") {
                 Choice(
-                    "Flow",
+                    stringResource(R.string.field_flow),
                     row.getString("value"),
                     listOf("none", "spotting", "light", "medium", "heavy"),
                 ) {
                     put("value", it)
                 }
-                Toggle("Start of a new period", row.getBoolean("period_start")) { on ->
+                Toggle(stringResource(R.string.observation_period_start), row.getBoolean("period_start")) {
+                    on ->
                     if (on && row.getString("value") in listOf("none", "spotting"))
                         row.put("value", "light")
                     put("period_start", on)
@@ -83,7 +93,7 @@ internal fun DetailEditor(kind: String, row: JSONObject, change: (String) -> Uni
             }
             if (type.endsWith("_test"))
                 Choice(
-                    "Result",
+                    stringResource(R.string.observation_result),
                     row.getString("value"),
                     listOf("negative", "positive", "unclear"),
                 ) {
@@ -91,49 +101,60 @@ internal fun DetailEditor(kind: String, row: JSONObject, change: (String) -> Uni
                 }
             if (type == "product")
                 Choice(
-                    "Fullness",
+                    stringResource(R.string.observation_fullness),
                     row.getString("value"),
                     listOf("", "light", "partly_full", "full", "overflow"),
                 ) {
                     put("value", it)
                 }
-            if (type == "temperature") TemperatureField("Temperature", row, "number", change)
+            if (type == "temperature")
+                TemperatureField(stringResource(R.string.observation_temperature), row, "number", change)
             if (type == "product")
                 Field(
-                    "Measured amount, mL (optional)",
+                    stringResource(R.string.observation_amount),
                     if (row.isNull("number")) "" else row.getString("number"),
                     number = true,
                 ) {
                     put("number", if (it.isBlank()) JSONObject.NULL else it.toDoubleOrNull() ?: it)
                 }
-            Muted(
-                "Multiple entries keep their own times. Daily summaries use the highest flow or symptom level; every entry stays in the timeline."
-            )
+            Muted(stringResource(R.string.observation_note))
         }
         "exclusion" -> {
-            Field("Reason", row.getString("reason")) { put("reason", it) }
-            DateField("From", row.getString("start")) { put("start", it) }
-            Toggle("Ongoing", row.isNull("end")) {
+            Field(stringResource(R.string.exclusion_reason), row.getString("reason")) {
+                put("reason", it)
+            }
+            DateField(stringResource(R.string.field_from), row.getString("start")) {
+                put("start", it)
+            }
+            Toggle(stringResource(R.string.exclusion_ongoing), row.isNull("end")) {
                 put("end", if (it) JSONObject.NULL else LocalDate.now().toString())
             }
-            if (!row.isNull("end")) DateField("Through", row.getString("end")) { put("end", it) }
-            Muted(
-                "Overlapping cycles stay in history but are not used for estimates. Correcting this interval never deletes observations."
-            )
+            if (!row.isNull("end"))
+                DateField(stringResource(R.string.field_through), row.getString("end")) {
+                    put("end", it)
+                }
+            Muted(stringResource(R.string.exclusion_note))
         }
         "refill" -> {
-            DateField("Date", row.getString("day")) { put("day", it) }
-            Field("Quantity added", row.getString("quantity"), number = true) {
+            DateField(stringResource(R.string.field_date), row.getString("day")) { put("day", it) }
+            Field(stringResource(R.string.refill_quantity), row.getString("quantity"), number = true) {
                 put("quantity", it.toIntOrNull() ?: it)
             }
         }
         "dose" -> {
             Text(
-                "${pretty(row.getString("day"))} · scheduled ${timeLabel(row.getLong("scheduled"))}",
+                stringResource(
+                    R.string.dose_scheduled,
+                    pretty(row.getString("day")),
+                    timeLabel(row.getLong("scheduled")),
+                ),
                 style = MaterialTheme.typography.titleMedium,
             )
-            Choice("Status", row.getString("status"), listOf("taken", "skipped", "snoozed")) {
-                status ->
+            Choice(
+                stringResource(R.string.dose_status),
+                row.getString("status"),
+                listOf("taken", "skipped", "snoozed"),
+            ) { status ->
                 row.put("recorded", Instant.now().epochSecond)
                     .put(
                         "snooze_until",
@@ -144,38 +165,47 @@ internal fun DetailEditor(kind: String, row: JSONObject, change: (String) -> Uni
             }
         }
         "appointment" -> {
-            Field("Title", row.getString("title")) { put("title", it) }
-            TimestampField("When", row.getLong("at")) { put("at", it) }
+            Field(stringResource(R.string.appointment_title), row.getString("title")) {
+                put("title", it)
+            }
+            TimestampField(stringResource(R.string.observation_when), row.getLong("at")) {
+                put("at", it)
+            }
             gg.seven.kit.DropdownField(
-                "Reminder",
+                stringResource(R.string.appointment_reminder),
                 row.getInt("remind_minutes"),
                 listOf(
-                    -1 to "Off",
-                    0 to "At the appointment",
-                    15 to "15 minutes before",
-                    60 to "1 hour before",
-                    1440 to "1 day before",
-                    10080 to "1 week before",
-                ),
+                        -1 to R.string.appointment_off,
+                        0 to R.string.appointment_at,
+                        15 to R.string.appointment_15,
+                        60 to R.string.appointment_60,
+                        1440 to R.string.appointment_day,
+                        10080 to R.string.appointment_week,
+                    )
+                    .map { (minutes, words) -> minutes to stringResource(words) },
             ) {
                 put("remind_minutes", it)
             }
         }
         "pregnancy" -> {
-            DateField("Record starts", row.getString("start")) { put("start", it) }
-            DateField("Estimated due date", row.getString("due")) { put("due", it) }
-            Muted(
-                "Use the date from your care team. The counter cannot confirm dating or pregnancy health."
-            )
-            Toggle("This pregnancy has ended", !row.isNull("ended")) {
+            DateField(stringResource(R.string.pregnancy_start), row.getString("start")) {
+                put("start", it)
+            }
+            DateField(stringResource(R.string.pregnancy_due), row.getString("due")) {
+                put("due", it)
+            }
+            Muted(stringResource(R.string.pregnancy_due_note))
+            Toggle(stringResource(R.string.pregnancy_ended_toggle), !row.isNull("ended")) {
                 put("ended", if (it) LocalDate.now().toString() else JSONObject.NULL)
             }
             if (!row.isNull("ended")) {
-                DateField("Ended", row.getString("ended")) { put("ended", it) }
-                Field("Outcome (optional)", row.getString("outcome")) { put("outcome", it) }
-                Muted(
-                    "The record stays in history. Choose postpartum or lactation in Settings if that fits your current tracking needs."
-                )
+                DateField(stringResource(R.string.pregnancy_ended), row.getString("ended")) {
+                    put("ended", it)
+                }
+                Field(stringResource(R.string.pregnancy_outcome), row.getString("outcome")) {
+                    put("outcome", it)
+                }
+                Muted(stringResource(R.string.pregnancy_ended_note))
             }
         }
     }
@@ -207,11 +237,19 @@ internal fun WellbeingFields(row: JSONObject, change: (String) -> Unit) {
         }
     val names =
         ((if (expanded) categories else pinned) + symptoms.keys().asSequence().toList()).distinct()
-    SectionTitle("How you feel")
+    SectionTitle(stringResource(R.string.feel_title))
+    val levels =
+        listOf(
+                R.string.value_none,
+                R.string.level_low,
+                R.string.value_medium,
+                R.string.level_high,
+            )
+            .mapIndexed { level, words -> level to stringResource(words) }
     names.forEach { name ->
         gg.seven.kit.OptionalChoice(
             name,
-            listOf(0 to "None", 1 to "Low", 2 to "Medium", 3 to "High"),
+            levels,
             if (symptoms.has(name)) symptoms.getInt(name) else null,
         ) { value ->
             if (value == null) symptoms.remove(name) else symptoms.put(name, value)
@@ -219,9 +257,9 @@ internal fun WellbeingFields(row: JSONObject, change: (String) -> Unit) {
         }
     }
     TextButton(onClick = { expanded = !expanded }) {
-        Text(if (expanded) "Only pinned observations" else "More observations")
+        Text(stringResource(if (expanded) R.string.feel_pinned else R.string.feel_more))
     }
-    Field("Custom observation", custom) { custom = it }
+    Field(stringResource(R.string.feel_custom), custom) { custom = it }
     TextButton(
         enabled = custom.isNotBlank(),
         onClick = {
@@ -230,17 +268,19 @@ internal fun WellbeingFields(row: JSONObject, change: (String) -> Unit) {
             custom = ""
         },
     ) {
-        Text("Add observation")
+        Text(stringResource(R.string.feel_add))
     }
-    Muted("0 none · 1 low · 2 medium · 3 high. Unlogged is different from none.")
+    Muted(stringResource(R.string.feel_scale))
     var details by rememberSaveable { mutableStateOf(false) }
     TextButton(onClick = { details = !details }) {
-        Text(if (details) "Hide optional details" else "Temperature, tests & tags")
+        Text(
+            stringResource(if (details) R.string.feel_details_hide else R.string.feel_details_show)
+        )
     }
     if (details) {
-        TemperatureField("Basal temperature", row, "bbt", change)
+        TemperatureField(stringResource(R.string.feel_bbt), row, "bbt", change)
         Choice(
-            "Cervical mucus",
+            stringResource(R.string.feel_mucus),
             row.getString("mucus"),
             listOf("none", "dry", "sticky", "creamy", "watery", "egg_white"),
         ) {
@@ -248,7 +288,7 @@ internal fun WellbeingFields(row: JSONObject, change: (String) -> Unit) {
         }
         listOf("ovulation_test", "pregnancy_test").forEach { key ->
             Choice(
-                key.replace('_', ' '),
+                valueText(key),
                 row.getString(key),
                 listOf("none", "negative", "positive", "unclear"),
             ) {
@@ -256,7 +296,7 @@ internal fun WellbeingFields(row: JSONObject, change: (String) -> Unit) {
             }
         }
         Field(
-            "Tags, comma separated",
+            stringResource(R.string.feel_tags),
             (0 until row.getJSONArray("tags").length()).joinToString(", ") {
                 row.getJSONArray("tags").getString(it)
             },
@@ -282,13 +322,15 @@ internal fun LayoutPreferences() {
         mutableStateOf(prefs.getString("favorites", "Cramps,Headache,Fatigue,Calm")!!)
     }
     var contacts by rememberSaveable { mutableStateOf(prefs.getBoolean("contacts", false)) }
-    SectionTitle("Make it yours")
-    Toggle("Show sex/contact shortcut on Today", contacts) {
+    SectionTitle(stringResource(R.string.layout_title))
+    Toggle(stringResource(R.string.layout_contacts), contacts) {
         contacts = it
         prefs.edit { putBoolean("contacts", it) }
     }
     TextButton(onClick = { expanded = !expanded }) {
-        Text(if (expanded) "Done choosing favorites" else "Choose quick-log favorites")
+        Text(
+            stringResource(if (expanded) R.string.layout_favorites_done else R.string.layout_favorites)
+        )
     }
     if (expanded)
         categories.forEach { name ->
@@ -299,7 +341,5 @@ internal fun LayoutPreferences() {
                 prefs.edit { putString("favorites", favorites) }
             }
         }
-    Muted(
-        "Hiding a category never removes its records. Contact history stays available in Calendar."
-    )
+    Muted(stringResource(R.string.layout_note))
 }

@@ -7,6 +7,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+/** What the watch tells the person: its own words (by code) or the phone's reply, as sent. */
+sealed interface WatchMessage {
+    data class Phone(val text: String) : WatchMessage
+
+    enum class Local : WatchMessage {
+        RefreshFirst,
+        Pending,
+        CouldNotKeep,
+        UpToDate,
+        Disconnected,
+        NotConfirmed,
+        Cleared,
+        CouldNotClear,
+    }
+}
+
 interface WatchPersistence {
     fun read(): String?
 
@@ -35,7 +51,7 @@ class WatchModel(
             cached.copy(pending = cached.pending.takeUnless { cached.snapshot?.enabled == false })
         )
     val busy = MutableStateFlow(false)
-    val message = MutableStateFlow<String?>(null)
+    val message = MutableStateFlow<WatchMessage?>(null)
     private val mutex = Mutex()
 
     private suspend fun persist(next: WatchStored) {
@@ -55,14 +71,14 @@ class WatchModel(
                     reply.error == null
             val pending = if (snapshot?.enabled == false || acknowledged) null else previous.pending
             persist(WatchStored(snapshot, pending))
-            reply.error?.let { message.value = it }
+            reply.error?.let { message.value = WatchMessage.Phone(it) }
         }
 
     suspend fun record(dose: WatchDose, status: String) {
         if (busy.value || state.value.pending != null) return
         val snapshot = state.value.snapshot ?: return
         if (!snapshot.fresh(clock()) || snapshot.doses.none { it == dose }) {
-            message.value = "Refresh from your phone before recording."
+            message.value = WatchMessage.Local.RefreshFirst
             return
         }
         try {
@@ -87,12 +103,12 @@ class WatchModel(
                     }
                 }
             if (!queued) return
-            message.value = "Pending. Not saved on phone yet."
+            message.value = WatchMessage.Local.Pending
             sync()
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (_: Exception) {
-            message.value = "Could not keep this action. Check your phone before trying again."
+            message.value = WatchMessage.Local.CouldNotKeep
         }
     }
 
@@ -122,13 +138,13 @@ class WatchModel(
             val reply = WatchCodec.decodeReply(bytes)
             check(reply.request_id == request.id) { "Unmatched reply" }
             receive(bytes)
-            message.value = reply.error ?: "Up to date with phone."
+            message.value = reply.error?.let(WatchMessage::Phone) ?: WatchMessage.Local.UpToDate
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (_: Exception) {
             message.value =
-                if (state.value.pending == null) "Open both apps to connect and refresh."
-                else "Not confirmed. Your action stays pending; open both apps and retry."
+                if (state.value.pending == null) WatchMessage.Local.Disconnected
+                else WatchMessage.Local.NotConfirmed
         } finally {
             busy.value = false
         }
@@ -138,12 +154,11 @@ class WatchModel(
         if (busy.value) return
         try {
             mutex.withLock { persist(state.value.copy(pending = null)) }
-            message.value =
-                "Pending action cleared here. Check phone history in case the reply was interrupted."
+            message.value = WatchMessage.Local.Cleared
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (_: Exception) {
-            message.value = "Could not clear the pending action. It remains queued."
+            message.value = WatchMessage.Local.CouldNotClear
         }
     }
 }

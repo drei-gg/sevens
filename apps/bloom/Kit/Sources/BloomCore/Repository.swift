@@ -119,10 +119,13 @@ public actor BloomRepository {
         archive: BloomCodec.string(read()), includeContacts: contacts, includeNotes: notes
       ).utf8)
   }
-  public func report(from: String, to: String, contacts: Bool, notes: Bool) throws -> String {
+  /// Text and PDF reports print temperatures in the unit the app shows; CSV stays in Celsius.
+  public func report(from: String, to: String, contacts: Bool, notes: Bool, fahrenheit: Bool)
+    throws -> String
+  {
     try bloomReport(
       archive: BloomCodec.string(read()), from: from, to: to, includeContacts: contacts,
-      includeNotes: notes)
+      includeNotes: notes, fahrenheit: fahrenheit)
   }
   public func seal(password: String) throws -> Data {
     Data(try bloomSeal(archive: BloomCodec.string(read()), password: password))

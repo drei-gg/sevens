@@ -265,7 +265,7 @@ class BloomTest {
 
     @Test
     fun editsSurviveActivityRecreationAndSaveThroughRust() {
-        // Run on the explicitly unlocked personal fixture; production gates remain in SevenKit.
+        // Needs adding records: the generic build is unlocked, the personal fixture explicitly so.
         ui.waitUntil(15000) {
             ui.onAllNodesWithText("Log today").fetchSemanticsNodes().isNotEmpty()
         }
@@ -419,7 +419,7 @@ class BloomTest {
             model = androidx.lifecycle.ViewModelProvider(ui.activity)[BloomModel::class.java]
             val text = (1..200).joinToString("\n") { "Observation $it: full report line" }
             // As if the picker returned this document for a prepared export.
-            model.exports.prepare(PendingExport("report.pdf", reportBytes(text, "pdf")))
+            model.exports.prepare(PendingExport("report.pdf", reportBytes(text, "pdf", context.getString(R.string.report_page))))
             model.picked(android.net.Uri.fromFile(file))
         }
         ui.waitUntil(15000) { !model.busy.value && file.exists() }

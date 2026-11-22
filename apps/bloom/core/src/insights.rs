@@ -12,7 +12,14 @@ pub struct Cycle {
     pub length: Option<i32>,
     pub bleeding_days: i32,
     pub excluded_reason: Option<String>,
+    /// Explicit period starts that fell within [`JOIN_DAYS`] of this cycle's start. They are kept as
+    /// entered but counted as part of this period, so the apps can say so on those days.
+    #[serde(default)]
+    pub joined: Vec<String>,
 }
+/// An explicit start fewer than this many days after the previous period's start joins that period
+/// (as Clue and Apple Health do) instead of creating an implausibly short cycle.
+pub const JOIN_DAYS: i32 = 10;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SymptomStat {
     pub name: String,
@@ -67,7 +74,15 @@ pub fn cycles(a: &Archive) -> Result<Vec<Cycle>> {
     let mut out: Vec<Cycle> = vec![];
     let mut prev: Option<&str> = None;
     for d in days {
-        if prev.is_none() || d.period_start || time::distance(prev.unwrap(), &d.day)? > 2 {
+        let joins = match out.last() {
+            Some(last) if d.period_start => time::distance(&last.start, &d.day)? < JOIN_DAYS,
+            _ => false,
+        };
+        if joins {
+            let last = out.last_mut().expect("joins needs a previous cycle");
+            last.bleeding_days += 1;
+            last.joined.push(d.day.clone());
+        } else if prev.is_none() || d.period_start || time::distance(prev.unwrap(), &d.day)? > 2 {
             if let Some(last) = out.last_mut() {
                 last.length = Some(time::distance(&last.start, &d.day)?);
             }
@@ -76,6 +91,7 @@ pub fn cycles(a: &Archive) -> Result<Vec<Cycle>> {
                 length: None,
                 bleeding_days: 1,
                 excluded_reason: None,
+                joined: vec![],
             });
         } else if let Some(last) = out.last_mut() {
             last.bleeding_days += 1;

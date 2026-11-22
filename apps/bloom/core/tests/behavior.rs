@@ -256,6 +256,7 @@ fn reports_default_to_no_intimate_notes() {
         "2026-11-30".into(),
         false,
         false,
+        false,
     )
     .unwrap();
     assert!(!r.contains("secret") && !r.contains("private activity"));
@@ -425,6 +426,7 @@ fn timed_events_keep_all_values_but_count_a_symptom_day_once() {
         "2026-11-30".into(),
         false,
         false,
+        false,
     )
     .unwrap();
     assert_eq!(report.matches("symptom Focused").count(), 2);
@@ -584,9 +586,18 @@ fn doses_that_follow_the_phone_are_wall_clock_times() {
     let mut a = Archive::default();
     a.plans.push(plan());
     let r = schedule::reminders(&a, NOW, "UTC").unwrap();
-    assert!(!r.is_empty() && r.iter().all(|r| r.floating), "a plan that follows the phone floats");
+    assert!(
+        !r.is_empty() && r.iter().all(|r| r.floating),
+        "a plan that follows the phone floats"
+    );
     a.plans[0].fixed_zone = true;
-    assert!(schedule::reminders(&a, NOW, "UTC").unwrap().iter().all(|r| !r.floating), "a fixed-zone plan is an instant");
+    assert!(
+        schedule::reminders(&a, NOW, "UTC")
+            .unwrap()
+            .iter()
+            .all(|r| !r.floating),
+        "a fixed-zone plan is an instant"
+    );
     a.plans[0].fixed_zone = false;
     let first = &schedule::reminders(&a, NOW, "UTC").unwrap()[0];
     let o = first.dose.clone().unwrap();
@@ -604,7 +615,9 @@ fn doses_that_follow_the_phone_are_wall_clock_times() {
     let again = snoozed.iter().find(|r| r.id == first.id).unwrap();
     assert!(!again.floating, "a snooze is an instant");
     // Old payloads without the field still decode.
-    let old: schedule::Reminder = serde_json::from_str(r#"{"id":"bloom.x","at":1,"title":"t","body":"b","dose":null}"#).unwrap();
+    let old: schedule::Reminder =
+        serde_json::from_str(r#"{"id":"bloom.x","at":1,"title":"t","body":"b","dose":null}"#)
+            .unwrap();
     assert!(!old.floating);
 }
 #[test]
@@ -680,4 +693,146 @@ fn temperatures_convert_for_display_and_entry() {
     assert!(bloom_temperature_celsius(37.0, true).is_err()); // A Celsius value typed as °F.
     assert!(bloom_temperature_celsius(98.6, false).is_err());
     assert!(bloom_temperature_celsius(f64::NAN, false).is_err());
+}
+#[test]
+fn a_start_nine_days_after_the_last_joins_that_period() {
+    let mut a = Archive::default();
+    for d in ["2026-09-01", "2026-09-29", "2026-10-27", "2026-11-05"] {
+        a.days.push(day(d, "medium"));
+    }
+    let d = insights::dashboard(&a, NOW, "UTC").unwrap();
+    assert_eq!(d.cycles.len(), 3);
+    assert_eq!(d.lengths, vec![28, 28]);
+    let last = d.cycles.last().unwrap();
+    assert_eq!(last.start, "2026-10-27");
+    assert_eq!(last.joined, vec!["2026-11-05".to_string()]);
+    assert_eq!(last.bleeding_days, 2);
+    // The early start no longer produces a 9-day cycle that blanks the estimate.
+    assert_eq!(d.next_period.as_deref(), Some("2026-11-24"));
+    // The stored record stays as entered.
+    assert!(
+        a.days
+            .iter()
+            .find(|x| x.day == "2026-11-05")
+            .unwrap()
+            .period_start
+    );
+}
+#[test]
+fn a_start_ten_days_after_the_last_begins_a_cycle() {
+    let mut a = Archive::default();
+    for d in ["2026-10-27", "2026-11-06"] {
+        a.days.push(day(d, "medium"));
+    }
+    let cycles = insights::cycles(&a).unwrap();
+    assert_eq!(cycles.len(), 2);
+    assert_eq!(cycles[0].length, Some(10));
+    assert!(cycles.iter().all(|c| c.joined.is_empty()));
+}
+#[test]
+fn a_timed_start_joins_and_flow_after_it_continues_the_period() {
+    let mut a = Archive::default();
+    a.days.push(day("2026-11-01", "light"));
+    let mut o = observation("flow", "", NOW - 9 * 86400); // 2026-11-08
+    o.value = "medium".into();
+    o.level = None;
+    o.period_start = true;
+    a = apply(&a, "observation", json!(o), true).unwrap();
+    let mut next = day("2026-11-09", "light");
+    next.period_start = false;
+    a.days.push(next);
+    let cycles = insights::cycles(&a).unwrap();
+    assert_eq!(cycles.len(), 1);
+    assert_eq!(cycles[0].joined, vec!["2026-11-08".to_string()]);
+    assert_eq!(cycles[0].bleeding_days, 3);
+}
+#[test]
+fn moving_an_earlier_start_separates_or_joins_a_later_one() {
+    let mut a = Archive::default();
+    a.days.push(day("2026-10-01", "medium"));
+    a.days.push(day("2026-10-25", "medium"));
+    a.days.push(day("2026-11-03", "medium"));
+    let cycles = insights::cycles(&a).unwrap();
+    assert_eq!(cycles.len(), 2);
+    assert_eq!(cycles[1].joined, vec!["2026-11-03".to_string()]);
+    // Correcting the second start a day earlier leaves the third start ten days later: a cycle.
+    let mut moved = a.clone();
+    moved.days[1].day = "2026-10-24".into();
+    let cycles = insights::cycles(&moved).unwrap();
+    assert_eq!(cycles.len(), 3);
+    assert_eq!(cycles[1].length, Some(10));
+    assert!(cycles.iter().all(|c| c.joined.is_empty()));
+    // Moving the third start closer joins it again; removing the second makes it a cycle start.
+    let mut moved = a.clone();
+    moved.days[2].day = "2026-10-30".into();
+    assert_eq!(
+        insights::cycles(&moved).unwrap()[1].joined,
+        vec!["2026-10-30".to_string()]
+    );
+    let mut removed = a.clone();
+    removed.days.remove(1);
+    let cycles = insights::cycles(&removed).unwrap();
+    assert_eq!(cycles.len(), 2);
+    assert_eq!(cycles[0].length, Some(33));
+    assert!(cycles.iter().all(|c| c.joined.is_empty()));
+}
+#[test]
+fn reports_print_the_shown_unit_and_csv_stays_celsius() {
+    let mut a = Archive::default();
+    let mut d = day("2026-11-10", "none");
+    d.bbt = Some(36.5);
+    a.days.push(d);
+    let mut o = observation("temperature", "", NOW - 3600);
+    o.number = Some(37.0);
+    o.level = None;
+    a.observations.push(o);
+    let s = serde_json::to_string(&a).unwrap();
+    let report = |fahrenheit| {
+        bloom_report(
+            s.clone(),
+            "2026-11-01".into(),
+            "2026-11-30".into(),
+            false,
+            false,
+            fahrenheit,
+        )
+        .unwrap()
+    };
+    let f = report(true);
+    assert!(f.contains("BBT: 97.70 °F"), "{f}");
+    assert!(f.contains("measured 98.60 °F"), "{f}");
+    assert!(!f.contains("°C"));
+    let c = report(false);
+    assert!(c.contains("BBT: 36.50 °C") && c.contains("measured 37.00 °C"));
+    assert!(!c.contains("°F"));
+    let csv = bloom_csv(s, false, false).unwrap();
+    let mut lines = csv.lines();
+    assert_eq!(
+        lines.next(),
+        Some("type,id,date_or_time,details,temperature_c,notes")
+    );
+    let rows: Vec<_> = lines.collect();
+    assert!(
+        rows[0].starts_with("\"day\"") && rows[0].ends_with(",\"36.5\",\"\""),
+        "{}",
+        rows[0]
+    );
+    assert!(rows[1].starts_with("\"observation\"") && rows[1].ends_with(",\"37\",\"\""));
+}
+#[test]
+fn reports_list_a_joined_start_under_its_period() {
+    let mut a = Archive::default();
+    a.days.push(day("2026-11-01", "medium"));
+    a.days.push(day("2026-11-07", "light"));
+    let r = bloom_report(
+        json!(a).to_string(),
+        "2026-11-01".into(),
+        "2026-11-30".into(),
+        false,
+        false,
+        false,
+    )
+    .unwrap();
+    assert!(r.contains("2026-11-01: 2 logged bleeding days"), "{r}");
+    assert!(r.contains("2026-11-07: marked start counted as part of this period"));
 }

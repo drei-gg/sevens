@@ -111,7 +111,7 @@ class BloomGlanceWidget : GlanceAppWidget() {
             Spacer(GlanceModifier.height(8.dp))
             if (!snapshot.enabled) {
                 Text(
-                    "Your private journal",
+                    context.getString(R.string.widget_placeholder),
                     style =
                         TextStyle(
                             color = GlanceTheme.colors.onSurface,
@@ -120,13 +120,13 @@ class BloomGlanceWidget : GlanceAppWidget() {
                         ),
                 )
                 Text(
-                    "Open the app",
+                    context.getString(R.string.widget_open_app),
                     style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 14.sp),
                 )
             } else {
                 snapshot.cycleDay?.let {
                     Text(
-                        "Cycle day $it",
+                        context.getString(R.string.widget_cycle_day, it),
                         style =
                             TextStyle(
                                 color = GlanceTheme.colors.onSurface,
@@ -137,7 +137,7 @@ class BloomGlanceWidget : GlanceAppWidget() {
                 }
                 snapshot.nextReminder?.let { at ->
                     Text(
-                        "Next reminder",
+                        context.getString(R.string.widget_next),
                         style =
                             TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 14.sp),
                     )
@@ -147,7 +147,12 @@ class BloomGlanceWidget : GlanceAppWidget() {
                     val shown =
                         if (day == java.time.LocalDate.now()) time
                         else
-                            "${android.text.format.DateFormat.getMediumDateFormat(context).format(date)} · $time"
+                            context.getString(
+                                R.string.pair,
+                                android.text.format.DateFormat.getMediumDateFormat(context)
+                                    .format(date),
+                                time,
+                            )
                     Text(
                         shown,
                         style =
@@ -159,7 +164,7 @@ class BloomGlanceWidget : GlanceAppWidget() {
                     )
                 }
                     ?: Text(
-                        "Open your journal",
+                        context.getString(R.string.widget_open_journal),
                         style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 18.sp),
                     )
             }
