@@ -14,6 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -35,7 +37,10 @@ fun SevenTopBar(
         navigationIcon = {
             if (onBack != null)
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back")
+                    Icon(
+                        Icons.AutoMirrored.Outlined.ArrowBack,
+                        stringResource(R.string.seven_back),
+                    )
                 }
         },
         actions = actions,
@@ -63,33 +68,47 @@ fun SevenAbout(coreVersion: String? = null, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var notices by rememberSaveable { mutableStateOf(false) }
     val status =
-        if (purchase.sourceBuild) "Built from source: everything is unlocked."
-        else entitlement.statusLine(System.currentTimeMillis(), content.notStartedStatus)
+        if (purchase.sourceBuild) stringResource(R.string.seven_about_source_build_status)
+        else
+            entitlement.statusLine(
+                LocalResources.current,
+                System.currentTimeMillis(),
+                content.notStartedStatus,
+            )
     val version = remember {
         val info = context.packageManager.getPackageInfo(context.packageName, 0)
         "${info.versionName} (${PackageInfoCompat.getLongVersionCode(info)})"
     }
+    // Section rows are built outside composition, so their words are read here.
+    val unlockTitle = purchase.unlockTitle()
+    val restoreLabel = stringResource(R.string.seven_restore_purchases)
+    val beforeYouBuyLabel = stringResource(R.string.seven_before_you_buy)
+    val versionLabel = stringResource(R.string.seven_about_version)
+    val coreLabel = stringResource(R.string.seven_about_core)
+    val licensesLabel = stringResource(R.string.seven_licenses)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(Space.l)) {
         Section(
-            title = if (purchase.sourceBuild) "Edition" else "Trial and unlock",
-            footer = purchase.message,
+            title =
+                stringResource(
+                    if (purchase.sourceBuild) R.string.seven_about_edition
+                    else R.string.seven_about_trial_unlock
+                ),
+            footer = purchase.messageText(),
         ) {
             item(content.unlock.appName, supporting = status)
             if (entitlement != Entitlement.Unlocked) {
-                action(purchase.unlockTitle()) { gate.offer() }
-                action("Restore purchases", enabled = !purchase.busy) { store.restore() }
+                action(unlockTitle) { gate.offer() }
+                action(restoreLabel, enabled = !purchase.busy) { store.restore() }
             }
-            item("Before you buy", onClick = gate::beforeYouBuy)
+            item(beforeYouBuyLabel, onClick = gate::beforeYouBuy)
         }
         Section(
-            title = "About",
-            footer =
-                "Code is GPL-3.0; the source and full notices are in the public repository. " +
-                    "The official name and icon are separately licensed trademarks.",
+            title = stringResource(R.string.seven_about),
+            footer = stringResource(R.string.seven_about_footer),
         ) {
-            item("Version", version)
-            coreVersion?.let { item("Core", it) }
-            item("Open-source licenses", onClick = { notices = true })
+            item(versionLabel, version)
+            coreVersion?.let { item(coreLabel, it) }
+            item(licensesLabel, onClick = { notices = true })
         }
     }
     if (notices) NoticesDialog { notices = false }
@@ -113,9 +132,9 @@ fun NoticesDialog(onClose: () -> Unit) {
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
-                    title = { Text("Open-source licenses") },
+                    title = { Text(stringResource(R.string.seven_licenses)) },
                     navigationIcon = {
-                        IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, "Close") }
+                        IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, stringResource(R.string.seven_close)) }
                     },
                     colors =
                         TopAppBarDefaults.topAppBarColors(

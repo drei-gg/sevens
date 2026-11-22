@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -445,10 +446,12 @@ private fun PickerField(
 ) {
     // A single real button target works for touch, keyboard and TalkBack. A read-only text
     // field's PressInteraction alone does not expose an accessibility click action.
+    val chooseLabel = stringResource(R.string.seven_choose_label, label)
+    val description = stringResource(R.string.seven_picker_value, label, value)
     Box(
         modifier
-            .clickable(role = Role.Button, onClickLabel = "Choose $label", onClick = onOpen)
-            .semantics { contentDescription = "$label, $value" }
+            .clickable(role = Role.Button, onClickLabel = chooseLabel, onClick = onOpen)
+            .semantics { contentDescription = description }
     ) {
         OutlinedTextField(
             value,
@@ -502,7 +505,7 @@ fun DateTimeField(
                 }
                 if (withTime)
                     PickerField(
-                        "Time",
+                        stringResource(R.string.seven_time),
                         SevenFormat.time(at, h24),
                         Icons.Outlined.Schedule,
                         Modifier.fillMaxWidth().testTag("$label-time"),
@@ -522,7 +525,7 @@ fun DateTimeField(
                 }
                 if (withTime)
                     PickerField(
-                        "Time",
+                        stringResource(R.string.seven_time),
                         SevenFormat.time(at, h24),
                         Icons.Outlined.Schedule,
                         Modifier.weight(1f).testTag("$label-time"),
@@ -554,11 +557,11 @@ fun DateTimeField(
             // The modal calendar clips entire weeks in a short window. Keep Material's
             // calendar/input modes, with a scrolling body and actions outside the IME viewport.
             FullScreenForm(
-                "Choose date",
+                stringResource(R.string.seven_choose_date),
                 { pickDate = false },
                 confirm,
                 saveEnabled = state.selectedDateMillis != null,
-                saveLabel = "OK",
+                saveLabel = stringResource(R.string.seven_ok),
             ) {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                     DatePicker(state, Modifier.widthIn(max = 480.dp).testTag("seven-date-picker"))
@@ -569,10 +572,14 @@ fun DateTimeField(
                 onDismissRequest = { pickDate = false },
                 confirmButton = {
                     TextButton(onClick = confirm, enabled = state.selectedDateMillis != null) {
-                        Text("OK")
+                        Text(stringResource(R.string.seven_ok))
                     }
                 },
-                dismissButton = { TextButton(onClick = { pickDate = false }) { Text("Cancel") } },
+                dismissButton = {
+                    TextButton(onClick = { pickDate = false }) {
+                        Text(stringResource(R.string.seven_cancel))
+                    }
+                },
             ) {
                 DatePicker(state, Modifier.testTag("seven-date-picker"))
             }
@@ -645,14 +652,20 @@ private fun SevenTimePicker(
             IconButton(onClick = { keyboard = !keyboard }) {
                 Icon(
                     if (keyboard) Icons.Outlined.Schedule else Icons.Outlined.Keyboard,
-                    if (keyboard) "Use clock" else "Type time",
+                    stringResource(
+                        if (keyboard) R.string.seven_use_clock else R.string.seven_type_time
+                    ),
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { confirm(state.hour, state.minute) }) { Text("OK") }
+            TextButton(onClick = { confirm(state.hour, state.minute) }) {
+                Text(stringResource(R.string.seven_ok))
+            }
         },
-        dismissButton = { TextButton(onClick = close) { Text("Cancel") } },
+        dismissButton = {
+            TextButton(onClick = close) { Text(stringResource(R.string.seven_cancel)) }
+        },
     ) {
         BoxWithConstraints {
             // Material measures its content before adding title/actions. Reserve that chrome
@@ -758,7 +771,7 @@ fun SearchInput(
         trailingIcon = {
             if (state.text.isNotEmpty())
                 IconButton(onClick = { state.edit { replace(0, length, "") } }) {
-                    Icon(Icons.Outlined.Close, "Clear search")
+                    Icon(Icons.Outlined.Close, stringResource(R.string.seven_clear_search))
                 }
         },
     )
@@ -778,7 +791,7 @@ fun FullScreenForm(
     onSave: () -> Unit,
     busy: Boolean = false,
     saveEnabled: Boolean = true,
-    saveLabel: String = "Save",
+    saveLabel: String = stringResource(R.string.seven_save),
     confirmDiscard: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -816,7 +829,7 @@ fun FullScreenForm(
                             enabled = !busy,
                             modifier = Modifier.testTag("editor-cancel"),
                         ) {
-                            Icon(Icons.Outlined.Close, "Close")
+                            Icon(Icons.Outlined.Close, stringResource(R.string.seven_close))
                         }
                     },
                     actions = {

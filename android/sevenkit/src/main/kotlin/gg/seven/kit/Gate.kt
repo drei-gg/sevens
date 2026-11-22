@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -141,11 +142,12 @@ fun Gated(feature: String? = null, content: @Composable () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            feature?.let { "$it is part of the unlock." } ?: "This is part of the unlock.",
+            feature?.let { stringResource(R.string.seven_gate_feature_part, it) }
+                ?: stringResource(R.string.seven_gate_part),
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
         )
-        Button(onClick = { gate.offer(feature) }) { Text("See what the unlock adds") }
+        Button(onClick = { gate.offer(feature) }) { Text(stringResource(R.string.seven_gate_see_unlock)) }
     }
 }
 
@@ -245,17 +247,23 @@ fun BeforeYouBuyScreen(content: BeforeYouBuyContent, onFinish: () -> Unit) {
                                     },
                                     modifier = Modifier.fillMaxWidth().testTag("seven-start-trial"),
                                 ) {
-                                    Text(content.startTrialLabel)
+                                    Text(
+                                        content.startTrialLabel
+                                            ?: stringResource(R.string.seven_start_trial)
+                                    )
                                 }
                                 Button(
                                     onClick = ::finish,
                                     modifier = Modifier.fillMaxWidth().testTag("seven-look-around"),
                                 ) {
-                                    Text(content.lookAroundLabel)
+                                    Text(
+                                        content.lookAroundLabel
+                                            ?: stringResource(R.string.seven_look_around)
+                                    )
                                 }
                             } else
                                 Button(onClick = ::finish, modifier = Modifier.fillMaxWidth()) {
-                                    Text("Done")
+                                    Text(stringResource(R.string.seven_done))
                                 }
                         }
                     }
@@ -271,7 +279,8 @@ fun BeforeYouBuyScreen(content: BeforeYouBuyContent, onFinish: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(Space.m),
             ) {
                 Heading(content.title)
-                content.resolved(purchase.price).forEach {
+                val noPrice = stringResource(R.string.seven_price_later)
+                content.resolved(purchase.price, noPrice).forEach {
                     Text(it, style = MaterialTheme.typography.bodyLarge)
                 }
             }
@@ -303,10 +312,10 @@ fun UnlockSheet(feature: String?, onDismiss: () -> Unit) {
                 .padding(bottom = Space.l),
             verticalArrangement = Arrangement.spacedBy(Space.l),
         ) {
-            Heading("What the unlock adds")
+            Heading(stringResource(R.string.seven_unlock_heading))
             feature?.let {
                 Text(
-                    "$it is part of the unlock.",
+                    stringResource(R.string.seven_gate_feature_part, it),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -314,13 +323,13 @@ fun UnlockSheet(feature: String?, onDismiss: () -> Unit) {
             Lines(content.features)
             val status =
                 when (val e = entitlement) {
-                    is Entitlement.Expired -> "Your free 7 days ended on ${day(e.endedAt)}."
-                    Entitlement.Pending ->
-                        "Waiting for approval. You’ll get access as soon as it comes through."
+                    is Entitlement.Expired ->
+                        stringResource(R.string.seven_unlock_trial_ended_on, day(e.endedAt))
+                    Entitlement.Pending -> stringResource(R.string.seven_unlock_pending)
                     else -> null
                 }
             // Play's own pending line would repeat the status above.
-            val message = purchase.message.takeUnless { entitlement == Entitlement.Pending }
+            val message = purchase.messageText().takeUnless { entitlement == Entitlement.Pending }
             listOfNotNull(status, message).forEach { Note(it) }
             Actions {
                 if (entitlement == Entitlement.NotStarted)
@@ -329,7 +338,7 @@ fun UnlockSheet(feature: String?, onDismiss: () -> Unit) {
                         enabled = !purchase.busy,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("Start my free 7 days")
+                        Text(stringResource(R.string.seven_start_trial))
                     }
                 UnlockButton { context.activity()?.let(store::unlock) }
                 if (purchase.busy) LoadingIndicator(Modifier.align(Alignment.CenterHorizontally))
@@ -338,11 +347,11 @@ fun UnlockSheet(feature: String?, onDismiss: () -> Unit) {
                     enabled = !purchase.busy,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Restore purchases")
+                    Text(stringResource(R.string.seven_restore_purchases))
                 }
                 // Same size and shape as the buy button, which alone is filled (SPEC §13).
                 OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                    Text("Not now")
+                    Text(stringResource(R.string.seven_not_now))
                 }
             }
         }
@@ -376,15 +385,21 @@ fun TrialEndedSheet(content: TrialEndedContent, onDismiss: () -> Unit) {
                 .padding(bottom = Space.l),
             verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
-            Heading("Your free 7 days have ended")
-            Text("What stays free", style = MaterialTheme.typography.titleMedium)
+            Heading(stringResource(R.string.seven_trial_ended_heading))
+            Text(
+                stringResource(R.string.seven_trial_ended_still_free),
+                style = MaterialTheme.typography.titleMedium,
+            )
             Lines(content.stillFree)
-            Text("What the unlock keeps", style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.seven_trial_ended_unlock_keeps),
+                style = MaterialTheme.typography.titleMedium,
+            )
             Lines(content.unlockKeeps)
             Actions {
                 UnlockButton { context.activity()?.let(store::unlock) }
                 OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                    Text("Not now")
+                    Text(stringResource(R.string.seven_not_now))
                 }
             }
         }

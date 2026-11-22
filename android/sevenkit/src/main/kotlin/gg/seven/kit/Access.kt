@@ -2,6 +2,10 @@ package gg.seven.kit
 
 import android.app.Activity
 import android.content.Context
+import android.content.res.Resources
+import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -16,7 +20,13 @@ data class PurchaseState(
     val loaded: Boolean = false,
     /** A build from the public source: everything unlocked, nothing to buy (owned is true). */
     val sourceBuild: Boolean = false,
+    /** SevenKit's own [message], as a string resource, so it follows the device language. */
+    @StringRes val messageRes: Int? = null,
 )
+
+/** The source's note for the person: [PurchaseState.message], else [PurchaseState.messageRes]. */
+@Composable
+fun PurchaseState.messageText(): String? = message ?: messageRes?.let { stringResource(it) }
 
 interface PurchaseSource {
     val state: StateFlow<PurchaseState>
@@ -32,7 +42,7 @@ class LocalPurchaseSource : PurchaseSource {
     override val state =
         MutableStateFlow(
             PurchaseState(
-                message = "Purchases are available in the Google Play edition.",
+                messageRes = R.string.seven_purchase_local,
                 loaded = true,
             )
         )
@@ -55,9 +65,7 @@ class SourceBuildPurchaseSource : PurchaseSource {
                 owned = true,
                 loaded = true,
                 sourceBuild = true,
-                message =
-                    "Built from the public source, so everything is unlocked. The Google Play " +
-                        "edition is the same app; buying it there pays for its upkeep.",
+                messageRes = R.string.seven_purchase_source_build,
             )
         )
 
@@ -95,14 +103,16 @@ class AccessStore(context: Context, private val personalUnlock: Boolean) {
     fun canCreate(purchase: PurchaseState, now: Long) =
         personalUnlock || purchase.owned || remaining(now) > 0
 
-    fun label(purchase: PurchaseState, now: Long) =
+    fun label(resources: Resources, purchase: PurchaseState, now: Long): String =
         when {
-            personalUnlock -> "Personal build · unlocked"
-            purchase.sourceBuild -> "Built from source · everything unlocked"
-            purchase.owned -> "Unlocked · paid once"
-            remaining(now) > 0 ->
-                "Free trial · ${(remaining(now) + 86_399_999) / 86_400_000} days left"
-            trialStart == 0L -> "Try everything free for seven days"
-            else -> "Trial ended · your records stay yours"
+            personalUnlock -> resources.getString(R.string.seven_access_personal)
+            purchase.sourceBuild -> resources.getString(R.string.seven_access_source_build)
+            purchase.owned -> resources.getString(R.string.seven_access_owned)
+            remaining(now) > 0 -> {
+                val days = ((remaining(now) + 86_399_999) / 86_400_000).toInt()
+                resources.getQuantityString(R.plurals.seven_access_trial_days_left, days, days)
+            }
+            trialStart == 0L -> resources.getString(R.string.seven_access_not_started)
+            else -> resources.getString(R.string.seven_access_trial_ended)
         }
 }

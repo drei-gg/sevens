@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SevenKit's own words, shared by all seven apps. English ships; translations arrive as
+  values-<lang>/strings.xml in community pull requests. Keys carry the seven_ prefix so they never
+  collide with an app's resources.
+-->
+<resources>
+    <!-- Shared actions -->
+    <string name="seven_back">Back</string>
+    <string name="seven_close">Close</string>
+    <string name="seven_done">Done</string>
+    <string name="seven_ok">OK</string>
+    <string name="seven_cancel">Cancel</string>
+    <string name="seven_save">Save</string>
+    <string name="seven_set">Set</string>
+    <string name="seven_clear">Clear</string>
+    <string name="seven_not_now">Not now</string>
+
+    <!-- Purchase sources (PurchaseState.message) -->
+    <string name="seven_purchase_local">Purchases are available in the Google Play edition.</string>
+    <string name="seven_purchase_source_build">Built from the public source, so everything is unlocked. The Google Play edition is the same app; buying it there pays for its upkeep.</string>
+
+    <!-- AccessStore.label -->
+    <string name="seven_access_personal">Personal build · unlocked</string>
+    <string name="seven_access_source_build">Built from source · everything unlocked</string>
+    <string name="seven_access_owned">Unlocked · paid once</string>
+    <plurals name="seven_access_trial_days_left">
+        <item quantity="one">Free trial · %1$d day left</item>
+        <item quantity="other">Free trial · %1$d days left</item>
+    </plurals>
+    <string name="seven_access_not_started">Try everything free for seven days</string>
+    <string name="seven_access_trial_ended">Trial ended · your records stay yours</string>
+
+    <!-- The unlock and the trial (Gate, Store) -->
+    <string name="seven_unlock">Unlock</string>
+    <!-- %1$s: the Play price, such as $7.00 -->
+    <string name="seven_unlock_price">Unlock · %1$s</string>
+    <string name="seven_start_trial">Start my free 7 days</string>
+    <string name="seven_look_around">Look around first</string>
+    <string name="seven_restore_purchases">Restore purchases</string>
+    <string name="seven_price_later">Then a one-time price, if you want to keep it.</string>
+    <!-- %1$s: the name of a paid feature, such as Peek -->
+    <string name="seven_gate_feature_part">%1$s is part of the unlock.</string>
+    <string name="seven_gate_part">This is part of the unlock.</string>
+    <string name="seven_gate_see_unlock">See what the unlock adds</string>
+    <string name="seven_unlock_heading">What the unlock adds</string>
+    <!-- %1$s: a date -->
+    <string name="seven_unlock_trial_ended_on">Your free 7 days ended on %1$s.</string>
+    <string name="seven_unlock_pending">Waiting for approval. You’ll get access as soon as it comes through.</string>
+    <string name="seven_trial_ended_heading">Your free 7 days have ended</string>
+    <string name="seven_trial_ended_still_free">What stays free</string>
+    <string name="seven_trial_ended_unlock_keeps">What the unlock keeps</string>
+
+    <!-- The trial status sentence (Entitlement.statusLine) -->
+    <string name="seven_status_not_started">Free trial not started.</string>
+    <!-- %1$d: today's day of the trial; %2$d: the trial's length in days; %3$s: its end date -->
+    <string name="seven_status_trial">Free trial: day %1$d of %2$d, ends %3$s.</string>
+    <string name="seven_status_expired">Free trial ended.</string>
+    <string name="seven_status_unlocked">Unlocked. Thank you.</string>
+    <string name="seven_status_pending">Waiting for approval of your purchase.</string>
+
+    <!-- Settings' shared sections (SevenAbout) -->
+    <string name="seven_about_source_build_status">Built from source: everything is unlocked.</string>
+    <string name="seven_about_edition">Edition</string>
+    <string name="seven_about_trial_unlock">Trial and unlock</string>
+    <string name="seven_before_you_buy">Before you buy</string>
+    <string name="seven_about">About</string>
+    <string name="seven_about_footer">Code is GPL-3.0; the source and full notices are in the public repository. The official name and icon are separately licensed trademarks.</string>
+    <string name="seven_about_version">Version</string>
+    <string name="seven_about_core">Core</string>
+    <string name="seven_licenses">Open-source licenses</string>
+
+    <!-- Form controls -->
+    <string name="seven_discard_title">Discard changes?</string>
+    <string name="seven_discard_text">Your unsaved changes will be lost.</string>
+    <string name="seven_discard">Discard</string>
+    <string name="seven_keep_editing">Keep editing</string>
+    <!-- %1$s: the setting's label -->
+    <string name="seven_edit_label">Edit %1$s</string>
+    <!-- %1$d–%2$d: the allowed range -->
+    <string name="seven_integer_range">%1$d–%2$d</string>
+    <!-- %1$d–%2$d: the allowed range; %3$d: the step between allowed values -->
+    <string name="seven_integer_range_step">%1$d–%2$d; increments of %3$d</string>
+    <string name="seven_not_recorded">Not recorded</string>
+    <!-- %1$s: the choice's title -->
+    <string name="seven_clear_label">Clear %1$s</string>
+    <!-- TalkBack name of one option: %1$s the choice's title, %2$s the option -->
+    <string name="seven_option_description">%1$s %2$s</string>
+
+    <!-- Pickers and search -->
+    <!-- %1$s: the field's label -->
+    <string name="seven_choose_label">Choose %1$s</string>
+    <!-- TalkBack name of a picker field: %1$s its label, %2$s the value shown -->
+    <string name="seven_picker_value">%1$s, %2$s</string>
+    <string name="seven_time">Time</string>
+    <string name="seven_choose_date">Choose date</string>
+    <string name="seven_use_clock">Use clock</string>
+    <string name="seven_type_time">Type time</string>
+    <string name="seven_clear_search">Clear search</string>
+
+    <!-- Home-screen widget setup -->
+    <string name="seven_widget_section">Home-screen widget</string>
+    <!-- %1$s: the widget's name -->
+    <string name="seven_widget_add">Add %1$s widget</string>
+    <string name="seven_widget_confirm">Confirm placement in your launcher’s widget prompt.</string>
+    <string name="seven_widget_manual">Long-press an empty space on your home screen, then choose Widgets.</string>
+    <!-- %1$s: the widget's name -->
+    <string name="seven_widget_manual_named">Long-press an empty space on your home screen, then choose Widgets and %1$s.</string>
+</resources>

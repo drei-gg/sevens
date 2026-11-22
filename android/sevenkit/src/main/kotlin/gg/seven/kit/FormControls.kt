@@ -9,8 +9,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
@@ -20,10 +22,14 @@ import androidx.compose.ui.unit.dp
 fun DiscardChangesDialog(onKeepEditing: () -> Unit, onDiscard: () -> Unit) {
     AlertDialog(
         onDismissRequest = onKeepEditing,
-        title = { Text("Discard changes?") },
-        text = { Text("Your unsaved changes will be lost.") },
-        confirmButton = { TextButton(onClick = onDiscard) { Text("Discard") } },
-        dismissButton = { TextButton(onClick = onKeepEditing) { Text("Keep editing") } },
+        title = { Text(stringResource(R.string.seven_discard_title)) },
+        text = { Text(stringResource(R.string.seven_discard_text)) },
+        confirmButton = {
+            TextButton(onClick = onDiscard) { Text(stringResource(R.string.seven_discard)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onKeepEditing) { Text(stringResource(R.string.seven_keep_editing)) }
+        },
     )
 }
 
@@ -47,7 +53,7 @@ fun IntegerSetting(
             Text(label, style = MaterialTheme.typography.labelMedium)
             Text(value.toString(), style = MaterialTheme.typography.titleLarge)
         }
-        Icon(Icons.Outlined.Edit, "Edit $label")
+        Icon(Icons.Outlined.Edit, stringResource(R.string.seven_edit_label, label))
     }
     if (editing) {
         var draft by rememberSaveable { mutableStateOf(value.toString()) }
@@ -62,8 +68,14 @@ fun IntegerSetting(
                 isError = draft.isNotEmpty() && !valid,
                 supportingText = {
                     Text(
-                        "${range.first}–${range.last}" +
-                            if (step > 1) "; increments of $step" else ""
+                        if (step > 1)
+                            stringResource(
+                                R.string.seven_integer_range_step,
+                                range.first,
+                                range.last,
+                                step,
+                            )
+                        else stringResource(R.string.seven_integer_range, range.first, range.last)
                     )
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -87,7 +99,7 @@ fun IntegerSetting(
                 onClose = { editing = false },
                 onSave = commit,
                 saveEnabled = valid && enabled,
-                saveLabel = "Set",
+                saveLabel = stringResource(R.string.seven_set),
             ) {
                 field()
             }
@@ -97,9 +109,15 @@ fun IntegerSetting(
                 title = { Text(label) },
                 text = field,
                 confirmButton = {
-                    TextButton(enabled = valid && enabled, onClick = commit) { Text("Set") }
+                    TextButton(enabled = valid && enabled, onClick = commit) {
+                        Text(stringResource(R.string.seven_set))
+                    }
                 },
-                dismissButton = { TextButton(onClick = { editing = false }) { Text("Cancel") } },
+                dismissButton = {
+                    TextButton(onClick = { editing = false }) {
+                        Text(stringResource(R.string.seven_cancel))
+                    }
+                },
             )
         }
     }
@@ -114,6 +132,8 @@ fun <T : Any> OptionalChoice(
     supporting: String? = null,
     onChange: (T?) -> Unit,
 ) {
+    val clearLabel = stringResource(R.string.seven_clear_label, title)
+    val resources = LocalResources.current
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -121,7 +141,7 @@ fun <T : Any> OptionalChoice(
                 Text(
                     supporting
                         ?: options.firstOrNull { it.first == selected }?.second
-                        ?: "Not recorded",
+                        ?: stringResource(R.string.seven_not_recorded),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -129,16 +149,20 @@ fun <T : Any> OptionalChoice(
             TextButton(
                 onClick = { onChange(null) },
                 enabled = selected != null,
-                modifier = Modifier.semantics { contentDescription = "Clear $title" },
+                modifier = Modifier.semantics { contentDescription = clearLabel },
             ) {
-                Text("Clear")
+                Text(stringResource(R.string.seven_clear))
             }
         }
         ConnectedChoice<T?>(
             options,
             selected,
             optionDescription = { value ->
-                "$title ${options.firstOrNull { it.first == value }?.second.orEmpty()}"
+                resources.getString(
+                    R.string.seven_option_description,
+                    title,
+                    options.firstOrNull { it.first == value }?.second.orEmpty(),
+                )
             },
             onSelect = onChange,
         )

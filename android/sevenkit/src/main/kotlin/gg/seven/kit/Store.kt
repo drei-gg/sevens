@@ -2,6 +2,9 @@ package gg.seven.kit
 
 import android.app.Activity
 import android.content.Context
+import android.content.res.Resources
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -106,7 +109,10 @@ fun canPurchase(purchase: PurchaseState, entitlement: Entitlement): Boolean =
         entitlement != Entitlement.Unlocked
 
 /** "Unlock · $7.00", or plain "Unlock" while the price hasn't loaded. */
-fun PurchaseState.unlockTitle(): String = price?.let { "Unlock · $it" } ?: "Unlock"
+@Composable
+fun PurchaseState.unlockTitle(): String =
+    price?.let { stringResource(R.string.seven_unlock_price, it) }
+        ?: stringResource(R.string.seven_unlock)
 
 internal fun day(millis: Long): String =
     Instant.ofEpochMilli(millis)
@@ -114,16 +120,22 @@ internal fun day(millis: Long): String =
         .format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
 
 /** The trial status sentence (iOS AboutSection status). */
-fun Entitlement.statusLine(now: Long, notStarted: String? = null): String =
+fun Entitlement.statusLine(resources: Resources, now: Long, notStarted: String? = null): String =
     when (this) {
-        Entitlement.NotStarted -> notStarted ?: "Free trial not started."
+        Entitlement.NotStarted ->
+            notStarted ?: resources.getString(R.string.seven_status_not_started)
         is Entitlement.Trial -> {
             val today = TrialMath.dayNumber(endsAt - TrialMath.TRIAL_MILLIS, now)
-            "Free trial: day $today of ${TrialMath.totalDays(TrialMath.TRIAL_MILLIS)}, ends ${day(endsAt)}."
+            resources.getString(
+                R.string.seven_status_trial,
+                today,
+                TrialMath.totalDays(TrialMath.TRIAL_MILLIS),
+                day(endsAt),
+            )
         }
-        is Entitlement.Expired -> "Free trial ended."
-        Entitlement.Unlocked -> "Unlocked. Thank you."
-        Entitlement.Pending -> "Waiting for approval of your purchase."
+        is Entitlement.Expired -> resources.getString(R.string.seven_status_expired)
+        Entitlement.Unlocked -> resources.getString(R.string.seven_status_unlocked)
+        Entitlement.Pending -> resources.getString(R.string.seven_status_pending)
     }
 
 /**
@@ -133,17 +145,20 @@ fun Entitlement.statusLine(now: Long, notStarted: String? = null): String =
 data class BeforeYouBuyContent(
     val title: String,
     val paragraphs: List<Paragraph>,
-    val startTrialLabel: String = "Start my free 7 days",
-    val lookAroundLabel: String = "Look around first",
+    /** The app's own wording, or SevenKit's "Start my free 7 days" when null. */
+    val startTrialLabel: String? = null,
+    /** The app's own wording, or SevenKit's "Look around first" when null. */
+    val lookAroundLabel: String? = null,
 ) {
     data class Paragraph(val text: String, val withoutPrice: String? = null)
 
-    fun resolved(price: String?): List<String> =
+    /** The paragraphs with the price filled in; [noPrice] stands in when neither is known. */
+    fun resolved(price: String?, noPrice: String): List<String> =
         paragraphs.map { p ->
             when {
                 PRICE !in p.text -> p.text
                 price != null -> p.text.replace(PRICE, price)
-                else -> p.withoutPrice ?: "Then a one-time price, if you want to keep it."
+                else -> p.withoutPrice ?: noPrice
             }
         }
 
