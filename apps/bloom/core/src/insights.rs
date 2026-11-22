@@ -13,12 +13,14 @@ pub struct Cycle {
     pub bleeding_days: i32,
     pub excluded_reason: Option<String>,
     /// Explicit period starts that fell within [`JOIN_DAYS`] of this cycle's start. They are kept as
-    /// entered but counted as part of this period, so the apps can say so on those days.
+    /// entered but counted as part of this period, so the apps can say so on those days. Flow-derived
+    /// bleeds within that window join too, without an entry.
     #[serde(default)]
     pub joined: Vec<String>,
 }
-/// An explicit start fewer than this many days after the previous period's start joins that period
-/// (as Clue and Apple Health do) instead of creating an implausibly short cycle.
+/// A new bleed (an explicit start, or flow after a gap of more than two days) fewer than this many
+/// days after the previous period's start joins that period, as in Clue and Apple Health, instead of
+/// creating an implausibly short cycle.
 pub const JOIN_DAYS: i32 = 10;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SymptomStat {
@@ -74,15 +76,23 @@ pub fn cycles(a: &Archive) -> Result<Vec<Cycle>> {
     let mut out: Vec<Cycle> = vec![];
     let mut prev: Option<&str> = None;
     for d in days {
+        // A new bleed is an explicit start or flow after a gap of more than two days.
+        let new_bleed = match prev {
+            None => true,
+            Some(p) => d.period_start || time::distance(p, &d.day)? > 2,
+        };
         let joins = match out.last() {
-            Some(last) if d.period_start => time::distance(&last.start, &d.day)? < JOIN_DAYS,
+            Some(last) if new_bleed => time::distance(&last.start, &d.day)? < JOIN_DAYS,
             _ => false,
         };
         if joins {
             let last = out.last_mut().expect("joins needs a previous cycle");
             last.bleeding_days += 1;
-            last.joined.push(d.day.clone());
-        } else if prev.is_none() || d.period_start || time::distance(prev.unwrap(), &d.day)? > 2 {
+            // Only a start the person marked gets a note; a flow-derived bleed simply continues.
+            if d.period_start {
+                last.joined.push(d.day.clone());
+            }
+        } else if new_bleed {
             if let Some(last) = out.last_mut() {
                 last.length = Some(time::distance(&last.start, &d.day)?);
             }

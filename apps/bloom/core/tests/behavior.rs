@@ -836,3 +836,52 @@ fn reports_list_a_joined_start_under_its_period() {
     assert!(r.contains("2026-11-01: 2 logged bleeding days"), "{r}");
     assert!(r.contains("2026-11-07: marked start counted as part of this period"));
 }
+#[test]
+fn flow_after_a_gap_within_ten_days_joins_the_period() {
+    let mut a = Archive::default();
+    for d in ["2026-09-01", "2026-09-29", "2026-10-27"] {
+        a.days.push(day(d, "medium"));
+    }
+    // Unmarked flow nine days after the last start, after a gap of more than two days.
+    let mut late = day("2026-11-05", "light");
+    late.period_start = false;
+    a.days.push(late);
+    let d = insights::dashboard(&a, NOW, "UTC").unwrap();
+    assert_eq!(d.cycles.len(), 3);
+    assert_eq!(d.lengths, vec![28, 28]);
+    let last = d.cycles.last().unwrap();
+    assert_eq!(last.bleeding_days, 2);
+    assert!(last.joined.is_empty()); // Nothing was marked, so there is no note.
+    assert_eq!(d.next_period.as_deref(), Some("2026-11-24"));
+}
+#[test]
+fn flow_after_a_gap_ten_days_later_begins_a_cycle() {
+    let mut a = Archive::default();
+    a.days.push(day("2026-10-27", "medium"));
+    let mut later = day("2026-11-06", "light");
+    later.period_start = false;
+    a.days.push(later);
+    let cycles = insights::cycles(&a).unwrap();
+    assert_eq!(cycles.len(), 2);
+    assert_eq!(cycles[0].length, Some(10));
+    // A bleed resuming within two days stays the same period, as before.
+    let mut a = Archive::default();
+    a.days.push(day("2026-10-27", "medium"));
+    let mut next = day("2026-10-29", "light");
+    next.period_start = false;
+    a.days.push(next);
+    assert_eq!(insights::cycles(&a).unwrap().len(), 1);
+}
+#[test]
+fn moving_a_start_regroups_a_flow_derived_bleed() {
+    let mut a = Archive::default();
+    a.days.push(day("2026-10-01", "medium"));
+    let mut bleed = day("2026-10-10", "light");
+    bleed.period_start = false;
+    a.days.push(bleed);
+    assert_eq!(insights::cycles(&a).unwrap().len(), 1);
+    a.days[0].day = "2026-09-30".into();
+    let cycles = insights::cycles(&a).unwrap();
+    assert_eq!(cycles.len(), 2);
+    assert_eq!(cycles[0].length, Some(10));
+}

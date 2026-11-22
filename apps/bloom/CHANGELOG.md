@@ -49,7 +49,7 @@
 
 ### Close starts, report units and localization groundwork — 22 November 2026
 
-- A period start marked fewer than 10 days after the previous start now counts as part of that period instead of a new cycle, so it no longer blanks estimates. The record is kept as entered; Calendar says "Counted as part of the period that started …" on that day and reports list it under its period.
+- A new bleed fewer than 10 days after the previous period's start, whether marked as a start or flow after a gap, now counts as part of that period instead of a new cycle, so it no longer blanks estimates. The record is kept as entered; Calendar says "Counted as part of the period that started …" on that day and reports list it under its period.
 - Text and PDF reports print temperatures in °C or °F, as the app shows them. CSV keeps Celsius and names it in a `temperature_c` column.
 - Android and Wear OS words now live in `strings.xml`, with plurals and locale-aware dates, times, weekdays and lists, ready for community translations. iOS gains a String Catalog for new strings.
 - Android: Android 11 or newer; strong biometrics or the device credential unlock the journal. The generic build is fully unlocked.
