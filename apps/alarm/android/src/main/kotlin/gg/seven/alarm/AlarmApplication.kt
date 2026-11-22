@@ -116,9 +116,8 @@ class AlarmReceiver : BroadcastReceiver() {
 
 /** Puts every alarm back after a reboot, an update, or a clock or time-zone change. */
 class RestoreReceiver : BroadcastReceiver() {
-    @android.annotation.SuppressLint("UnsafeProtectedBroadcastReceiver") // restoreReason checks it.
     override fun onReceive(context: Context, intent: Intent) {
-        val reason = restoreReason(intent) ?: return
+        val reason = restoreReason(intent.action) ?: return
         work(context) { engine ->
             if (!engine.ready.value) engine.reload()
             // After a clock or zone change an armed alarm's instant is stale, even if it looks live.

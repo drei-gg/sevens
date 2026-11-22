@@ -30,9 +30,12 @@ enum class RestoreReason {
         get() = this == CLOCK_CHANGED || this == ZONE_CHANGED
 }
 
-/** The [RestoreReason] for a system broadcast, or null for anything else. */
-fun restoreReason(intent: Intent?): RestoreReason? =
-    when (intent?.action) {
+/**
+ * The [RestoreReason] for a system broadcast's action, or null for anything else. Receivers pass
+ * `intent.action` so the check is visible where the broadcast arrives.
+ */
+fun restoreReason(action: String?): RestoreReason? =
+    when (action) {
         Intent.ACTION_LOCKED_BOOT_COMPLETED -> RestoreReason.LOCKED_BOOT
         Intent.ACTION_BOOT_COMPLETED -> RestoreReason.BOOT
         Intent.ACTION_MY_PACKAGE_REPLACED -> RestoreReason.PACKAGE_REPLACED

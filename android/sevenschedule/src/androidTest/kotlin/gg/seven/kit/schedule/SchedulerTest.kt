@@ -171,17 +171,17 @@ class SchedulerTest {
 
     @Test
     fun restoreReasonsAreRecognised() {
-        assertEquals(RestoreReason.LOCKED_BOOT, restoreReason(Intent(Intent.ACTION_LOCKED_BOOT_COMPLETED)))
-        assertEquals(RestoreReason.BOOT, restoreReason(Intent(Intent.ACTION_BOOT_COMPLETED)))
-        assertEquals(RestoreReason.PACKAGE_REPLACED, restoreReason(Intent(Intent.ACTION_MY_PACKAGE_REPLACED)))
-        assertTrue(restoreReason(Intent(Intent.ACTION_TIME_CHANGED))!!.clockMoved)
-        assertTrue(restoreReason(Intent(Intent.ACTION_TIMEZONE_CHANGED))!!.clockMoved)
-        assertFalse(restoreReason(Intent(Intent.ACTION_BOOT_COMPLETED))!!.clockMoved)
+        assertEquals(RestoreReason.LOCKED_BOOT, restoreReason(Intent.ACTION_LOCKED_BOOT_COMPLETED))
+        assertEquals(RestoreReason.BOOT, restoreReason(Intent.ACTION_BOOT_COMPLETED))
+        assertEquals(RestoreReason.PACKAGE_REPLACED, restoreReason(Intent.ACTION_MY_PACKAGE_REPLACED))
+        assertTrue(restoreReason(Intent.ACTION_TIME_CHANGED)!!.clockMoved)
+        assertTrue(restoreReason(Intent.ACTION_TIMEZONE_CHANGED)!!.clockMoved)
+        assertFalse(restoreReason(Intent.ACTION_BOOT_COMPLETED)!!.clockMoved)
         assertEquals(
             RestoreReason.EXACT_ACCESS_CHANGED,
-            restoreReason(Intent("android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED")),
+            restoreReason("android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"),
         )
-        assertNull(restoreReason(Intent("something.else")))
-        assertNull(restoreReason(null))
+        assertNull(restoreReason("something.else"))
+        assertNull(restoreReason(null as String?))
     }
 }
