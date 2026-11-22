@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,8 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.kit.DropdownField
 import gg.seven.kit.EmptyState
-import gg.seven.kit.SevenAbout
 import gg.seven.kit.Section
+import gg.seven.kit.SevenAbout
 import gg.seven.kit.Space
 import gg.seven.kit.item
 import gg.seven.kit.numeric
@@ -58,9 +57,9 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
     fun restore(document: ScanDocument) {
         working = true
         scope.launch {
-            model.restore(document)
+            val restored = model.restore(document)
             working = false
-            nav.tell("Restored “${document.title}”")
+            if (restored) nav.tell("Restored “${document.title}”")
         }
     }
     Scaffold(
@@ -89,7 +88,10 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
                             onClick = {},
                             shapes = ListItemDefaults.segmentedShapes(index, deleted.size),
                             modifier =
-                                Modifier.combinedClickable(onLongClickLabel = "Options", onLongClick = { menu = true }) {}
+                                Modifier.combinedClickable(
+                                        onLongClickLabel = "Options",
+                                        onLongClick = { menu = true },
+                                    ) {}
                                     .semantics {
                                         onLongClick("Options") {
                                             menu = true
@@ -97,24 +99,69 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
                                         }
                                     },
                             leadingContent = {
-                                PageThumbnail(document.pages.firstOrNull()?.let { model.repository.pageFile(document.id, it.id, deleted = true) }, document.pages.firstOrNull(), Modifier.width(44.dp), maxPixels = 160)
+                                PageThumbnail(
+                                    document.pages.firstOrNull()?.let {
+                                        model.repository.pageFile(
+                                            document.id,
+                                            it.id,
+                                            deleted = true,
+                                        )
+                                    },
+                                    document.pages.firstOrNull(),
+                                    Modifier.width(44.dp),
+                                    maxPixels = 160,
+                                )
                             },
-                            supportingContent = { Text(pageCount(document.pages.size), style = LocalTextStyle.current.numeric()) },
+                            supportingContent = {
+                                Text(
+                                    pageCount(document.pages.size),
+                                    style = LocalTextStyle.current.numeric(),
+                                )
+                            },
                             trailingContent = {
-                                OutlinedButton(onClick = { restore(document) }, enabled = !working, modifier = Modifier.testTag("trash.restore")) { Text("Restore") }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    OutlinedButton(
+                                        onClick = { restore(document) },
+                                        enabled = !working,
+                                        modifier = Modifier.testTag("trash.restore"),
+                                    ) {
+                                        Text("Restore")
+                                    }
+                                    IconButton(onClick = { menu = true }, enabled = !working) {
+                                        Icon(
+                                            Icons.Outlined.MoreVert,
+                                            "Actions for ${document.title}",
+                                        )
+                                    }
+                                }
                             },
                         ) {
                             Text(document.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
                         DropdownMenu(menu, onDismissRequest = { menu = false }) {
-                            DropdownMenuItem(text = { Text("Restore") }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Undo, null) }, onClick = {
-                                menu = false
-                                restore(document)
-                            })
+                            DropdownMenuItem(
+                                text = { Text("Restore") },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Undo, null) },
+                                onClick = {
+                                    menu = false
+                                    restore(document)
+                                },
+                            )
                             HorizontalDivider()
                             DropdownMenuItem(
-                                text = { Text("Delete permanently", color = MaterialTheme.colorScheme.error) },
-                                leadingIcon = { Icon(Icons.Outlined.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
+                                text = {
+                                    Text(
+                                        "Delete permanently",
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.DeleteForever,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                    )
+                                },
                                 onClick = {
                                     menu = false
                                     permanent = document
@@ -126,7 +173,7 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
                 }
                 item {
                     Text(
-                        "Deleted documents stay on this phone until you restore or permanently delete them. Long-press one to delete it for good. They are not a backup; export important copies.",
+                        "Deleted documents stay on this phone until you restore or permanently delete them. Open a document’s menu to delete it for good. They are not a backup; export important copies.",
                         Modifier.padding(top = Space.s, start = Space.m, end = Space.m),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -140,21 +187,29 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
             title = { Text("Delete “${document.title}” permanently?") },
             text = { Text("This cannot be undone.") },
             confirmButton = {
-                TextButton(onClick = {
-                    permanent = null
-                    working = true
-                    scope.launch {
-                        model.permanentlyDelete(document)
-                        working = false
-                    }
-                }, modifier = Modifier.testTag("trash.confirm")) { Text("Delete permanently", color = MaterialTheme.colorScheme.error) }
+                TextButton(
+                    onClick = {
+                        permanent = null
+                        working = true
+                        scope.launch {
+                            model.permanentlyDelete(document)
+                            working = false
+                        }
+                    },
+                    modifier = Modifier.testTag("trash.confirm"),
+                ) {
+                    Text("Delete permanently", color = MaterialTheme.colorScheme.error)
+                }
             },
             dismissButton = { TextButton(onClick = { permanent = null }) { Text("Cancel") } },
         )
     }
 }
 
-/** Backup: what one file will hold (tiles), one large Export button, Restore beneath it, and the limits in plain words. */
+/**
+ * Backup: what one file will hold (tiles), one large Export button, Restore beneath it, and the
+ * limits in plain words.
+ */
 @Composable
 fun BackupScreen(model: ScannerModel) {
     val nav = LocalNav.current
@@ -173,25 +228,36 @@ fun BackupScreen(model: ScannerModel) {
         failed = failure
         if (failure) view.reject() else view.confirm()
     }
-    val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { target ->
-        if (target == null) return@rememberLauncherForActivityResult
-        working = true
-        message = null
-        scope.launch {
-            try {
-                model.repository.io {
-                    val out = context.contentResolver.openOutputStream(target, "wt") ?: throw IllegalStateException("That location can’t be written to.")
-                    out.use { exportBackup(it) }
+    val export =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/octet-stream")
+        ) { target ->
+            if (target == null) return@rememberLauncherForActivityResult
+            working = true
+            message = null
+            scope.launch {
+                try {
+                    model.repository.io {
+                        val out =
+                            context.contentResolver.openOutputStream(target, "wt")
+                                ?: throw IllegalStateException("That location can’t be written to.")
+                        out.use { exportBackup(it) }
+                    }
+                    report("Backup saved.", false)
+                } catch (e: Exception) {
+                    runCatching {
+                        DocumentsContract.deleteDocument(context.contentResolver, target)
+                    }
+                    report(
+                        "Backup could not be completed. Your library is unchanged. " + describe(e),
+                        true,
+                    )
                 }
-                report("Backup saved.", false)
-            } catch (e: Exception) {
-                runCatching { DocumentsContract.deleteDocument(context.contentResolver, target) }
-                report("Backup could not be completed. Your library is unchanged. " + describe(e), true)
+                working = false
             }
-            working = false
         }
-    }
-    val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { candidate = it }
+    val open =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { candidate = it }
     fun restore(source: Uri) {
         working = true
         message = null
@@ -199,17 +265,26 @@ fun BackupScreen(model: ScannerModel) {
             try {
                 val count =
                     model.repository.io {
-                        val descriptor = context.contentResolver.openFileDescriptor(source, "r") ?: throw IllegalStateException("This file couldn’t be opened.")
+                        val descriptor =
+                            context.contentResolver.openFileDescriptor(source, "r")
+                                ?: throw IllegalStateException("This file couldn’t be opened.")
                         descriptor.use { fd ->
                             val length = fd.statSize
-                            if (length < 0) throw gg.seven.scanner.core.ScanException.InvalidDocument()
-                            FileInputStream(fd.fileDescriptor).buffered().use { restoreBackup(it, length) }
+                            if (length < 0)
+                                throw gg.seven.scanner.core.ScanException.InvalidDocument()
+                            FileInputStream(fd.fileDescriptor).buffered().use {
+                                restoreBackup(it, length)
+                            }
                         }
                     }
                 model.reload()
                 report("Restored ${documentCount(count)} as copies.", false)
             } catch (e: Exception) {
-                report("This backup could not be restored. Your existing documents are unchanged. " + describe(e), true)
+                report(
+                    "This backup could not be restored. Your existing documents are unchanged. " +
+                        describe(e),
+                    true,
+                )
             }
             working = false
         }
@@ -219,14 +294,28 @@ fun BackupScreen(model: ScannerModel) {
         topBar = { ScannerTopBar("Backup & restore", onBack = nav::pop) },
     ) { padding ->
         Column(
-            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).readable().padding(horizontal = Space.m, vertical = Space.l),
+            Modifier.padding(padding)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .readable()
+                .padding(horizontal = Space.m, vertical = Space.l),
             verticalArrangement = Arrangement.spacedBy(Space.l),
         ) {
-            val tiles = listOf("Documents" to documents.size, "Pages" to pages, "Favorites" to documents.count { it.favorite == true }, "Recently Deleted" to deleted.size)
+            val tiles =
+                listOf(
+                    "Documents" to documents.size,
+                    "Pages" to pages,
+                    "Favorites" to documents.count { it.favorite == true },
+                    "Recently Deleted" to deleted.size,
+                )
             val perRow = if (largeText()) 1 else 2
             Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
                 tiles.chunked(perRow).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(Space.ms)) { row.forEach { (title, value) -> StatTile(title, "$value", Modifier.weight(1f)) } }
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.ms)) {
+                        row.forEach { (title, value) ->
+                            StatTile(title, "$value", Modifier.weight(1f))
+                        }
+                    }
                 }
             }
             Text(
@@ -234,12 +323,23 @@ fun BackupScreen(model: ScannerModel) {
                 style = MaterialTheme.typography.bodyLarge,
             )
             Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
-                Button(onClick = { export.launch(BACKUP_NAME) }, enabled = !working, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("backup.export")) {
-                    if (working) LoadingIndicator(Modifier.size(24.dp)) else Icon(Icons.Outlined.Backup, null)
+                Button(
+                    onClick = { export.launch(BACKUP_NAME) },
+                    enabled = !working,
+                    modifier =
+                        Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("backup.export"),
+                ) {
+                    if (working) LoadingIndicator(Modifier.size(24.dp))
+                    else Icon(Icons.Outlined.Backup, null)
                     Spacer(Modifier.width(Space.s))
                     Text(if (working) "Working…" else "Export backup")
                 }
-                FilledTonalButton(onClick = { open.launch(arrayOf("*/*")) }, enabled = !working, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("backup.restore")) {
+                FilledTonalButton(
+                    onClick = { open.launch(arrayOf("*/*")) },
+                    enabled = !working,
+                    modifier =
+                        Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("backup.restore"),
+                ) {
                     Icon(Icons.Outlined.Restore, null)
                     Spacer(Modifier.width(Space.s))
                     Text("Restore from backup")
@@ -250,14 +350,23 @@ fun BackupScreen(model: ScannerModel) {
                     it,
                     Modifier.testTag("backup.message"),
                     icon = if (failed) Icons.Outlined.WarningAmber else Icons.Outlined.CheckCircle,
-                    tint = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    tint =
+                        if (failed) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primary,
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                 listOf(
-                    "Restore adds copies and never overwrites your current documents. Recently Deleted items remain deleted. Each backup supports up to 1 GB and 1,000 documents.",
-                    "No automatic uploads or Scanner account. Cloud storage, if you choose it, is provided by your storage provider.",
-                ).forEach { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        "Restore adds copies and never overwrites your current documents. Recently Deleted items remain deleted. Each backup supports up to 1 GB and 1,000 documents.",
+                        "No automatic uploads or Scanner account. Cloud storage, if you choose it, is provided by your storage provider.",
+                    )
+                    .forEach {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
             }
         }
     }
@@ -267,10 +376,15 @@ fun BackupScreen(model: ScannerModel) {
             title = { Text("Restore copies from this backup?") },
             text = { Text("Your current documents stay as they are.") },
             confirmButton = {
-                TextButton(onClick = {
-                    candidate = null
-                    restore(source)
-                }, modifier = Modifier.testTag("backup.confirm")) { Text("Add restored copies") }
+                TextButton(
+                    onClick = {
+                        candidate = null
+                        restore(source)
+                    },
+                    modifier = Modifier.testTag("backup.confirm"),
+                ) {
+                    Text("Add restored copies")
+                }
             },
             dismissButton = { TextButton(onClick = { candidate = null }) { Text("Cancel") } },
         )
@@ -279,7 +393,9 @@ fun BackupScreen(model: ScannerModel) {
 
 const val BACKUP_NAME = "Scanner backup.scannerbackup"
 
-/** Settings: appearance, privacy in plain words, then SevenKit's trial/unlock and about sections. */
+/**
+ * Settings: appearance, privacy in plain words, then SevenKit's trial/unlock and about sections.
+ */
 @Composable
 fun SettingsScreen(model: ScannerModel) {
     val nav = LocalNav.current
@@ -289,13 +405,34 @@ fun SettingsScreen(model: ScannerModel) {
         topBar = { ScannerTopBar("Settings", onBack = nav::pop) },
     ) { padding ->
         Column(
-            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).readable().padding(horizontal = Space.m, vertical = Space.s),
+            Modifier.padding(padding)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .readable()
+                .padding(horizontal = Space.m, vertical = Space.s),
             verticalArrangement = Arrangement.spacedBy(Space.l),
         ) {
+            Section(title = "Your documents") {
+                item(
+                    "Backup & restore",
+                    icon = Icons.Outlined.SettingsBackupRestore,
+                    onClick = { nav.push(Route.Backup) },
+                )
+                item(
+                    "Recently Deleted",
+                    icon = Icons.Outlined.Delete,
+                    onClick = { nav.push(Route.Deleted) },
+                )
+            }
             Section(title = "Appearance") {
                 row { shapes ->
                     SegmentedListItem(shapes) {
-                        DropdownField("Theme", appearance, listOf("system" to "System", "light" to "Light", "dark" to "Dark"), Modifier.fillMaxWidth().testTag("settings.theme")) {
+                        DropdownField(
+                            "Theme",
+                            appearance,
+                            listOf("system" to "System", "light" to "Light", "dark" to "Dark"),
+                            Modifier.fillMaxWidth().testTag("settings.theme"),
+                        ) {
                             model.setAppearance(it)
                         }
                     }
@@ -304,13 +441,18 @@ fun SettingsScreen(model: ScannerModel) {
             Section(title = "Privacy") {
                 item(
                     "On this phone",
-                    supporting = "Scans and text recognition are processed on your phone. Files you export or back up go only where you choose. No Scanner account or servers.",
+                    supporting =
+                        "Scans and text recognition are processed on your phone. Files you export or back up go only where you choose. No Scanner account or servers.",
                     icon = Icons.Outlined.Lock,
                 )
-                item("Searchable text", supporting = "Searchable PDF exports include recognized text. Review important text for recognition errors.", icon = Icons.Outlined.DocumentScanner)
+                item(
+                    "Searchable text",
+                    supporting =
+                        "Searchable PDF exports include recognized text. Review important text for recognition errors.",
+                    icon = Icons.Outlined.DocumentScanner,
+                )
             }
             SevenAbout(coreVersion = remember { coreVersion() })
         }
     }
 }
-

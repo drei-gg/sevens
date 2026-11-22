@@ -233,6 +233,7 @@ struct ScannerSettings: View {
                 Label("Searchable PDF exports include recognized text. Review important text for recognition errors.", systemImage: "text.viewfinder")
             } header: { Text("Privacy") }
             AboutSection(onShowBeforeYouBuy: { before = true })
+            Section { AboutNoticesRow(notices: ["CropViewController 3.3.0 by Tim Oliver. " + (Bundle.main.url(forResource: "TOCropViewController-LICENSE", withExtension: "txt").flatMap { licenseURL in try? String(contentsOf: licenseURL, encoding: .utf8) } ?? "MIT license")]) }
         }
         .sevenScreenBackground()
         .navigationTitle("Settings")

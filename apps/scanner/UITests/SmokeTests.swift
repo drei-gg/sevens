@@ -1,9 +1,117 @@
 import XCTest
 @MainActor final class SmokeTests: XCTestCase {
+    func testAnnotationsUndoSaveReopenAndExport() {
+        let app = launch()
+        let document = app.buttons.matching(identifier: "scanner.document").firstMatch
+        XCTAssertTrue(document.waitForExistence(timeout: 30)); document.tap()
+        let page = app.buttons["scanner.page.1"]; reveal(page, in: app); page.tap()
+        let annotate = app.buttons["page.annotate"]; reveal(annotate, in: app); annotate.tap()
+        let add = app.buttons["annotations-exact"]
+        XCTAssertTrue(add.waitForExistence(timeout: 10))
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: add); waitForExpectations(timeout: 10)
+        let canvas = app.descendants(matching: .any)["annotations-canvas"].firstMatch
+        XCTAssertTrue(canvas.exists)
+        canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.4)).press(forDuration: 0.1, thenDragTo: canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.6)))
+        XCTAssertEqual(app.staticTexts["annotations-count"].label, "1 of 100 marks")
+        reveal(app.buttons["annotations-undo"], in: app); app.buttons["annotations-undo"].tap()
+        XCTAssertEqual(app.staticTexts["annotations-count"].label, "0 of 100 marks")
+        add.tap(); XCTAssertTrue(app.buttons["annotations-add"].waitForExistence(timeout: 5)); app.buttons["annotations-add"].tap()
+        XCTAssertEqual(app.staticTexts["annotations-count"].label, "1 of 100 marks")
+        app.buttons["annotations-undo"].tap(); app.buttons["annotations-redo"].tap()
+        XCTAssertEqual(app.staticTexts["annotations-count"].label, "1 of 100 marks")
+        reveal(app.segmentedControls["ink-tool"], in: app, down: true)
+        app.segmentedControls["ink-tool"].buttons["Ink"].tap()
+        let inkCanvas = app.descendants(matching: .any)["ink-canvas"].firstMatch
+        revealInkControl(inkCanvas, in: app)
+        let beforeInk = XCTAttachment(screenshot: app.screenshot()); beforeInk.name = "Before native ink"; beforeInk.lifetime = .keepAlways; self.add(beforeInk)
+        inkCanvas.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.55)).press(forDuration: 0.1, thenDragTo: inkCanvas.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.7)))
+        let afterInk = XCTAttachment(screenshot: app.screenshot()); afterInk.name = "After native ink"; afterInk.lifetime = .keepAlways; self.add(afterInk)
+        expectation(for: NSPredicate(format: "label == %@", "1 of 100 ink strokes"), evaluatedWith: app.staticTexts["ink-count"]); waitForExpectations(timeout: 10)
+        revealInkControl(app.buttons["annotations-undo"], in: app); app.buttons["annotations-undo"].tap()
+        XCTAssertEqual(app.staticTexts["ink-count"].label, "0 of 100 ink strokes")
+        app.buttons["annotations-redo"].tap()
+        XCTAssertEqual(app.staticTexts["ink-count"].label, "1 of 100 ink strokes")
+        let editor = XCTAttachment(screenshot: app.screenshot()); editor.name = "Annotations editor"; editor.lifetime = .keepAlways; self.add(editor)
+        app.buttons["annotations-save"].tap()
+        XCTAssertTrue(annotate.waitForExistence(timeout: 10))
+        app.terminate(); app.launchArguments = ["-scanner.ui"]; app.launch()
+        XCTAssertTrue(document.waitForExistence(timeout: 15)); document.tap(); reveal(page, in: app); page.tap()
+        reveal(annotate, in: app); annotate.tap()
+        XCTAssertEqual(app.staticTexts["annotations-count"].label, "1 of 100 marks")
+        XCTAssertEqual(app.staticTexts["ink-count"].label, "1 of 100 ink strokes")
+        app.buttons["Close"].tap()
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let export = app.buttons["scanner.export"]; reveal(export, in: app, down: true); export.tap()
+        let prepare = app.buttons["export.prepare"]; reveal(prepare, in: app); prepare.tap()
+        let preview = app.buttons["export.preview"]; XCTAssertTrue(preview.waitForExistence(timeout: 30)); reveal(preview, in: app); preview.tap()
+        XCTAssertTrue(app.navigationBars["PDF preview"].waitForExistence(timeout: 10))
+        let pdf = XCTAttachment(screenshot: app.screenshot()); pdf.name = "Saved annotation PDF preview"; pdf.lifetime = .keepAlways; self.add(pdf)
+    }
+    func testCropBoundsPersistAndNativeHandlesOpen() {
+        let app = launch()
+        let document = app.buttons.matching(identifier: "scanner.document").firstMatch
+        XCTAssertTrue(document.waitForExistence(timeout: 30)); document.tap()
+        let page = app.buttons["scanner.page.1"]; reveal(page, in: app); page.tap()
+        let crop = app.buttons["page.crop"]; reveal(crop, in: app); crop.tap()
+        let handles = app.buttons["page.cropHandles"]
+        XCTAssertTrue(handles.waitForExistence(timeout: 10))
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: handles); waitForExpectations(timeout: 10)
+        handles.tap()
+        let useBounds = app.buttons["page.cropUseBounds"]
+        XCTAssertTrue(useBounds.waitForExistence(timeout: 10))
+        let handlesImage = XCTAttachment(screenshot: app.screenshot()); handlesImage.name = "native-crop-handles"; handlesImage.lifetime = .keepAlways; add(handlesImage)
+        useBounds.tap()
+        let right = app.textFields["page.cropRight"]; reveal(right, in: app); right.tap()
+        right.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: (right.value as? String ?? "").count) + "80")
+        let bottom = app.textFields["page.cropBottom"]; reveal(bottom, in: app); bottom.tap()
+        bottom.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: (bottom.value as? String ?? "").count) + "60")
+        app.buttons["page.useCrop"].tap()
+        app.buttons["page.save"].tap()
+        XCTAssertTrue(page.waitForExistence(timeout: 10))
+        app.terminate(); app.launchArguments = ["-scanner.ui"]; app.launch()
+        XCTAssertTrue(document.waitForExistence(timeout: 15)); document.tap(); reveal(page, in: app); page.tap()
+        reveal(crop, in: app); crop.tap()
+        XCTAssertTrue(right.waitForExistence(timeout: 5)); XCTAssertEqual(right.value as? String, "80.00")
+        XCTAssertEqual(bottom.value as? String, "60.00")
+        XCTAssertTrue(app.images["page.imageReady"].firstMatch.waitForExistence(timeout: 10))
+        let savedImage = XCTAttachment(screenshot: app.screenshot()); savedImage.name = "crop-bounds-persisted"; savedImage.lifetime = .keepAlways; add(savedImage)
+    }
+    func testSavedTextCorrectionSurvivesRelaunch() {
+        let app = launch()
+        let document = app.buttons.matching(identifier: "scanner.document").firstMatch
+        XCTAssertTrue(document.waitForExistence(timeout: 30)); document.tap()
+        let page = app.buttons["scanner.page.1"]
+        reveal(page, in: app); page.tap()
+        let edit = app.buttons["page.editText"]
+        reveal(edit, in: app); edit.tap()
+        let text = app.textViews["page.correctedText"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5)); text.tap(); text.typeText("CORRECTED TEXT QA ")
+        XCTAssertTrue((text.value as? String ?? "").contains("CORRECTED TEXT QA"))
+        app.buttons["page.saveText"].tap()
+        XCTAssertTrue(text.wait(for: \.exists, toEqual: false, timeout: 10))
+        XCTAssertTrue(edit.waitForExistence(timeout: 5))
+        app.terminate(); app.launchArguments = ["-scanner.ui"]; app.launch()
+        XCTAssertTrue(document.waitForExistence(timeout: 15)); document.tap()
+        reveal(page, in: app); page.tap(); reveal(edit, in: app); edit.tap()
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        XCTAssertTrue((text.value as? String ?? "").contains("CORRECTED TEXT QA"))
+        let image = XCTAttachment(screenshot: app.screenshot()); image.name = "text-correction"; image.lifetime = .keepAlways; add(image)
+    }
     private func launch(audit: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-scanner.ui", "-scanner.reset", "-scanner.seed"] + (audit ? ["-scanner.audit"] : [])
         app.launch(); return app
+    }
+    /// Scroll beside the fitted native canvas. A swipe through its center correctly draws ink.
+    private func revealInkControl(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<8 {
+            if element.exists && element.isHittable && element.frame.minY >= 130 && element.frame.maxY <= app.frame.height - 50 { return }
+            let down = element.exists && element.frame.minY < 130
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: down ? 0.4 : 0.75))
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: down ? 0.7 : 0.45))
+            start.press(forDuration: 0.05, thenDragTo: end)
+        }
+        XCTAssertTrue(element.exists && element.isHittable)
     }
     private func reveal(_ element: XCUIElement, in app: XCUIApplication, down: Bool = false) {
         for _ in 0..<7 {

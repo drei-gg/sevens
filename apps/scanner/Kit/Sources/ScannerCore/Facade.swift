@@ -12,7 +12,7 @@ extension ScanPage: Identifiable {}
 extension ScanDocument: Identifiable {}
 
 public extension ScanPage {
-    init(id: UUID = UUID(), text: String = "") { self.init(id: id, text: text, adjustments: nil) }
+    init(id: UUID = UUID(), text: String = "") { self.init(id: id, text: text, adjustments: nil, annotations: [], ink: []) }
     /// The adjustments, or the defaults when there are none.
     var settings: PageSettings { scanPageSettings(page: self) }
 }

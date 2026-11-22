@@ -92,7 +92,7 @@ import ScannerCore
             let urls = try await repository.pageURLs(selection); let pages = selection.pages
             let text = try await Task.detached { try DocumentProcessing.recognize(urls: urls, pages: pages) }.value
             _ = try await repository.fillRecognizedText(documentID: document.id, byPage: text,
-                expectedSettings: Dictionary(uniqueKeysWithValues: pages.map { ($0.id, $0.settings) }), overwrite: !onlyEmpty)
+                expectedSettings: Dictionary(uniqueKeysWithValues: pages.map { ($0.id, $0.settings) }), overwrite: !onlyEmpty, expectedPages: pages)
             await reload()
         } catch {
             if documents.contains(where: { $0.id == document.id }) { self.error = String(localized: "Your scan is saved. Text recognition could not finish. You can retry from the document.") }

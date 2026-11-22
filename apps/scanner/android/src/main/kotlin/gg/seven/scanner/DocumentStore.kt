@@ -23,7 +23,8 @@ import kotlinx.coroutines.withContext
  */
 
 /** The core's `&[u8]` parameters borrow a direct buffer from its start. */
-internal fun ByteArray.direct(): ByteBuffer = ByteBuffer.allocateDirect(size).put(this).also { it.flip() }
+internal fun ByteArray.direct(): ByteBuffer =
+    ByteBuffer.allocateDirect(size).put(this).also { it.flip() }
 
 class DocumentStore(val root: File) {
     private val lock = Mutex()
@@ -32,7 +33,8 @@ class DocumentStore(val root: File) {
         get() = File(root, ".trash")
 
     /** Runs [block] alone, off the main thread. */
-    suspend fun <T> io(block: DocumentStore.() -> T): T = lock.withLock { withContext(Dispatchers.IO) { block() } }
+    suspend fun <T> io(block: DocumentStore.() -> T): T =
+        lock.withLock { withContext(Dispatchers.IO) { block() } }
 
     fun list(deleted: Boolean = false): List<ScanDocument> {
         val listing = readLibrary(deleted)
@@ -57,13 +59,22 @@ class DocumentStore(val root: File) {
     }
 
     /** A new document from prepared page files (copied in; the caller's files are left alone). */
-    fun create(title: String, images: List<File>, text: List<String>, created: Double = nowReference()): ScanDocument {
+    fun create(
+        title: String,
+        images: List<File>,
+        text: List<String>,
+        created: Double = nowReference(),
+    ): ScanDocument {
         val doc = newDocumentFromScan(title, images.map { it.length().toULong() }, text, created)
         root.mkdirs()
         val staging = File(root, ".pending-" + documentFolderName(doc.id))
         if (!staging.mkdir()) throw ScanException.InvalidDocument()
         try {
-            doc.pages.forEachIndexed { index, page -> writeAtomically(File(staging, pageFileName(page.id))) { images[index].inputStream().use { input -> input.copyTo(it) } } }
+            doc.pages.forEachIndexed { index, page ->
+                writeAtomically(File(staging, pageFileName(page.id))) {
+                    images[index].inputStream().use { input -> input.copyTo(it) }
+                }
+            }
             writeAtomically(File(staging, MANIFEST)) { it.write(manifestEncode(doc)) }
             if (!staging.renameTo(folder(doc.id))) throw ScanException.InvalidDocument()
             return doc
@@ -75,7 +86,8 @@ class DocumentStore(val root: File) {
 
     fun save(document: ScanDocument) {
         documentValidate(document)
-        for (page in document.pages) if (!imageFile(document.id, page.id).isFile) throw ScanException.MissingPage()
+        for (page in document.pages) if (!imageFile(document.id, page.id).isFile)
+            throw ScanException.MissingPage()
         writeAtomically(File(folder(document.id), MANIFEST)) { it.write(manifestEncode(document)) }
         removeUnlistedPages(folder(document.id), document)
     }
@@ -100,7 +112,11 @@ class DocumentStore(val root: File) {
         }
         for (base in listOf(root, trash).filter { it.isDirectory }) {
             for (folder in base.listFiles().orEmpty().filter { isDocumentFolder(it.name) }) {
-                val doc = runCatching { manifestRead(File(folder, MANIFEST).readBytes().direct(), folder.name) }.getOrNull() ?: continue
+                val doc =
+                    runCatching {
+                            manifestRead(File(folder, MANIFEST).readBytes().direct(), folder.name)
+                        }
+                        .getOrNull() ?: continue
                 val before = folder.list()?.size ?: 0
                 removeUnlistedPages(folder, doc)
                 removed += before - (folder.list()?.size ?: before)
@@ -129,13 +145,38 @@ class DocumentStore(val root: File) {
         return current
     }
 
+    fun updateAnnotations(
+        documentId: UUID,
+        expected: ScanPage,
+        annotations: List<PageAnnotation>,
+        ink: List<PageInk> = expected.ink,
+    ): ScanDocument {
+        val current = documentWithPageMarks(load(documentId), expected, annotations, ink)
+        save(current)
+        return current
+    }
+
+    fun updatePageText(documentId: UUID, expected: ScanPage, text: String): ScanDocument {
+        val current = documentWithPageText(load(documentId), expected, text)
+        save(current)
+        return current
+    }
+
     fun append(documentId: UUID, images: List<File>): ScanDocument {
         val current = load(documentId)
         val existing = pageFiles(current).sumOf { it.length() }
-        checkAppendImages(current.pages.size.toULong(), images.map { it.length().toULong() }, existing.toULong())
+        checkAppendImages(
+            current.pages.size.toULong(),
+            images.map { it.length().toULong() },
+            existing.toULong(),
+        )
         val pages = images.map { newScanPage("") }
         try {
-            pages.zip(images).forEach { (page, file) -> writeAtomically(imageFile(current.id, page.id)) { out -> file.inputStream().use { it.copyTo(out) } } }
+            pages.zip(images).forEach { (page, file) ->
+                writeAtomically(imageFile(current.id, page.id)) { out ->
+                    file.inputStream().use { it.copyTo(out) }
+                }
+            }
             val next = current.copy(pages = current.pages + pages)
             save(next)
             return next
@@ -145,14 +186,25 @@ class DocumentStore(val root: File) {
         }
     }
 
-    /** The listed pages in that order; unlisted pages are removed. [expected] refuses a stale copy. */
-    fun setPageOrder(documentId: UUID, pageIds: List<UUID>, expected: List<UUID>? = null): ScanDocument {
+    /**
+     * The listed pages in that order; unlisted pages are removed. [expected] refuses a stale copy.
+     */
+    fun setPageOrder(
+        documentId: UUID,
+        pageIds: List<UUID>,
+        expected: List<UUID>? = null,
+    ): ScanDocument {
         val current = documentWithPageOrder(load(documentId), pageIds, expected)
         save(current)
         return current
     }
 
-    fun updateMetadata(documentId: UUID, title: String, note: String, favorite: Boolean): ScanDocument {
+    fun updateMetadata(
+        documentId: UUID,
+        title: String,
+        note: String,
+        favorite: Boolean,
+    ): ScanDocument {
         val current = documentWithMetadata(load(documentId), title, note, favorite)
         save(current)
         return current
@@ -168,13 +220,22 @@ class DocumentStore(val root: File) {
 
     fun permanentlyDelete(document: ScanDocument) {
         val folder = trashFolder(document.id)
-        if (!folder.isDirectory || !folder.deleteRecursively()) throw ScanException.InvalidDocument()
+        if (!folder.isDirectory || !folder.deleteRecursively())
+            throw ScanException.InvalidDocument()
     }
 
     /** OCR completion never overwrites a rename, reorder or edit made while recognition ran. */
-    fun fillRecognizedText(documentId: UUID, byPage: Map<UUID, String>, expected: Map<UUID, PageSettings>? = null, overwrite: Boolean = false): ScanDocument {
+    fun fillRecognizedText(
+        documentId: UUID,
+        byPage: Map<UUID, String>,
+        expected: Map<UUID, PageSettings>? = null,
+        overwrite: Boolean = false,
+        expectedPages: List<ScanPage>? = null,
+    ): ScanDocument {
         val current = documentDecode(File(folder(documentId), MANIFEST).readBytes().direct())
-        val filled = documentFillRecognizedText(current, byPage, expected, overwrite)
+        val filled =
+            expectedPages?.let { documentApplyRecognition(current, it, byPage, overwrite) }
+                ?: documentFillRecognizedText(current, byPage, expected, overwrite)
         save(filled)
         return filled
     }
@@ -208,14 +269,15 @@ class DocumentStore(val root: File) {
     }
 
     /**
-     * Checks every record and checksum in staging, then adds copies with new document IDs.
-     * Existing documents are never replaced; deleted entries restore into Recently Deleted. An
-     * ordinary failure while committing removes the copies already added.
+     * Checks every record and checksum in staging, then adds copies with new document IDs. Existing
+     * documents are never replaced; deleted entries restore into Recently Deleted. An ordinary
+     * failure while committing removes the copies already added.
      */
     fun restoreBackup(input: InputStream, length: Long): Int {
         val preamble = exact(input, backupMagic().size + 4)
         val indexLength = backupIndexLength(length.toULong(), preamble.direct())
-        val index = readBackupIndex(length.toULong(), exact(input, indexLength.toInt() + 4).direct())
+        val index =
+            readBackupIndex(length.toULong(), exact(input, indexLength.toInt() + 4).direct())
         root.mkdirs()
         val staging = File(root, ".restore-" + UUID.randomUUID().toString().uppercase())
         if (!staging.mkdir()) throw ScanException.InvalidDocument()
@@ -226,8 +288,12 @@ class DocumentStore(val root: File) {
                 val name = documentFolderName(document.id)
                 val folder = File(staging, name).apply { mkdir() }
                 document.pages.zip(entry.sizes).forEach { (page, size) ->
-                    val checksum = File(folder, pageFileName(page.id)).outputStream().use { stream(input, it, size) }
-                    if (!exact(input, 4).contentEquals(backupChecksumBytes(checksum))) throw ScanException.InvalidDocument()
+                    val checksum =
+                        File(folder, pageFileName(page.id)).outputStream().use {
+                            stream(input, it, size)
+                        }
+                    if (!exact(input, 4).contentEquals(backupChecksumBytes(checksum)))
+                        throw ScanException.InvalidDocument()
                 }
                 writeAtomically(File(folder, MANIFEST)) { it.write(manifestEncode(document)) }
                 val base = if (entry.deleted) trash else root
@@ -282,7 +348,8 @@ class DocumentStore(val root: File) {
 
     // MARK: files
 
-    private fun load(id: UUID): ScanDocument = manifestRead(File(folder(id), MANIFEST).readBytes().direct(), documentFolderName(id))
+    internal fun load(id: UUID): ScanDocument =
+        manifestRead(File(folder(id), MANIFEST).readBytes().direct(), documentFolderName(id))
 
     /** A folder's manifest, refused unread when it is larger than any manifest can be. */
     private fun readManifest(folder: File): ScanDocument {

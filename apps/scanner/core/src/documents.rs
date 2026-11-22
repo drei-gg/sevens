@@ -69,6 +69,10 @@ pub struct ScanPage {
     pub text: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub adjustments: Option<PageSettings>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub annotations: Vec<crate::PageAnnotation>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ink: Vec<crate::PageInk>,
 }
 
 impl ScanPage {
@@ -81,7 +85,13 @@ impl ScanPage {
 /// `ScanPage(text:)`: a new ID, no adjustments.
 #[uniffi::export]
 pub fn new_scan_page(text: String) -> ScanPage {
-    ScanPage { id: Uuid::new_v4(), text, adjustments: None }
+    ScanPage {
+        id: Uuid::new_v4(),
+        text,
+        adjustments: None,
+        annotations: vec![],
+        ink: vec![],
+    }
 }
 
 #[uniffi::export]
@@ -108,13 +118,25 @@ pub struct ScanDocument {
 /// `ScanDocument(title:pages:created:)`: version 1, a new ID, no note or favourite.
 #[uniffi::export]
 pub fn new_scan_document(title: String, pages: Vec<ScanPage>, created: f64) -> ScanDocument {
-    ScanDocument { version: 1, id: Uuid::new_v4(), title, created, pages, note: None, favorite: None }
+    ScanDocument {
+        version: 1,
+        id: Uuid::new_v4(),
+        title,
+        created,
+        pages,
+        note: None,
+        favorite: None,
+    }
 }
 
 impl ScanDocument {
     pub fn validate(&self) -> Result<(), ScanError> {
         let ids: HashSet<Uuid> = self.pages.iter().map(|p| p.id).collect();
-        let ok = self.version == 1
+        let ok = (1..=4).contains(&self.version)
+            && (self.version >= 2 || self.pages.iter().all(|p| p.settings().crop.is_none()))
+            && (self.version >= 3 || self.pages.iter().all(|p| p.annotations.is_empty()))
+            && (self.version >= 4 || self.pages.iter().all(|p| p.ink.is_empty()))
+            && self.pages.iter().flat_map(|p| &p.ink).map(|s| s.points.len()).sum::<usize>() <= 100_000
             && !trimmed(&self.title).is_empty()
             && characters(&self.title) <= 200
             && !self.pages.is_empty()
@@ -128,6 +150,8 @@ impl ScanDocument {
         }
         for page in &self.pages {
             page.settings().validate()?;
+            crate::annotations_validate(&page.annotations)?;
+            crate::ink_validate(&page.ink)?;
         }
         Ok(())
     }
@@ -221,8 +245,15 @@ pub fn manifest_encode(document: &ScanDocument) -> Result<Vec<u8>, ScanError> {
 /// only after the manifest that dropped them is committed.
 #[uniffi::export]
 pub fn unlisted_page_files(document: &ScanDocument, file_names: Vec<String>) -> Vec<String> {
-    let keep: HashSet<String> = document.pages.iter().map(|p| page_file_name(p.id)).collect();
-    file_names.into_iter().filter(|name| path_extension(name) == "jpg" && !keep.contains(name)).collect()
+    let keep: HashSet<String> = document
+        .pages
+        .iter()
+        .map(|p| page_file_name(p.id))
+        .collect();
+    file_names
+        .into_iter()
+        .filter(|name| path_extension(name) == "jpg" && !keep.contains(name))
+        .collect()
 }
 
 /// `URL.pathExtension` for a plain file name: after the last dot, none for a dot file.
@@ -251,9 +282,18 @@ pub fn check_new_document_images(image_sizes: Vec<u64>, text_count: u64) -> Resu
 
 /// A new document from scanned pages: `create` checks the images, then the document.
 #[uniffi::export]
-pub fn new_document_from_scan(title: String, image_sizes: Vec<u64>, text: Vec<String>, created: f64) -> Result<ScanDocument, ScanError> {
+pub fn new_document_from_scan(
+    title: String,
+    image_sizes: Vec<u64>,
+    text: Vec<String>,
+    created: f64,
+) -> Result<ScanDocument, ScanError> {
     check_new_document_images(image_sizes, text.len() as u64)?;
-    let document = new_scan_document(title, text.into_iter().map(new_scan_page).collect(), created);
+    let document = new_scan_document(
+        title,
+        text.into_iter().map(new_scan_page).collect(),
+        created,
+    );
     document.validate()?;
     Ok(document)
 }
@@ -261,12 +301,22 @@ pub fn new_document_from_scan(title: String, image_sizes: Vec<u64>, text: Vec<St
 /// `append`'s limits: at least one image, 50 pages at most, each image 1 byte to 20 MB (all
 /// checked first), then the document's existing image bytes plus the new ones within 100 MB.
 #[uniffi::export]
-pub fn check_append_images(existing_page_count: u64, image_sizes: Vec<u64>, existing_bytes: u64) -> Result<(), ScanError> {
-    let ok = !image_sizes.is_empty() && existing_page_count.saturating_add(image_sizes.len() as u64) <= MAX_PAGES as u64 && check_images(&image_sizes);
+pub fn check_append_images(
+    existing_page_count: u64,
+    image_sizes: Vec<u64>,
+    existing_bytes: u64,
+) -> Result<(), ScanError> {
+    let ok = !image_sizes.is_empty()
+        && existing_page_count.saturating_add(image_sizes.len() as u64) <= MAX_PAGES as u64
+        && check_images(&image_sizes);
     if !ok {
         return Err(ScanError::TooLarge);
     }
-    if image_sizes.iter().fold(existing_bytes, |a, b| a.saturating_add(*b)) > MAX_DOCUMENT_IMAGE_BYTES {
+    if image_sizes
+        .iter()
+        .fold(existing_bytes, |a, b| a.saturating_add(*b))
+        > MAX_DOCUMENT_IMAGE_BYTES
+    {
         return Err(ScanError::TooLarge);
     }
     Ok(())
@@ -275,41 +325,122 @@ pub fn check_append_images(existing_page_count: u64, image_sizes: Vec<u64>, exis
 /// `updatePage`: settings are checked first; the page's OCR text is cleared, because it was read
 /// from the image as it looked before.
 #[uniffi::export]
-pub fn document_with_page_settings(document: &ScanDocument, page_id: Uuid, settings: PageSettings) -> Result<ScanDocument, ScanError> {
+pub fn document_with_page_settings(
+    document: &ScanDocument,
+    page_id: Uuid,
+    settings: PageSettings,
+) -> Result<ScanDocument, ScanError> {
     settings.validate()?;
     let mut next = document.clone();
-    let page = next.pages.iter_mut().find(|p| p.id == page_id).ok_or(ScanError::MissingPage)?;
+    let page = next
+        .pages
+        .iter_mut()
+        .find(|p| p.id == page_id)
+        .ok_or(ScanError::MissingPage)?;
+    if settings.crop.is_some() { next.version = next.version.max(2); }
     page.adjustments = Some(settings);
     page.text = String::new();
     Ok(next)
+}
+
+/// Correct saved text without changing the original image or newer edits to this page.
+#[uniffi::export]
+pub fn document_with_page_text(
+    document: &ScanDocument,
+    expected: ScanPage,
+    text: String,
+) -> Result<ScanDocument, ScanError> {
+    let mut next = document.clone();
+    let page = next
+        .pages
+        .iter_mut()
+        .find(|page| page.id == expected.id)
+        .ok_or(ScanError::MissingPage)?;
+    if page.text != expected.text || page.settings() != expected.settings() {
+        return Err(ScanError::InvalidDocument);
+    }
+    page.text = text;
+    next.validate()?;
+    Ok(next)
+}
+
+/// Native recognition jobs supply their starting pages. Even explicit retry must preserve a
+/// correction saved while that job ran; settings alone cannot detect a concurrent text edit.
+#[uniffi::export]
+pub fn document_apply_recognition(
+    document: &ScanDocument,
+    expected_pages: Vec<ScanPage>,
+    by_page: HashMap<Uuid, String>,
+    overwrite: bool,
+) -> ScanDocument {
+    let expected: HashMap<_, _> = expected_pages
+        .into_iter()
+        .map(|page| (page.id, page))
+        .collect();
+    let allowed = document
+        .pages
+        .iter()
+        .filter_map(|page| {
+            let old = expected.get(&page.id)?;
+            if page.text != old.text || page.settings() != old.settings() {
+                return None;
+            }
+            by_page.get(&page.id).map(|text| (page.id, text.clone()))
+        })
+        .collect();
+    document_fill_recognized_text(document, allowed, None, overwrite)
 }
 
 /// `setPageOrder`: the listed pages in that order; unlisted pages are removed. When
 /// `expected_page_ids` is given it must be the document's current set of pages, so a reorder
 /// made on a stale copy is refused. The result still needs validating, as `save` does.
 #[uniffi::export]
-pub fn document_with_page_order(document: &ScanDocument, page_ids: Vec<Uuid>, expected_page_ids: Option<Vec<Uuid>>) -> Result<ScanDocument, ScanError> {
+pub fn document_with_page_order(
+    document: &ScanDocument,
+    page_ids: Vec<Uuid>,
+    expected_page_ids: Option<Vec<Uuid>>,
+) -> Result<ScanDocument, ScanError> {
     let current: HashSet<Uuid> = document.pages.iter().map(|p| p.id).collect();
     let listed: HashSet<Uuid> = page_ids.iter().copied().collect();
-    let expected_ok = expected_page_ids.map(|e| e.into_iter().collect::<HashSet<_>>() == current).unwrap_or(true);
-    if !expected_ok || page_ids.is_empty() || listed.len() != page_ids.len() || !listed.is_subset(&current) {
+    let expected_ok = expected_page_ids
+        .map(|e| e.into_iter().collect::<HashSet<_>>() == current)
+        .unwrap_or(true);
+    if !expected_ok
+        || page_ids.is_empty()
+        || listed.len() != page_ids.len()
+        || !listed.is_subset(&current)
+    {
         return Err(ScanError::InvalidDocument);
     }
     let by_id: HashMap<Uuid, &ScanPage> = document.pages.iter().map(|p| (p.id, p)).collect();
     let mut next = document.clone();
-    next.pages = page_ids.iter().filter_map(|id| by_id.get(id).map(|p| (*p).clone())).collect();
+    next.pages = page_ids
+        .iter()
+        .filter_map(|id| by_id.get(id).map(|p| (*p).clone()))
+        .collect();
     Ok(next)
 }
 
 /// `updateMetadata`: title, note and favourite as given (an empty note is kept as `""`).
 #[uniffi::export]
-pub fn document_with_metadata(document: &ScanDocument, title: String, note: String, favorite: bool) -> ScanDocument {
-    ScanDocument { title, note: Some(note), favorite: Some(favorite), ..document.clone() }
+pub fn document_with_metadata(
+    document: &ScanDocument,
+    title: String,
+    note: String,
+    favorite: bool,
+) -> ScanDocument {
+    ScanDocument {
+        title,
+        note: Some(note),
+        favorite: Some(favorite),
+        ..document.clone()
+    }
 }
 
 /// `fillRecognizedText`: OCR completion fills only empty pages (all pages with `overwrite`), and
 /// only where the page still has the settings recognition ran with, so it never overwrites a
-/// rename, reorder, manual correction or later edit made while recognition ran.
+/// rename, reorder or later image edit made while recognition ran. Native jobs use
+/// `document_apply_recognition` to additionally protect concurrent text corrections.
 #[uniffi::export]
 pub fn document_fill_recognized_text(
     document: &ScanDocument,
@@ -318,10 +449,18 @@ pub fn document_fill_recognized_text(
     overwrite: bool,
 ) -> ScanDocument {
     let mut next = document.clone();
-    for page in next.pages.iter_mut().filter(|p| p.text.is_empty() || overwrite) {
+    for page in next
+        .pages
+        .iter_mut()
+        .filter(|p| p.text.is_empty() || overwrite)
+    {
         if let Some(text) = by_page.get(&page.id) {
             let current = page.settings();
-            if expected_settings.as_ref().map(|e| e.get(&page.id) == Some(&current)).unwrap_or(true) {
+            if expected_settings
+                .as_ref()
+                .map(|e| e.get(&page.id) == Some(&current))
+                .unwrap_or(true)
+            {
                 page.text = text.clone();
             }
         }
@@ -338,5 +477,8 @@ pub struct LibraryListing {
 
 #[uniffi::export]
 pub fn library_listing(documents: Vec<ScanDocument>, unreadable_count: i64) -> LibraryListing {
-    LibraryListing { documents: LibraryOrder::Newest.sorted(&documents), unreadable_count }
+    LibraryListing {
+        documents: LibraryOrder::Newest.sorted(&documents),
+        unreadable_count,
+    }
 }

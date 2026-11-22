@@ -10,6 +10,8 @@
 uniffi::setup_scaffolding!();
 
 mod backup;
+mod annotations;
+mod ink;
 mod documents;
 mod export;
 mod json;
@@ -18,6 +20,8 @@ mod settings;
 mod text;
 
 pub use backup::*;
+pub use annotations::*;
+pub use ink::*;
 pub use documents::*;
 pub use export::*;
 pub use layout::*;

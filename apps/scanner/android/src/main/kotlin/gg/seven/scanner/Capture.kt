@@ -39,10 +39,16 @@ import gg.seven.kit.numeric
 import gg.seven.scanner.core.scanLimits
 import java.io.File
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.withContext
 
-/** Whether this device has any camera to scan with (iOS `VNDocumentCameraViewController.isSupported`). */
-fun cameraAvailable(context: android.content.Context) = context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
+/**
+ * Whether this device has any camera to scan with (iOS
+ * `VNDocumentCameraViewController.isSupported`).
+ */
+fun cameraAvailable(context: android.content.Context) =
+    context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
 
 /**
  * The open-source scanner (VisionKit's counterpart): a full-bleed CameraX viewfinder, a shutter in
@@ -50,18 +56,50 @@ fun cameraAvailable(context: android.content.Context) = context.packageManager.h
  * are saved as photographed and can be rotated and adjusted in the page editor. Up to 50 pages.
  */
 @Composable
-fun CameraCapture(onSave: (List<Uri>, cleanUp: () -> Unit) -> Unit, onClose: () -> Unit, onImport: (() -> Unit)?) {
+fun CameraCapture(
+    onSave: (List<Uri>, cleanUp: () -> Unit) -> Unit,
+    onClose: () -> Unit,
+    onImport: (() -> Unit)?,
+    busy: Boolean = false,
+    progress: String = "",
+) {
     val context = LocalContext.current
     val view = LocalView.current
-    val folder = remember { File(context.cacheDir, "ScannerCapture/${UUID.randomUUID()}").apply { mkdirs() } }
-    var granted by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) }
-    var asked by rememberSaveable { mutableStateOf(false) }
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        granted = it
-        asked = true
+    val folderPath = rememberSaveable {
+        File(context.cacheDir, "ScannerCapture/${UUID.randomUUID()}").absolutePath
     }
-    LaunchedEffect(Unit) { if (!granted) permission.launch(Manifest.permission.CAMERA) }
-    val pages = remember { mutableStateListOf<File>() }
+    val folder = remember(folderPath) { File(folderPath).apply { mkdirs() } }
+    var granted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var asked by rememberSaveable { mutableStateOf(false) }
+    val permission =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+            granted = it
+            asked = true
+        }
+    LaunchedEffect(Unit) { if (!granted && !asked) permission.launch(Manifest.permission.CAMERA) }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        granted =
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED
+    }
+    // Restore captured pages from this draft's own directory after rotation/process recreation.
+    val pages =
+        remember(folderPath) {
+            mutableStateListOf<File>().apply {
+                addAll(
+                    folder
+                        .listFiles()
+                        .orEmpty()
+                        .filter { it.extension == "jpg" && it.length() > 0 }
+                        .sortedBy { it.nameWithoutExtension.toIntOrNull() ?: 0 }
+                )
+            }
+        }
     var taking by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
     var discard by remember { mutableStateOf(false) }
@@ -70,58 +108,96 @@ fun CameraCapture(onSave: (List<Uri>, cleanUp: () -> Unit) -> Unit, onClose: () 
         folder.deleteRecursively()
         onClose()
     }
-    BackHandler { if (pages.isEmpty()) close() else discard = true }
+    BackHandler {
+        if (!taking && !busy) {
+            if (pages.isEmpty()) close() else discard = true
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(Color.Black).testTag("scanner.camera")) {
         if (granted) {
             val owner = LocalLifecycleOwner.current
             var request by remember { mutableStateOf<SurfaceRequest?>(null) }
-            val capture = remember { ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build() }
+            val capture = remember {
+                ImageCapture.Builder()
+                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                    .build()
+            }
             LaunchedEffect(owner) {
-                val provider = ProcessCameraProvider.awaitInstance(context)
-                val preview = Preview.Builder().build().apply { setSurfaceProvider { request = it } }
-                try {
-                    provider.unbindAll()
-                    provider.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
-                    awaitCancellation()
-                } catch (e: IllegalArgumentException) {
-                    failure = "The camera couldn’t start. You can import images or PDFs instead."
-                } finally {
-                    provider.unbindAll()
+                withContext(Dispatchers.Main.immediate) {
+                    val provider = ProcessCameraProvider.awaitInstance(context)
+                    val preview =
+                        Preview.Builder().build().apply { setSurfaceProvider { request = it } }
+                    try {
+                        provider.bindToLifecycle(
+                            owner,
+                            CameraSelector.DEFAULT_BACK_CAMERA,
+                            preview,
+                            capture,
+                        )
+                        awaitCancellation()
+                    } catch (e: IllegalArgumentException) {
+                        failure =
+                            "The camera couldn’t start. You can import images or PDFs instead."
+                    } finally {
+                        provider.unbind(preview, capture)
+                    }
                 }
             }
-            request?.let { CameraXViewfinder(surfaceRequest = it, modifier = Modifier.fillMaxSize()) }
+            request?.let {
+                CameraXViewfinder(
+                    surfaceRequest = it,
+                    modifier = Modifier.fillMaxSize().testTag("scanner.viewfinder"),
+                )
+            }
             Column(
-                Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color.Black.copy(alpha = 0.55f)).navigationBarsPadding().padding(Space.m),
+                Modifier.align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.55f))
+                    .navigationBarsPadding()
+                    .padding(Space.m),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Space.ms),
             ) {
                 Text(
-                    failure ?: if (pages.isEmpty()) "Hold the page flat and fill the frame." else "${pageCount(pages.size)} · up to $limit",
+                    if (busy) progress
+                    else
+                        failure
+                            ?: if (pages.isEmpty()) "Hold the page flat and fill the frame."
+                            else "${pageCount(pages.size)} · up to $limit",
                     color = Color.White,
                     style = MaterialTheme.typography.bodyMedium.numeric(),
                     textAlign = TextAlign.Center,
                 )
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) {
-                        TextButton(onClick = { if (pages.isEmpty()) close() else discard = true }, colors = ButtonDefaults.textButtonColors(contentColor = Color.White)) { Text("Cancel") }
+                        TextButton(
+                            onClick = { if (pages.isEmpty()) close() else discard = true },
+                            enabled = !taking && !busy,
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                        ) {
+                            Text("Cancel")
+                        }
                     }
                     FilledIconButton(
                         onClick = {
-                            if (taking || pages.size >= limit) return@FilledIconButton
+                            if (taking || busy || pages.size >= limit) return@FilledIconButton
                             taking = true
                             val file = File(folder, "${pages.size + 1}.jpg")
                             capture.takePicture(
                                 ImageCapture.OutputFileOptions.Builder(file).build(),
                                 ContextCompat.getMainExecutor(context),
                                 object : ImageCapture.OnImageSavedCallback {
-                                    override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                                    override fun onImageSaved(
+                                        output: ImageCapture.OutputFileResults
+                                    ) {
                                         pages += file
                                         taking = false
                                         view.confirm()
                                     }
 
                                     override fun onError(exception: ImageCaptureException) {
+                                        file.delete()
                                         taking = false
                                         failure = "That page couldn’t be taken. Try again."
                                         view.reject()
@@ -129,20 +205,33 @@ fun CameraCapture(onSave: (List<Uri>, cleanUp: () -> Unit) -> Unit, onClose: () 
                                 },
                             )
                         },
-                        enabled = !taking && pages.size < limit,
+                        enabled = !taking && !busy && pages.size < limit,
                         modifier = Modifier.size(76.dp).testTag("scanner.shutter"),
-                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.White, contentColor = Color.Black),
+                        colors =
+                            IconButtonDefaults.filledIconButtonColors(
+                                containerColor = Color.White,
+                                contentColor = Color.Black,
+                            ),
                     ) {
                         Icon(Icons.Outlined.CameraAlt, "Take page", Modifier.size(32.dp))
                     }
                     Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
                         Button(
-                            onClick = { onSave(pages.map(Uri::fromFile)) { folder.deleteRecursively() } },
-                            enabled = pages.isNotEmpty() && !taking,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                            onClick = {
+                                onSave(pages.map(Uri::fromFile)) { folder.deleteRecursively() }
+                            },
+                            enabled = pages.isNotEmpty() && !taking && !busy,
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = Color.White,
+                                    contentColor = Color.Black,
+                                ),
                             modifier = Modifier.testTag("scanner.capture.save"),
                         ) {
-                            Text(if (pages.isEmpty()) "Save" else "Save ${pages.size}", style = LocalTextStyle.current.numeric())
+                            Text(
+                                if (pages.isEmpty()) "Save" else "Save ${pages.size}",
+                                style = LocalTextStyle.current.numeric(),
+                            )
                         }
                     }
                 }
@@ -153,7 +242,11 @@ fun CameraCapture(onSave: (List<Uri>, cleanUp: () -> Unit) -> Unit, onClose: () 
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Space.m),
             ) {
-                Text("Camera access is off", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Camera access is off",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                )
                 Text(
                     "Scanning needs the camera. Turn it on in Settings, or import images and PDFs instead.",
                     color = Color.White,
@@ -162,33 +255,59 @@ fun CameraCapture(onSave: (List<Uri>, cleanUp: () -> Unit) -> Unit, onClose: () 
                 )
                 if (asked)
                     Button(
-                        onClick = { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                        onClick = {
+                            context.startActivity(
+                                Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.fromParts("package", context.packageName, null),
+                                )
+                            )
+                        },
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = Color.White,
+                                contentColor = Color.Black,
+                            ),
                     ) {
                         Text("Open settings")
                     }
                 onImport?.let {
-                    OutlinedButton(onClick = {
-                        close()
-                        it()
-                    }, colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)) { Text("Import instead") }
+                    OutlinedButton(
+                        onClick = {
+                            close()
+                            it()
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                    ) {
+                        Text("Import instead")
+                    }
                 }
             }
-            IconButton(onClick = ::close, modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(Space.s)) {
+            IconButton(
+                onClick = ::close,
+                modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(Space.s),
+            ) {
                 Icon(Icons.Outlined.Close, "Close", tint = Color.White)
             }
         }
     }
     LaunchedEffect(Unit) {
         // Permission granted from Settings while the screen was open.
-        granted = granted || ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        granted =
+            granted ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                    PackageManager.PERMISSION_GRANTED
     }
     if (discard)
         AlertDialog(
             onDismissRequest = { discard = false },
             title = { Text("Discard ${pageCount(pages.size)}?") },
             text = { Text("The pages you took here are not saved yet.") },
-            confirmButton = { TextButton(onClick = ::close) { Text("Discard", color = MaterialTheme.colorScheme.error) } },
+            confirmButton = {
+                TextButton(onClick = ::close) {
+                    Text("Discard", color = MaterialTheme.colorScheme.error)
+                }
+            },
             dismissButton = { TextButton(onClick = { discard = false }) { Text("Keep scanning") } },
         )
 }

@@ -12,7 +12,10 @@
 //! the core builds and checks the header, validates every record and the exact file length before
 //! anything is restored, and gives the checksum to run over each page as it is copied.
 
-use crate::documents::{MAX_DOCUMENT_IMAGE_BYTES, MAX_MANIFEST_BYTES, MAX_PAGE_BYTES, ScanDocument, ScanError, document_encode};
+use crate::documents::{
+    MAX_DOCUMENT_IMAGE_BYTES, MAX_MANIFEST_BYTES, MAX_PAGE_BYTES, ScanDocument, ScanError,
+    document_encode,
+};
 use crate::json::{self, swift_int};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -52,7 +55,11 @@ static TABLE: [u32; 256] = {
         let mut c = n as u32;
         let mut k = 0;
         while k < 8 {
-            c = if c & 1 == 1 { 0xedb8_8320 ^ (c >> 1) } else { c >> 1 };
+            c = if c & 1 == 1 {
+                0xedb8_8320 ^ (c >> 1)
+            } else {
+                c >> 1
+            };
             k += 1;
         }
         table[n] = c;
@@ -107,7 +114,11 @@ pub fn backup_header(entries: Vec<BackupEntry>) -> Result<Vec<u8>, ScanError> {
             }
         }
     }
-    let index = json::encode(&BackupIndex { version: 1, entries }).map_err(|_| ScanError::InvalidDocument)?;
+    let index = json::encode(&BackupIndex {
+        version: 1,
+        entries,
+    })
+    .map_err(|_| ScanError::InvalidDocument)?;
     if index.len() as u64 > MAX_INDEX_BYTES || total + index.len() as u64 + 17 > MAX_BACKUP_BYTES {
         return Err(ScanError::TooLarge);
     }
@@ -126,7 +137,10 @@ pub fn backup_index_length(file_length: u64, preamble: &[u8]) -> Result<u32, Sca
     if file_length > MAX_BACKUP_BYTES {
         return Err(ScanError::TooLarge);
     }
-    if preamble.len() < BACKUP_MAGIC.len() || &preamble[..BACKUP_MAGIC.len()] != BACKUP_MAGIC || preamble.len() != BACKUP_PREAMBLE_BYTES as usize {
+    if preamble.len() < BACKUP_MAGIC.len()
+        || &preamble[..BACKUP_MAGIC.len()] != BACKUP_MAGIC
+        || preamble.len() != BACKUP_PREAMBLE_BYTES as usize
+    {
         return Err(ScanError::InvalidDocument);
     }
     let length = u32::from_le_bytes(preamble[9..13].try_into().unwrap());
@@ -150,9 +164,13 @@ pub fn read_backup_index(file_length: u64, header: &[u8]) -> Result<BackupIndex,
     if u32::from_le_bytes(checksum.try_into().unwrap()) != crc32(index_bytes) {
         return Err(ScanError::InvalidDocument);
     }
-    let index: BackupIndex = serde_json::from_slice(index_bytes).map_err(|_| ScanError::Unreadable)?;
+    let index: BackupIndex =
+        serde_json::from_slice(index_bytes).map_err(|_| ScanError::Unreadable)?;
     let ids: HashSet<_> = index.entries.iter().map(|e| e.document.id).collect();
-    if index.version != 1 || index.entries.len() > MAX_BACKUP_DOCUMENTS || ids.len() != index.entries.len() {
+    if index.version != 1
+        || index.entries.len() > MAX_BACKUP_DOCUMENTS
+        || ids.len() != index.entries.len()
+    {
         return Err(ScanError::InvalidDocument);
     }
     let mut expected = BACKUP_MAGIC.len() as u64 + 8 + index_bytes.len() as u64;
@@ -162,8 +180,16 @@ pub fn read_backup_index(file_length: u64, header: &[u8]) -> Result<BackupIndex,
             return Err(ScanError::TooLarge);
         }
         // In Swift's order, so the sum is only taken over sizes already known to be small.
-        let sizes_ok = entry.sizes.len() == entry.document.pages.len() && entry.sizes.iter().all(|&s| s > 0 && s as u64 <= MAX_PAGE_BYTES);
-        let sum = if sizes_ok { entry.sizes.iter().map(|&s| s as u64).sum::<u64>() } else { 0 };
+        let sizes_ok = entry.sizes.len() == entry.document.pages.len()
+            && entry
+                .sizes
+                .iter()
+                .all(|&s| s > 0 && s as u64 <= MAX_PAGE_BYTES);
+        let sum = if sizes_ok {
+            entry.sizes.iter().map(|&s| s as u64).sum::<u64>()
+        } else {
+            0
+        };
         if !sizes_ok || sum > MAX_DOCUMENT_IMAGE_BYTES {
             return Err(ScanError::InvalidDocument);
         }
@@ -181,5 +207,8 @@ pub fn read_backup_index(file_length: u64, header: &[u8]) -> Result<BackupIndex,
 /// The copy a restore adds: the same document under a new ID (page IDs are kept).
 #[uniffi::export]
 pub fn restored_copy(document: &ScanDocument) -> ScanDocument {
-    ScanDocument { id: uuid::Uuid::new_v4(), ..document.clone() }
+    ScanDocument {
+        id: uuid::Uuid::new_v4(),
+        ..document.clone()
+    }
 }

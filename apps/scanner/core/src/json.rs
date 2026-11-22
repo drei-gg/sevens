@@ -21,7 +21,11 @@ impl serde_json::ser::Formatter for Foundation {
     fn write_f64<W: ?Sized + Write>(&mut self, w: &mut W, value: f64) -> Result<()> {
         w.write_all(swift_double(value).as_bytes())
     }
-    fn write_string_fragment<W: ?Sized + Write>(&mut self, w: &mut W, fragment: &str) -> Result<()> {
+    fn write_string_fragment<W: ?Sized + Write>(
+        &mut self,
+        w: &mut W,
+        fragment: &str,
+    ) -> Result<()> {
         w.write_all(fragment.replace('/', "\\/").as_bytes())
     }
 }
@@ -30,7 +34,11 @@ impl serde_json::ser::Formatter for Foundation {
 /// decimal between 1e-4 and 2^53, exponential (`1e-05`, `1.5e+20`) outside it.
 pub(crate) fn swift_double(value: f64) -> String {
     if value == 0.0 {
-        return if value.is_sign_negative() { "-0".into() } else { "0".into() };
+        return if value.is_sign_negative() {
+            "-0".into()
+        } else {
+            "0".into()
+        };
     }
     let scientific = format!("{value:e}");
     let (mantissa, exponent) = scientific.split_once('e').unwrap_or((&scientific, "0"));
@@ -59,8 +67,15 @@ pub(crate) mod uuid_string {
 
 /// `UUID(uuidString:)`.
 pub(crate) fn parse_uuid(text: &str) -> Option<uuid::Uuid> {
-    let hyphens = text.len() == 36 && text.char_indices().all(|(i, c)| matches!(i, 8 | 13 | 18 | 23) == (c == '-'));
-    if hyphens { uuid::Uuid::parse_str(text).ok() } else { None }
+    let hyphens = text.len() == 36
+        && text
+            .char_indices()
+            .all(|(i, c)| matches!(i, 8 | 13 | 18 | 23) == (c == '-'));
+    if hyphens {
+        uuid::Uuid::parse_str(text).ok()
+    } else {
+        None
+    }
 }
 
 /// Serde for Swift `Int`: `JSONDecoder` also accepts a number with an exact integral value
@@ -71,7 +86,8 @@ pub(crate) mod swift_int {
         s.serialize_i64(*value)
     }
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<i64, D::Error> {
-        super::int(serde_json::Number::deserialize(d)?).ok_or_else(|| D::Error::custom("not an Int"))
+        super::int(serde_json::Number::deserialize(d)?)
+            .ok_or_else(|| D::Error::custom("not an Int"))
     }
     pub mod vec {
         use serde::{Deserialize, Deserializer, Serializer, de::Error, ser::SerializeSeq};

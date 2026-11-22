@@ -63,43 +63,73 @@ fun pageCount(count: Int) = if (count == 1) "1 page" else "$count pages"
 fun documentCount(count: Int) = if (count == 1) "1 document" else "$count documents"
 
 /** "Nov 16, 2026". */
-fun day(millis: Long): String = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
+fun day(millis: Long): String =
+    Instant.ofEpochMilli(millis)
+        .atZone(ZoneId.systemDefault())
+        .format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
 
 /** "Nov 16, 2026, 4:05 PM". */
 fun dayAndTime(millis: Long): String = ScannerModel.titleStamp(millis)
 
 /** True at large font scales, where side-by-side layouts stack (iOS accessibility sizes). */
-@Composable
-fun largeText(): Boolean = LocalDensity.current.fontScale >= 1.5f
+@Composable fun largeText(): Boolean = LocalDensity.current.fontScale >= 1.5f
 
 /** Rendered pages, so grids don't decode the same page twice while scrolling. */
+private data class ThumbnailKey(
+    val path: String,
+    val modified: Long,
+    val settings: PageSettings,
+    val annotations: List<gg.seven.scanner.core.PageAnnotation>,
+    val ink: List<gg.seven.scanner.core.PageInk>,
+    val maxPixels: Int,
+)
+
 private object Thumbnails {
     private val cache =
-        object : LruCache<String, ImageBitmap>((Runtime.getRuntime().maxMemory() / 8).toInt()) {
-            override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
+        object :
+            LruCache<ThumbnailKey, ImageBitmap>((Runtime.getRuntime().maxMemory() / 8).toInt()) {
+            override fun sizeOf(key: ThumbnailKey, value: ImageBitmap) =
+                value.width * value.height * 4 +
+                    key.annotations.size * 64 +
+                    key.ink.sumOf { it.points.size * 48 + 128 }
         }
 
-    fun get(key: String): ImageBitmap? = cache.get(key)
+    fun get(key: ThumbnailKey): ImageBitmap? = cache.get(key)
 
-    fun put(key: String, image: ImageBitmap) {
+    fun put(key: ThumbnailKey, image: ImageBitmap) {
         cache.put(key, image)
     }
 }
 
 /**
- * A page rendered with its adjustments. Nothing shows while it renders (a frame or two at
- * thumbnail size), so grids don't flicker spinners; it fades in.
+ * A page rendered with its adjustments. Nothing shows while it renders (a frame or two at thumbnail
+ * size), so grids don't flicker spinners; it fades in.
  */
 @Composable
-fun PageImage(file: File?, settings: PageSettings, modifier: Modifier = Modifier, maxPixels: Int = 800, fill: Boolean = false) {
-    val key = file?.let { "${it.path}|${it.lastModified()}|$settings|$maxPixels" }
+fun PageImage(
+    file: File?,
+    settings: PageSettings,
+    modifier: Modifier = Modifier,
+    maxPixels: Int = 800,
+    fill: Boolean = false,
+    annotations: List<gg.seven.scanner.core.PageAnnotation> = emptyList(),
+    ink: List<gg.seven.scanner.core.PageInk> = emptyList(),
+) {
+    // Keep structural geometry references, not a giant point-list string per cached thumbnail.
+    val key =
+        file?.let {
+            ThumbnailKey(it.path, it.lastModified(), settings, annotations, ink, maxPixels)
+        }
     var image by remember(key) { mutableStateOf(key?.let(Thumbnails::get)) }
     var failed by remember(key) { mutableStateOf(false) }
     LaunchedEffect(key) {
         if (file == null || key == null || image != null) return@LaunchedEffect
         delay(100)
         try {
-            val rendered = withContext(Dispatchers.Default) { Processing.rendered(file, settings, maxPixels).asImageBitmap() }
+            val rendered =
+                withContext(Dispatchers.Default) {
+                    Processing.rendered(file, settings, maxPixels, annotations, ink).asImageBitmap()
+                }
             Thumbnails.put(key, rendered)
             image = rendered
         } catch (_: Exception) {
@@ -110,17 +140,35 @@ fun PageImage(file: File?, settings: PageSettings, modifier: Modifier = Modifier
         Crossfade(image, label = "page") { shown ->
             when {
                 shown != null ->
-                    Image(shown, null, Modifier.fillMaxSize(), contentScale = if (fill) ContentScale.Crop else ContentScale.Fit)
-                failed -> Icon(Icons.Outlined.WarningAmber, "Page unavailable", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Image(
+                        shown,
+                        null,
+                        Modifier.fillMaxSize(),
+                        contentScale = if (fill) ContentScale.Crop else ContentScale.Fit,
+                    )
+                failed ->
+                    Icon(
+                        Icons.Outlined.WarningAmber,
+                        "Page unavailable",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 else -> Spacer(Modifier.fillMaxSize())
             }
         }
     }
 }
 
-/** One page as a thumbnail: the adjusted image on card, rounded, with a hairline so white paper still has an edge. */
+/**
+ * One page as a thumbnail: the adjusted image on card, rounded, with a hairline so white paper
+ * still has an edge.
+ */
 @Composable
-fun PageThumbnail(file: File?, page: ScanPage?, modifier: Modifier = Modifier, maxPixels: Int = 480) {
+fun PageThumbnail(
+    file: File?,
+    page: ScanPage?,
+    modifier: Modifier = Modifier,
+    maxPixels: Int = 480,
+) {
     val shape = RoundedCornerShape(ScannerMetrics.thumbnailRadius)
     Box(
         modifier
@@ -131,11 +179,22 @@ fun PageThumbnail(file: File?, page: ScanPage?, modifier: Modifier = Modifier, m
             .clearAndSetSemantics {}
     ) {
         if (page != null)
-            PageImage(file, page.settings, Modifier.fillMaxSize(), maxPixels, fill = true)
+            PageImage(
+                file,
+                page.settings,
+                Modifier.fillMaxSize(),
+                maxPixels,
+                fill = true,
+                annotations = page.annotations,
+                ink = page.ink,
+            )
     }
 }
 
-/** A document in the library grid: its first page with the page count on the corner, then the name and date. */
+/**
+ * A document in the library grid: its first page with the page count on the corner, then the name
+ * and date.
+ */
 @Composable
 fun DocumentCard(document: ScanDocument, firstPage: File?, modifier: Modifier = Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(Space.s)) {
@@ -147,30 +206,64 @@ fun DocumentCard(document: ScanDocument, firstPage: File?, modifier: Modifier = 
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
-                Row(Modifier.padding(horizontal = Space.s, vertical = Space.xs), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+                Row(
+                    Modifier.padding(horizontal = Space.s, vertical = Space.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                ) {
                     Icon(Icons.Outlined.Description, null, Modifier.size(16.dp))
-                    Text("${document.pages.size}", style = MaterialTheme.typography.labelLarge.numeric())
+                    Text(
+                        "${document.pages.size}",
+                        style = MaterialTheme.typography.labelLarge.numeric(),
+                    )
                 }
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(Space.xs), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 if (document.favorite == true) Icon(Icons.Outlined.Star, null, Modifier.size(16.dp))
-                Text(document.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                    document.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-            Text(day(document.createdMillis), style = MaterialTheme.typography.bodySmall.numeric(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                day(document.createdMillis),
+                style = MaterialTheme.typography.bodySmall.numeric(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
 
 /** The words TalkBack reads for a card: name, then pages, date and favorite. */
 fun cardDescription(document: ScanDocument): String =
-    listOfNotNull(document.title, pageCount(document.pages.size), day(document.createdMillis), if (document.favorite == true) "Favorite" else null).joinToString(", ")
+    listOfNotNull(
+            document.title,
+            pageCount(document.pages.size),
+            day(document.createdMillis),
+            if (document.favorite == true) "Favorite" else null,
+        )
+        .joinToString(", ")
 
 /** A status line: the colour goes on the icon, the words stay on-surface (polish guide §3.1). */
 @Composable
-fun StatusLine(text: String, modifier: Modifier = Modifier, icon: ImageVector = Icons.Outlined.WarningAmber, tint: Color = MaterialTheme.colorScheme.error) {
-    Row(modifier.fillMaxWidth().semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.spacedBy(Space.s), verticalAlignment = Alignment.Top) {
+fun StatusLine(
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector = Icons.Outlined.WarningAmber,
+    tint: Color = MaterialTheme.colorScheme.error,
+) {
+    Row(
+        modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+        horizontalArrangement = Arrangement.spacedBy(Space.s),
+        verticalAlignment = Alignment.Top,
+    ) {
         Icon(icon, null, tint = tint)
         Text(text, style = MaterialTheme.typography.bodyMedium)
     }
@@ -179,9 +272,20 @@ fun StatusLine(text: String, modifier: Modifier = Modifier, icon: ImageVector = 
 /** A labelled number on a card: Backup's summary. */
 @Composable
 fun StatTile(title: String, value: String, modifier: Modifier = Modifier) {
-    Surface(modifier.semantics(mergeDescendants = true) { contentDescription = "$title, $value" }, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
-        Column(Modifier.padding(Space.ms).heightIn(min = 64.dp), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-            Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Surface(
+        modifier.semantics(mergeDescendants = true) { contentDescription = "$title, $value" },
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            Modifier.padding(Space.ms).heightIn(min = 64.dp),
+            verticalArrangement = Arrangement.spacedBy(Space.xs),
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Text(value, style = MaterialTheme.typography.titleLarge.numeric())
         }
     }
@@ -189,27 +293,55 @@ fun StatTile(title: String, value: String, modifier: Modifier = Modifier) {
 
 /** A card on paper for a titled block of content (iOS GroupBox). */
 @Composable
-fun ContentCard(title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
+fun ContentCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
+    ) {
         Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            Text(
+                title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
             content()
         }
     }
 }
 
 /** The page column, capped at the readable width and centred on wide screens. */
-fun Modifier.readable(): Modifier = this.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = ScannerMetrics.contentWidth)
+fun Modifier.readable(): Modifier =
+    this.fillMaxWidth()
+        .wrapContentWidth(Alignment.CenterHorizontally)
+        .widthIn(max = ScannerMetrics.contentWidth)
 
-/** Haptics that confirm, reject and tick (polish guide §3.8), with the older constants before Android 11 / 14. */
+/**
+ * Haptics that confirm, reject and tick (polish guide §3.8), with the older constants before
+ * Android 11 / 14.
+ */
 fun android.view.View.confirm() {
-    performHapticFeedback(if (android.os.Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.CONFIRM else android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+    performHapticFeedback(
+        if (android.os.Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.CONFIRM
+        else android.view.HapticFeedbackConstants.VIRTUAL_KEY
+    )
 }
 
 fun android.view.View.reject() {
-    performHapticFeedback(if (android.os.Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.REJECT else android.view.HapticFeedbackConstants.LONG_PRESS)
+    performHapticFeedback(
+        if (android.os.Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.REJECT
+        else android.view.HapticFeedbackConstants.LONG_PRESS
+    )
 }
 
 fun android.view.View.tick() {
-    performHapticFeedback(if (android.os.Build.VERSION.SDK_INT >= 34) android.view.HapticFeedbackConstants.SEGMENT_FREQUENT_TICK else android.view.HapticFeedbackConstants.CLOCK_TICK)
+    performHapticFeedback(
+        if (android.os.Build.VERSION.SDK_INT >= 34)
+            android.view.HapticFeedbackConstants.SEGMENT_FREQUENT_TICK
+        else android.view.HapticFeedbackConstants.CLOCK_TICK
+    )
 }

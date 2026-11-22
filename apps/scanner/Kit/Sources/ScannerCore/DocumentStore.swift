@@ -110,6 +110,18 @@ public actor DocumentStore {
         return current
     }
 
+    public func updateAnnotations(documentID: UUID, expected: ScanPage, annotations: [PageAnnotation], ink: [PageInk]? = nil) throws -> ScanDocument {
+        let current = try documentWithPageMarks(document: load(documentID), expected: expected, annotations: annotations, ink: ink ?? expected.ink)
+        try save(current)
+        return current
+    }
+
+    public func updatePageText(documentID: UUID, expected: ScanPage, text: String) throws -> ScanDocument {
+        let current = try documentWithPageText(document: load(documentID), expected: expected, text: text)
+        try save(current)
+        return current
+    }
+
     public func append(documentID: UUID, images: [Data]) throws -> ScanDocument {
         var current = try load(documentID)
         let existing = try pageURLs(current).reduce(0) { $0 + (try ScanFiles.size($1)) }
@@ -153,16 +165,17 @@ public actor DocumentStore {
 
     /// OCR completion must not overwrite a rename, reorder or edit performed while recognition ran.
     public func fillRecognizedText(documentID: UUID, byPage: [UUID: String], expectedSettings: [UUID: PageSettings]? = nil,
-                                   overwrite: Bool = false) throws -> ScanDocument {
+                                   overwrite: Bool = false, expectedPages: [ScanPage]? = nil) throws -> ScanDocument {
         let current = try documentDecode(data: Data(contentsOf: folder(documentID).appendingPathComponent("document.json")))
-        let filled = documentFillRecognizedText(document: current, byPage: byPage, expectedSettings: expectedSettings, overwrite: overwrite)
+        let filled = expectedPages.map { documentApplyRecognition(document: current, expectedPages: $0, byPage: byPage, overwrite: overwrite) }
+            ?? documentFillRecognizedText(document: current, byPage: byPage, expectedSettings: expectedSettings, overwrite: overwrite)
         try save(filled)
         return filled
     }
 
     // MARK: files
 
-    private func load(_ id: UUID) throws -> ScanDocument {
+    public func load(_ id: UUID) throws -> ScanDocument {
         try manifestRead(data: Data(contentsOf: folder(id).appendingPathComponent("document.json")),
                          folderName: documentFolderName(documentId: id))
     }

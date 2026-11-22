@@ -5,6 +5,23 @@
 	"objectVersion" = "77";
 	"archiveVersion" = "1";
 	"objects" = {
+		"DE4FDFABE294F33F0E5F6B4D" = {
+			"isa" = "XCRemoteSwiftPackageReference";
+			"repositoryURL" = "https://github.com/TimOliver/TOCropViewController";
+			"requirement" = {
+				"kind" = "exactVersion";
+				"version" = "3.3.0";
+			};
+		};
+		"3475843763A6771B02BDA290" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "DE4FDFABE294F33F0E5F6B4D";
+			"productName" = "CropViewController";
+		};
+		"A3942DE0D1366E836BF2C880" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "3475843763A6771B02BDA290";
+		};
 		"91339408208ECF8A407F313A" = {
 			"isa" = "XCConfigurationList";
 			"defaultConfigurationIsVisible" = "0";
@@ -280,6 +297,7 @@
 			"files" = (
 				"879CCA7B21084EB6CE7DF1EB",
 				"ABCDEF123456789012345679",
+				"A3942DE0D1366E836BF2C880",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
@@ -316,6 +334,9 @@
 			"projectRoot" = "";
 			"preferredProjectObjectVersion" = "77";
 			"mainGroup" = "686E248E049253F9D30C3F4C";
+			"packageReferences" = (
+				"DE4FDFABE294F33F0E5F6B4D",
+			);
 		};
 		"0462E5556301BB380E2C8DF1" = {
 			"path" = "Release.xcconfig";
@@ -357,13 +378,15 @@
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
 		"066DC18C249F54B39289CF0A" = {
-			"name" = "Scanner";
+			"buildRules" = (
+			);
 			"buildConfigurationList" = "9ED377900986B03F62D90F26";
 			"productReference" = "984940A6B53763461516B39F";
 			"productType" = "com.apple.product-type.application";
 			"packageProductDependencies" = (
 				"FC956963D93E4776F5B7BEE1",
 				"ABCDEF123456789012345678",
+				"3475843763A6771B02BDA290",
 			);
 			"productName" = "Scanner";
 			"isa" = "PBXNativeTarget";
@@ -373,12 +396,11 @@
 			);
 			"dependencies" = (
 			);
+			"name" = "Scanner";
 			"buildPhases" = (
 				"4E6A9FB79F74BE865D78A65C",
 				"A0E02F31DF92278329A35C11",
 				"F54BDE30D29FD49040F5D82D",
-			);
-			"buildRules" = (
 			);
 		};
 		"2F1EA0A7B220918020E3DBE9" = {

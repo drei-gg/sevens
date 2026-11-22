@@ -5,8 +5,10 @@ by Apache-2.0.txt; the others' licences follow in their own files.
 - JavaCPP and JavaCPP Presets for Tesseract and Leptonica, Bytedeco (Apache-2.0)
 - Leptonica 1.87 (BSD-2-Clause style, Leptonica.txt) and its image codecs (Leptonica-codecs.txt)
 - PdfBox-Android 2.0.27 and Apache PDFBox (Apache-2.0, PDFBox-NOTICE.txt)
+- AndroidX Ink authoring, brush and strokes 1.0.0 (Apache-2.0), Android Open Source Project
 - AndroidX CameraX 1.6 and ExifInterface 1.4 (Apache-2.0)
 - Reorderable by Calvin Liang 3.1 (Apache-2.0)
+- Android-Image-Cropper by CanHub 4.7.0 (Apache-2.0), https://github.com/CanHub/Android-Image-Cropper
 
 Personal and Google Play editions also use Google's ML Kit document scanner through Google Play
 services, under Google's terms (a platform exception, like Play Billing); the open edition does not.

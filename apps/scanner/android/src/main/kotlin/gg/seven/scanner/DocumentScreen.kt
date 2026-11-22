@@ -6,6 +6,7 @@
 
 package gg.seven.scanner
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
@@ -95,15 +97,30 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
     var arranging by rememberSaveable { mutableStateOf(false) }
     var preview by remember { mutableStateOf<File?>(null) }
     var removing by remember { mutableStateOf<ScanPage?>(null) }
+    var discarding by remember { mutableStateOf(false) }
+    val close = {
+        if (!working) {
+            if (edited) discarding = true else nav.pop()
+        }
+    }
+    BackHandler { close() }
+    if (discarding)
+        gg.seven.kit.DiscardChangesDialog(
+            { discarding = false },
+            {
+                discarding = false
+                nav.pop()
+            },
+        )
     val adders = rememberAdders(model, id)
     val camera = remember { cameraAvailable(context) }
     val allText = document.pages.map { it.text }.filter { it.isNotEmpty() }.joinToString("\n\n")
     val large = largeText()
 
-    fun orderPages(ids: List<UUID>) {
+    fun orderPages(ids: List<UUID>, onSaved: () -> Unit = {}) {
         working = true
         scope.launch {
-            model.setPageOrder(document, ids)
+            if (model.setPageOrder(document, ids) != null) onSaved()
             working = false
         }
     }
@@ -113,8 +130,14 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
         scope.launch {
             try {
                 val files = model.repository.io { pageFiles(document) }
-                val out = Processing.exportFile(context, pdfExportPlan(document, document.pages.map { it.id }).filename)
-                withContext(Dispatchers.Default) { Processing.pdf(context, files, document.pages, out, searchable = false) }
+                val out =
+                    Processing.exportFile(
+                        context,
+                        pdfExportPlan(document, document.pages.map { it.id }).filename,
+                    )
+                withContext(Dispatchers.Default) {
+                    Processing.pdf(context, files, document.pages, out, searchable = false)
+                }
                 preview = out
             } catch (e: Exception) {
                 model.error.value = describe(e)
@@ -127,7 +150,7 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(nav.snackbar) },
         topBar = {
-            ScannerTopBar(document.title, onBack = nav::pop) {
+            ScannerTopBar(document.title, onBack = close) {
                 val starred = document.favorite == true
                 IconToggleButton(
                     checked = starred,
@@ -137,14 +160,31 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                     },
                     modifier = Modifier.testTag("scanner.favorite"),
                 ) {
-                    Icon(if (starred) Icons.Outlined.Star else Icons.Outlined.StarOutline, if (starred) "Remove from Favorites" else "Add to Favorites")
+                    Icon(
+                        if (starred) Icons.Outlined.Star else Icons.Outlined.StarOutline,
+                        if (starred) "Remove from Favorites" else "Add to Favorites",
+                    )
                 }
             }
         },
         bottomBar = {
             Surface(color = MaterialTheme.colorScheme.background) {
-                Box(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal = Space.m, vertical = Space.s), contentAlignment = Alignment.Center) {
-                    Button(onClick = { exporting = true }, enabled = !working, modifier = Modifier.widthIn(max = ScannerMetrics.contentWidth).fillMaxWidth().heightIn(min = 56.dp).testTag("scanner.export")) {
+                Box(
+                    Modifier.fillMaxWidth()
+                        .navigationBarsPadding()
+                        .imePadding()
+                        .padding(horizontal = Space.m, vertical = Space.s),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Button(
+                        onClick = { exporting = true },
+                        enabled = !working,
+                        modifier =
+                            Modifier.widthIn(max = ScannerMetrics.contentWidth)
+                                .fillMaxWidth()
+                                .heightIn(min = 56.dp)
+                                .testTag("scanner.export"),
+                    ) {
                         Icon(Icons.Outlined.PictureAsPdf, null)
                         Spacer(Modifier.width(Space.s))
                         Text("Export PDF")
@@ -155,7 +195,10 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).readable().padding(horizontal = Space.m, vertical = Space.s),
+                Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .readable()
+                    .padding(horizontal = Space.m, vertical = Space.s),
                 verticalArrangement = Arrangement.spacedBy(Space.l),
             ) {
                 Text(
@@ -171,7 +214,12 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                             row.forEach { page ->
                                 Box(Modifier.weight(1f)) {
                                     if (page == null)
-                                        AddPagesTile(enabled = !busy, camera = camera, onScan = { gate.run("Scan documents", adders.scan) }, onImport = { gate.run("Scan documents", adders.import) })
+                                        AddPagesTile(
+                                            enabled = !busy,
+                                            camera = camera,
+                                            onScan = { gate.run("Scan documents", adders.scan) },
+                                            onImport = { gate.run("Scan documents", adders.import) },
+                                        )
                                     else {
                                         val index = document.pages.indexOf(page)
                                         PageTile(
@@ -191,15 +239,55 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                     }
                 }
                 val actions: @Composable (Modifier) -> Unit = { each ->
-                    ActionTile("Preview", Icons.Outlined.Visibility, each.testTag("scanner.preview"), enabled = !working) { makePreview() }
-                    ActionTile("Arrange", Icons.Outlined.GridView, each.testTag("scanner.arrange"), enabled = document.pages.size > 1 && !working) { arranging = true }
-                    ActionTile("Share text", Icons.Outlined.FormatQuote, each, enabled = allText.isNotEmpty()) { shareText(context, allText) }
+                    ActionTile(
+                        "Preview",
+                        Icons.Outlined.Visibility,
+                        each.testTag("scanner.preview"),
+                        enabled = !working,
+                    ) {
+                        makePreview()
+                    }
+                    ActionTile(
+                        "Arrange",
+                        Icons.Outlined.GridView,
+                        each.testTag("scanner.arrange"),
+                        enabled = document.pages.size > 1 && !working,
+                    ) {
+                        arranging = true
+                    }
+                    ActionTile(
+                        "Share text",
+                        Icons.Outlined.FormatQuote,
+                        each,
+                        enabled = allText.isNotEmpty(),
+                    ) {
+                        shareText(context, allText)
+                    }
                 }
-                if (large) Column(verticalArrangement = Arrangement.spacedBy(Space.s)) { actions(Modifier.fillMaxWidth()) }
-                else Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) { actions(Modifier.weight(1f)) }
+                if (large)
+                    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                        actions(Modifier.fillMaxWidth())
+                    }
+                else
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                        actions(Modifier.weight(1f))
+                    }
                 ContentCard("Recognized text") {
-                    if (allText.isEmpty()) Text("No recognized text yet.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    else SelectionContainer { Text(allText, style = MaterialTheme.typography.bodyMedium, maxLines = 6, overflow = TextOverflow.Ellipsis) }
+                    if (allText.isEmpty())
+                        Text(
+                            "No recognized text yet.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    else
+                        SelectionContainer {
+                            Text(
+                                allText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 6,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     TextButton(
                         onClick = {
                             working = true
@@ -218,7 +306,11 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                         Modifier.fillMaxWidth().testTag("scanner.title"),
                         label = { Text("Name") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Sentences,
+                                imeAction = ImeAction.Next,
+                            ),
                     )
                     OutlinedTextField(
                         note,
@@ -228,7 +320,8 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                         placeholder = { Text("Optional notes") },
                         minLines = 3,
                         maxLines = 8,
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        keyboardOptions =
+                            KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     )
                     FilledTonalButton(
                         onClick = {
@@ -243,7 +336,7 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                                 working = false
                             }
                         },
-                        enabled = edited && !working,
+                        enabled = edited && title.isNotBlank() && !working,
                         modifier = Modifier.testTag("scanner.saveDetails"),
                     ) {
                         Text("Save details")
@@ -258,8 +351,12 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                             }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("scanner.delete"),
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    modifier =
+                        Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("scanner.delete"),
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
                 ) {
                     Text("Delete document")
                 }
@@ -273,41 +370,78 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
             title = { Text("Remove this page?") },
             text = { Text("Its image is deleted when the document is saved.") },
             confirmButton = {
-                TextButton(onClick = {
-                    removing = null
-                    orderPages(document.pages.filter { it.id != page.id }.map { it.id })
-                }) { Text("Remove page", color = MaterialTheme.colorScheme.error) }
+                TextButton(
+                    onClick = {
+                        removing = null
+                        orderPages(document.pages.filter { it.id != page.id }.map { it.id })
+                    }
+                ) {
+                    Text("Remove page", color = MaterialTheme.colorScheme.error)
+                }
             },
             dismissButton = { TextButton(onClick = { removing = null }) { Text("Cancel") } },
         )
     }
     if (exporting) ExportScreen(model, document) { exporting = false }
-    if (arranging) ArrangePages(model, document, onClose = { arranging = false }) { ids ->
-        arranging = false
-        orderPages(ids)
-    }
+    if (arranging)
+        ArrangePages(model, document, working, onClose = { arranging = false }) { ids ->
+            orderPages(ids) { arranging = false }
+        }
     preview?.let { PdfPreview(it) { preview = null } }
 }
 
 /** An icon over a short label: the document's quick actions. */
 @Composable
-private fun ActionTile(label: String, icon: ImageVector, modifier: Modifier, enabled: Boolean = true, onClick: () -> Unit) {
-    OutlinedButton(onClick = onClick, enabled = enabled, modifier = modifier.heightIn(min = 64.dp), shape = MaterialTheme.shapes.large, contentPadding = PaddingValues(Space.s)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+private fun ActionTile(
+    label: String,
+    icon: ImageVector,
+    modifier: Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.heightIn(min = 64.dp),
+        shape = MaterialTheme.shapes.large,
+        contentPadding = PaddingValues(Space.s),
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Space.xs),
+        ) {
             Icon(icon, null)
-            Text(label, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, maxLines = 2)
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+            )
         }
     }
 }
 
 @Composable
-private fun PageTile(model: ScannerModel, document: ScanDocument, page: ScanPage, index: Int, onOpen: () -> Unit, onShare: () -> Unit, onRemove: () -> Unit) {
+private fun PageTile(
+    model: ScannerModel,
+    document: ScanDocument,
+    page: ScanPage,
+    index: Int,
+    onOpen: () -> Unit,
+    onShare: () -> Unit,
+    onRemove: () -> Unit,
+) {
     var menu by remember { mutableStateOf(false) }
     val number = index + 1
     Box {
         Column(
             Modifier.fillMaxWidth()
-                .combinedClickable(onLongClickLabel = "Options", onLongClick = { menu = true }, onClickLabel = "Rotate or adjust", onClick = onOpen)
+                .combinedClickable(
+                    onLongClickLabel = "Options",
+                    onLongClick = { menu = true },
+                    onClickLabel = "Rotate or adjust",
+                    onClick = onOpen,
+                )
                 .semantics(mergeDescendants = true) {
                     contentDescription = "Page $number"
                     stateDescription = page.text.ifEmpty { "No recognized text" }.take(200)
@@ -316,20 +450,41 @@ private fun PageTile(model: ScannerModel, document: ScanDocument, page: ScanPage
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Space.xs),
         ) {
-            PageThumbnail(model.repository.pageFile(document.id, page.id), page, Modifier.fillMaxWidth(), maxPixels = 700)
-            Text("$number", style = MaterialTheme.typography.bodySmall.numeric(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            PageThumbnail(
+                model.repository.pageFile(document.id, page.id),
+                page,
+                Modifier.fillMaxWidth(),
+                maxPixels = 700,
+            )
+            Text(
+                "$number",
+                style = MaterialTheme.typography.bodySmall.numeric(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        FilledTonalIconButton(
+            onClick = { menu = true },
+            modifier = Modifier.align(Alignment.TopEnd).testTag("scanner.page.options.$number"),
+        ) {
+            Icon(Icons.Outlined.MoreVert, "Page $number actions")
         }
         DropdownMenu(menu, onDismissRequest = { menu = false }) {
             if (page.text.isNotEmpty())
-                DropdownMenuItem(text = { Text("Share text") }, leadingIcon = { Icon(Icons.Outlined.FormatQuote, null) }, onClick = {
-                    menu = false
-                    onShare()
-                })
+                DropdownMenuItem(
+                    text = { Text("Share text") },
+                    leadingIcon = { Icon(Icons.Outlined.FormatQuote, null) },
+                    onClick = {
+                        menu = false
+                        onShare()
+                    },
+                )
             if (document.pages.size > 1) {
                 if (page.text.isNotEmpty()) HorizontalDivider()
                 DropdownMenuItem(
                     text = { Text("Remove page", color = MaterialTheme.colorScheme.error) },
-                    leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error)
+                    },
                     onClick = {
                         menu = false
                         onRemove()
@@ -337,131 +492,326 @@ private fun PageTile(model: ScannerModel, document: ScanDocument, page: ScanPage
                 )
             }
             if (page.text.isEmpty() && document.pages.size < 2)
-                DropdownMenuItem(text = { Text("Rotate or adjust") }, leadingIcon = { Icon(Icons.Outlined.Tune, null) }, onClick = {
-                    menu = false
-                    onOpen()
-                })
+                DropdownMenuItem(
+                    text = { Text("Rotate or adjust") },
+                    leadingIcon = { Icon(Icons.Outlined.Tune, null) },
+                    onClick = {
+                        menu = false
+                        onOpen()
+                    },
+                )
         }
     }
 }
 
-/** The last tile: add pages by camera or from files. Adding pages needs access, like a new document. */
+/**
+ * The last tile: add pages by camera or from files. Adding pages needs access, like a new document.
+ */
 @Composable
-private fun AddPagesTile(enabled: Boolean, camera: Boolean, onScan: () -> Unit, onImport: () -> Unit) {
+private fun AddPagesTile(
+    enabled: Boolean,
+    camera: Boolean,
+    onScan: () -> Unit,
+    onImport: () -> Unit,
+) {
     var menu by remember { mutableStateOf(false) }
     val rule = MaterialTheme.colorScheme.outline
     Box {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Space.xs),
+        ) {
             Surface(
                 onClick = { menu = true },
                 enabled = enabled,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(ScannerMetrics.thumbnailRadius),
+                shape =
+                    androidx.compose.foundation.shape.RoundedCornerShape(
+                        ScannerMetrics.thumbnailRadius
+                    ),
                 color = MaterialTheme.colorScheme.background,
                 modifier =
                     Modifier.fillMaxWidth()
                         .aspectRatio(ScannerMetrics.PAGE_ASPECT)
                         .drawBehind {
                             val radius = ScannerMetrics.thumbnailRadius.toPx()
-                            drawRoundRect(rule, cornerRadius = CornerRadius(radius), style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))))
+                            drawRoundRect(
+                                rule,
+                                cornerRadius = CornerRadius(radius),
+                                style =
+                                    Stroke(
+                                        1.5.dp.toPx(),
+                                        pathEffect =
+                                            PathEffect.dashPathEffect(
+                                                floatArrayOf(6.dp.toPx(), 4.dp.toPx())
+                                            ),
+                                    ),
+                            )
                         }
                         .semantics { contentDescription = "Add pages" }
                         .testTag("scanner.addPages"),
             ) {
-                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.s, Alignment.CenterVertically)) {
+                Column(
+                    Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Space.s, Alignment.CenterVertically),
+                ) {
                     Icon(Icons.Outlined.Add, null)
                     Text("Add pages", style = MaterialTheme.typography.titleSmall)
                 }
             }
-            Text(" ", style = MaterialTheme.typography.bodySmall)
+            // Match the page-number caption height without exposing a blank accessibility node.
+            Text(
+                " ",
+                modifier = Modifier.clearAndSetSemantics {},
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
         DropdownMenu(menu, onDismissRequest = { menu = false }) {
             if (camera)
-                DropdownMenuItem(text = { Text("Scan more pages") }, leadingIcon = { Icon(Icons.Outlined.DocumentScanner, null) }, onClick = {
+                DropdownMenuItem(
+                    text = { Text("Scan more pages") },
+                    leadingIcon = { Icon(Icons.Outlined.DocumentScanner, null) },
+                    onClick = {
+                        menu = false
+                        onScan()
+                    },
+                )
+            DropdownMenuItem(
+                text = { Text("Append images or PDF") },
+                leadingIcon = { Icon(Icons.Outlined.FileOpen, null) },
+                onClick = {
                     menu = false
-                    onScan()
-                })
-            DropdownMenuItem(text = { Text("Append images or PDF") }, leadingIcon = { Icon(Icons.Outlined.FileOpen, null) }, onClick = {
-                menu = false
-                onImport()
-            })
+                    onImport()
+                },
+            )
         }
     }
 }
 
 /**
- * Reorder or remove pages in one list: drag by the handle (or TalkBack's Move up / Move down),
- * remove with the trailing button. Nothing is saved until Save; at least one page stays.
+ * Reorder or remove pages in one list: drag by the handle, use accessibility move actions, or open
+ * the page options menu. Nothing is saved until Save; at least one page stays.
  */
 @Composable
-private fun ArrangePages(model: ScannerModel, document: ScanDocument, onClose: () -> Unit, onSave: (List<UUID>) -> Unit) {
-    var pages by remember { mutableStateOf(document.pages) }
-    val numbers = remember(document) { document.pages.withIndex().associate { (i, p) -> p.id to i + 1 } }
+private fun ArrangePages(
+    model: ScannerModel,
+    document: ScanDocument,
+    busy: Boolean,
+    onClose: () -> Unit,
+    onSave: (List<UUID>) -> Unit,
+) {
+    var pages by
+        rememberSaveable(
+            document.id,
+            stateSaver =
+                androidx.compose.runtime.saveable.listSaver(
+                    save = { rows -> rows.map { it.id.toString() } },
+                    restore = { ids ->
+                        ids.mapNotNull { id -> document.pages.find { it.id.toString() == id } }
+                    },
+                ),
+        ) {
+            mutableStateOf(document.pages)
+        }
+    val numbers =
+        remember(document) { document.pages.withIndex().associate { (i, p) -> p.id to i + 1 } }
     val list = rememberLazyListState()
     val view = LocalView.current
-    val reorder = rememberReorderableLazyListState(list) { from, to ->
-        // By key: the list's first item is the explanation, not a page.
-        val a = pages.indexOfFirst { it.id.toString() == from.key }
-        val b = pages.indexOfFirst { it.id.toString() == to.key }
-        if (a >= 0 && b >= 0) {
-            pages = pages.toMutableList().apply { add(b, removeAt(a)) }
-            view.tick()
+    val reorder =
+        rememberReorderableLazyListState(list) { from, to ->
+            // By key: the list's first item is the explanation, not a page.
+            val a = pages.indexOfFirst { it.id.toString() == from.key }
+            val b = pages.indexOfFirst { it.id.toString() == to.key }
+            if (!busy && a >= 0 && b >= 0) {
+                pages = pages.toMutableList().apply { add(b, removeAt(a)) }
+                view.tick()
+            }
         }
-    }
     fun move(from: Int, to: Int) {
-        if (to !in pages.indices) return
+        if (busy || to !in pages.indices) return
         pages = pages.toMutableList().apply { add(to, removeAt(from)) }
     }
     val changed = pages.map { it.id } != document.pages.map { it.id }
-    // Material's full-screen dialog (SevenKit FullScreenForm's bar), with the list itself scrolling.
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+    // Material's full-screen dialog (SevenKit FullScreenForm's bar), with the list itself
+    // scrolling.
+    var discarding by remember { mutableStateOf(false) }
+    val close = {
+        if (!busy) {
+            if (changed) discarding = true else onClose()
+        }
+    }
+    if (discarding)
+        gg.seven.kit.DiscardChangesDialog(
+            { discarding = false },
+            {
+                discarding = false
+                onClose()
+            },
+        )
+    Dialog(
+        onDismissRequest = close,
+        properties =
+            DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = { Text("Arrange pages") },
-                    navigationIcon = { IconButton(onClick = onClose, modifier = Modifier.testTag("editor-cancel")) { Icon(Icons.Outlined.Close, "Close") } },
-                    actions = { TextButton(onClick = { onSave(pages.map { it.id }) }, enabled = changed, modifier = Modifier.testTag("editor-save")) { Text("Save") } },
-                )
-            },
-        ) { padding ->
-        LazyColumn(Modifier.padding(padding).fillMaxSize().readable(), state = list, contentPadding = PaddingValues(Space.m), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-            item {
-                Text(
-                    "Drag to reorder. Removed pages are deleted when you tap Save. Keep at least one page, or delete the document.",
-                    Modifier.padding(bottom = Space.s),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    navigationIcon = {
+                        IconButton(
+                            onClick = close,
+                            enabled = !busy,
+                            modifier = Modifier.testTag("editor-cancel"),
+                        ) {
+                            Icon(Icons.Outlined.Close, "Close")
+                        }
+                    },
+                    actions = {
+                        TextButton(
+                            onClick = { onSave(pages.map { it.id }) },
+                            enabled = changed && !busy,
+                            modifier = Modifier.testTag("editor-save"),
+                        ) {
+                            Text("Save")
+                        }
+                    },
                 )
             }
-            items(pages, key = { it.id.toString() }) { page ->
-                ReorderableItem(reorder, key = page.id.toString()) { dragging ->
-                    val index = pages.indexOf(page)
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = if (dragging) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surface,
-                        tonalElevation = if (dragging) 2.dp else 0.dp,
-                        modifier =
-                            Modifier.semantics {
-                                customActions =
-                                    listOf(
-                                        CustomAccessibilityAction("Move up") { move(index, index - 1).let { true } },
-                                        CustomAccessibilityAction("Move down") { move(index, index + 1).let { true } },
+        ) { padding ->
+            LazyColumn(
+                Modifier.padding(padding).fillMaxSize().readable(),
+                state = list,
+                contentPadding = PaddingValues(Space.m),
+                verticalArrangement = Arrangement.spacedBy(Space.xs),
+            ) {
+                item {
+                    Text(
+                        "Drag a handle or use a page’s options to move it. Changes apply when you tap Save. Keep at least one page.",
+                        Modifier.padding(bottom = Space.s),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                items(pages, key = { it.id.toString() }) { page ->
+                    ReorderableItem(reorder, key = page.id.toString()) { dragging ->
+                        val index = pages.indexOf(page)
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color =
+                                if (dragging) MaterialTheme.colorScheme.surfaceContainerHigh
+                                else MaterialTheme.colorScheme.surface,
+                            tonalElevation = if (dragging) 2.dp else 0.dp,
+                            modifier =
+                                Modifier.semantics {
+                                    customActions = buildList {
+                                        if (!busy && index > 0)
+                                            add(
+                                                CustomAccessibilityAction("Move up") {
+                                                    move(index, index - 1)
+                                                    true
+                                                }
+                                            )
+                                        if (!busy && index < pages.lastIndex)
+                                            add(
+                                                CustomAccessibilityAction("Move down") {
+                                                    move(index, index + 1)
+                                                    true
+                                                }
+                                            )
+                                    }
+                                },
+                        ) {
+                            Row(
+                                Modifier.padding(Space.s),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(Space.ms),
+                            ) {
+                                Icon(
+                                    Icons.Outlined.DragHandle,
+                                    "Reorder",
+                                    (if (busy) Modifier else Modifier.draggableHandle())
+                                        .size(48.dp)
+                                        .padding(Space.ms),
+                                )
+                                PageThumbnail(
+                                    model.repository.pageFile(document.id, page.id),
+                                    page,
+                                    Modifier.width(44.dp),
+                                    maxPixels = 160,
+                                )
+                                Column(
+                                    Modifier.weight(1f).semantics(mergeDescendants = true) {},
+                                    verticalArrangement = Arrangement.spacedBy(Space.xs),
+                                ) {
+                                    Text(
+                                        "Page ${numbers[page.id]}",
+                                        style = MaterialTheme.typography.titleSmall,
                                     )
-                            },
-                    ) {
-                        Row(Modifier.padding(Space.s), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.ms)) {
-                            Icon(Icons.Outlined.DragHandle, "Reorder", Modifier.draggableHandle().size(48.dp).padding(Space.ms))
-                            PageThumbnail(model.repository.pageFile(document.id, page.id), page, Modifier.width(44.dp), maxPixels = 160)
-                            Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-                                Text("Page ${numbers[page.id]}", style = MaterialTheme.typography.titleSmall)
-                                Text(page.text.ifEmpty { "No recognized text" }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            }
-                            IconButton(onClick = { pages = pages - page }, enabled = pages.size > 1) {
-                                Icon(Icons.Outlined.RemoveCircleOutline, "Remove page ${numbers[page.id]}")
+                                    Text(
+                                        "Position ${index + 1} of ${pages.size}",
+                                        style = MaterialTheme.typography.labelMedium,
+                                    )
+                                    Text(
+                                        page.text.ifEmpty { "No recognized text" },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                var options by remember { mutableStateOf(false) }
+                                Box {
+                                    IconButton(
+                                        onClick = { options = true },
+                                        enabled = !busy,
+                                        modifier =
+                                            Modifier.testTag("arrange.options.${numbers[page.id]}"),
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.MoreVert,
+                                            "Options for page ${numbers[page.id]}",
+                                        )
+                                    }
+                                    DropdownMenu(options, onDismissRequest = { options = false }) {
+                                        DropdownMenuItem(
+                                            text = { Text("Move earlier") },
+                                            enabled = index > 0 && !busy,
+                                            leadingIcon = {
+                                                Icon(Icons.Outlined.ArrowUpward, null)
+                                            },
+                                            onClick = {
+                                                options = false
+                                                move(index, index - 1)
+                                            },
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Move later") },
+                                            enabled = index < pages.lastIndex && !busy,
+                                            leadingIcon = {
+                                                Icon(Icons.Outlined.ArrowDownward, null)
+                                            },
+                                            onClick = {
+                                                options = false
+                                                move(index, index + 1)
+                                            },
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Remove page") },
+                                            enabled = pages.size > 1 && !busy,
+                                            leadingIcon = {
+                                                Icon(Icons.Outlined.RemoveCircleOutline, null)
+                                            },
+                                            onClick = {
+                                                options = false
+                                                pages = pages - page
+                                            },
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
             }
         }
     }

@@ -35,7 +35,7 @@ enum DocumentProcessing {
             return TextLine(text: text, bounds: observation.boundingBox)
         }
     }
-    nonisolated static func rendered(_ data: Data, settings: PageSettings = PageSettings(), maxPixels: Int = 2400, quality: Double = 0.85) throws -> Data {
+    nonisolated static func rendered(_ data: Data, settings: PageSettings = PageSettings(), maxPixels: Int = 2400, quality: Double = 0.85, annotations: [PageAnnotation] = [], ink: [PageInk] = []) throws -> Data {
         try settings.validate()
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
@@ -43,14 +43,42 @@ enum DocumentProcessing {
                 kCGImageSourceThumbnailMaxPixelSize: maxPixels,
                 kCGImageSourceCreateThumbnailWithTransform: true
               ] as CFDictionary) else { throw ScanError.MissingPage }
-        if settings == PageSettings() { return try jpeg(image, quality: quality) }
-        var ci = CIImage(cgImage: image)
+        if settings == PageSettings() { return try jpeg(annotated(image, settings: settings, marks: annotations, ink: ink), quality: quality) }
+        var adjusted = image
+        if let crop = settings.crop {
+            let box = try pageCropPixels(crop: crop, width: UInt32(image.width), height: UInt32(image.height))
+            guard let cropped = image.cropping(to: CGRect(x: Int(box.x), y: Int(box.y), width: Int(box.width), height: Int(box.height))) else { throw ScanError.InvalidDocument }
+            adjusted = cropped
+        }
+        var ci = CIImage(cgImage: adjusted)
         for _ in 0..<settings.quarterTurns { ci = ci.oriented(.right) }
         ci = ci.applyingFilter("CIColorControls", parameters: [kCIInputBrightnessKey: settings.brightness,
             kCIInputContrastKey: settings.contrast, kCIInputSaturationKey: settings.grayscale ? 0 : 1])
         let context = CIContext(options: [.useSoftwareRenderer: true])
         guard let result = context.createCGImage(ci, from: ci.extent) else { throw ScanError.MissingPage }
-        return try jpeg(result, quality: quality)
+        return try jpeg(annotated(result, settings: settings, marks: annotations, ink: ink), quality: quality)
+    }
+    nonisolated private static func annotated(_ image: CGImage, settings: PageSettings, marks: [PageAnnotation], ink: [PageInk]) throws -> CGImage {
+        try annotationsValidate(annotations: marks)
+        try inkValidate(ink: ink)
+        guard !marks.isEmpty || !ink.isEmpty else { return image }
+        let width = CGFloat(image.width), height = CGFloat(image.height)
+        guard let context = CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { throw ScanError.InvalidDocument }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        for mark in marks {
+            let r = try annotationDisplayBounds(bounds: mark.bounds, settings: settings)
+            let box = CGRect(x: r.x * width, y: (1 - r.y - r.height) * height, width: r.width * width, height: r.height * height)
+            switch mark.style {
+            case .highlight:
+                context.setFillColor(CGColor(red: 1, green: 208.0/255, blue: 0, alpha: 82.0/255)); context.fill(box)
+            case .redOutline, .blueOutline:
+                context.setStrokeColor(mark.style == .redOutline ? CGColor(red: 200.0/255, green: 35.0/255, blue: 35.0/255, alpha: 1) : CGColor(red: 30.0/255, green: 80.0/255, blue: 210.0/255, alpha: 1))
+                context.setLineWidth(min(width, height) * 0.004); context.stroke(box)
+            }
+        }
+        try drawPageInk(context, ink: ink, settings: settings, size: CGSize(width: width, height: height), flipped: true)
+        guard let result = context.makeImage() else { throw ScanError.InvalidDocument }; return result
     }
     nonisolated private static func jpeg(_ image: CGImage, quality: Double) throws -> Data {
         let bytes = NSMutableData()
@@ -70,14 +98,15 @@ enum DocumentProcessing {
         for (url, page) in zip(urls, pages) {
             try Task.checkCancellation()
             try autoreleasepool {
-                let bytes = try rendered(Data(contentsOf: url), settings: page.settings, maxPixels: quality == .compact ? 1200 : 2400, quality: quality == .compact ? 0.55 : 0.85)
+                let bytes = try rendered(Data(contentsOf: url), settings: page.settings, maxPixels: quality == .compact ? 1200 : 2400, quality: quality == .compact ? 0.55 : 0.85, annotations: page.annotations, ink: page.ink)
                 guard let source = CGImageSourceCreateWithData(bytes as CFData, nil), let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { throw ScanError.MissingPage }
                 let scale = min((box.width - 36) / CGFloat(image.width), (box.height - 36) / CGFloat(image.height))
                 let size = CGSize(width: CGFloat(image.width) * scale, height: CGFloat(image.height) * scale)
                 let frame = CGRect(x: (box.width-size.width)/2, y: (box.height-size.height)/2, width: size.width, height: size.height)
                 context.beginPDFPage(nil); context.draw(image, in: frame)
                 if searchable {
-                    for line in try observations(bytes) {
+                    let recognitionBytes = (page.annotations.isEmpty && page.ink.isEmpty) ? bytes : try rendered(Data(contentsOf: url), settings: page.settings, maxPixels: quality == .compact ? 1200 : 2400)
+                    for line in try observations(recognitionBytes) {
                         let rect = CGRect(x: frame.minX + line.bounds.minX * frame.width, y: frame.minY + line.bounds.minY * frame.height,
                                           width: line.bounds.width * frame.width, height: line.bounds.height * frame.height)
                         let font = CTFontCreateWithName("Helvetica" as CFString, 12, nil)

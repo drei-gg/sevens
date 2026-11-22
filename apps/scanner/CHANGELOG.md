@@ -1,5 +1,13 @@
 # Changelog
 
+## 18 November 2026 — feature continuation, not released
+
+- Added finger/stylus ink on both phones using stable Jetpack Ink and system PencilKit, with labelled color/width choices, shared undo/redo, whole-stroke removal, native failure feedback and retained drafts. Version-4 portable geometry follows crop/rotation into thumbnails and both PDF modes; originals and OCR remain separate. Creation clipping prevents off-canvas input appearing after uncrop. Text labels, pressure/textured brushes and partial erasing remain separate work.
+
+- Added portable rectangular highlights and outline boxes on both phones with native canvases, exact bounds, undo/redo, discard and conflict-aware save. Version-3 marks survive reopening/backup and follow crop/rotation into previews and exported PDFs; originals and searchable text remain intact. Freehand ink/text labels remain separate work.
+
+- Added saved OCR text corrections on both phones, including conflict checks against late recognition and changed page settings. Search and text sharing use corrections; searchable PDF export still recognizes the image. Android OCR is now shared with Vault through sevenocr.
+
 ## Android — in development
 
 - Document Scanner on Android, with the iPhone app's library, document, page editor, PDF export, Recently Deleted and backup. Backups move between the two phones.
@@ -54,3 +62,5 @@ Scanner now looks like a document scanner rather than a settings list, in the Se
 ## Shared export infrastructure — unreleased
 
 - Manual backup export now uses SevenKit’s shared Files export picker, extracted for reuse by Vault. Scanner backup format and manual-only behavior are unchanged.
+
+- Manual crop on Android and iOS: maintained native handles, exact bounds, preserved originals, shared geometry, updated OCR/PDF output and versioned manifests. Android crop and rotation controls adapt to short windows and large text.

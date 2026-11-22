@@ -41,17 +41,40 @@ pub struct PdfExportPlan {
 /// whitespace and dots, at most 100 characters ("Scan" when nothing is left), with
 /// " - selected pages" when not every page is exported.
 #[uniffi::export]
-pub fn pdf_export_plan(document: &ScanDocument, selected: Vec<Uuid>) -> Result<PdfExportPlan, ScanError> {
+pub fn pdf_export_plan(
+    document: &ScanDocument,
+    selected: Vec<Uuid>,
+) -> Result<PdfExportPlan, ScanError> {
     let selected: HashSet<Uuid> = selected.into_iter().collect();
-    let pages: Vec<ScanPage> = document.pages.iter().filter(|p| selected.contains(&p.id)).cloned().collect();
+    let pages: Vec<ScanPage> = document
+        .pages
+        .iter()
+        .filter(|p| selected.contains(&p.id))
+        .cloned()
+        .collect();
     let ids: HashSet<Uuid> = document.pages.iter().map(|p| p.id).collect();
     if pages.is_empty() || !selected.is_subset(&ids) {
         return Err(ScanError::InvalidDocument);
     }
     let disallowed = |c: char| is_control(c) || "/\\:?*<>|\"".contains(c);
-    let joined = document.title.split(disallowed).collect::<Vec<_>>().join(" ");
+    let joined = document
+        .title
+        .split(disallowed)
+        .collect::<Vec<_>>()
+        .join(" ");
     let cleaned = joined.trim_matches(|c: char| is_whitespace_or_newline(c) || c == '.');
-    let base = if cleaned.is_empty() { "Scan" } else { prefix_characters(cleaned, 100) };
-    let suffix = if pages.len() == document.pages.len() { "" } else { " - selected pages" };
-    Ok(PdfExportPlan { filename: format!("{base}{suffix}.pdf"), pages })
+    let base = if cleaned.is_empty() {
+        "Scan"
+    } else {
+        prefix_characters(cleaned, 100)
+    };
+    let suffix = if pages.len() == document.pages.len() {
+        ""
+    } else {
+        " - selected pages"
+    };
+    Ok(PdfExportPlan {
+        filename: format!("{base}{suffix}.pdf"),
+        pages,
+    })
 }

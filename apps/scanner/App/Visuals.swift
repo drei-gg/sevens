@@ -36,7 +36,7 @@ struct PageThumbnail: View {
         Color.clear
             .aspectRatio(ScannerMetrics.pageAspect, contentMode: .fit)
             .overlay {
-                if let url, let shown { PageImage(url: url, settings: shown.settings, maxPixels: maxPixels, fill: true) }
+                if let url, let shown { PageImage(url: url, settings: shown.settings, annotations: shown.annotations, ink: shown.ink, maxPixels: maxPixels, fill: true) }
             }
             .background(Tokens.card)
             .clipShape(shape)

@@ -32,3 +32,9 @@ Needs Rust (stable), `rustup target add aarch64-linux-android armv7-linux-androi
 ## Adding the next Seven's core
 
 See `apps/fast/core/README.md`.
+
+## Portable marks and ink
+
+`annotations.rs` and `ink.rs` own the original-space geometry and optimistic mark commits. Manifest v3 adds rectangular marks; v4 adds bounded constant-width centerlines, color, width relative to the original short edge and a creation clip. Both native authoring adapters convert through `ink_from_display`; all previews/PDF pixels use `ink_display`. Predicted input, native brush archives and undo stacks are not backup formats. Legacy manifests default to empty ink; a newer document must never be downgraded by rectangle/settings edits. Whole-page mark commits preserve concurrent metadata/text while rejecting changed geometry, rectangles or ink.
+
+Ink limits: 100 strokes, 8,192 points/stroke, 32,768 points/page, 100,000 points/document, finite bounded coordinates, normalized width 0.000001–0.1, valid creation clip, and the existing 6 MB manifest limit. Native canvases clip rather than clamping path points. Rendering flattens visible strokes into output images without replacing originals or feeding annotations into OCR; it is not redaction. Pressure/textures, partial erasing and text labels are separate future format decisions.

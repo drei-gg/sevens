@@ -88,7 +88,9 @@ fn compare_level(a: &str, b: &str) -> Ordering {
             }
             (Piece::Number(_), Piece::Char(c)) => NUMBER.cmp(&char_class(*c)),
             (Piece::Char(c), Piece::Number(_)) => char_class(*c).cmp(&NUMBER),
-            (Piece::Char(x), Piece::Char(y)) => char_class(*x).cmp(&char_class(*y)).then_with(|| x.cmp(y)),
+            (Piece::Char(x), Piece::Char(y)) => {
+                char_class(*x).cmp(&char_class(*y)).then_with(|| x.cmp(y))
+            }
         };
         if order != Ordering::Equal {
             return order;
@@ -101,11 +103,24 @@ fn compare_level(a: &str, b: &str) -> Ordering {
 /// by value first, then accents, then case (lower before upper), then leading zeros.
 pub(crate) fn standard_compare(a: &str, b: &str) -> Ordering {
     compare_level(&fold(a), &fold(b))
-        .then_with(|| compare_level(&a.nfd().collect::<String>().to_lowercase(), &b.nfd().collect::<String>().to_lowercase()))
+        .then_with(|| {
+            compare_level(
+                &a.nfd().collect::<String>().to_lowercase(),
+                &b.nfd().collect::<String>().to_lowercase(),
+            )
+        })
         .then_with(|| {
             // Tertiary: case, lower first.
             let swap = |s: &str| -> String {
-                s.nfd().map(|c| if c.is_lowercase() { c.to_uppercase().next().unwrap_or(c) } else { c.to_lowercase().next().unwrap_or(c) }).collect()
+                s.nfd()
+                    .map(|c| {
+                        if c.is_lowercase() {
+                            c.to_uppercase().next().unwrap_or(c)
+                        } else {
+                            c.to_lowercase().next().unwrap_or(c)
+                        }
+                    })
+                    .collect()
             };
             compare_level(&swap(a), &swap(b))
         })

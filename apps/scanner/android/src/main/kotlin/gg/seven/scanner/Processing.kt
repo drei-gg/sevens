@@ -2,7 +2,6 @@ package gg.seven.scanner
 
 import android.content.Context
 import android.graphics.Bitmap
-import androidx.core.graphics.createBitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
@@ -14,6 +13,7 @@ import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
+import androidx.core.graphics.createBitmap
 import androidx.exifinterface.media.ExifInterface
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.io.MemoryUsageSetting
@@ -43,7 +43,10 @@ object Processing {
 
     // MARK: decoding and adjustments
 
-    /** The image at [file] (or any stream), upright per its EXIF, at most [maxPixels] on its longest side. */
+    /**
+     * The image at [file] (or any stream), upright per its EXIF, at most [maxPixels] on its longest
+     * side.
+     */
     fun decode(open: () -> InputStream, maxPixels: Int): Bitmap {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         open().use { BitmapFactory.decodeStream(it, null, bounds) }
@@ -51,16 +54,24 @@ object Processing {
         var sample = 1
         while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxPixels) sample *= 2
         val decoded =
-            open().use { BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample }) }
-                ?: throw ScanException.MissingPage()
-        val orientation = runCatching { open().use { ExifInterface(it).rotationDegrees } }.getOrDefault(0)
+            open().use {
+                BitmapFactory.decodeStream(
+                    it,
+                    null,
+                    BitmapFactory.Options().apply { inSampleSize = sample },
+                )
+            } ?: throw ScanException.MissingPage()
+        val orientation =
+            runCatching { open().use { ExifInterface(it).rotationDegrees } }.getOrDefault(0)
         val scale = minOf(1f, maxPixels.toFloat() / maxOf(decoded.width, decoded.height))
         if (orientation == 0 && scale >= 1f) return decoded
-        val matrix = Matrix().apply {
-            postScale(scale, scale)
-            postRotate(orientation.toFloat())
-        }
-        return Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true).also { if (it !== decoded) decoded.recycle() }
+        val matrix =
+            Matrix().apply {
+                postScale(scale, scale)
+                postRotate(orientation.toFloat())
+            }
+        return Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+            .also { if (it !== decoded) decoded.recycle() }
     }
 
     fun decode(file: File, maxPixels: Int): Bitmap = decode({ file.inputStream() }, maxPixels)
@@ -69,38 +80,125 @@ object Processing {
      * The page as it is shown, recognized and exported: quarter turns clockwise, then Core Image's
      * CIColorControls (saturation, brightness, contrast), on an opaque white ground.
      */
-    fun rendered(file: File, settings: PageSettings, maxPixels: Int = geometry.renderMaxPixels.toInt()): Bitmap {
+    fun rendered(
+        file: File,
+        settings: PageSettings,
+        maxPixels: Int = geometry.renderMaxPixels.toInt(),
+        annotations: List<PageAnnotation> = emptyList(),
+        ink: List<PageInk> = emptyList(),
+    ): Bitmap {
         pageSettingsValidate(settings)
-        val source = decode(file, maxPixels)
-        if (settings == pageSettingsDefault()) return source
+        var source = decode(file, maxPixels)
+        if (settings == pageSettingsDefault()) return annotated(source, settings, annotations, ink)
+        settings.crop?.let { crop ->
+            val box = pageCropPixels(crop, source.width.toUInt(), source.height.toUInt())
+            val cropped =
+                Bitmap.createBitmap(
+                    source,
+                    box.x.toInt(),
+                    box.y.toInt(),
+                    box.width.toInt(),
+                    box.height.toInt(),
+                )
+            if (cropped !== source) source.recycle()
+            source = cropped
+        }
         val turns = settings.quarterTurns.toInt()
-        val (w, h) = if (turns % 2 == 0) source.width to source.height else source.height to source.width
+        val (w, h) =
+            if (turns % 2 == 0) source.width to source.height else source.height to source.width
         val out = createBitmap(w, h)
         Canvas(out).apply {
             drawColor(Color.WHITE)
-            val matrix = Matrix().apply {
-                postRotate(90f * turns, source.width / 2f, source.height / 2f)
-                postTranslate((w - source.width) / 2f, (h - source.height) / 2f)
-            }
-            drawBitmap(source, matrix, Paint(Paint.FILTER_BITMAP_FLAG).apply { colorFilter = ColorMatrixColorFilter(ColorMatrix(ColorControls.matrix(settings.contrast.toFloat(), settings.brightness.toFloat(), settings.grayscale))) })
+            val matrix =
+                Matrix().apply {
+                    postRotate(90f * turns, source.width / 2f, source.height / 2f)
+                    postTranslate((w - source.width) / 2f, (h - source.height) / 2f)
+                }
+            drawBitmap(
+                source,
+                matrix,
+                Paint(Paint.FILTER_BITMAP_FLAG).apply {
+                    colorFilter =
+                        ColorMatrixColorFilter(
+                            ColorMatrix(
+                                ColorControls.matrix(
+                                    settings.contrast.toFloat(),
+                                    settings.brightness.toFloat(),
+                                    settings.grayscale,
+                                )
+                            )
+                        )
+                },
+            )
         }
         source.recycle()
-        return out
+        return annotated(out, settings, annotations, ink)
+    }
+
+    /** Consumes [source] only when marks require a new bitmap. OCR calls rendered without marks. */
+    fun annotated(
+        source: Bitmap,
+        settings: PageSettings,
+        marks: List<PageAnnotation>,
+        ink: List<PageInk> = emptyList(),
+    ): Bitmap {
+        annotationsValidate(marks)
+        inkValidate(ink)
+        if (marks.isEmpty() && ink.isEmpty()) return source
+        val output = createBitmap(source.width, source.height)
+        Canvas(output).apply {
+            drawBitmap(source, 0f, 0f, null)
+            for (mark in marks) {
+                val r = annotationDisplayBounds(mark.bounds, settings)
+                val paint =
+                    Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        color =
+                            when (mark.style) {
+                                AnnotationStyle.HIGHLIGHT -> Color.argb(82, 255, 208, 0)
+                                AnnotationStyle.RED_OUTLINE -> Color.rgb(200, 35, 35)
+                                AnnotationStyle.BLUE_OUTLINE -> Color.rgb(30, 80, 210)
+                            }
+                        style =
+                            if (mark.style == AnnotationStyle.HIGHLIGHT) Paint.Style.FILL
+                            else Paint.Style.STROKE
+                        strokeWidth = minOf(width, height) * 0.004f
+                    }
+                drawRect(
+                    (r.x * width).toFloat(),
+                    (r.y * height).toFloat(),
+                    ((r.x + r.width) * width).toFloat(),
+                    ((r.y + r.height) * height).toFloat(),
+                    paint,
+                )
+            }
+        }
+        Canvas(output).drawPageInk(ink, settings)
+        source.recycle()
+        return output
     }
 
     fun jpeg(bitmap: Bitmap, quality: Double = geometry.pageJpegQuality): ByteArray =
-        ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, (quality * 100).toInt(), it) }.toByteArray()
+        ByteArrayOutputStream()
+            .also { bitmap.compress(Bitmap.CompressFormat.JPEG, (quality * 100).toInt(), it) }
+            .toByteArray()
 
     /**
      * A captured or imported image as a stored page: fitted inside 2400 pixels, drawn on white,
      * JPEG 0.85, written to [out].
      */
     fun normalize(bitmap: Bitmap, out: File) {
-        val size = normalizedPageSize(bitmap.width.toDouble(), bitmap.height.toDouble()) ?: throw ScanException.InvalidDocument()
+        val size =
+            normalizedPageSize(bitmap.width.toDouble(), bitmap.height.toDouble())
+                ?: throw ScanException.InvalidDocument()
         val page = createBitmap(size.width.toInt(), size.height.toInt())
         Canvas(page).apply {
             drawColor(Color.WHITE)
-            drawBitmap(bitmap, null, android.graphics.Rect(0, 0, page.width, page.height), Paint(Paint.FILTER_BITMAP_FLAG))
+            drawBitmap(
+                bitmap,
+                null,
+                android.graphics.Rect(0, 0, page.width, page.height),
+                Paint(Paint.FILTER_BITMAP_FLAG),
+            )
         }
         out.writeBytes(jpeg(page))
         page.recycle()
@@ -128,9 +226,11 @@ object Processing {
             coroutineContext.ensureActive()
             if (size(context, uri) > geometry.maxImportFileBytes) throw ScanException.TooLarge()
             val type = resolver.getType(uri).orEmpty()
-            val isPdf = type == "application/pdf" || displayName(context, uri).lowercase().endsWith(".pdf")
+            val isPdf =
+                type == "application/pdf" || displayName(context, uri).lowercase().endsWith(".pdf")
             if (isPdf) {
-                val descriptor = resolver.openFileDescriptor(uri, "r") ?: throw ScanException.InvalidDocument()
+                val descriptor =
+                    resolver.openFileDescriptor(uri, "r") ?: throw ScanException.InvalidDocument()
                 val renderer =
                     try {
                         PdfRenderer(descriptor)
@@ -142,15 +242,21 @@ object Processing {
                         throw ScanException.InvalidDocument()
                     }
                 renderer.use {
-                    if (it.pageCount == 0 || pages.size + it.pageCount > limits.maxPages) throw ScanException.InvalidDocument()
+                    if (it.pageCount == 0 || pages.size + it.pageCount > limits.maxPages)
+                        throw ScanException.InvalidDocument()
                     for (index in 0 until it.pageCount) {
                         coroutineContext.ensureActive()
                         it.openPage(index).use { page ->
-                            val size = pdfImportRasterSize(page.width.toDouble(), page.height.toDouble()) ?: throw ScanException.InvalidDocument()
+                            val size =
+                                pdfImportRasterSize(page.width.toDouble(), page.height.toDouble())
+                                    ?: throw ScanException.InvalidDocument()
                             val bitmap = createBitmap(size.width.toInt(), size.height.toInt())
                             bitmap.eraseColor(Color.WHITE)
                             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
-                            val file = File(staging, "${UUID.randomUUID()}.jpg").apply { writeBytes(jpeg(bitmap)) }
+                            val file =
+                                File(staging, "${UUID.randomUUID()}.jpg").apply {
+                                    writeBytes(jpeg(bitmap))
+                                }
                             bitmap.recycle()
                             add(file)
                         }
@@ -158,7 +264,11 @@ object Processing {
                 }
             } else {
                 if (pages.size >= limits.maxPages) throw ScanException.TooLarge()
-                val bitmap = decode({ resolver.openInputStream(uri) ?: throw ScanException.MissingPage() }, geometry.renderMaxPixels.toInt())
+                val bitmap =
+                    decode(
+                        { resolver.openInputStream(uri) ?: throw ScanException.MissingPage() },
+                        geometry.renderMaxPixels.toInt(),
+                    )
                 val file = File(staging, "${UUID.randomUUID()}.jpg")
                 normalize(bitmap, file)
                 bitmap.recycle()
@@ -169,17 +279,28 @@ object Processing {
     }
 
     private fun size(context: Context, uri: Uri): Long =
-        runCatching { context.contentResolver.openFileDescriptor(uri, "r")?.use(ParcelFileDescriptor::getStatSize) }.getOrNull()?.takeIf { it >= 0 }
+        runCatching {
+                context.contentResolver
+                    .openFileDescriptor(uri, "r")
+                    ?.use(ParcelFileDescriptor::getStatSize)
+            }
+            .getOrNull()
+            ?.takeIf { it >= 0 }
             ?: runCatching {
-                    context.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else null }
+                    context.contentResolver
+                        .query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
+                        ?.use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else null }
                 }
                 .getOrNull()
             ?: 0L
 
     fun displayName(context: Context, uri: Uri): String =
-        runCatching { context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c -> if (c.moveToFirst()) c.getString(0) else null } }
-            .getOrNull()
-            ?: uri.lastPathSegment.orEmpty()
+        runCatching {
+                context.contentResolver
+                    .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                    ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+            }
+            .getOrNull() ?: uri.lastPathSegment.orEmpty()
 
     // MARK: PDF export
 
@@ -198,7 +319,8 @@ object Processing {
         paper: PaperSize = PaperSize.A4,
         searchable: Boolean = true,
     ) {
-        if (pages.isEmpty() || files.size != pages.size || pages.size > scanLimits().maxPages) throw ScanException.InvalidDocument()
+        if (pages.isEmpty() || files.size != pages.size || pages.size > scanLimits().maxPages)
+            throw ScanException.InvalidDocument()
         PDFBoxResourceLoader.init(context.applicationContext)
         val render = pdfRender(quality)
         val sheet = paperBox(paper)
@@ -208,14 +330,26 @@ object Processing {
                 val font = PDType1Font.HELVETICA
                 for ((file, page) in files.zip(pages)) {
                     coroutineContext.ensureActive()
-                    val bitmap = rendered(file, page.settings, render.maxPixels.toInt())
-                    val image = JPEGFactory.createFromByteArray(document, jpeg(bitmap, render.jpegQuality))
-                    val frame = pdfImageFrame(paper, image.width.toLong(), image.height.toLong()) ?: throw ScanException.InvalidDocument()
-                    val sheetPage = PDPage(PDRectangle(sheet.width.toFloat(), sheet.height.toFloat()))
+                    val base = rendered(file, page.settings, render.maxPixels.toInt())
+                    val lines = ocr?.lines(base).orEmpty()
+                    val bitmap = annotated(base, page.settings, page.annotations, page.ink)
+                    val image =
+                        JPEGFactory.createFromByteArray(document, jpeg(bitmap, render.jpegQuality))
+                    val frame =
+                        pdfImageFrame(paper, image.width.toLong(), image.height.toLong())
+                            ?: throw ScanException.InvalidDocument()
+                    val sheetPage =
+                        PDPage(PDRectangle(sheet.width.toFloat(), sheet.height.toFloat()))
                     document.addPage(sheetPage)
                     PDPageContentStream(document, sheetPage).use { stream ->
-                        stream.drawImage(image, frame.x.toFloat(), frame.y.toFloat(), frame.width.toFloat(), frame.height.toFloat())
-                        ocr?.lines(bitmap)?.forEach { line -> invisibleLine(stream, font, line, frame) }
+                        stream.drawImage(
+                            image,
+                            frame.x.toFloat(),
+                            frame.y.toFloat(),
+                            frame.width.toFloat(),
+                            frame.height.toFloat(),
+                        )
+                        lines.forEach { line -> invisibleLine(stream, font, line, frame) }
                     }
                     bitmap.recycle()
                 }
@@ -229,8 +363,17 @@ object Processing {
         }
     }
 
-    private fun invisibleLine(stream: PDPageContentStream, font: PDType1Font, line: TextLine, frame: PdfRect) {
-        val text = line.text.map { c -> if (runCatching { font.encode(c.toString()) }.isSuccess) c else ' ' }.joinToString("").trimEnd()
+    private fun invisibleLine(
+        stream: PDPageContentStream,
+        font: PDType1Font,
+        line: TextLine,
+        frame: PdfRect,
+    ) {
+        val text =
+            line.text
+                .map { c -> if (runCatching { font.encode(c.toString()) }.isSuccess) c else ' ' }
+                .joinToString("")
+                .trimEnd()
         if (text.isBlank()) return
         val rect = pdfTextRect(frame, line.bounds)
         val size = 12f
@@ -243,7 +386,9 @@ object Processing {
         stream.beginText()
         stream.setRenderingMode(RenderingMode.NEITHER)
         stream.setFont(font, size)
-        stream.setTextMatrix(PdfMatrix(sx, 0f, 0f, sy, rect.x.toFloat(), rect.y.toFloat() + descent * sy))
+        stream.setTextMatrix(
+            PdfMatrix(sx, 0f, 0f, sy, rect.x.toFloat(), rect.y.toFloat() + descent * sy)
+        )
         stream.showText(text)
         stream.endText()
     }
@@ -261,7 +406,9 @@ object Processing {
         return File(folder, filename)
     }
 
-    /** App-owned export folders older than 24 hours, so share targets have time to finish reading. */
+    /**
+     * App-owned export folders older than 24 hours, so share targets have time to finish reading.
+     */
     fun cleanOldExports(context: Context, now: Long = System.currentTimeMillis()) {
         val base = File(context.cacheDir, EXPORTS)
         for (folder in base.listFiles().orEmpty()) {
@@ -294,7 +441,11 @@ object ColorControls {
 
     /** One pixel through [matrix], clamped as the platform does. */
     fun apply(matrix: FloatArray, r: Float, g: Float, b: Float): Triple<Float, Float, Float> {
-        fun ch(i: Int) = (matrix[i] * r + matrix[i + 1] * g + matrix[i + 2] * b + matrix[i + 4]).coerceIn(0f, 255f)
+        fun ch(i: Int) =
+            (matrix[i] * r + matrix[i + 1] * g + matrix[i + 2] * b + matrix[i + 4]).coerceIn(
+                0f,
+                255f,
+            )
         return Triple(ch(0), ch(5), ch(10))
     }
 }

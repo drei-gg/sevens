@@ -67,7 +67,10 @@ pub fn normalized_page_size(width: f64, height: f64) -> Option<PixelSize> {
         return None;
     }
     let scale = (NORMALIZED_MAX_PIXELS as f64 / width.max(height)).min(1.0);
-    Some(PixelSize { width: ((width * scale).round() as i64).max(1), height: ((height * scale).round() as i64).max(1) })
+    Some(PixelSize {
+        width: ((width * scale).round() as i64).max(1),
+        height: ((height * scale).round() as i64).max(1),
+    })
 }
 
 /// The bitmap an imported PDF page is drawn into: 2400 pixels on its longest side, at most three
@@ -79,7 +82,10 @@ pub fn pdf_import_raster_size(width: f64, height: f64) -> Option<PixelSize> {
         return None;
     }
     let scale = (NORMALIZED_MAX_PIXELS as f64 / width.max(height)).min(3.0);
-    Some(PixelSize { width: (width * scale).round().max(1.0) as i64, height: (height * scale).round().max(1.0) as i64 })
+    Some(PixelSize {
+        width: (width * scale).round().max(1.0) as i64,
+        height: (height * scale).round().max(1.0) as i64,
+    })
 }
 
 /// The paper in points: A4 595 × 842, US Letter 612 × 792.
@@ -89,15 +95,26 @@ pub fn paper_box(size: PaperSize) -> PdfRect {
         PaperSize::A4 => (595.0, 842.0),
         PaperSize::Letter => (612.0, 792.0),
     };
-    PdfRect { x: 0.0, y: 0.0, width, height }
+    PdfRect {
+        x: 0.0,
+        y: 0.0,
+        width,
+        height,
+    }
 }
 
 /// Standard: 2400 pixels at JPEG 0.85. Smaller file: 1200 pixels at 0.55.
 #[uniffi::export]
 pub fn pdf_render(quality: PdfQuality) -> PdfRender {
     match quality {
-        PdfQuality::Standard => PdfRender { max_pixels: 2400, jpeg_quality: 0.85 },
-        PdfQuality::Compact => PdfRender { max_pixels: 1200, jpeg_quality: 0.55 },
+        PdfQuality::Standard => PdfRender {
+            max_pixels: 2400,
+            jpeg_quality: 0.85,
+        },
+        PdfQuality::Compact => PdfRender {
+            max_pixels: 1200,
+            jpeg_quality: 0.55,
+        },
     }
 }
 
@@ -112,7 +129,12 @@ pub fn pdf_image_frame(size: PaperSize, image_width: i64, image_height: i64) -> 
     let (w, h) = (image_width as f64, image_height as f64);
     let scale = ((paper.width - 36.0) / w).min((paper.height - 36.0) / h);
     let (width, height) = (w * scale, h * scale);
-    Some(PdfRect { x: (paper.width - width) / 2.0, y: (paper.height - height) / 2.0, width, height })
+    Some(PdfRect {
+        x: (paper.width - width) / 2.0,
+        y: (paper.height - height) / 2.0,
+        width,
+        height,
+    })
 }
 
 /// Where a recognized line's invisible text goes on the paper: its normalized bounds (origin at
@@ -133,8 +155,20 @@ mod tests {
 
     #[test]
     fn normalized_size_fits_2400_and_never_enlarges() {
-        assert_eq!(normalized_page_size(4032.0, 3024.0), Some(PixelSize { width: 2400, height: 1800 }));
-        assert_eq!(normalized_page_size(600.0, 800.0), Some(PixelSize { width: 600, height: 800 }));
+        assert_eq!(
+            normalized_page_size(4032.0, 3024.0),
+            Some(PixelSize {
+                width: 2400,
+                height: 1800
+            })
+        );
+        assert_eq!(
+            normalized_page_size(600.0, 800.0),
+            Some(PixelSize {
+                width: 600,
+                height: 800
+            })
+        );
         assert_eq!(normalized_page_size(0.0, 800.0), None);
         assert_eq!(normalized_page_size(f64::NAN, 800.0), None);
     }
@@ -142,9 +176,21 @@ mod tests {
     #[test]
     fn pdf_import_raster_caps_at_three_pixels_per_point() {
         // A4 at 2400 / 842 ≈ 2.85 px per point.
-        assert_eq!(pdf_import_raster_size(595.0, 842.0), Some(PixelSize { width: 1696, height: 2400 }));
+        assert_eq!(
+            pdf_import_raster_size(595.0, 842.0),
+            Some(PixelSize {
+                width: 1696,
+                height: 2400
+            })
+        );
         // A business card is capped at 3x.
-        assert_eq!(pdf_import_raster_size(252.0, 144.0), Some(PixelSize { width: 756, height: 432 }));
+        assert_eq!(
+            pdf_import_raster_size(252.0, 144.0),
+            Some(PixelSize {
+                width: 756,
+                height: 432
+            })
+        );
         assert_eq!(pdf_import_raster_size(-1.0, 10.0), None);
     }
 
@@ -166,14 +212,41 @@ mod tests {
 
     #[test]
     fn text_rect_maps_normalized_bounds_into_the_frame() {
-        let frame = PdfRect { x: 10.0, y: 20.0, width: 100.0, height: 200.0 };
-        let rect = pdf_text_rect(frame, PdfRect { x: 0.5, y: 0.25, width: 0.5, height: 0.1 });
-        assert_eq!(rect, PdfRect { x: 60.0, y: 70.0, width: 50.0, height: 20.0 });
+        let frame = PdfRect {
+            x: 10.0,
+            y: 20.0,
+            width: 100.0,
+            height: 200.0,
+        };
+        let rect = pdf_text_rect(
+            frame,
+            PdfRect {
+                x: 0.5,
+                y: 0.25,
+                width: 0.5,
+                height: 0.1,
+            },
+        );
+        assert_eq!(
+            rect,
+            PdfRect {
+                x: 60.0,
+                y: 70.0,
+                width: 50.0,
+                height: 20.0
+            }
+        );
     }
 
     #[test]
     fn qualities_and_paper() {
-        assert_eq!(pdf_render(PdfQuality::Compact), PdfRender { max_pixels: 1200, jpeg_quality: 0.55 });
+        assert_eq!(
+            pdf_render(PdfQuality::Compact),
+            PdfRender {
+                max_pixels: 1200,
+                jpeg_quality: 0.55
+            }
+        );
         assert_eq!(paper_box(PaperSize::Letter).width, 612.0);
         assert_eq!(page_processing().max_import_file_bytes, 100_000_000);
     }
