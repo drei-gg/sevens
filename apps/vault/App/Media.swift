@@ -20,6 +20,28 @@ struct IncomingMedia: Transferable, Sendable {
         }
     }
 }
+/// Downsampled thumbnails of decrypted images, in memory only (never written to disk), so a list
+/// doesn't decrypt every visible image again each time it scrolls into view. Bounded by count and
+/// decoded size; cleared on lock and on a memory warning. Item IDs never change content (a note
+/// edit makes a new ID), so an ID is a safe key.
+@MainActor final class ThumbnailCache {
+    static let shared = ThumbnailCache()
+    private let cache = NSCache<NSUUID, UIImage>()
+    private var observer: NSObjectProtocol?
+    private init() {
+        cache.countLimit = 300
+        cache.totalCostLimit = 48 * 1024 * 1024
+        observer = NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { ThumbnailCache.shared.clear() }
+        }
+    }
+    func image(for id: UUID) -> UIImage? { cache.object(forKey: id as NSUUID) }
+    func store(_ image: UIImage, for id: UUID) {
+        let cost = image.cgImage.map { $0.bytesPerRow * $0.height } ?? 0
+        cache.setObject(image, forKey: id as NSUUID, cost: cost)
+    }
+    func clear() { cache.removeAllObjects() }
+}
 struct VaultThumbnail: View {
     @Environment(VaultModel.self) private var model
     let item: VaultItem
@@ -30,7 +52,9 @@ struct VaultThumbnail: View {
             else { Image(systemName: icon).font(.title).foregroundStyle(.secondary) }
         }.accessibilityHidden(true)
             .task(id: item.id) {
-                guard UTType(item.type)?.conforms(to: .image) == true, !model.busy else { return }
+                guard UTType(item.type)?.conforms(to: .image) == true else { return }
+                if let cached = ThumbnailCache.shared.image(for: item.id) { thumbnail = cached; return }
+                guard !model.busy else { return }
                 let epoch = model.generation
                 let destination = await model.repository.temporary.appendingPathComponent("thumb-" + UUID().uuidString)
                 defer { try? FileManager.default.removeItem(at: destination) }
@@ -43,7 +67,7 @@ struct VaultThumbnail: View {
                         CGImageDestinationAddImage(target, image, nil); guard CGImageDestinationFinalize(target) else { return nil }; return result as Data
                     }.value
                     guard !Task.isCancelled, epoch == model.generation, model.library != nil else { return }
-                    if let data { thumbnail = UIImage(data: data) }
+                    if let data, let image = UIImage(data: data) { ThumbnailCache.shared.store(image, for: item.id); thumbnail = image }
                 } catch { /* A thumbnail is optional; opening the file reports the underlying error. */ }
             }
     }
@@ -92,7 +116,7 @@ struct VaultCamera: UIViewControllerRepresentable {
         for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
             for window in scene.windows {
                 let view = UIView(frame: window.bounds); view.backgroundColor = .systemBackground; view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-                let label = UILabel(); label.text = "Vault locked"; label.font = .preferredFont(forTextStyle: .title2); label.textAlignment = .center; label.frame = view.bounds; label.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+                let label = UILabel(); label.text = String(localized: "Vault locked"); label.font = .preferredFont(forTextStyle: .title2); label.textAlignment = .center; label.frame = view.bounds; label.autoresizingMask = [.flexibleWidth, .flexibleHeight]
                 view.addSubview(label); window.addSubview(view); covers.append(view)
             }
         }

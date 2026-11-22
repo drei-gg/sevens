@@ -9,7 +9,7 @@ Vault's shared logic in Rust, for the iOS and Android apps through [UniFFI](http
 - Credentials (`VaultCredentialKind`): passphrase, PIN and pattern rules, their domain-separated key material, and 5×5 pattern canonicalization (`pattern_append`, `pattern_decode`), crossed dots included.
 - The library index (`VaultLibrary`, `VaultItem`, `VaultFolder`, `VaultOrder`): JSON keys and defaults, validation in Swift's order, search (`localizedStandardContains`) and ordering (`localizedStandardCompare` for names).
 - The repository's library edits without storage: import ordering, notes, rename, favorite, trash, move, folders, preferences, manual reorder, permanent delete, backup stamp.
-- Format version 1 (the iPhone's current files): `header.json` (`VaultHeader`, `KeyEnvelope`), the key-derivation parameters and their check, the AES-GCM associated-data strings, the HKDF salt and info for file keys, blob names, size limits (`vault_format`), which envelope a credential unlocks (`unlock_route`) and the `.vault7` framing (`7DVAULT1`). Its cryptography stays native on iOS.
+- Format version 1 (the iPhone's legacy files, readable and writable until a vault migrates): `header.json` (`VaultHeader`, `KeyEnvelope`), the key-derivation parameters and their check, the AES-GCM associated-data strings, the HKDF salt and info for file keys, blob names, size limits (`vault_format`), which envelope a credential unlocks (`unlock_route`) and the `.vault7` framing (`7DVAULT1`). Its cryptography stays native on iOS.
 - Format version 2 (cross-platform, below): all of it, cryptography included, built on age.
 
 **Stays native:** randomness for version 1 only, Keychain / Android Keystore custody for biometric unlock, file protection and backup exclusion, directory staging and moves, temporary-file cleanup, the session and lock lifecycle, automatic-backup delivery, document pickers, purchases and every pixel.
@@ -42,7 +42,7 @@ Version 2 is one encrypted format for every platform: an Android vault and an iP
 | File | Contents |
 | --- | --- |
 | `header.json` | JSON, at most 16,384 bytes: `version` (2), `id` (upper-case UUID), `recipient` (`age1…`), `credentialKind` (`passphrase`, `pin`, `pattern`; required), `password` and `recovery` (Base64 of the envelope age files). |
-| `index.age` | An age file encrypted to `recipient` whose plaintext is a 32-byte **tag** followed by the library JSON (version 1's `VaultLibrary` coding, `library_encode`). The tag is HMAC-SHA256 over exactly those JSON bytes, keyed by HKDF-SHA256 (no salt) from the identity's secret text `AGE-SECRET-KEY-1…` with info `Vault/index-mac/v2/<VAULT UUID>`. At most 32,000,000 bytes; opening decrypts, verifies the tag in constant time before decoding anything (missing or wrong: `Damaged`), then `library.id` must equal the header's `id`. |
+| `index.age` | An age file encrypted to `recipient` whose plaintext is a 32-byte **tag** followed by the library JSON (version 1's `VaultLibrary` coding, `library_encode`; `recoveryUnconfirmed: true` while the current recovery key awaits the person's confirmation, omitted otherwise). The tag is HMAC-SHA256 over exactly those JSON bytes, keyed by HKDF-SHA256 (no salt) from the identity's secret text `AGE-SECRET-KEY-1…` with info `Vault/index-mac/v2/<VAULT UUID>`. At most 32,000,000 bytes; opening decrypts, verifies the tag in constant time before decoding anything (missing or wrong: `Damaged`), then `library.id` must equal the header's `id`. |
 | `<UUID>.age` | Each original, upper-case item UUID, age-encrypted to `recipient`, streamed file to file in 1 MiB chunks (age's STREAM: 64 KiB authenticated chunks, the last one marked final, so truncation and trailing bytes fail). |
 
 - Decrypting verifies the plaintext's length and SHA-256 against the item's `bytes` and `digest`, so an original swapped for another item's (same vault) is `Damaged`; another vault's file does not decrypt at all.
@@ -59,7 +59,7 @@ The version 1 framing with a new magic: `7DVAULT2`, a big-endian UInt64 entry co
 
 ### Errors
 
-`VaultError` keeps Swift's cases in Swift's order; version 2 appends `OlderBackup`.
+`VaultError` keeps Swift's cases in Swift's order; version 2 appends `OlderBackup` and `SecretInUse` (a restore whose unlock secret already opens another vault).
 
 ### Migrating a version 1 vault (iPhone)
 

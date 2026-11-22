@@ -51,8 +51,12 @@ public actor VaultRepository {
     /// The open vault's format, 1 or 2.
     public func formatVersion() throws -> Int { try session().0.version }
     /// The recovery key a migration just issued, handed out once. A version 1 recovery key cannot be
-    /// carried over, so the person must keep this one instead.
+    /// carried over, so the person must keep this one instead. The migrated index records it as
+    /// unconfirmed, so losing it before `confirmRecoveryKey` leads to a replacement prompt.
     public func takeMigratedRecoveryKey() -> String? { defer { migratedRecoveryKey = nil }; return migratedRecoveryKey }
+    /// The IDs of the vaults on this device (their directory names), for cleaning up per-vault
+    /// state kept elsewhere, such as a biometric Keychain item.
+    public func vaultIDs() throws -> [UUID] { try folders().compactMap { UUID(uuidString: $0.lastPathComponent) } }
     private func session() throws -> (VaultKeys, VaultLibrary, URL) {
         guard let keys, let library, let directory else { throw VaultError.Locked }; return (keys, library, directory)
     }
@@ -185,7 +189,9 @@ public actor VaultRepository {
         try libraryValidateName(name: name); try kind.validate(passphrase)
         // A credential must select exactly one vault. Check without changing the existing session.
         for folder in try folders() { if try opens(folder, secret: passphrase, kind: kind) { throw VaultError.DuplicateVault } }
-        let value = VaultLibrary(name: name), identity = vaultIdentityGenerate(), recovery = generateRecoveryKey()
+        // The recovery key is shown next; until the person confirms saving it, the index says so.
+        let value = librarySetRecoveryUnconfirmed(library: VaultLibrary(name: name), unconfirmed: true)
+        let identity = vaultIdentityGenerate(), recovery = generateRecoveryKey()
         let header = try headerV2New(id: value.id, identity: identity, kind: kind, credential: passphrase, recoveryKey: recovery)
         let staging = root.appendingPathComponent(".stage-" + UUID().uuidString); try ProtectedFiles.directory(staging)
         defer { try? FileManager.default.removeItem(at: staging) }
@@ -204,12 +210,20 @@ public actor VaultRepository {
             catch { unreadable = true; continue }
             guard let keys = found else { continue }
             let value: VaultLibrary
-            do { value = try load(at: folder, keys: keys, id: header.id) } catch { keys.wipe(); throw error }
+            do { value = try confirmedByRecovery(load(at: folder, keys: keys, id: header.id), recovery: recovery, keys: keys, at: folder) }
+            catch { keys.wipe(); throw error }
             open(keys, value, folder)
             if case .v1(let old) = header, !recovery { migrate(header: old, credential: credential) }
             return library ?? value
         }
         if unreadable { throw VaultError.Damaged }; throw VaultError.InvalidCredential
+    }
+    /// A vault whose recovery key was never confirmed as saved, just opened by that very key: the
+    /// person evidently has it, so the reminder is cleared.
+    private func confirmedByRecovery(_ value: VaultLibrary, recovery: Bool, keys: VaultKeys, at folder: URL) throws -> VaultLibrary {
+        guard recovery, value.recoveryUnconfirmed else { return value }
+        let confirmed = librarySetRecoveryUnconfirmed(library: value, unconfirmed: false)
+        try save(confirmed, keys: keys, at: folder); return confirmed
     }
     /// The open vault's key material for Face ID / Touch ID custody: the version 2 identity's
     /// export, or the version 1 key.
@@ -249,8 +263,13 @@ public actor VaultRepository {
             try writeHeader(headerV2RewrapPassword(header: headerV2(at: folder), identity: identity, kind: kind, credential: passphrase), to: folder)
         }
     }
+    /// A new recovery key to show once. The index records it as unconfirmed first, so an interruption
+    /// or a lock before the person saves it leads to another replacement prompt, never to a key
+    /// nobody saw.
     public func replaceRecoveryKey() throws -> String {
-        let (keys, value, folder) = try session()
+        let (keys, current, folder) = try session()
+        let value = librarySetRecoveryUnconfirmed(library: current, unconfirmed: true)
+        try save(value, keys: keys, at: folder); library = value
         switch keys {
         case .v1(let key):
             let recovery = try VaultCrypto.random(Int(VaultCrypto.format.recoveryKeyBytes)).base64EncodedString()
@@ -265,6 +284,12 @@ public actor VaultRepository {
         }
     }
 
+    /// The person confirmed saving the current recovery key.
+    public func confirmRecoveryKey() throws {
+        guard try snapshot().recoveryUnconfirmed else { return }
+        try change { librarySetRecoveryUnconfirmed(library: $0, unconfirmed: false) }
+    }
+
     // MARK: migration, version 1 → 2
 
     /// Re-encrypt the open version 1 vault as version 2 beside it, verify it, then swap the folders.
@@ -273,7 +298,8 @@ public actor VaultRepository {
     /// space, an unreadable original) leaves the version 1 vault untouched and open; the next unlock
     /// tries again.
     private func migrate(header old: VaultHeader, credential: String) {
-        guard case .v1(let key)? = keys, let current = library, let folder = directory else { return }
+        guard case .v1(let key)? = keys, let opened = library, let folder = directory else { return }
+        let current = librarySetRecoveryUnconfirmed(library: opened, unconfirmed: true)
         let staging = root.appendingPathComponent(".migrate-" + current.id.uuidString)
         let retired = root.appendingPathComponent(".old-" + current.id.uuidString)
         let identity = vaultIdentityGenerate(), recovery = generateRecoveryKey()
@@ -314,39 +340,61 @@ public actor VaultRepository {
         guard resource.isRegularFile == true, resource.isSymbolicLink != true else { throw VaultError.Unsupported }
         let (bytes, digest) = try VaultCrypto.digest(url)
         let item = libraryImportItem(library: current, name: name, contentType: type, bytes: bytes, digest: digest, folder: parent)
+        // Verify the actual encrypted copy before committing or offering source removal.
+        try commitImport(item, keys: keys, library: current, folder: folder) { try encrypt(url, item: item, keys: keys, to: $0) }
+        return item
+    }
+    /// Encrypt (with `write`, to a staging name), publish the original under its blob name, then
+    /// commit the index; a failed index write removes the published original again.
+    private func commitImport(_ item: VaultItem, keys: VaultKeys, library current: VaultLibrary, folder: URL, write: (URL) throws -> Void) throws {
         let target = blob(item.id, keys: keys, in: folder)
         let staging = folder.appendingPathComponent(".import-" + item.id.uuidString)
         defer { try? FileManager.default.removeItem(at: staging) }
-        // Verify the actual encrypted copy before committing or offering source removal.
-        try encrypt(url, item: item, keys: keys, to: staging)
+        try write(staging)
         try FileManager.default.moveItem(at: staging, to: target)
         let changed = libraryAppendItem(library: current, item: item)
         do { try save(changed, keys: keys, at: folder); library = changed }
         catch { try? FileManager.default.removeItem(at: target); throw error }
-        return item
+    }
+    /// Encrypt note text from memory as `item`'s original (no plaintext file), then verify it.
+    private func encrypt(_ data: Data, item: VaultItem, keys: VaultKeys, to destination: URL) throws {
+        switch keys {
+        case .v1(let key):
+            try VaultCrypto.encrypt(data, to: destination, key: VaultCrypto.fileKey(key, id: item.id))
+        case .v2(let identity):
+            let measured = try dataEncrypt(recipient: identity.recipient(), data: data, destination: destination.path)
+            guard measured.bytes == item.bytes, measured.digest == item.digest else {
+                try? FileManager.default.removeItem(at: destination); throw VaultError.Damaged
+            }
+        }
+        try ProtectedFiles.protect(destination)
+        try verify(destination, keys: keys, item: item)
+    }
+    private static func measure(_ data: Data) -> (Int64, String) {
+        (Int64(data.count), SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined())
     }
     // Note text is vault content: only its size is checked here, against the core's limit, and the
-    // core's note rules are given an empty text, so the plaintext never crosses into the core.
-    public func addNote(name: String, text: String, folder: UUID?) throws {
-        guard text.utf8.count <= Int(VaultCrypto.format.noteMaxBytes) else { throw VaultError.NoSpace }
+    // core's note rules are given an empty text. It is encrypted from memory (version 2 through the
+    // core's `dataEncrypt`, which needs only the public recipient); no plaintext file is written.
+    public func addNote(name: String, text: String, folder parent: UUID?) throws {
+        var data = Data(text.utf8); defer { data.resetBytes(in: 0..<data.count) }
+        guard data.count <= Int(VaultCrypto.format.noteMaxBytes) else { throw VaultError.NoSpace }
         let stored = try noteName(name: name, text: "")
-        let source = temporary.appendingPathComponent(UUID().uuidString + ".txt")
-        defer { try? FileManager.default.removeItem(at: source) }
-        try ProtectedFiles.write(Data(text.utf8), to: source)
-        _ = try importFile(source, name: stored, type: "public.plain-text", folder: folder)
+        let (keys, current, folder) = try session(); try libraryCheckImport(library: current, name: stored, folder: parent)
+        let (bytes, digest) = Self.measure(data)
+        let item = libraryImportItem(library: current, name: stored, contentType: "public.plain-text", bytes: bytes, digest: digest, folder: parent)
+        try commitImport(item, keys: keys, library: current, folder: folder) { try encrypt(data, item: item, keys: keys, to: $0) }
     }
     public func editNote(_ id: UUID, text: String) throws {
         let (keys, current, folder) = try session()
         let old = try libraryCheckNoteEdit(library: current, id: id, text: "")
-        guard text.utf8.count <= Int(VaultCrypto.format.noteMaxBytes) else { throw VaultError.Unsupported }
-        let source = temporary.appendingPathComponent(UUID().uuidString + ".txt")
-        defer { try? FileManager.default.removeItem(at: source) }
-        try ProtectedFiles.write(Data(text.utf8), to: source)
-        let (bytes, digest) = try VaultCrypto.digest(source)
+        var data = Data(text.utf8); defer { data.resetBytes(in: 0..<data.count) }
+        guard data.count <= Int(VaultCrypto.format.noteMaxBytes) else { throw VaultError.Unsupported }
+        let (bytes, digest) = Self.measure(data)
         let replacement = noteReplacement(old: old, bytes: bytes, digest: digest)
         let target = blob(replacement.id, keys: keys, in: folder)
         do {
-            try encrypt(source, item: replacement, keys: keys, to: target)
+            try encrypt(data, item: replacement, keys: keys, to: target)
             let changed = libraryReplaceItem(library: current, id: id, replacement: replacement)
             try save(changed, keys: keys, at: folder); library = changed
         } catch { try? FileManager.default.removeItem(at: target); throw error }
@@ -465,11 +513,15 @@ public actor VaultRepository {
         let header = try header(at: staging)
         guard let keys = try keys(for: header, credential: credential, recovery: recovery, kind: kind) else { throw VaultError.InvalidCredential }
         do {
-            let value = try load(at: staging, keys: keys, id: header.id)
-            if keys.version == 1 { try backupNamesMatch(names: names, library: value) } else { try backupV2NamesMatch(names: names, library: value) }
-            for item in value.items { try verify(blob(item.id, keys: keys, in: staging), keys: keys, item: item) }
-            let target = root.appendingPathComponent(value.id.uuidString)
+            let loaded = try load(at: staging, keys: keys, id: header.id)
+            if keys.version == 1 { try backupNamesMatch(names: names, library: loaded) } else { try backupV2NamesMatch(names: names, library: loaded) }
+            let target = root.appendingPathComponent(loaded.id.uuidString)
             guard !FileManager.default.fileExists(atPath: target.path) else { throw VaultError.DuplicateVault }
+            // As at creation and change: one unlock secret opens one vault. (A recovery-key restore
+            // can't check the backup's secret; the person can change it afterwards.)
+            if !recovery { for folder in try folders() { if try opens(folder, secret: credential, kind: kind) { throw VaultError.SecretInUse } } }
+            for item in loaded.items { try verify(blob(item.id, keys: keys, in: staging), keys: keys, item: item) }
+            let value = try confirmedByRecovery(loaded, recovery: recovery, keys: keys, at: staging)
             try FileManager.default.moveItem(at: staging, to: target)
             lock(); open(keys, value, target)
             if case .v1(let old) = header, !recovery { migrate(header: old, credential: credential) }

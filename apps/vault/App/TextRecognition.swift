@@ -71,10 +71,13 @@ struct RecognizedTextScreen: View {
     @State private var saving = false
     init(draft: RecognizedImageText) {
         self.draft = draft
-        _name = State(initialValue: (draft.item.name as NSString).deletingPathExtension + " text")
+        _name = State(initialValue: RecognizedTextScreen.defaultName(draft.item))
         _text = State(initialValue: draft.text)
     }
-    private var hasChanges: Bool { text != draft.text || name != (draft.item.name as NSString).deletingPathExtension + " text" }
+    private var hasChanges: Bool { text != draft.text || name != Self.defaultName(draft.item) }
+    static func defaultName(_ item: VaultItem) -> String {
+        String(localized: "\((item.name as NSString).deletingPathExtension) text", comment: "Default name for a note of recognized text; the placeholder is the source file name without extension.")
+    }
     var body: some View {
         NavigationStack {
             Form {
@@ -132,8 +135,9 @@ struct PdfRangeScreen: View {
                 Section {
                     LabeledContent("First page") { TextField("First page", text: $first).keyboardType(.numberPad).multilineTextAlignment(.trailing).accessibilityIdentifier("ocr-first") }
                     LabeledContent("Last page") { TextField("Last page", text: $last).keyboardType(.numberPad).multilineTextAlignment(.trailing).accessibilityIdentifier("ocr-last") }
-                } header: { Text("\(draft.pages) pages") } footer: {
-                    Text(plan.issue ?? "Choose up to \(plan.maximumPages) pages. Review the result before saving a separate encrypted note. The original PDF stays unchanged.")
+                } header: { Text("\(Int(draft.pages)) pages") } footer: {
+                    if let issue = plan.issue { Text(issue) }
+                    else { Text("Choose up to \(Int(plan.maximumPages)) pages. Review the result before saving a separate encrypted note. The original PDF stays unchanged.") }
                 }
                 if model.busy { ProgressView("Recognizing selected pages…") }
             }

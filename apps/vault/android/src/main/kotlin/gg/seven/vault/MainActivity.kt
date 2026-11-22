@@ -40,9 +40,11 @@ fun PrivacyCover() {
 /**
  * The lock lifecycle (iOS `scenePhase`): FLAG_SECURE keeps every window out of screenshots, screen
  * recording and the recent-apps thumbnail; the contents are covered whenever the activity is not
- * resumed; the vault locks when the app leaves the screen. A system picker, camera or share sheet
- * that Vault itself opened gets five minutes before the lock, so an import doesn't lock the vault
- * it is importing into; returning cancels it. FragmentActivity hosts BiometricPrompt.
+ * resumed; the vault locks as soon as the app leaves the screen. The one exception is a system
+ * screen Vault itself just opened (a picker, the share chooser, a permission or biometric prompt,
+ * tracked by [SystemFlowGuard] from launch until its result or Vault's return): the lock waits for
+ * it, bounded by the guard's short timeout, so an import doesn't lock the vault it is importing
+ * into. Locking also clears temporary plaintext. FragmentActivity hosts BiometricPrompt.
  */
 class MainActivity : FragmentActivity() {
     private val model by lazy { ViewModelProvider(this)[VaultModel::class.java] }
@@ -70,7 +72,7 @@ class MainActivity : FragmentActivity() {
     override fun onStart() {
         super.onStart()
         handler.removeCallbacks(pendingLock)
-        model.external = false
+        model.endSystemFlow()
     }
 
     override fun onResume() {
@@ -81,16 +83,13 @@ class MainActivity : FragmentActivity() {
 
     override fun onPause() {
         super.onPause()
-        if (!model.external) covered.value = true
+        if (!model.systemFlow.active) covered.value = true
     }
 
     override fun onStop() {
         super.onStop()
         if (isChangingConfigurations || model.library == null) return
-        if (model.external) handler.postDelayed(pendingLock, EXTERNAL_GRACE_MILLIS) else model.lock()
-    }
-
-    companion object {
-        const val EXTERNAL_GRACE_MILLIS = 5 * 60 * 1000L
+        val wait = model.systemFlow.remaining()
+        if (wait > 0) handler.postDelayed(pendingLock, wait) else model.lock()
     }
 }

@@ -65,10 +65,10 @@ fun SettingsScreen(model: VaultModel, onBack: () -> Unit) {
                         action("Generate a replacement recovery key", Icons.Outlined.Key, enabled = !model.busy) { model.replaceRecoveryKey() }
                     }
                     Caption(
-                        "Save the .vault7 file outside this app, then test a restore on another device. Uninstalling Vault deletes local files. Android's own device backup does not include your vaults. Replacing a recovery key affects this device. Old backups keep the previous key until you replace those backups."
+                        "Save the .vault7 file outside this app, then test a restore on another device. Uninstalling Vault deletes local files. Android’s own device backup does not include your vaults. Replacing a recovery key affects this device. Old backups keep the previous key until you replace those backups."
                     )
                     val unavailable = remember { BiometricKey.unavailable(context) }
-                    Section(title = "Biometric convenience", footer = "Turning this on keeps this vault's key in this device's secure hardware, released only by your current fingerprints or face. Enrolling a new one turns it off. Keep the independent secret and recovery key.") {
+                    Section(title = "Biometric convenience", footer = "Turning this on keeps this vault’s key in this device’s secure hardware, released only by your current fingerprints or face. Enrolling a new one turns it off. Keep the independent secret and recovery key.") {
                         if (unavailable != null) content { Text(unavailable, style = MaterialTheme.typography.bodyMedium) }
                         action("Turn on fingerprint or face unlock for this vault", Icons.Outlined.Fingerprint, enabled = unavailable == null && !model.busy) {
                             context.fragmentActivity()?.let(model::enableBiometrics)
@@ -79,15 +79,15 @@ fun SettingsScreen(model: VaultModel, onBack: () -> Unit) {
                 }
                 Section(title = "Privacy") {
                     content {
-                        Text("No Vault account, analytics, ads or storage servers. Automatic backups copy encrypted files to the folder you select. That folder's app handles any cloud storage; Google Play purchases contact Google.", style = MaterialTheme.typography.bodyMedium)
+                        Text("No Vault account, analytics, ads or storage servers. Automatic backups copy encrypted files to the folder you select. That folder’s app handles any cloud storage; Google Play purchases contact Google.", style = MaterialTheme.typography.bodyMedium)
                     }
                     content {
-                        Text("Vault hides its contents from the recent apps screen and screenshots, covers them when it isn't in front, and locks when you leave it. It does not protect an open session on a compromised device.", style = MaterialTheme.typography.bodyMedium)
+                        Text("Vault hides its contents from the recent apps screen and screenshots, covers them when it isn’t in front, and locks when you leave it. A picker or share sheet Vault opens keeps it unlocked for up to two minutes. It does not protect an open session on a compromised device.", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
                 Section(title = "Built on") {
                     content {
-                        Text("age encryption (rage, the Rust implementation of age-encryption.org/v1), the Android Keystore and BiometricPrompt, CameraX, Media3, Telephoto and Android's photo picker and document folders. Original files are preserved without recompression by Vault.", style = MaterialTheme.typography.bodyMedium)
+                        Text("age encryption (rage, the Rust implementation of age-encryption.org/v1), the Android Keystore and BiometricPrompt, CameraX, Media3, Telephoto and Android’s photo picker and document folders. Original files are preserved without recompression by Vault.", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
                 SevenAbout(coreVersion = remember { coreVersion() })
@@ -104,20 +104,20 @@ fun AutomaticBackupSection(model: VaultModel) {
     val context = LocalContext.current
     val choose =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { tree ->
-            model.external = false
+            model.endSystemFlow()
             if (tree != null) {
                 runCatching { context.contentResolver.takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
                 model.enableAutomaticBackup(tree)
             }
         }
     val pick = {
-        model.external = true
+        model.beginSystemFlow()
         choose.launch(null)
     }
     Section(
         title = "Automatic encrypted backup",
         footer =
-            "Choose a folder once, on this device or in a cloud drive's app. Changes are backed up while this vault is open. Completed encrypted backups can retry in the background; Android decides when. If preparation is interrupted, open this vault again to catch up. The latest three copies made by this device are kept. That folder's app handles cloud upload; a completed copy is not an upload receipt. Backups remain available after the trial ends. Turning this off leaves existing copies in your chosen folder.",
+            "Choose a folder once, on this device or in a cloud drive’s app. Changes are backed up while this vault is open. Completed encrypted backups can retry in the background; Android decides when. If preparation is interrupted, open this vault again to catch up. The latest three copies made by this device are kept. That folder’s app handles cloud upload; a completed copy is not an upload receipt. Backups remain available after the trial ends. Turning this off leaves existing copies in your chosen folder.",
     ) {
         val status = model.automaticStatus
         if (status != null) {

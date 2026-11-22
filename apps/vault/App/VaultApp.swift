@@ -26,7 +26,9 @@ struct VaultRoot: View {
     @State private var before = false
     var body: some View {
         Group {
-            if model.library != nil { VaultLibraryView() } else { VaultLockView() }
+            if model.library == nil { VaultLockView() }
+            else if model.needsRecoveryReplacement { RecoveryReplacementView() }
+            else { VaultLibraryView() }
         }.id(model.generation)
             .task(id: model.store.hasStarted) { if model.store.hasStarted && model.store.state != .unlocked && model.store.launchSheet == .beforeYouBuy { before = true } }
             .sheet(isPresented: $before) { BeforeYouBuyView(content: VaultGate.before) { _ in before = false } }
@@ -64,13 +66,13 @@ struct VaultLockView: View {
                 Section("Open your vault") {
                     Toggle("Use a recovery key", isOn: $recovery).onChange(of: recovery) { credential = "" }
                     if !recovery { CredentialKindPicker(kind: $kind).onChange(of: kind) { credential = "" } }
-                    CredentialInput(kind: recovery ? .passphrase : kind, value: $credential, label: recovery ? "Recovery key" : kind.title, identifier: "vault.credential")
+                    CredentialInput(kind: recovery ? .passphrase : kind, value: $credential, label: recovery ? String(localized: "Recovery key") : kind.localizedTitle, identifier: "vault.credential")
                     Button("Unlock") { let secret = credential; credential = ""; Task { await model.unlock(secret, recovery: recovery, kind: kind) } }.disabled(credential.isEmpty || model.busy).accessibilityIdentifier("vault.unlock")
                     if model.hasBiometricKey { Button("Unlock with Face ID or Touch ID") { Task { await model.unlockBiometrics() } }.disabled(model.busy) }
                     if model.busy { ProgressView(model.progress) }
                 }
                 Section {
-                    GatedButton(feature: "Create a vault", action: { creating = true }) { Label("Create a vault", systemImage: "plus") }.disabled(model.busy)
+                    GatedButton(feature: String(localized: "Create a vault"), action: { creating = true }) { Label("Create a vault", systemImage: "plus") }.disabled(model.busy)
                     Button { restoring = true } label: { Label("Restore encrypted backup", systemImage: "arrow.clockwise.icloud") }.disabled(model.busy)
                 }
                 Section { Text("A recovery key opens existing encrypted data. It cannot bring back files after the app is deleted unless you kept a backup.").font(.footnote).foregroundStyle(.secondary) }
@@ -95,8 +97,8 @@ struct CreateVaultSheet: View {
                 Section("New vault") {
                     TextField("Vault name", text: $name).accessibilityIdentifier("vault.newName")
                     CredentialKindPicker(kind: $kind).onChange(of: kind) { password = ""; repeated = "" }
-                    CredentialInput(kind: kind, value: $password, label: "New " + kind.title.lowercased(), identifier: "vault.newPassword")
-                    CredentialInput(kind: kind, value: $repeated, label: "Repeat " + kind.title.lowercased(), identifier: "vault.repeatPassword")
+                    CredentialInput(kind: kind, value: $password, label: kind.newLabel, identifier: "vault.newPassword")
+                    CredentialInput(kind: kind, value: $repeated, label: kind.repeatLabel, identifier: "vault.repeatPassword")
                 }
                 Section {
                     Text("Use 12+ characters, an 8–32 digit PIN, or 8+ dots. Each secret opens its own vault. Longer, unpredictable secrets resist guessing better; avoid dates, letters and simple shapes.")
@@ -122,12 +124,37 @@ struct RecoverySheet: View {
                         Text("Vault updated this vault to its new encryption format, which also opens on Android. Your old recovery key no longer opens it; this one does.").accessibilityIdentifier("vault.migrated")
                     }
                     Text("This key can open your vault without its usual unlock secret. Store it somewhere private, such as your password manager.")
-                    Text(model.recoveryKey ?? "").font(.body.monospaced()).textSelection(.enabled).accessibilityIdentifier("vault.recoveryKey")
-                    Text("We do not retain a readable copy. A backup is still needed if the local files are lost.").foregroundStyle(.secondary)
-                    Toggle("I have saved my recovery key", isOn: $saved)
+                    Text(verbatim: model.recoveryKey ?? "").font(.body.monospaced()).textSelection(.enabled).accessibilityIdentifier("vault.recoveryKey")
+                    Text("We don’t keep a readable copy. If Vault locks before you confirm, you’ll be asked to make a new key. A backup is still needed if the local files are lost.").foregroundStyle(.secondary)
+                    Toggle("I’ve saved my recovery key", isOn: $saved).accessibilityIdentifier("vault.recoverySaved")
                 }
-                Button("Continue to vault") { model.recoveryKey = nil; model.recoveryKeyReplacesOld = false }.disabled(!saved)
+                if model.busy { ProgressView(model.progress) }
+                Button("Continue to vault") { Task { await model.confirmRecoveryKey() } }.disabled(!saved || model.busy).accessibilityIdentifier("vault.continue")
             }.navigationTitle("Recovery key").interactiveDismissDisabled()
+        }
+    }
+}
+/// Shown instead of the library when the vault's current recovery key was never confirmed as saved
+/// (Vault locked or quit while it was on screen). Nothing secret survived the lock, so the only safe
+/// way on is a replacement key, through the same path as Settings.
+struct RecoveryReplacementView: View {
+    @Environment(VaultModel.self) private var model
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Image(systemName: "key").font(.system(size: 44)).foregroundStyle(.tint).accessibilityHidden(true)
+                        Text("Save a new recovery key").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                        Text("Vault locked before you confirmed saving this vault’s recovery key, and it isn’t kept anywhere it can be shown again. Make a replacement now and save it before you continue.")
+                    }.padding(.vertical, 8)
+                }
+                Section {
+                    if model.busy { ProgressView(model.progress) }
+                    Button("Create a new recovery key") { Task { await model.replaceRecoveryKey() } }.disabled(model.busy).accessibilityIdentifier("vault.replaceRecovery")
+                } footer: { Text("Old backups still open with the recovery key they were made with.") }
+            }.navigationTitle("Recovery key")
+                .toolbar { Button { model.lock() } label: { Label("Lock", systemImage: "lock.fill") } }
         }
     }
 }
@@ -143,10 +170,10 @@ struct RestoreVaultSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    Button(file?.lastPathComponent ?? "Choose a .vault7 backup") { choosing = true }
+                    Button(file?.lastPathComponent ?? String(localized: "Choose a .vault7 backup")) { choosing = true }
                     Toggle("Use recovery key", isOn: $recovery).onChange(of: recovery) { credential = "" }
                     if !recovery { CredentialKindPicker(kind: $kind).onChange(of: kind) { credential = "" } }
-                    CredentialInput(kind: recovery ? .passphrase : kind, value: $credential, label: recovery ? "Recovery key" : "Backup " + kind.title.lowercased(), identifier: "vault.restoreCredential")
+                    CredentialInput(kind: recovery ? .passphrase : kind, value: $credential, label: recovery ? String(localized: "Recovery key") : kind.backupLabel, identifier: "vault.restoreCredential")
                     Text("Use the pattern, PIN, passphrase or recovery key that applied when this backup was made. The whole backup is verified before it is added. Existing vaults are never overwritten.").font(.footnote).foregroundStyle(.secondary)
                 }
                 Button("Verify and restore") {
@@ -196,10 +223,11 @@ struct VaultLibraryView: View {
     }
     private func searchCoverage(_ result: NoteSearchResult) -> String {
         if let issue = result.issue { return issue }
-        var text = "Searched \(result.searched) \(result.searched == 1 ? "note" : "notes")"
-        if result.unavailable > 0 { text += " · \(result.unavailable) unreadable" }
-        if result.omitted > 0 { text += " · \(result.omitted) skipped (500 notes / 32 MB per search)" }
-        return text
+        // Each part is its own catalog entry with plural variants; the list separator is a format too.
+        var parts = [String(localized: "Searched \(Int(result.searched)) notes")]
+        if result.unavailable > 0 { parts.append(String(localized: "\(Int(result.unavailable)) unreadable")) }
+        if result.omitted > 0 { parts.append(String(localized: "\(Int(result.omitted)) skipped (500 notes / 32 MB per search)")) }
+        return parts.joined(separator: String(localized: " · ", comment: "Separator between search coverage counts"))
     }
     var body: some View {
         NavigationStack {
@@ -230,16 +258,16 @@ struct VaultLibraryView: View {
                 if !trash {
                     Section {
                         HStack {
-                            GatedButton(feature: "Import files", action: { importing = true }) { Label("Files", systemImage: "folder.badge.plus") }
+                            GatedButton(feature: String(localized: "Import files"), action: { importing = true }) { Label("Files", systemImage: "folder.badge.plus") }
                             Spacer()
                             if model.store.paidFeaturesAvailable {
                                 PhotosPicker(selection: $photos, matching: .any(of: [.images, .videos]), preferredItemEncoding: .current) { Label("Photos", systemImage: "photo.badge.plus") }
-                            } else { GatedButton(feature: "Import photos", action: {}) { Label("Photos", systemImage: "photo.badge.plus") } }
+                            } else { GatedButton(feature: String(localized: "Import photos"), action: {}) { Label("Photos", systemImage: "photo.badge.plus") } }
                         }.buttonStyle(.borderless).disabled(model.busy)
                         HStack {
-                            GatedButton(feature: "Write a note", action: { note = true }) { Label("Note", systemImage: "square.and.pencil") }
+                            GatedButton(feature: String(localized: "Write a note"), action: { note = true }) { Label("Note", systemImage: "square.and.pencil") }
                             Spacer()
-                            GatedButton(feature: "Capture a photo", action: { camera = true }) { Label("Camera", systemImage: "camera") }.disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
+                            GatedButton(feature: String(localized: "Capture a photo"), action: { camera = true }) { Label("Camera", systemImage: "camera") }.disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
                         }.buttonStyle(.borderless).disabled(model.busy)
                     } footer: { Text("Photos imports the current rendition. Live Photos are stills here. Originals stay in Photos; this app never deletes them.") }
                 }
@@ -315,14 +343,14 @@ struct VaultLibraryView: View {
                         try Task.checkCancellation()
                         noteResult = result; resultRequest = request
                     } catch is CancellationError { }
-                    catch { searchFailure = "Note text could not be searched. Unlock again and retry."; resultRequest = request }
+                    catch { searchFailure = String(localized: "Note text could not be searched. Unlock again and retry."); resultRequest = request }
                 }
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) { Button { model.lock() } label: { Label("Lock", systemImage: "lock.fill") }.accessibilityIdentifier("vault.lock") }
                     ToolbarItemGroup(placement: .topBarTrailing) {
                         Button(selecting ? "Done" : "Select") { selecting.toggle(); selected = [] }
                         Menu {
-                            Picker("Sort", selection: Binding(get: { library.sort }, set: { order in Task { await model.update { try await model.repository.preferences(sort: order, grid: library.grid) } } })) { ForEach(VaultOrder.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) } }
+                            Picker("Sort", selection: Binding(get: { library.sort }, set: { order in Task { await model.update { try await model.repository.preferences(sort: order, grid: library.grid) } } })) { ForEach(VaultOrder.allCases, id: \.self) { Text($0.localizedTitle).tag($0) } }
                             Button(library.grid ? "List view" : "Grid view") { Task { await model.update { try await model.repository.preferences(sort: library.sort, grid: !library.grid) } } }
                             Toggle("Favorites only", isOn: $favorites)
                             Button(trash ? "Show library" : "Recently Deleted") { trash.toggle(); selected = []; folder = nil }
@@ -439,6 +467,7 @@ struct VaultSettings: View {
     @State private var kind = VaultCredentialKind.passphrase
     @State private var repeated = ""
     @State private var restore = false
+    @State private var changed = false
     var body: some View {
         Form {
             if let library = model.library {
@@ -453,15 +482,28 @@ struct VaultSettings: View {
                     Text("Replacing a recovery key affects this device. Old backups keep the previous key until you replace those backups.").font(.footnote).foregroundStyle(.secondary)
                 }
                 Section("Biometric convenience") {
-                    Button("Enable Face ID / Touch ID for this vault") { Task { await model.enableBiometrics() } }
-                    Button("Remove biometric unlock") { model.disableBiometrics() }
-                    Text("Enabling this stores a key protected by your current biometric enrollment on this device. Keep the independent passphrase and recovery key.").font(.footnote).foregroundStyle(.secondary)
+                    if model.biometricVaultID == library.id {
+                        Label("Face ID or Touch ID unlock is on for this vault.", systemImage: "checkmark.circle.fill").accessibilityIdentifier("vault.biometricOn")
+                    } else {
+                        Button("Enable Face ID / Touch ID for this vault") { Task { await model.enableBiometrics() } }
+                        if model.hasBiometricKey { Text("It’s on for another vault now. Turning it on here moves it to this one.").font(.footnote).foregroundStyle(.secondary) }
+                    }
+                    if model.hasBiometricKey { Button("Remove biometric unlock", role: .destructive) { model.disableBiometrics() } }
+                    Text("Enabling this stores a key protected by your current biometric enrollment on this device, for one vault at a time. Keep the independent secret and recovery key.").font(.footnote).foregroundStyle(.secondary)
                 }
                 Section("Change unlock method") {
-                    CredentialKindPicker(kind: $kind).onChange(of: kind) { password = ""; repeated = "" }
-                    CredentialInput(kind: kind, value: $password, label: "New " + kind.title.lowercased(), identifier: "vault.changeCredential")
-                    CredentialInput(kind: kind, value: $repeated, label: "Repeat " + kind.title.lowercased(), identifier: "vault.repeatChangeCredential")
-                    Button("Change unlock secret") { let secret = password; password = ""; repeated = ""; Task { await model.update { try await model.repository.changePassphrase(secret, kind: kind) } } }.disabled((try? kind.validate(password)) == nil || password != repeated)
+                    CredentialKindPicker(kind: $kind).onChange(of: kind) { password = ""; repeated = ""; changed = false }
+                    CredentialInput(kind: kind, value: $password, label: kind.newLabel, identifier: "vault.changeCredential").onChange(of: password) { if !password.isEmpty { changed = false } }
+                    CredentialInput(kind: kind, value: $repeated, label: kind.repeatLabel, identifier: "vault.repeatChangeCredential")
+                    Button("Change unlock secret") {
+                        let secret = password, chosen = kind; password = ""; repeated = ""
+                        Task {
+                            if await model.update(action: { try await model.repository.changePassphrase(secret, kind: chosen) }) {
+                                changed = true; model.announce(String(localized: "Unlock secret changed. Older backups still open with the old one."))
+                            }
+                        }
+                    }.disabled((try? kind.validate(password)) == nil || password != repeated)
+                    if changed { Label("Unlock secret changed. Older backups still open with the old one.", systemImage: "checkmark.circle.fill").accessibilityIdentifier("vault.secretChanged") }
                     Text("Older backups still use their old credentials. Make a new backup after changing them.").font(.footnote).foregroundStyle(.secondary)
                 }
             }
@@ -469,7 +511,7 @@ struct VaultSettings: View {
                 Text("No Vault account, analytics, ads or storage servers. Automatic backups copy encrypted files to the folder you select. Your Files provider handles cloud storage; App Store purchases contact Apple.")
                 Text("Vault hides its contents when inactive and locks in the background. It does not prevent screenshots or protect an open session on a compromised device.")
             }
-            Section("Built on") { Text("Apple CryptoKit, CommonCrypto, Keychain, Apple Encrypted Archive, PhotosUI and Quick Look. Original files are preserved without recompression by Vault.") }
+            Section("Built on") { Text("age encryption (rage, the Rust implementation of age-encryption.org/v1) in Vault’s shared core, the Keychain, PhotosUI, Vision, PDFKit and Quick Look. Vaults made by earlier versions are read with Apple CryptoKit and Apple Encrypted Archive until their first unlock updates them. Original files are preserved without recompression by Vault.") }
             AboutSection(onShowBeforeYouBuy: { before = true })
         }.navigationTitle("Settings").disabled(model.busy)
             .toolbar { Button("Lock") { model.lock() } }

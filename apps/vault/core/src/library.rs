@@ -115,6 +115,16 @@ pub struct VaultLibrary {
     pub grid: bool,
     #[serde(rename = "backupPrepared", with = "date_opt", default, skip_serializing_if = "Option::is_none")]
     pub backup_prepared: Option<SystemTime>,
+    /// The current recovery key was issued (vault creation, a replacement, a version 1 → 2
+    /// migration) but the person has not yet confirmed saving it. Kept inside the authenticated
+    /// index so no secret has to outlive the session: the next unlock asks for a replacement key.
+    /// Absent (false) in older indexes and omitted when false, so existing files read back equal.
+    #[serde(rename = "recoveryUnconfirmed", default, skip_serializing_if = "is_false")]
+    pub recovery_unconfirmed: bool,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 impl VaultLibrary {
@@ -123,7 +133,7 @@ impl VaultLibrary {
     }
 
     pub fn with_id(id: Uuid, name: String) -> Self {
-        Self { version: 1, id, name, items: vec![], folders: vec![], sort: VaultOrder::Newest, grid: false, backup_prepared: None }
+        Self { version: 1, id, name, items: vec![], folders: vec![], sort: VaultOrder::Newest, grid: false, backup_prepared: None, recovery_unconfirmed: false }
     }
 
     pub fn validate_name(name: &str) -> Result<(), VaultError> {

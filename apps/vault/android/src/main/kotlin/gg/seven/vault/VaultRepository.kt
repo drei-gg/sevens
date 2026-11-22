@@ -98,20 +98,20 @@ class VaultRepository(val root: File, val temporary: File) {
         }
     }
 
-    /** Publish an operation's committed library, unless the session it came from has locked. */
-    private fun commitLibrary(s: Session, changed: VaultLibrary) =
+    /**
+     * Publish an operation's committed library and header, unless the session it came from has
+     * locked.
+     */
+    private fun commit(s: Session, library: VaultLibrary = s.library, header: VaultHeaderV2 = s.header) =
         synchronized(this) {
             val origin = s.origin ?: return@synchronized
             if (current === origin)
-                current = Session(origin.identity, origin.header, changed, origin.directory)
+                current = Session(origin.identity, header, library, origin.directory)
         }
 
-    private fun commitHeader(s: Session, changed: VaultHeaderV2) =
-        synchronized(this) {
-            val origin = s.origin ?: return@synchronized
-            if (current === origin)
-                current = Session(origin.identity, changed, origin.library, origin.directory)
-        }
+    private fun commitLibrary(s: Session, changed: VaultLibrary) = commit(s, library = changed)
+
+    private fun commitHeader(s: Session, changed: VaultHeaderV2) = commit(s, header = changed)
 
     private fun folders(): List<File> =
         (root.listFiles() ?: emptyArray())
@@ -162,7 +162,8 @@ class VaultRepository(val root: File, val temporary: File) {
             // session.
             for (folder in folders()) if (opens(folder, secret, kind))
                 throw VaultException.DuplicateVault()
-            val value = newVaultLibrary(name)
+            // The recovery key is shown next; until the person confirms saving it, the index says so.
+            val value = librarySetRecoveryUnconfirmed(newVaultLibrary(name), true)
             val newIdentity = vaultIdentityGenerate()
             val recovery = generateRecoveryKey()
             val newHeader = headerV2New(value.id, newIdentity, kind, secret, recovery)
@@ -199,7 +200,7 @@ class VaultRepository(val root: File, val temporary: File) {
                     ?: continue
             val value =
                 try {
-                    load(folder, found, opened)
+                    confirmedByRecovery(load(folder, found, opened), recovery, opened, folder)
                 } catch (e: Exception) {
                     opened.destroy()
                     throw e
@@ -209,6 +210,17 @@ class VaultRepository(val root: File, val temporary: File) {
         }
         if (unreadable) throw VaultException.Damaged()
         throw VaultException.InvalidCredential()
+    }
+
+    /**
+     * A vault whose recovery key was never confirmed as saved, just opened by that very key: the
+     * person evidently has it, so the reminder is cleared (in the index, with [identity]).
+     */
+    private fun confirmedByRecovery(value: VaultLibrary, recovery: Boolean, identity: VaultIdentity, folder: File): VaultLibrary {
+        if (!recovery || !value.recoveryUnconfirmed) return value
+        val confirmed = librarySetRecoveryUnconfirmed(value, false)
+        save(confirmed, identity, folder)
+        return confirmed
     }
 
     /** The open vault's id and its identity's secret, solely to wrap for biometric custody. */
@@ -237,13 +249,28 @@ class VaultRepository(val root: File, val temporary: File) {
         }
     }
 
+    /**
+     * A new recovery key, returned to show once. The index records it as unconfirmed first, so an
+     * interruption (or a lock before the person saves it) is followed by another replacement
+     * prompt at the next unlock, never by a key nobody saw.
+     */
     suspend fun replaceRecoveryKey(): String = serial {
         operation { s ->
             val recovery = generateRecoveryKey()
+            val flagged = librarySetRecoveryUnconfirmed(s.library, true)
+            save(flagged, s.identity, s.directory)
             val changed = headerV2RewrapRecovery(readHeader(s.directory), s.identity, recovery)
             writeHeader(changed, s.directory)
-            commitHeader(s, changed)
+            commit(s, flagged, changed)
             recovery
+        }
+    }
+
+    /** The person confirmed saving the current recovery key. */
+    suspend fun confirmRecoveryKey() = serial {
+        operation { s ->
+            if (s.library.recoveryUnconfirmed)
+                edit(s) { librarySetRecoveryUnconfirmed(it, false) }
         }
     }
 
@@ -567,16 +594,22 @@ class VaultRepository(val root: File, val temporary: File) {
             if (!recovery && found.credentialKind != kind) throw VaultException.InvalidCredential()
             val opened = headerV2Open(found, credential, kind, recovery)
             try {
-                val value = load(staging, found, opened)
-                backupV2NamesMatch(names, value)
-                for (item in value.items) fileVerify(
+                val loaded = load(staging, found, opened)
+                backupV2NamesMatch(names, loaded)
+                val target = File(root, loaded.id.upper())
+                if (target.exists()) throw VaultException.DuplicateVault()
+                // As at creation and change: one unlock secret opens one vault. (A recovery-key
+                // restore can't check the backup's secret; the person can change it afterwards.)
+                if (!recovery)
+                    for (folder in folders()) if (opens(folder, credential, kind))
+                        throw VaultException.SecretInUse()
+                for (item in loaded.items) fileVerify(
                     opened,
                     blob(item.id, staging).path,
                     item.bytes,
                     item.digest,
                 )
-                val target = File(root, value.id.upper())
-                if (target.exists()) throw VaultException.DuplicateVault()
+                val value = confirmedByRecovery(loaded, recovery, opened, staging)
                 if (!staging.renameTo(target)) throw VaultException.Damaged()
                 publish(opened, found, value, target)
                 value

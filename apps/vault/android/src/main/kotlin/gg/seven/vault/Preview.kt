@@ -314,7 +314,7 @@ fun FilesReadySheet(model: VaultModel, shown: Presentation.Files) {
                 if (shown.backup) "application/octet-stream" else "*/*"
             )
         ) { uri ->
-            model.external = false
+            model.endSystemFlow()
             if (uri != null && one != null) {
                 saving = true
                 scope.launch {
@@ -343,7 +343,7 @@ fun FilesReadySheet(model: VaultModel, shown: Presentation.Files) {
         }
     val saveMany =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { tree ->
-            model.external = false
+            model.endSystemFlow()
             val folder =
                 tree?.let { DocumentFile.fromTreeUri(context, it) }
                     ?: return@rememberLauncherForActivityResult
@@ -406,7 +406,7 @@ fun FilesReadySheet(model: VaultModel, shown: Presentation.Files) {
             )
             Button(
                 onClick = {
-                    model.external = true
+                    model.beginSystemFlow()
                     if (one != null) saveOne.launch(one.name) else saveMany.launch(null)
                 },
                 enabled = !saving,
@@ -438,7 +438,7 @@ fun FilesReadySheet(model: VaultModel, shown: Presentation.Files) {
                             uris.drop(1).forEach { addItem(ClipData.Item(it)) }
                         }
                     send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    model.external = true
+                    model.beginSystemFlow()
                     context.startActivity(Intent.createChooser(send, null))
                 },
                 enabled = !saving,

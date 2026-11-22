@@ -190,3 +190,13 @@ pub fn library_mark_backup_prepared(library: &VaultLibrary, now: SystemTime) -> 
     changed.backup_prepared = Some(as_date(now));
     changed
 }
+
+/// Record whether the vault's current recovery key still awaits the person's "I’ve saved it":
+/// true when a key is issued (creation, replacement, migration), false once confirmed or once the
+/// key has opened the vault.
+#[uniffi::export]
+pub fn library_set_recovery_unconfirmed(library: &VaultLibrary, unconfirmed: bool) -> VaultLibrary {
+    let mut changed = library.clone();
+    changed.recovery_unconfirmed = unconfirmed;
+    changed
+}

@@ -36,7 +36,7 @@ struct BatchRecognitionScreen: View {
                 }
                 if !queue.started {
                     Section("Review \(queue.plan.items.count) files") {
-                        Text("Recognize one file at a time, then save an encrypted note or skip it. All pages of each PDF are included, up to \(queue.plan.maximumPdfPages); longer PDFs need the individual page-range action. Originals stay unchanged.")
+                        Text("Recognize one file at a time, then save an encrypted note or skip it. All pages of each PDF are included, up to \(Int(queue.plan.maximumPdfPages)); longer PDFs need the individual page-range action. Originals stay unchanged.")
                         ForEach(queue.plan.items) { Text($0.name) }
                         Text("The queue stays only in this unlocked session. Closing or locking discards unsaved text; notes already saved remain.")
                         Button("Start review") { queue.started = true }.accessibilityIdentifier("ocr-batch-start")
@@ -98,5 +98,5 @@ struct BatchRecognitionScreen: View {
 
 enum BatchRecognitionError: LocalizedError {
     case pageLimit(UInt32)
-    var errorDescription: String? { switch self { case .pageLimit(let limit): "This PDF needs the individual page-range action (up to \(limit) pages). Skip it here." } }
+    var errorDescription: String? { switch self { case .pageLimit(let limit): String(localized: "This PDF needs the individual page-range action (up to \(Int(limit)) pages). Skip it here.") } }
 }

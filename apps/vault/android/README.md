@@ -15,10 +15,10 @@ Debug builds only: `adb shell run-as org.example.sevens.vault.debug touch files/
 
 | iOS | Android |
 | --- | --- |
-| `VaultRepository` actor, CryptoKit, AppleArchive | `VaultRepository` (Kotlin, serialized with a mutex; lock wipes the session identity at once and each operation runs on its own `fork()`) over the core's v2 API: `header_v2_*`, `index_seal`/`index_open`, `file_encrypt(_fd)`/`file_verify`/`file_decrypt`, `data_encrypt`/`data_decrypt`, `backup_v2_write`/`backup_v2_read(_fd)` |
+| `VaultRepository` actor over the same core API (CryptoKit/AppleArchive only to read and migrate legacy version 1) | `VaultRepository` (Kotlin, serialized with a mutex; lock wipes the session identity at once and each operation runs on its own `fork()`) over the core's v2 API: `header_v2_*`, `index_seal`/`index_open`, `file_encrypt(_fd)`/`file_verify`/`file_decrypt`, `data_encrypt`/`data_decrypt`, `backup_v2_write`/`backup_v2_read(_fd)` |
 | Application Support / Caches, file protection, excluded from backup | `noBackupFilesDir/Vault` (vault directories) and `cacheDir/Vault-plaintext` (previews, exports, capture), owner-only; Android backup rules include only the trial record |
 | Keychain item, `.biometryCurrentSet` | Android Keystore AES-256-GCM key (StrongBox when present), per-use strong-biometric authentication, invalidated by a new enrollment, wrapping the core's `export_for_custody()`; BiometricPrompt with "Use your secret" instead of a device-credential fallback |
-| `PrivacyShield`, scene phase | FLAG_SECURE on every window (recents thumbnail, screenshots, recording), a "Vault locked" cover while not resumed, lock on `onStop` |
+| `PrivacyShield`, scene phase | FLAG_SECURE on every window (recents thumbnail, screenshots, recording), a "Vault locked" cover while not resumed, lock on `onStop` (a system screen Vault launched gets a bounded wait, below) |
 | `fileImporter`, PhotosPicker | Storage Access Framework (`OpenMultipleDocuments`) and the Android Photo Picker (`PickMultipleVisualMedia`); each source is read once, from its descriptor, never modified |
 | UIImagePickerController camera | CameraX inside the app, written only to Vault's temporary area, then encrypted and removed; nothing reaches MediaStore |
 | Quick Look | In-app viewers: images (Telephoto zoom), video and audio (Media3), PDF (PdfRenderer), text; anything else offers export |
@@ -27,15 +27,15 @@ Debug builds only: `adb shell run-as org.example.sevens.vault.debug touch files/
 
 ## Platform differences
 
-- **Encryption format.** Android writes format version 2 only (age). The iPhone app still writes version 1 until it migrates; a version 1 `.vault7` offered here is refused as an older iPhone format ("Update Vault on the iPhone and back up again"), and the iPhone's current reader refuses a version 2 backup as unsupported. Once iOS moves to version 2, vaults and backups are the same on both.
-- **Leaving for a system screen.** Opening the document picker, photo picker, camera permission prompt or share sheet stops Vault's activity. Locking then would lock the vault you are importing into, so a picker or sheet Vault opened gets five minutes before the lock; coming back cancels it. Leaving any other way locks at once.
+- **Encryption format.** Both apps write format version 2 (age), so vaults and `.vault7` backups are the same on both. The iPhone app also reads its legacy version 1 and migrates a vault on its first unlock with a PIN, pattern or passphrase. Android reads version 2 only: a version 1 `.vault7` is refused as an older iPhone format ("Update Vault on the iPhone and back up again").
+- **Leaving for a system screen.** Leaving Vault locks it at once, as on iOS. The exception: the document, photo or folder picker, SAF save, share chooser, camera permission prompt or biometric prompt that Vault itself launched stops its activity on Android (on iOS these don't background the app). Each launch is tracked (`SystemFlowGuard`) until its result arrives or Vault returns, and the lock waits for it at most two minutes from launch; then it locks, clearing temporary plaintext as usual.
 - **Screenshots.** iOS says it does not prevent screenshots; Android's FLAG_SECURE does prevent them (and screen recording), which is the platform's standard for this kind of app.
-- **Notes** are encrypted from memory; no plaintext note file is written (iOS writes a protected temporary file first).
+- **Notes** are encrypted from memory on both platforms; no plaintext note file is written.
 - **Add actions** are an Expressive floating action button menu (Files, Photos, Note, Camera) rather than iOS's inline buttons. Multi-select starts with a long press (or Select in the menu) with a contextual top bar; moving to the trash offers Undo.
 - **Content types** are stored as uniform type identifiers like iOS (`public.jpeg`, `public.plain-text`), translated from MIME types; an unmapped type keeps its MIME type as `dyn.android.mime.<type>`.
 - **Trial notice.** When paid features are unavailable the library says so in one line above the folders; iOS shows nothing until an add action is tapped.
 - **Large screens** use a centred 672 dp column for forms and Settings and an adaptive grid; there is no list-detail split pane yet.
-- At 200% font scale the shared credential-kind button group ellipsizes "Passphrase" (SevenKit's `ConnectedChoice`).
+- **Credential kind** is a connected button group while all three labels fit on one line, and a radio-button list (labels wrap, nothing truncates) at large font scales or narrow widths.
 
 ## Not verified here
 

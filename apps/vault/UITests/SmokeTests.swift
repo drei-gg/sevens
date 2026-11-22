@@ -56,7 +56,7 @@ import XCTest
         XCTAssertTrue(key.waitForExistence(timeout: 20))
         let recovery = key.label
         XCTAssertGreaterThan(recovery.count, 30)
-        turnOn(app.switches["I have saved my recovery key"])
+        turnOn(app.switches["vault.recoverySaved"])
         app.buttons["Continue to vault"].tap()
         XCTAssertTrue(app.buttons["Import sample files"].waitForExistence(timeout: 10))
         app.buttons["Import sample files"].tap()
@@ -115,7 +115,7 @@ import XCTest
         XCTAssertTrue(key.waitForExistence(timeout: 20))
         let recovery = key.label
         XCTAssertGreaterThan(recovery.count, 30)
-        turnOn(app.switches["I have saved my recovery key"])
+        turnOn(app.switches["vault.recoverySaved"])
         app.buttons["Continue to vault"].tap()
         XCTAssertTrue(app.buttons["Import sample files"].waitForExistence(timeout: 10))
         app.buttons["Import sample files"].tap()
@@ -175,7 +175,7 @@ import XCTest
         XCTAssertTrue(key.waitForExistence(timeout: 20))
         let recovery = key.label
         XCTAssertGreaterThan(recovery.count, 30)
-        turnOn(app.switches["I have saved my recovery key"])
+        turnOn(app.switches["vault.recoverySaved"])
         app.buttons["Continue to vault"].tap()
         XCTAssertTrue(app.buttons["Import sample files"].waitForExistence(timeout: 10))
         app.buttons["Import sample files"].tap()
@@ -247,7 +247,7 @@ import XCTest
         XCTAssertTrue(key.waitForExistence(timeout: 20))
         let recovery = key.label
         XCTAssertGreaterThan(recovery.count, 30)
-        turnOn(app.switches["I have saved my recovery key"])
+        turnOn(app.switches["vault.recoverySaved"])
         app.buttons["Continue to vault"].tap()
         XCTAssertTrue(app.buttons["Import sample files"].waitForExistence(timeout: 10))
         app.buttons["Import sample files"].tap()
@@ -298,7 +298,7 @@ import XCTest
         XCTAssertTrue(key.waitForExistence(timeout: 20))
         let recovery = key.label
         XCTAssertGreaterThan(recovery.count, 30)
-        turnOn(app.switches["I have saved my recovery key"])
+        turnOn(app.switches["vault.recoverySaved"])
         app.buttons["Continue to vault"].tap()
         XCTAssertTrue(app.buttons["Import sample files"].waitForExistence(timeout: 10))
         app.buttons["Import sample files"].tap()

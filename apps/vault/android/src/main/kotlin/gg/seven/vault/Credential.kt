@@ -4,6 +4,8 @@ import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,10 +23,12 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -38,11 +42,50 @@ val VaultCredentialKind.title: String
 
 fun VaultCredentialKind.valid(value: String) = runCatching { credentialKindValidate(this, value) }.isSuccess
 
-/** iOS `CredentialKindPicker`: a connected button group for the three unlock methods. */
+/**
+ * iOS `CredentialKindPicker`: a connected button group for the three unlock methods while every
+ * label fits on one line; otherwise (large font, narrow window) a radio-button list, whose labels
+ * wrap instead of truncating. The fit check allows the toggle buttons' full content padding.
+ */
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun CredentialKindPicker(kind: VaultCredentialKind, onChange: (VaultCredentialKind) -> Unit) {
-    ConnectedChoice(VaultCredentialKind.entries.map { it to it.title }, kind, onSelect = onChange)
+    val options = VaultCredentialKind.entries.map { it to it.title }
+    val measurer = rememberTextMeasurer()
+    val style = MaterialTheme.typography.labelLarge
+    val density = LocalDensity.current
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val widest = options.maxOf { measurer.measure(it.second, style, maxLines = 1).size.width }
+        val perButton = with(density) { widest.toDp() } + KindButtonPadding
+        val fits = perButton * options.size + ButtonGroupDefaults.ConnectedSpaceBetween * (options.size - 1) <= maxWidth
+        if (fits) ConnectedChoice(options, kind, onSelect = onChange)
+        else
+            Column(Modifier.fillMaxWidth().selectableGroup()) {
+                Text(
+                    "Unlock method",
+                    Modifier.padding(bottom = Space.xs),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                options.forEach { (value, label) ->
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .selectable(selected = value == kind, role = Role.RadioButton, onClick = { if (value != kind) onChange(value) })
+                            .testTag("choice-$label"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    ) {
+                        RadioButton(selected = value == kind, onClick = null)
+                        Text(label, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+    }
 }
+
+/** A toggle button's horizontal content padding (24 dp a side) plus room for the press morph. */
+private val KindButtonPadding = 56.dp
 
 /** iOS `CredentialInput`: a secret field (digits for a PIN), or the pattern pad. */
 @Composable

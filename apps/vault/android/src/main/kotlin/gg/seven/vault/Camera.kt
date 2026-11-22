@@ -48,13 +48,13 @@ fun CameraScreen(model: VaultModel, onCaptured: (File) -> Unit, onClose: () -> U
     var asked by remember { mutableStateOf(false) }
     val permission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-            model.external = false
+            model.endSystemFlow()
             granted = it
             asked = true
         }
     LaunchedEffect(Unit) {
         if (!granted) {
-            model.external = true
+            model.beginSystemFlow()
             permission.launch(Manifest.permission.CAMERA)
         }
     }

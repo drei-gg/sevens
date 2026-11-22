@@ -595,3 +595,40 @@ fn an_in_flight_commit_after_lock_succeeds_on_its_own_copy() {
     vault.library = changed.clone();
     assert_eq!(vault.reopen(SECRET, VaultCredentialKind::Passphrase, false).unwrap(), changed);
 }
+
+#[test]
+fn an_unconfirmed_recovery_key_is_recorded_inside_the_authenticated_index() {
+    let vault = create("recovery-flag", VaultCredentialKind::Passphrase, SECRET);
+    // Older indexes have no key at all and read as confirmed; false is never written.
+    assert!(!vault.library.recovery_unconfirmed);
+    let plain = String::from_utf8(library_encode(&vault.library).unwrap()).unwrap();
+    assert!(!plain.contains("recoveryUnconfirmed"));
+
+    let flagged = library_set_recovery_unconfirmed(&vault.library, true);
+    assert!(flagged.recovery_unconfirmed);
+    assert!(String::from_utf8(library_encode(&flagged).unwrap()).unwrap().contains("\"recoveryUnconfirmed\":true"));
+    let sealed = index_seal(&flagged, &vault.identity).unwrap();
+    let opened = index_open(sealed, &vault.identity, vault.header.id).unwrap();
+    assert!(opened.recovery_unconfirmed);
+    assert_eq!(opened, flagged);
+
+    let confirmed = library_set_recovery_unconfirmed(&opened, false);
+    assert_eq!(confirmed, vault.library);
+    // The flag lives in the encrypted, tagged index: changing it changes the backup revision.
+    fs::write(vault.dir.at("index.age"), index_seal(&flagged, &vault.identity).unwrap()).unwrap();
+    let before = vault_revision_v2(vault.dir.s("")).unwrap();
+    fs::write(vault.dir.at("index.age"), index_seal(&confirmed, &vault.identity).unwrap()).unwrap();
+    assert_ne!(before, vault_revision_v2(vault.dir.s("")).unwrap());
+}
+
+#[test]
+fn credential_neutral_messages() {
+    let text = vault_error_description(VaultError::InvalidCredential);
+    for word in ["PIN", "pattern", "passphrase", "recovery key"] {
+        assert!(text.contains(word), "{text}");
+    }
+    assert!(vault_error_description(VaultError::SecretInUse).contains("recovery key"));
+    for error in [VaultError::InvalidCredential, VaultError::OlderBackup, VaultError::SecretInUse] {
+        assert!(!vault_error_description(error).contains('\''), "straight apostrophe in {error:?}");
+    }
+}

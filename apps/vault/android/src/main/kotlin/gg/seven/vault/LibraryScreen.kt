@@ -141,13 +141,13 @@ fun LibraryScreen(model: VaultModel) {
 
     val documents =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-            model.external = false
+            model.endSystemFlow()
             model.importDocuments(uris, folder, fromPhotos = false)
         }
     val photos =
         rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris
             ->
-            model.external = false
+            model.endSystemFlow()
             model.importDocuments(uris, folder, fromPhotos = true)
         }
 
@@ -423,7 +423,7 @@ fun LibraryScreen(model: VaultModel) {
                         onClick = {
                             addMenu = false
                             gate.run("Import files") {
-                                model.external = true
+                                model.beginSystemFlow()
                                 documents.launch(arrayOf("*/*"))
                             }
                         },
@@ -435,7 +435,7 @@ fun LibraryScreen(model: VaultModel) {
                         onClick = {
                             addMenu = false
                             gate.run("Import photos") {
-                                model.external = true
+                                model.beginSystemFlow()
                                 photos.launch(
                                     PickVisualMediaRequest(
                                         ActivityResultContracts.PickVisualMedia.ImageAndVideo

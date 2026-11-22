@@ -15,12 +15,12 @@ struct AutomaticBackupSection: View {
                 else { Text("No completed copy yet.") }
                 if model.automaticNeedsPreparation { Text("Latest changes are waiting to be prepared.") }
                 if status.pendingRevision != nil { Text("Encrypted backup queued for delivery.") }
-                if let failure = status.failure { Text(failure).foregroundStyle(.red) }
+                if let failure = status.failure { Text(failure).foregroundStyle(Tokens.danger) }
                 Button("Back up now") { Task { await model.prepareAutomaticBackup(); await model.retryAutomaticBackups() } }
                 Button("Change backup folder") { choosing = true }
                 Button("Turn off automatic backup", role: .destructive) { Task { await model.disableAutomaticBackup() } }
             } else { Button("Choose automatic backup folder") { choosing = true } }
-            if let message = model.automaticMessage { Text(message).foregroundStyle(.red) }
+            if let message = model.automaticMessage { Text(message).foregroundStyle(Tokens.danger) }
             Text("Choose iCloud Drive or another folder in Files once. Changes are backed up while this vault is open. Completed encrypted backups can retry in the background; iOS decides when. If preparation is interrupted, open this vault again to catch up. The latest three copies made by this device are kept. Your provider handles cloud upload; a completed copy is not an upload receipt.").font(.footnote).foregroundStyle(.secondary)
             Text("Backups remain available after trial expiry. Turning this off leaves existing copies in your chosen folder.").font(.footnote).foregroundStyle(.secondary)
         }.sheet(isPresented: $choosing) { SevenBackupFolderPicker { directory in choosing = false; Task { await model.enableAutomaticBackup(in: directory) } } }

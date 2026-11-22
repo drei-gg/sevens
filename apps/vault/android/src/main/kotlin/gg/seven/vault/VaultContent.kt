@@ -17,15 +17,15 @@ internal val VaultContent =
                 paragraphs =
                     listOf(
                         BeforeYouBuyContent.Paragraph(
-                            "Google Photos keeps a Locked Folder behind your screen lock, and newer Android versions add a private space. If those are enough, keep your money.",
+                            "Google Photos keeps a Locked Folder behind your screen lock, and newer Android versions add a private space. If that’s enough, keep your money.",
                         ),
                         BeforeYouBuyContent.Paragraph(
-                            "Vault adds an independent passphrase, an encrypted library for mixed files, organization and portable backups. Try it for 7 days, then {price}, once.",
+                            "What this adds: each vault opens with its own passphrase, PIN or pattern, and keeps photos, videos, files and notes encrypted, organized and backed up in a portable file. Try it for 7 days, then {price}, once.",
                             withoutPrice =
-                                "Vault adds an independent passphrase, an encrypted library for mixed files, organization and portable backups. Try it for 7 days, then one purchase.",
+                                "What this adds: each vault opens with its own passphrase, PIN or pattern, and keeps photos, videos, files and notes encrypted, organized and backed up in a portable file. Try it for 7 days, then one purchase.",
                         ),
                         BeforeYouBuyContent.Paragraph(
-                            "Existing files remain readable and exportable after the trial. Recovery needs your credentials and an intact vault or backup. We cannot reset your encryption key.",
+                            "What it can’t do: protect an open vault on a compromised phone, take back copies you’ve exported, or hide that Vault is installed. After the trial your files stay readable and exportable. Nobody can reset your secret for you.",
                         ),
                     ),
                 lookAroundLabel = "Look around",

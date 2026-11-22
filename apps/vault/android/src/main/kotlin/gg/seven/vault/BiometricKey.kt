@@ -149,7 +149,7 @@ object BiometricKey {
             cipher.init(Cipher.DECRYPT_MODE, key() ?: throw KeyPermanentlyInvalidatedException(), GCMParameterSpec(128, iv))
         } catch (_: KeyPermanentlyInvalidatedException) {
             remove(activity)
-            throw Unavailable("Biometric unlock was turned off because this device's fingerprints or faces changed. Unlock with your secret, then turn it on again in Settings.")
+            throw Unavailable("Biometric unlock was turned off because this device’s fingerprints or faces changed. Unlock with your secret, then turn it on again in Settings.")
         }
         val authorized = authenticate(activity, "Unlock Vault", cipher)
         return id to authorized.doFinal(sealed)

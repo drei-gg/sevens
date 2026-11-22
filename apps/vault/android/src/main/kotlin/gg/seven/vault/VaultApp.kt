@@ -52,7 +52,13 @@ internal fun Context.fragmentActivity(): FragmentActivity? =
 fun VaultApp() {
     val model: VaultModel = viewModel()
     LaunchedEffect(Unit) { model.start() }
-    key(model.generation) { if (model.library != null) LibraryScreen(model) else LockScreen(model) }
+    key(model.generation) {
+        when {
+            model.library == null -> LockScreen(model)
+            model.needsRecoveryReplacement -> RecoveryReplacementScreen(model)
+            else -> LibraryScreen(model)
+        }
+    }
     model.error?.let { message ->
         AlertDialog(
             onDismissRequest = { model.error = null },
@@ -348,11 +354,12 @@ fun RecoveryKeyScreen(model: VaultModel) {
                         "We do not retain a readable copy. A backup is still needed if the local files are lost.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Section { checkbox("I have saved my recovery key", saved) { saved = it } }
+                    Section { checkbox("I’ve saved my recovery key", saved) { saved = it } }
+                    if (model.busy) Progress(model.progress)
                     Button(
                         shapes = ButtonDefaults.shapes(),
-                        onClick = { model.recoveryKey = null },
-                        enabled = saved,
+                        onClick = model::confirmRecoveryKey,
+                        enabled = saved && !model.busy,
                         modifier =
                             Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("vault.continue"),
                     ) {
@@ -360,6 +367,64 @@ fun RecoveryKeyScreen(model: VaultModel) {
                     }
                     Spacer(Modifier.navigationBarsPadding())
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Shown instead of the library when the vault's current recovery key was never confirmed as saved
+ * (Vault locked or closed while it was on screen). Nothing secret survived the lock, so the only
+ * safe way on is a replacement key, through the same path as Settings.
+ */
+@Composable
+fun RecoveryReplacementScreen(model: VaultModel) {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            SevenTopBar("Recovery key") {
+                IconButton(onClick = model::lock) { Icon(Icons.Outlined.Lock, "Lock") }
+            }
+        },
+    ) { padding ->
+        Column(
+            Modifier.padding(padding)
+                .consumeWindowInsets(padding)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Space.m, vertical = Space.s),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Column(
+                Modifier.widthIn(max = ContentWidth).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(Space.m),
+            ) {
+                Icon(Icons.Outlined.Key, null, Modifier.size(44.dp), tint = MaterialTheme.colorScheme.primary)
+                Text(
+                    "Save a new recovery key",
+                    Modifier.semantics { heading() },
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                Text(
+                    "Vault locked before you confirmed saving this vault’s recovery key, and it isn’t kept anywhere it can be shown again. Make a replacement now and save it before you continue.",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    "Old backups still open with the recovery key they were made with.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (model.busy) Progress(model.progress)
+                Button(
+                    shapes = ButtonDefaults.shapes(),
+                    onClick = model::replaceRecoveryKey,
+                    enabled = !model.busy,
+                    modifier =
+                        Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("vault.replaceRecovery"),
+                ) {
+                    Text("Create a new recovery key")
+                }
+                Spacer(Modifier.navigationBarsPadding())
             }
         }
     }
@@ -390,7 +455,7 @@ fun RestoreVaultScreen(model: VaultModel, onClose: () -> Unit) {
     val context = LocalContext.current
     val choose =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            model.external = false
+            model.endSystemFlow()
             if (uri != null) {
                 file = uri
                 fileName =
@@ -426,7 +491,7 @@ fun RestoreVaultScreen(model: VaultModel, onClose: () -> Unit) {
                 fileName ?: "Choose a .vault7 backup",
                 icon = Icons.Outlined.FileOpen,
                 onClick = {
-                    model.external = true
+                    model.beginSystemFlow()
                     choose.launch(arrayOf("*/*"))
                 },
             )

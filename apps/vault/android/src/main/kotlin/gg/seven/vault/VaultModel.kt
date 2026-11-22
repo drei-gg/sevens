@@ -89,8 +89,14 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
     var automaticNeedsPreparation by mutableStateOf(false)
         private set
 
-    /** A system picker, camera, share sheet or prompt of ours is in front: don't lock for it. */
-    var external = false
+    /** A system picker, share sheet or prompt Vault opened is in front: the lock waits, bounded. */
+    val systemFlow = SystemFlowGuard()
+
+    /** Call as a system picker, share sheet or prompt is launched. */
+    fun beginSystemFlow() = systemFlow.begin()
+
+    /** Call when its result arrives (Vault's return to the front also ends it). */
+    fun endSystemFlow() = systemFlow.end()
 
     private var started = false
     private var operation = 0
@@ -128,6 +134,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
         operation += 1
         library = null
         recoveryKey = null
+        systemFlow.end()
         presentation = null
         error = null
         importResult = ""
@@ -535,14 +542,14 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun enableBiometrics(activity: FragmentActivity) {
-        external = true
+        systemFlow.begin()
         update(then = { showNotice("Biometric unlock is on for this vault.") }) {
             try {
                 val (id, secret) = repository.custodyMaterial()
                 BiometricKey.enable(activity, id, secret)
                 hasBiometricKey = true
             } finally {
-                external = false
+                systemFlow.end()
             }
         }
     }
@@ -555,7 +562,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
 
     fun unlockBiometrics(activity: FragmentActivity) {
         if (BiometricKey.storedId(application) == null) return
-        external = true
+        systemFlow.begin()
         perform("Authenticating…") {
             try {
                 val (id, secret) =
@@ -571,7 +578,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                     secret.fill(0)
                 }
             } finally {
-                external = false
+                systemFlow.end()
             }
         }
     }
@@ -583,6 +590,22 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
             if (token == operation) recoveryKey = replacement
         }
     }
+
+    /**
+     * "I’ve saved it": the index stops asking for a replacement, then the key leaves memory. A
+     * failed save keeps the key on screen to retry.
+     */
+    fun confirmRecoveryKey() {
+        val token = operation
+        update(then = { if (token == operation) recoveryKey = null }) { repository.confirmRecoveryKey() }
+    }
+
+    /**
+     * The open vault's recovery key was issued but never confirmed as saved (the app locked or
+     * closed first): it must be replaced before the library opens.
+     */
+    val needsRecoveryReplacement: Boolean
+        get() = library?.recoveryUnconfirmed == true && recoveryKey == null
 
     // MARK: automatic backup (iOS VaultModel extension)
 

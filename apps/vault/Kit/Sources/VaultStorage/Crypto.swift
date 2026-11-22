@@ -73,6 +73,26 @@ enum VaultCrypto {
             try stream.close(); try output.close()
         } catch { try? stream.close(); try? FileManager.default.removeItem(at: destination); throw error }
     }
+    /// Encrypt `data` from memory (a note) with the same profile as a file, so no plaintext file is
+    /// written for version 1 vaults either.
+    static func encrypt(_ data: Data, to destination: URL, key: SymmetricKey) throws {
+        let context = ArchiveEncryptionContext(profile: .hkdf_sha256_aesctr_hmac__symmetric__none, compressionAlgorithm: .none)
+        try context.setSymmetricKey(key)
+        guard let output = ArchiveByteStream.fileStream(path: FilePath(destination.path), mode: .writeOnly, options: [.create, .exclusiveCreate], permissions: FilePermissions(rawValue: 0o600)) else { throw VaultError.Damaged }
+        defer { try? output.close() }
+        guard let stream = ArchiveByteStream.encryptionStream(writingTo: output, encryptionContext: context) else { throw VaultError.Damaged }
+        do {
+            try data.withUnsafeBytes { buffer in
+                var offset = 0
+                while offset < buffer.count {
+                    let written = try stream.write(from: UnsafeRawBufferPointer(rebasing: buffer[offset...]))
+                    guard written > 0 else { throw VaultError.Damaged }
+                    offset += written
+                }
+            }
+            try stream.close(); try output.close()
+        } catch { try? stream.close(); try? FileManager.default.removeItem(at: destination); throw error }
+    }
     /// Read authenticated chunks with bounded memory. A consumer sees only authenticated stream output;
     /// callers publish files only after complete-stream authentication and expected digest/size checks.
     static func decrypt(_ source: URL, key: SymmetricKey, consume: (Data) throws -> Void) throws {

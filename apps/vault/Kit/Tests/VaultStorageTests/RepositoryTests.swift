@@ -333,4 +333,80 @@ func names(_ folder: URL) throws -> Set<String> { Set(try FileManager.default.co
     await repo.lock(); #expect(try await repo.unlock(id: id, biometricKey: custody).id == made.library.id)
     await repo.lock(); await #expect(throws: (any Error).self) { try await repo.unlock(id: id, biometricKey: Data(repeating: 1, count: 32)) }
 }
+@Test func notesAreEncryptedFromMemoryWithoutTemporaryPlaintext() async throws {
+    let f = Fixture(); defer { f.cleanup() }; let repo = f.repo; try await repo.prepare()
+    _ = try await repo.create(name: "Notes", passphrase: password)
+    let temporary = f.directory.appendingPathComponent("tmp")
+    try await repo.addNote(name: "Plan", text: "never on disk", folder: nil)
+    #expect(try FileManager.default.contentsOfDirectory(atPath: temporary.path).isEmpty)
+    let id = try await repo.snapshot().items[0].id
+    try await repo.editNote(id, text: "still never on disk")
+    #expect(try FileManager.default.contentsOfDirectory(atPath: temporary.path).isEmpty)
+    let edited = try await repo.snapshot().items[0]
+    #expect(try await repo.readNote(edited.id) == "still never on disk")
+    #expect(edited.bytes == Int64("still never on disk".utf8.count))
+    await #expect(throws: VaultError.NoSpace) { try await repo.addNote(name: "Huge", text: String(repeating: "x", count: 5_000_001), folder: nil) }
+    #expect(try await repo.snapshot().items.count == 1)
+}
+
+@Test func version1NotesAreEncryptedFromMemoryToo() async throws {
+    let f = Fixture(); defer { f.cleanup() }
+    try FileManager.default.createDirectory(at: f.directory.appendingPathComponent("data"), withIntermediateDirectories: true)
+    let old = try makeV1Vault(f); let repo = f.repo; try await repo.prepare()
+    _ = try await repo.unlock(credential: old.recoveryKey, recovery: true)
+    #expect(try await repo.formatVersion() == 1)
+    try await repo.addNote(name: "Legacy", text: "v1 from memory", folder: nil)
+    #expect(try FileManager.default.contentsOfDirectory(atPath: f.directory.appendingPathComponent("tmp").path).isEmpty)
+    let note = try #require(try await repo.snapshot().items.first { $0.name == "Legacy.txt" })
+    #expect(try await repo.readNote(note.id) == "v1 from memory")
+}
+
+@Test func restoreRefusesAnUnlockSecretThatAlreadyOpensAnotherVault() async throws {
+    let f = Fixture(), g = Fixture(); defer { f.cleanup(); g.cleanup() }
+    let repo = f.repo, other = g.repo; try await repo.prepare(); try await other.prepare()
+    let made = try await repo.create(name: "Backed up", passphrase: password)
+    let backup = try await repo.backup()
+    let existing = try await other.create(name: "Already here", passphrase: password)
+    await other.lock()
+    await #expect(throws: VaultError.SecretInUse) { try await other.restore(backup, credential: password, recovery: false) }
+    #expect(try await other.vaultIDs() == [existing.library.id])
+    // The recovery key restores it; a new secret then separates the two.
+    #expect(try await other.restore(backup, credential: made.recoveryKey, recovery: true).id == made.library.id)
+    try await other.changePassphrase("a brand new restored secret")
+    await other.lock()
+    #expect(try await other.unlock(credential: password).id == existing.library.id)
+}
+
+@Test func anUnconfirmedRecoveryKeyOutlivesTheSessionUntilConfirmedOrReplaced() async throws {
+    let f = Fixture(); defer { f.cleanup() }; let repo = f.repo; try await repo.prepare()
+    let made = try await repo.create(name: "Fresh", passphrase: password)
+    #expect(made.library.recoveryUnconfirmed)
+    await repo.lock()
+    #expect(try await repo.unlock(credential: password).recoveryUnconfirmed)
+    let replacement = try await repo.replaceRecoveryKey()
+    #expect(try await repo.snapshot().recoveryUnconfirmed)
+    try await repo.confirmRecoveryKey()
+    #expect(try await repo.snapshot().recoveryUnconfirmed == false)
+    await repo.lock(); #expect(try await repo.unlock(credential: password).recoveryUnconfirmed == false)
+    await repo.lock()
+    await #expect(throws: (any Error).self) { try await repo.unlock(credential: made.recoveryKey, recovery: true) }
+    #expect(try await repo.unlock(credential: replacement, recovery: true).id == made.library.id)
+    // Issued then abandoned: flagged again; opening with that very key clears it.
+    let abandoned = try await repo.replaceRecoveryKey()
+    await repo.lock(); #expect(try await repo.unlock(credential: password).recoveryUnconfirmed)
+    await repo.lock(); #expect(try await repo.unlock(credential: abandoned, recovery: true).recoveryUnconfirmed == false)
+}
+
+@Test func aMigratedVaultAsksForItsNewRecoveryKeyUntilConfirmed() async throws {
+    let f = Fixture(); defer { f.cleanup() }
+    try FileManager.default.createDirectory(at: f.directory.appendingPathComponent("data"), withIntermediateDirectories: true)
+    let old = try makeV1Vault(f); let repo = f.repo; try await repo.prepare()
+    #expect(try await repo.unlock(credential: password).recoveryUnconfirmed)
+    #expect(await repo.takeMigratedRecoveryKey() != nil)
+    // Locked before saving it: the key is gone, the reminder is not.
+    await repo.lock(); #expect(try await repo.unlock(credential: password).recoveryUnconfirmed)
+    _ = try await repo.replaceRecoveryKey(); try await repo.confirmRecoveryKey()
+    await repo.lock(); #expect(try await repo.unlock(credential: password).recoveryUnconfirmed == false)
+    #expect(try await repo.vaultIDs() == [old.id])
+}
 #endif

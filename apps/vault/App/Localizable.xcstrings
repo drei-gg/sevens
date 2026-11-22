@@ -1,0 +1,3150 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    " · ": {
+      "comment": "Separator between search coverage counts",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · "
+          }
+        }
+      }
+    },
+    "%@ text": {
+      "comment": "Default name for a note of recognized text; the placeholder is the source file name without extension.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ text"
+          }
+        }
+      }
+    },
+    "%lld could not be imported:": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld could not be imported:"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld could not be imported:"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld dots · draw a path or tap dots in order": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld dot · draw a path or tap dots in order"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld dots · draw a path or tap dots in order"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld exports failed. Successful originals are ready.": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld export failed. Successful originals are ready."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld exports failed. Successful originals are ready."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld imported. Originals stay in Photos.": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld imported. Originals stay in Photos."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld imported. Originals stay in Photos."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld imported. Originals stay where they were.": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld imported. Originals stay where they were."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld imported. Originals stay where they were."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld imports failed:": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld import failed:"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld imports failed:"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld pages": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld page"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld pages"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld saved · %lld skipped": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld saved · %lld skipped"
+          }
+        }
+      }
+    },
+    "%lld selected": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld selected"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld selected"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld skipped (500 notes / 32 MB per search)": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld skipped (500 notes / 32 MB per search)"
+          }
+        }
+      }
+    },
+    "%lld unreadable": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld unreadable"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld unreadable"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "A place for private things.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A place for private things."
+          }
+        }
+      }
+    },
+    "A recovery key opens existing encrypted data. It cannot bring back files after the app is deleted unless you kept a backup.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A recovery key opens existing encrypted data. It cannot bring back files after the app is deleted unless you kept a backup."
+          }
+        }
+      }
+    },
+    "About & ownership": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About & ownership"
+          }
+        }
+      }
+    },
+    "Add photos, documents or a note. Your files stay on this device until you choose to export or back up.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add photos, documents or a note. Your files stay on this device until you choose to export or back up."
+          }
+        }
+      }
+    },
+    "age encryption (rage, the Rust implementation of age-encryption.org/v1) in Vault’s shared core, the Keychain, PhotosUI, Vision, PDFKit and Quick Look. Vaults made by earlier versions are read with Apple CryptoKit and Apple Encrypted Archive until their first unlock updates them. Original files are preserved without recompression by Vault.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "age encryption (rage, the Rust implementation of age-encryption.org/v1) in Vault’s shared core, the Keychain, PhotosUI, Vision, PDFKit and Quick Look. Vaults made by earlier versions are read with Apple CryptoKit and Apple Encrypted Archive until their first unlock updates them. Original files are preserved without recompression by Vault."
+          }
+        }
+      }
+    },
+    "Authenticating…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authenticating…"
+          }
+        }
+      }
+    },
+    "Automatic encrypted backup": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic encrypted backup"
+          }
+        }
+      }
+    },
+    "Back from %@": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back from %@"
+          }
+        }
+      }
+    },
+    "Back up now": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back up now"
+          }
+        }
+      }
+    },
+    "Backup & recovery": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup & recovery"
+          }
+        }
+      }
+    },
+    "Backup needs another attempt: %@": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup needs another attempt: %@"
+          }
+        }
+      }
+    },
+    "Backup passphrase": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup passphrase"
+          }
+        }
+      }
+    },
+    "Backup pattern": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup pattern"
+          }
+        }
+      }
+    },
+    "Backup PIN": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup PIN"
+          }
+        }
+      }
+    },
+    "Backups remain available after trial expiry. Turning this off leaves existing copies in your chosen folder.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backups remain available after trial expiry. Turning this off leaves existing copies in your chosen folder."
+          }
+        }
+      }
+    },
+    "Biometric convenience": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biometric convenience"
+          }
+        }
+      }
+    },
+    "Biometric unlock is off.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biometric unlock is off."
+          }
+        }
+      }
+    },
+    "Built on": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built on"
+          }
+        }
+      }
+    },
+    "Camera": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Capture a photo": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture a photo"
+          }
+        }
+      }
+    },
+    "Change backup folder": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change backup folder"
+          }
+        }
+      }
+    },
+    "Change unlock method": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change unlock method"
+          }
+        }
+      }
+    },
+    "Change unlock secret": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change unlock secret"
+          }
+        }
+      }
+    },
+    "Choose a .vault7 backup": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a .vault7 backup"
+          }
+        }
+      }
+    },
+    "Choose automatic backup folder": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose automatic backup folder"
+          }
+        }
+      }
+    },
+    "Choose iCloud Drive or another folder in Files once. Changes are backed up while this vault is open. Completed encrypted backups can retry in the background; iOS decides when. If preparation is interrupted, open this vault again to catch up. The latest three copies made by this device are kept. Your provider handles cloud upload; a completed copy is not an upload receipt.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose iCloud Drive or another folder in Files once. Changes are backed up while this vault is open. Completed encrypted backups can retry in the background; iOS decides when. If preparation is interrupted, open this vault again to catch up. The latest three copies made by this device are kept. Your provider handles cloud upload; a completed copy is not an upload receipt."
+          }
+        }
+      }
+    },
+    "Choose up to %lld pages. Review the result before saving a separate encrypted note. The original PDF stays unchanged.": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Choose up to %lld page. Review the result before saving a separate encrypted note. The original PDF stays unchanged."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Choose up to %lld pages. Review the result before saving a separate encrypted note. The original PDF stays unchanged."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Clear": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
+    "Close": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "Continue to vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue to vault"
+          }
+        }
+      }
+    },
+    "Could not complete": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not complete"
+          }
+        }
+      }
+    },
+    "Create a new recovery key": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new recovery key"
+          }
+        }
+      }
+    },
+    "Create a vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a vault"
+          }
+        }
+      }
+    },
+    "Create encrypted vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create encrypted vault"
+          }
+        }
+      }
+    },
+    "Create vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create vault"
+          }
+        }
+      }
+    },
+    "Creating encrypted vault…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creating encrypted vault…"
+          }
+        }
+      }
+    },
+    "Deleted items stay here until you permanently remove them.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted items stay here until you permanently remove them."
+          }
+        }
+      }
+    },
+    "Discard": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard"
+          }
+        }
+      }
+    },
+    "Discard text changes?": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard text changes?"
+          }
+        }
+      }
+    },
+    "Discard unsaved text and close the queue?": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard unsaved text and close the queue?"
+          }
+        }
+      }
+    },
+    "Done": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "Draw its pattern or enter its PIN or passphrase. Your private library stays encrypted when locked.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draw its pattern or enter its PIN or passphrase. Your private library stays encrypted when locked."
+          }
+        }
+      }
+    },
+    "Edit note": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit note"
+          }
+        }
+      }
+    },
+    "Enable Face ID / Touch ID for this vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Face ID / Touch ID for this vault"
+          }
+        }
+      }
+    },
+    "Enabling this stores a key protected by your current biometric enrollment on this device, for one vault at a time. Keep the independent secret and recovery key.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enabling this stores a key protected by your current biometric enrollment on this device, for one vault at a time. Keep the independent secret and recovery key."
+          }
+        }
+      }
+    },
+    "Encrypted backup queued for delivery.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encrypted backup queued for delivery."
+          }
+        }
+      }
+    },
+    "Encrypting %lld of %lld…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encrypting %lld of %lld…"
+          }
+        }
+      }
+    },
+    "Export original": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export original"
+          }
+        }
+      }
+    },
+    "Export selected originals": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export selected originals"
+          }
+        }
+      }
+    },
+    "Face ID or Touch ID unlock is on for this vault.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Face ID or Touch ID unlock is on for this vault."
+          }
+        }
+      }
+    },
+    "Favorite": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorite"
+          }
+        }
+      }
+    },
+    "Favorites only": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorites only"
+          }
+        }
+      }
+    },
+    "File %lld of %lld: %@": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File %lld of %lld: %@"
+          }
+        }
+      }
+    },
+    "File details": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File details"
+          }
+        }
+      }
+    },
+    "Files": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files"
+          }
+        }
+      }
+    },
+    "First page": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First page"
+          }
+        }
+      }
+    },
+    "Folder": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folder"
+          }
+        }
+      }
+    },
+    "Folder name": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folder name"
+          }
+        }
+      }
+    },
+    "gate.byb.lookAround": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look around"
+          }
+        }
+      }
+    },
+    "gate.byb.p1": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos locks its Hidden album with Face ID, Touch ID or your passcode, Notes can lock notes with a password, and iOS can lock or hide eligible apps. If that’s enough, keep your money."
+          }
+        }
+      }
+    },
+    "gate.byb.p2": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What this adds: each vault opens with its own passphrase, PIN or pattern, and keeps photos, videos, files and notes encrypted, organized and backed up in a portable file. Try it for 7 days, then {price}, once."
+          }
+        }
+      }
+    },
+    "gate.byb.p2.noPrice": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What this adds: each vault opens with its own passphrase, PIN or pattern, and keeps photos, videos, files and notes encrypted, organized and backed up in a portable file. Try it for 7 days, then one purchase."
+          }
+        }
+      }
+    },
+    "gate.byb.p3": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What it can’t do: protect an open vault on a compromised iPhone, take back copies you’ve exported, or hide that Vault is installed. After the trial your files stay readable and exportable. Nobody can reset your secret for you."
+          }
+        }
+      }
+    },
+    "gate.byb.title": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your iPhone already has a Hidden album."
+          }
+        }
+      }
+    },
+    "gate.free.backup": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back up, restore and recover your vaults"
+          }
+        }
+      }
+    },
+    "gate.free.files": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open, organize, export and delete existing files"
+          }
+        }
+      }
+    },
+    "gate.keeps.add": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add vaults, files, photos and notes"
+          }
+        }
+      }
+    },
+    "gate.unlock.backups": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portable encrypted backups. No subscription."
+          }
+        }
+      }
+    },
+    "gate.unlock.files": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encrypted photos, videos, files and notes"
+          }
+        }
+      }
+    },
+    "gate.unlock.vaults": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Independent vaults and useful organization"
+          }
+        }
+      }
+    },
+    "Generate a replacement recovery key": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate a replacement recovery key"
+          }
+        }
+      }
+    },
+    "Grid view": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grid view"
+          }
+        }
+      }
+    },
+    "I understand there is no account reset": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I understand there is no account reset"
+          }
+        }
+      }
+    },
+    "Import files": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import files"
+          }
+        }
+      }
+    },
+    "Import photos": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import photos"
+          }
+        }
+      }
+    },
+    "Include note text": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Include note text"
+          }
+        }
+      }
+    },
+    "Item %lld: %@": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item %lld: %@"
+          }
+        }
+      }
+    },
+    "It’s on for another vault now. Turning it on here moves it to this one.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It’s on for another vault now. Turning it on here moves it to this one."
+          }
+        }
+      }
+    },
+    "I’ve saved my recovery key": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I’ve saved my recovery key"
+          }
+        }
+      }
+    },
+    "Keep editing": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep editing"
+          }
+        }
+      }
+    },
+    "Keep reviewing": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep reviewing"
+          }
+        }
+      }
+    },
+    "Keep this key outside Vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep this key outside Vault"
+          }
+        }
+      }
+    },
+    "Largest": {
+      "comment": "Sort order",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Largest"
+          }
+        }
+      }
+    },
+    "Last copied to provider: %@.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last copied to provider: %@."
+          }
+        }
+      }
+    },
+    "Last page": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last page"
+          }
+        }
+      }
+    },
+    "Last prepared: %@. This does not confirm that a provider uploaded it.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last prepared: %@. This does not confirm that a provider uploaded it."
+          }
+        }
+      }
+    },
+    "Latest changes are waiting to be prepared.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latest changes are waiting to be prepared."
+          }
+        }
+      }
+    },
+    "Library options": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Library options"
+          }
+        }
+      }
+    },
+    "List view": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "List view"
+          }
+        }
+      }
+    },
+    "Loading and encrypting %lld of %lld…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading and encrypting %lld of %lld…"
+          }
+        }
+      }
+    },
+    "Lock": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lock"
+          }
+        }
+      }
+    },
+    "Locking…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locking…"
+          }
+        }
+      }
+    },
+    "Manual": {
+      "comment": "Sort order",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manual"
+          }
+        }
+      }
+    },
+    "Manual order": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manual order"
+          }
+        }
+      }
+    },
+    "Move earlier": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move earlier"
+          }
+        }
+      }
+    },
+    "Move later": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move later"
+          }
+        }
+      }
+    },
+    "Move selected to trash": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move selected to trash"
+          }
+        }
+      }
+    },
+    "Move selected to…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move selected to…"
+          }
+        }
+      }
+    },
+    "Move to Recently Deleted": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to Recently Deleted"
+          }
+        }
+      }
+    },
+    "Name": {
+      "comment": "Sort order",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "New folder": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New folder"
+          }
+        }
+      }
+    },
+    "New note": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New note"
+          }
+        }
+      }
+    },
+    "New passphrase": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New passphrase"
+          }
+        }
+      }
+    },
+    "New pattern": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New pattern"
+          }
+        }
+      }
+    },
+    "New PIN": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New PIN"
+          }
+        }
+      }
+    },
+    "New vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New vault"
+          }
+        }
+      }
+    },
+    "Newest": {
+      "comment": "Sort order",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Newest"
+          }
+        }
+      }
+    },
+    "Next, save your recovery key somewhere outside this app. Keep a separate encrypted backup too.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next, save your recovery key somewhere outside this app. Keep a separate encrypted backup too."
+          }
+        }
+      }
+    },
+    "No backup prepared yet.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No backup prepared yet."
+          }
+        }
+      }
+    },
+    "No completed copy yet.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No completed copy yet."
+          }
+        }
+      }
+    },
+    "No matching files": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching files"
+          }
+        }
+      }
+    },
+    "No text was recognized. Enter text or skip this file.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No text was recognized. Enter text or skip this file."
+          }
+        }
+      }
+    },
+    "No text was recognized. You can enter a note here or close and try another file.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No text was recognized. You can enter a note here or close and try another file."
+          }
+        }
+      }
+    },
+    "No Vault account, analytics, ads or storage servers. Automatic backups copy encrypted files to the folder you select. Your Files provider handles cloud storage; App Store purchases contact Apple.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Vault account, analytics, ads or storage servers. Automatic backups copy encrypted files to the folder you select. Your Files provider handles cloud storage; App Store purchases contact Apple."
+          }
+        }
+      }
+    },
+    "Not selected": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not selected"
+          }
+        }
+      }
+    },
+    "Note": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        }
+      }
+    },
+    "Note name": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note name"
+          }
+        }
+      }
+    },
+    "Note text": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note text"
+          }
+        }
+      }
+    },
+    "Note text could not be searched. Unlock again and retry.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note text could not be searched. Unlock again and retry."
+          }
+        }
+      }
+    },
+    "Nothing in the trash": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing in the trash"
+          }
+        }
+      }
+    },
+    "OK": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Old backups still open with the recovery key they were made with.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Old backups still open with the recovery key they were made with."
+          }
+        }
+      }
+    },
+    "Older backups still use their old credentials. Make a new backup after changing them.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Older backups still use their old credentials. Make a new backup after changing them."
+          }
+        }
+      }
+    },
+    "Oldest": {
+      "comment": "Sort order",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oldest"
+          }
+        }
+      }
+    },
+    "Open your encrypted vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open your encrypted vault"
+          }
+        }
+      }
+    },
+    "Open your vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open your vault"
+          }
+        }
+      }
+    },
+    "Opening vault…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opening vault…"
+          }
+        }
+      }
+    },
+    "Passphrase": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passphrase"
+          }
+        }
+      }
+    },
+    "Pattern": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pattern"
+          }
+        }
+      }
+    },
+    "PDF pages": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF pages"
+          }
+        }
+      }
+    },
+    "Permanently delete": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently delete"
+          }
+        }
+      }
+    },
+    "Permanently delete selected": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently delete selected"
+          }
+        }
+      }
+    },
+    "Permanently delete these files? Backups and exported copies are not deleted.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently delete these files? Backups and exported copies are not deleted."
+          }
+        }
+      }
+    },
+    "Photos": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos"
+          }
+        }
+      }
+    },
+    "Photos imports the current rendition. Live Photos are stills here. Originals stay in Photos; this app never deletes them.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos imports the current rendition. Live Photos are stills here. Originals stay in Photos; this app never deletes them."
+          }
+        }
+      }
+    },
+    "PIN": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN"
+          }
+        }
+      }
+    },
+    "Prepare encrypted backup": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare encrypted backup"
+          }
+        }
+      }
+    },
+    "Preparing encrypted backup…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing encrypted backup…"
+          }
+        }
+      }
+    },
+    "Preparing originals…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing originals…"
+          }
+        }
+      }
+    },
+    "Preparing preview…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing preview…"
+          }
+        }
+      }
+    },
+    "Preview": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview"
+          }
+        }
+      }
+    },
+    "Previews use a temporary decrypted copy on this device. Exported copies are no longer protected by Vault.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previews use a temporary decrypted copy on this device. Exported copies are no longer protected by Vault."
+          }
+        }
+      }
+    },
+    "Privacy": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy"
+          }
+        }
+      }
+    },
+    "Queue": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Queue"
+          }
+        }
+      }
+    },
+    "Queue stopped": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Queue stopped"
+          }
+        }
+      }
+    },
+    "Reading PDF pages…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading PDF pages…"
+          }
+        }
+      }
+    },
+    "Recently Deleted": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recently Deleted"
+          }
+        }
+      }
+    },
+    "Recognition runs on this device. Check the result before saving a separate encrypted note. The original file stays unchanged.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognition runs on this device. Check the result before saving a separate encrypted note. The original file stays unchanged."
+          }
+        }
+      }
+    },
+    "Recognize": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognize"
+          }
+        }
+      }
+    },
+    "Recognize one file at a time, then save an encrypted note or skip it. All pages of each PDF are included, up to %lld; longer PDFs need the individual page-range action. Originals stay unchanged.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognize one file at a time, then save an encrypted note or skip it. All pages of each PDF are included, up to %lld; longer PDFs need the individual page-range action. Originals stay unchanged."
+          }
+        }
+      }
+    },
+    "Recognize selected text": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognize selected text"
+          }
+        }
+      }
+    },
+    "Recognize text": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognize text"
+          }
+        }
+      }
+    },
+    "Recognized text": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognized text"
+          }
+        }
+      }
+    },
+    "Recognizing file %lld of %lld…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognizing file %lld of %lld…"
+          }
+        }
+      }
+    },
+    "Recognizing PDF on this device…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognizing PDF on this device…"
+          }
+        }
+      }
+    },
+    "Recognizing selected pages…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognizing selected pages…"
+          }
+        }
+      }
+    },
+    "Recognizing text on this device…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognizing text on this device…"
+          }
+        }
+      }
+    },
+    "Recovery key": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery key"
+          }
+        }
+      }
+    },
+    "Remove biometric unlock": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove biometric unlock"
+          }
+        }
+      }
+    },
+    "Rename folder": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename folder"
+          }
+        }
+      }
+    },
+    "Repeat passphrase": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeat passphrase"
+          }
+        }
+      }
+    },
+    "Repeat pattern": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeat pattern"
+          }
+        }
+      }
+    },
+    "Repeat PIN": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeat PIN"
+          }
+        }
+      }
+    },
+    "Replacing a recovery key affects this device. Old backups keep the previous key until you replace those backups.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replacing a recovery key affects this device. Old backups keep the previous key until you replace those backups."
+          }
+        }
+      }
+    },
+    "Replacing recovery key…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replacing recovery key…"
+          }
+        }
+      }
+    },
+    "Restore another vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore another vault"
+          }
+        }
+      }
+    },
+    "Restore encrypted backup": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore encrypted backup"
+          }
+        }
+      }
+    },
+    "Restore file": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore file"
+          }
+        }
+      }
+    },
+    "Restore selected": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore selected"
+          }
+        }
+      }
+    },
+    "Restore vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore vault"
+          }
+        }
+      }
+    },
+    "Retry this file": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry this file"
+          }
+        }
+      }
+    },
+    "Review": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review"
+          }
+        }
+      }
+    },
+    "Review %lld files": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Review %lld file"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Review %lld files"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Review complete": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review complete"
+          }
+        }
+      }
+    },
+    "Review progress": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review progress"
+          }
+        }
+      }
+    },
+    "Row %lld, column %lld": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Row %lld, column %lld"
+          }
+        }
+      }
+    },
+    "Save": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "Save a new recovery key": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save a new recovery key"
+          }
+        }
+      }
+    },
+    "Save details": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save details"
+          }
+        }
+      }
+    },
+    "Save encrypted note": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save encrypted note"
+          }
+        }
+      }
+    },
+    "Save note": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save note"
+          }
+        }
+      }
+    },
+    "Save note changes": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save note changes"
+          }
+        }
+      }
+    },
+    "Save the .vault7 file outside this app, then test a restore on another device. Uninstalling Vault deletes local files. Your iCloud device backup is not a substitute for this export.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save the .vault7 file outside this app, then test a restore on another device. Uninstalling Vault deletes local files. Your iCloud device backup is not a substitute for this export."
+          }
+        }
+      }
+    },
+    "Saved notes remain in their source folders. Skipped or unfinished files were not changed.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved notes remain in their source folders. Skipped or unfinished files were not changed."
+          }
+        }
+      }
+    },
+    "Saving…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving…"
+          }
+        }
+      }
+    },
+    "Search file names": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search file names"
+          }
+        }
+      }
+    },
+    "Search names and note text": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search names and note text"
+          }
+        }
+      }
+    },
+    "Search stays on this device while unlocked. Photos and PDFs need saved text first.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search stays on this device while unlocked. Photos and PDFs need saved text first."
+          }
+        }
+      }
+    },
+    "Searched %lld notes": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Searched %lld note"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Searched %lld notes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Searching note text…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Searching note text…"
+          }
+        }
+      }
+    },
+    "Select": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select"
+          }
+        }
+      }
+    },
+    "Select all shown": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select all shown"
+          }
+        }
+      }
+    },
+    "Selected": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected"
+          }
+        }
+      }
+    },
+    "Selected, %lld of %lld": {
+      "comment": "A pattern dot's state: its position in the pattern drawn so far.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected, %lld of %lld"
+          }
+        }
+      }
+    },
+    "Set up Face ID or Touch ID first.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up Face ID or Touch ID first."
+          }
+        }
+      }
+    },
+    "Settings": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "Show library": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show library"
+          }
+        }
+      }
+    },
+    "Skip this file": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip this file"
+          }
+        }
+      }
+    },
+    "Sort": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sort"
+          }
+        }
+      }
+    },
+    "Start review": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start review"
+          }
+        }
+      }
+    },
+    "Start the trial or unlock to add a vault.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start the trial or unlock to add a vault."
+          }
+        }
+      }
+    },
+    "Start the trial or unlock to save new notes. You can still read and copy this text.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start the trial or unlock to save new notes. You can still read and copy this text."
+          }
+        }
+      }
+    },
+    "Stop after current page": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop after current page"
+          }
+        }
+      }
+    },
+    "Stop and discard": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop and discard"
+          }
+        }
+      }
+    },
+    "Stop queue": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop queue"
+          }
+        }
+      }
+    },
+    "Stop this queue? Unsaved text will be discarded; saved notes remain.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop this queue? Unsaved text will be discarded; saved notes remain."
+          }
+        }
+      }
+    },
+    "Stopping after current page…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopping after current page…"
+          }
+        }
+      }
+    },
+    "The queue stays only in this unlocked session. Closing or locking discards unsaved text; notes already saved remain.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The queue stays only in this unlocked session. Closing or locking discards unsaved text; notes already saved remain."
+          }
+        }
+      }
+    },
+    "This key can open your vault without its usual unlock secret. Store it somewhere private, such as your password manager.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This key can open your vault without its usual unlock secret. Store it somewhere private, such as your password manager."
+          }
+        }
+      }
+    },
+    "This PDF needs the individual page-range action (up to %lld pages). Skip it here.": {
+      "comment": "Count with plural variants. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "This PDF needs the individual page-range action (up to %lld page). Skip it here."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "This PDF needs the individual page-range action (up to %lld pages). Skip it here."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Try another file name, or include note text.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try another file name, or include note text."
+          }
+        }
+      }
+    },
+    "Try another phrase. Check search coverage above for unreadable or skipped notes.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try another phrase. Check search coverage above for unreadable or skipped notes."
+          }
+        }
+      }
+    },
+    "Turn off automatic backup": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off automatic backup"
+          }
+        }
+      }
+    },
+    "Unlock": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock"
+          }
+        }
+      }
+    },
+    "Unlock method": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock method"
+          }
+        }
+      }
+    },
+    "Unlock secret changed. Older backups still open with the old one.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock secret changed. Older backups still open with the old one."
+          }
+        }
+      }
+    },
+    "Unlock with Face ID or Touch ID": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock with Face ID or Touch ID"
+          }
+        }
+      }
+    },
+    "Use 12+ characters, an 8–32 digit PIN, or 8+ dots. Each secret opens its own vault. Longer, unpredictable secrets resist guessing better; avoid dates, letters and simple shapes.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use 12+ characters, an 8–32 digit PIN, or 8+ dots. Each secret opens its own vault. Longer, unpredictable secrets resist guessing better; avoid dates, letters and simple shapes."
+          }
+        }
+      }
+    },
+    "Use a recovery key": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use a recovery key"
+          }
+        }
+      }
+    },
+    "Use recovery key": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use recovery key"
+          }
+        }
+      }
+    },
+    "Use the pattern, PIN, passphrase or recovery key that applied when this backup was made. The whole backup is verified before it is added. Existing vaults are never overwritten.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the pattern, PIN, passphrase or recovery key that applied when this backup was made. The whole backup is verified before it is added. Existing vaults are never overwritten."
+          }
+        }
+      }
+    },
+    "Vault": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vault"
+          }
+        }
+      }
+    },
+    "Vault hides its contents when inactive and locks in the background. It does not prevent screenshots or protect an open session on a compromised device.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vault hides its contents when inactive and locks in the background. It does not prevent screenshots or protect an open session on a compromised device."
+          }
+        }
+      }
+    },
+    "Vault locked": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vault locked"
+          }
+        }
+      }
+    },
+    "Vault locked before you confirmed saving this vault’s recovery key, and it isn’t kept anywhere it can be shown again. Make a replacement now and save it before you continue.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vault locked before you confirmed saving this vault’s recovery key, and it isn’t kept anywhere it can be shown again. Make a replacement now and save it before you continue."
+          }
+        }
+      }
+    },
+    "Vault name": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vault name"
+          }
+        }
+      }
+    },
+    "Vault root": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vault root"
+          }
+        }
+      }
+    },
+    "Vault updated this vault to its new encryption format, which also opens on Android. Your old recovery key no longer opens it; this one does.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vault updated this vault to its new encryption format, which also opens on Android. Your old recovery key no longer opens it; this one does."
+          }
+        }
+      }
+    },
+    "Verify and restore": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verify and restore"
+          }
+        }
+      }
+    },
+    "Verifying and preparing encrypted backup…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifying and preparing encrypted backup…"
+          }
+        }
+      }
+    },
+    "Verifying backup…": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifying backup…"
+          }
+        }
+      }
+    },
+    "We don’t keep a readable copy. If Vault locks before you confirm, you’ll be asked to make a new key. A backup is still needed if the local files are lost.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We don’t keep a readable copy. If Vault locks before you confirm, you’ll be asked to make a new key. A backup is still needed if the local files are lost."
+          }
+        }
+      }
+    },
+    "Write a note": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write a note"
+          }
+        }
+      }
+    },
+    "Your files": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your files"
+          }
+        }
+      }
+    },
+    "Yours to keep.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yours to keep."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

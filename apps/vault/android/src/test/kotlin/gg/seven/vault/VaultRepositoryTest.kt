@@ -190,4 +190,52 @@ class VaultRepositoryTest {
         repo.lock()
         assertThrows(VaultException.InvalidCredential::class.java) { runBlocking { repo.unlock(other.id, material) } }
     }
+
+    @Test
+    fun restoreRefusesAnUnlockSecretThatAlreadyOpensAnotherVault() = runBlocking<Unit> {
+        val repo = repository().apply { prepare() }
+        val created = repo.create("Backed up", secret, VaultCredentialKind.PASSPHRASE)
+        val backup = repo.backup().copyTo(File(base, "collide.vault7"))
+        // Another device whose own vault already uses the backup's passphrase.
+        val other = repository("other").apply { prepare() }
+        val existing = other.create("Already here", secret, VaultCredentialKind.PASSPHRASE)
+        other.lock()
+        assertThrows(VaultException.SecretInUse::class.java) { runBlocking { other.restore(backup.path, secret, false, VaultCredentialKind.PASSPHRASE) } }
+        assertEquals("nothing published", 1, other.root.listFiles()!!.count { it.isDirectory && !it.name.startsWith(".") })
+        assertEquals(existing.library.id, other.unlock(secret, false, VaultCredentialKind.PASSPHRASE).id)
+        // The recovery key still restores it; the person then chooses a new secret.
+        val restored = other.restore(backup.path, created.recoveryKey, true, VaultCredentialKind.PASSPHRASE)
+        assertEquals(created.library.id, restored.id)
+        other.changeCredential("a brand new restored secret", VaultCredentialKind.PASSPHRASE)
+        other.lock()
+        assertEquals(existing.library.id, other.unlock(secret, false, VaultCredentialKind.PASSPHRASE).id)
+    }
+
+    @Test
+    fun anUnconfirmedRecoveryKeyOutlivesTheSessionUntilConfirmedOrReplaced() = runBlocking<Unit> {
+        val repo = repository().apply { prepare() }
+        val created = repo.create("Fresh", secret, VaultCredentialKind.PASSPHRASE)
+        assertTrue(created.library.recoveryUnconfirmed)
+        // Locked before "I’ve saved it": the key is gone from memory, the reminder is not.
+        repo.lock()
+        assertTrue(repo.unlock(secret, false, VaultCredentialKind.PASSPHRASE).recoveryUnconfirmed)
+        val replacement = repo.replaceRecoveryKey()
+        assertTrue(repo.snapshot().recoveryUnconfirmed)
+        repo.confirmRecoveryKey()
+        assertFalse(repo.snapshot().recoveryUnconfirmed)
+        repo.lock()
+        assertFalse(repo.unlock(secret, false, VaultCredentialKind.PASSPHRASE).recoveryUnconfirmed)
+        // The replacement opens it; the first key no longer does.
+        repo.lock()
+        assertThrows(VaultException.InvalidCredential::class.java) { runBlocking { repo.unlock(created.recoveryKey, true, VaultCredentialKind.PASSPHRASE) } }
+        assertEquals(created.library.id, repo.unlock(replacement, true, VaultCredentialKind.PASSPHRASE).id)
+        // A replacement issued then abandoned is flagged again; opening with that key clears it.
+        val abandoned = repo.replaceRecoveryKey()
+        repo.lock()
+        assertTrue(repo.unlock(secret, false, VaultCredentialKind.PASSPHRASE).recoveryUnconfirmed)
+        repo.lock()
+        assertFalse(repo.unlock(abandoned, true, VaultCredentialKind.PASSPHRASE).recoveryUnconfirmed)
+        repo.lock()
+        assertFalse(repo.unlock(secret, false, VaultCredentialKind.PASSPHRASE).recoveryUnconfirmed)
+    }
 }

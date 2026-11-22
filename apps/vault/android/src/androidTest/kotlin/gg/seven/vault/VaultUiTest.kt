@@ -225,7 +225,7 @@ class VaultUiTest {
         ui.waitUntil(30_000) {
             ui.onAllNodesWithTag("vault.recoveryKey").fetchSemanticsNodes().isNotEmpty()
         }
-        ui.onNodeWithText("I have saved my recovery key").performScrollTo().performClick()
+        ui.onNodeWithText("I’ve saved my recovery key").performScrollTo().performClick()
         ui.onNodeWithTag("vault.continue").performScrollTo().performClick()
         waitFor(name)
     }
@@ -991,7 +991,7 @@ class VaultUiTest {
         ui.onNodeWithTag("vault.unlock")
             .performScrollTo()
             .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
-        waitFor("did not open a vault")
+        waitFor("didn’t open a vault")
         ui.onNodeWithText("OK").performClick()
         ui.onNodeWithTag("vault.credential").performScrollTo().performTextInput(secret)
         // Unlock remains reachable from the IME when the button is below the keyboard.
