@@ -67,7 +67,7 @@ if [ "$apple" = 1 ]; then
   for app in qr fast alarm scanner cleaner vault; do
     step "apple/$app" env SEVENS_APP="$app" scripts/vm test
   done
-  step apple/bloom scripts/bloom-apple test
+  step apple/bloom sh -c 'scripts/bloom-apple core && scripts/bloom-apple test'
 fi
 
 echo
