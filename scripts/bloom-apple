@@ -48,4 +48,4 @@ case "$cmd" in
 esac
 log="$HOME/.cache/sevens/logs/bloom-$cmd.log"
 ssh tahoe "cd $remote && $action" >"$log" 2>&1 || { tail -100 "$log"; exit 1; }
-rg 'error:|warning:|SUCCEEDED|Executed |passed|failed' "$log" | tail -50 || true
+grep -E 'error:|warning:|SUCCEEDED|Executed |passed|failed' "$log" | tail -50 || true
