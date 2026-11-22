@@ -15,7 +15,6 @@ import android.os.PersistableBundle
 import android.provider.CalendarContract
 import android.provider.ContactsContract
 import android.provider.Settings
-import androidx.annotation.RequiresApi
 import androidx.browser.customtabs.CustomTabsIntent
 import gg.seven.qr.core.ContactInfo
 import gg.seven.qr.core.EmailInfo
@@ -69,7 +68,7 @@ object Handoffs {
     /** A password is marked sensitive, so the system's clipboard preview doesn't show it. */
     fun copy(context: Context, text: String, sensitive: Boolean = false) {
         val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
-        val clip = ClipData.newPlainText("QR Code Kit", text)
+        val clip = ClipData.newPlainText(context.getString(R.string.app_name), text)
         // The framework constant is Android 13+; the key itself is what the system reads on 12L too.
         if (sensitive)
             clip.description.extras = PersistableBundle().apply { putBoolean(if (Build.VERSION.SDK_INT >= 33) ClipDescription.EXTRA_IS_SENSITIVE else "android.content.extra.IS_SENSITIVE", true) }
@@ -177,10 +176,9 @@ object Handoffs {
         Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI).resolveActivity(context.packageManager) != null
 
     /**
-     * Android 11+: the system sheet that asks "Save this network?" (NEHotspotConfiguration's
-     * counterpart). Null when the network can't be suggested this way.
+     * The system sheet that asks "Save this network?" (NEHotspotConfiguration's counterpart). Null
+     * when the network can't be suggested this way.
      */
-    @RequiresApi(30)
     fun wifiIntent(info: WiFiInfo): Intent? {
         if (info.ssid.isEmpty() || info.ssid.toByteArray().size > 32 || info.isEnterprise) return null
         val builder = WifiNetworkSuggestion.Builder().setSsid(info.ssid).setIsHiddenSsid(info.isHidden)
@@ -200,10 +198,9 @@ object Handoffs {
     }
 
     /**
-     * Where to join by hand: the Wi-Fi panel over the app on Android 10+, the Wi-Fi settings screen
-     * before (or when a device has no panel).
+     * Where to join by hand: the Wi-Fi panel over the app, or the Wi-Fi settings screen when a
+     * device has no panel.
      */
     fun wifiSettings(context: Context): Boolean =
-        (Build.VERSION.SDK_INT >= 29 && start(context, Intent(Settings.Panel.ACTION_WIFI))) ||
-            start(context, Intent(Settings.ACTION_WIFI_SETTINGS))
+        start(context, Intent(Settings.Panel.ACTION_WIFI)) || start(context, Intent(Settings.ACTION_WIFI_SETTINGS))
 }

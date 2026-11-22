@@ -142,12 +142,12 @@ class HistoryTextTest {
         assertEquals("login.example.com", HistoryRowSummary.host("https://user:pw@Login.Example.com:8443/path?q"))
         assertEquals("[::1]", HistoryRowSummary.host("http://[::1]:80/"))
         assertNull(HistoryRowSummary.host("example.com/path"))
-        assertEquals("example.org", HistoryRowSummary.shortPayload(item("https://example.org/menu", "link")))
+        assertEquals("example.org", HistoryRowSummary.shortPayload(testRes, item("https://example.org/menu", "link")))
     }
 
     @Test
     fun wifiShowsItsNetworkWithEscapesUndone() {
-        assertEquals("Cafe; Guest", HistoryRowSummary.shortPayload(item("WIFI:T:WPA;S:Cafe\\; Guest;P:x;;", "wifi")))
+        assertEquals("Cafe; Guest", HistoryRowSummary.shortPayload(testRes, item("WIFI:T:WPA;S:Cafe\\; Guest;P:x;;", "wifi")))
     }
 
     @Test
@@ -257,7 +257,7 @@ class ShareAndListsTest {
         assertFalse(ListsText.isOld("2026-11-10", LocalDate.of(2027, 5, 10)))
         assertTrue(ListsText.isOld("2026-11-10", LocalDate.of(2027, 5, 11)))
         assertTrue(ListsText.isOld("not a date", LocalDate.of(2026, 1, 1)))
-        assertEquals("Scam lists", ListsText.title(ListsVersion(1, 1, "x")))
+        assertEquals("Scam lists", ListsText.title(testRes, ListsVersion(1, 1, "x")))
     }
 
     @Test
@@ -287,4 +287,21 @@ class ShareAndListsTest {
         assertNull(SignalText.arg(mapOf("brand" to "\u0000"), "brand"))
         assertTrue(SignalText.arg(mapOf("b" to "y".repeat(50)), "b")!!.endsWith("…"))
     }
+
 }
+
+class CatalogTest {
+    /** Every signal is worded from the catalog, with and without its args, and no placeholder leaks. */
+    @Test
+    fun everySignalHasASentence() {
+        val args = mapOf("scheme" to "intent", "host" to "example.com", "brand" to "PayPal", "tld" to ".zip", "kind" to "card", "days" to "3")
+        for (id in gg.seven.qr.core.SignalId.entries) {
+            for (given in listOf(emptyMap(), args)) {
+                val sentence = SignalText.sentence(testRes, gg.seven.qr.core.Signal(id, given))
+                assertTrue(id.name, sentence.isNotBlank() && '%' !in sentence)
+            }
+        }
+        assertEquals("This domain was registered 1 day ago.", SignalText.sentence(testRes, gg.seven.qr.core.Signal(gg.seven.qr.core.SignalId.DOMAIN_NEW, mapOf("days" to "1"))))
+    }
+}
+

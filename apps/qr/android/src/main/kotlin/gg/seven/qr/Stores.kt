@@ -2,6 +2,7 @@ package gg.seven.qr
 
 import androidx.core.content.edit
 import android.content.Context
+import android.content.res.Resources
 import androidx.core.util.AtomicFile
 import gg.seven.qr.core.HistoryDecoded
 import gg.seven.qr.core.HistoryItem
@@ -62,8 +63,8 @@ fun historyDirectory(context: Context): File = File(context.filesDir, "History")
 data class HistoryState(
     /** Newest first. */
     val items: List<HistoryItem> = emptyList(),
+    /** The saved history is from a newer version: shown, never overwritten (qr_history_read_only). */
     val readOnly: Boolean = false,
-    val readOnlyReason: String? = null,
 )
 
 /**
@@ -103,7 +104,7 @@ class HistoryStore(
         mutableState.value =
             when (val decoded = historyFileDecode(bytes)) {
                 is HistoryDecoded.Items -> HistoryState(items = newestFirst(decoded.items))
-                else -> HistoryState(readOnly = true, readOnlyReason = QrText.historyReadOnlyReason)
+                else -> HistoryState(readOnly = true)
             }
     }
 
@@ -138,14 +139,14 @@ class HistoryStore(
     }
 
     /** Payload, note and type ID through the core, plus the type's display name ("Web link"). */
-    suspend fun search(query: String): List<HistoryItem> = mutex.withLock {
+    suspend fun search(res: Resources, query: String): List<HistoryItem> = mutex.withLock {
         loadLocked()
         val items = mutableState.value.items
         val hits = historySearch(items, query)
         val needle = query.trim()
         if (needle.isEmpty()) return@withLock hits
         val ids = hits.map { it.id }.toSet()
-        items.filter { it.id in ids || QrText.foldedContains(QrText.typeName(it.typeId), needle) }
+        items.filter { it.id in ids || QrText.foldedContains(QrText.typeName(res, it.typeId), needle) }
     }
 
     suspend fun exportJson(known: KnownAddresses?): ByteArray = mutex.withLock {

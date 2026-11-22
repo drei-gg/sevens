@@ -64,6 +64,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import gg.seven.kit.R as KitR
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalResources
 
 /*
  * Make (SPEC §8): a code from one of nine kinds of content, live as you type, styled and exported.
@@ -225,13 +229,13 @@ fun MakeScreen(model: QrModel, nav: QrNav, draft: MakeDraft) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Make a code") },
+                title = { Text(stringResource(R.string.qr_make_title)) },
                 actions = {
-                    TextButton(onClick = { draft.batchOpen.value = true }) { Text("Batch") }
+                    TextButton(onClick = { draft.batchOpen.value = true }) { Text(stringResource(R.string.qr_make_batch)) }
                 },
                 navigationIcon = {
                     IconButton(onClick = ::done, Modifier.testTag("make.done")) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Done")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(KitR.string.seven_done))
                     }
                 },
                 colors =
@@ -260,7 +264,7 @@ fun MakeScreen(model: QrModel, nav: QrNav, draft: MakeDraft) {
                         ) {
                             Icon(Icons.Rounded.Share, null, Modifier.size(ButtonDefaults.IconSize))
                             Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                            Text("Export")
+                            Text(stringResource(R.string.qr_history_export))
                         }
                     }
                 }
@@ -292,12 +296,12 @@ fun MakeScreen(model: QrModel, nav: QrNav, draft: MakeDraft) {
                 verticalArrangement = Arrangement.spacedBy(Space.m),
             ) {
                 Text(
-                    kind.title,
+                    stringResource(kind.title),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
                 MakeFields(kind, form, issue) { form = it }
-                error?.let { InlineMessage(it.message, isError = true) }
+                error?.let { InlineMessage(stringResource(it.message), isError = true) }
             }
             if (largeText) preview()
             val g = generated
@@ -347,7 +351,7 @@ private fun Preview(
                 if (bitmap != null)
                     Image(
                         bitmap.asImageBitmap(),
-                        contentDescription = symbology.accessibilityLabel(generated.typed),
+                        contentDescription = symbology.accessibilityLabel(LocalResources.current, generated.typed),
                         modifier = Modifier.fillMaxSize().padding(Space.s).testTag("make.code"),
                         filterQuality = FilterQuality.None,
                     )
@@ -362,10 +366,10 @@ private fun Preview(
             when {
                 isBlank ->
                     InlineMessage(
-                        "Fill in the fields below and your code appears here.",
+                        stringResource(R.string.qr_make_blank),
                         isError = false,
                     )
-                issue != null -> InlineMessage(issue.message, isError = true)
+                issue != null -> InlineMessage(stringResource(issue.message), isError = true)
             }
         }
     }
@@ -394,9 +398,9 @@ fun InlineMessage(text: String, isError: Boolean) {
 @Composable
 private fun KindChips(kind: MakeFormKind, onSelect: (MakeFormKind) -> Unit) {
     DropdownField(
-        "Content type",
+        stringResource(R.string.qr_make_content_type),
         kind,
-        MakeFormKind.entries.map { it to it.title },
+        MakeFormKind.entries.map { it to stringResource(it.title) },
         Modifier.fillMaxWidth().padding(horizontal = Space.m).testTag("make.type"),
         onSelect = onSelect,
     )
@@ -433,13 +437,13 @@ private fun Field(
                     IconButton(onClick = { reveal = !reveal }) {
                         Icon(
                             if (reveal) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                            if (reveal) "Hide password" else "Show password",
+                            stringResource(if (reveal) R.string.qr_wifi_hide_password else R.string.qr_wifi_show_password),
                         )
                     }
                 })
             else null,
         isError = shown != null,
-        supportingText = (shown?.message ?: hint)?.let { { Text(it) } },
+        supportingText = (shown?.message?.let { stringResource(it) } ?: hint)?.let { { Text(it) } },
         singleLine = !multiline,
         minLines = if (multiline) 2 else 1,
         maxLines = if (multiline) 8 else 3,
@@ -452,9 +456,6 @@ private fun Field(
             ),
     )
 }
-
-/** Phone and Text message codes need an international number (SPEC §8). */
-private const val INTERNATIONAL_HINT = "Include + and the country code."
 
 /** The fields of whichever form is chosen. Pure input: MakeFormState validates. */
 @Composable
@@ -469,7 +470,7 @@ private fun MakeFields(
     when (kind) {
         MakeFormKind.LINK ->
             Field(
-                "Web address",
+                stringResource(R.string.qr_make_field_web_address),
                 form.link,
                 { onChange(form.copy(link = it)) },
                 "make.field.link",
@@ -479,7 +480,7 @@ private fun MakeFields(
             )
         MakeFormKind.TEXT ->
             Field(
-                "Text",
+                stringResource(R.string.qr_make_field_text),
                 form.text,
                 { onChange(form.copy(text = it)) },
                 "make.field.text",
@@ -491,7 +492,7 @@ private fun MakeFields(
             )
         MakeFormKind.WIFI -> {
             Field(
-                "Network name",
+                stringResource(R.string.qr_make_field_network_name),
                 form.ssid,
                 { onChange(form.copy(ssid = it)) },
                 "make.field.ssid",
@@ -499,16 +500,16 @@ private fun MakeFields(
                 MakeFormField.SSID,
             )
             DropdownField(
-                "Security",
+                stringResource(R.string.qr_wifi_security),
                 form.wifiSecurity,
-                MakeWiFiSecurity.entries.map { it to it.title },
+                MakeWiFiSecurity.entries.map { it to stringResource(it.title) },
                 Modifier.fillMaxWidth().testTag("make.field.security"),
             ) {
                 onChange(form.copy(wifiSecurity = it))
             }
             if (form.wifiSecurity != MakeWiFiSecurity.NONE)
                 Field(
-                    "Password",
+                    stringResource(R.string.qr_wifi_password),
                     form.wifiPassword,
                     { onChange(form.copy(wifiPassword = it)) },
                     "make.field.wifiPassword",
@@ -516,13 +517,13 @@ private fun MakeFields(
                     MakeFormField.WIFI_PASSWORD,
                     KeyboardType.Password,
                 )
-            SwitchRow("Hidden network", form.wifiHidden, "make.field.hidden") {
+            SwitchRow(stringResource(R.string.qr_wifi_hidden), form.wifiHidden, "make.field.hidden") {
                 onChange(form.copy(wifiHidden = it))
             }
         }
         MakeFormKind.CONTACT -> {
             Field(
-                "First name",
+                stringResource(R.string.qr_make_field_first_name),
                 form.givenName,
                 { onChange(form.copy(givenName = it)) },
                 "make.field.givenName",
@@ -532,7 +533,7 @@ private fun MakeFields(
                 autocorrect = true,
             )
             Field(
-                "Last name",
+                stringResource(R.string.qr_make_field_last_name),
                 form.familyName,
                 { onChange(form.copy(familyName = it)) },
                 "make.field.familyName",
@@ -540,7 +541,7 @@ private fun MakeFields(
                 autocorrect = true,
             )
             Field(
-                "Company",
+                stringResource(R.string.qr_make_field_company),
                 form.organization,
                 { onChange(form.copy(organization = it)) },
                 "make.field.organization",
@@ -548,7 +549,7 @@ private fun MakeFields(
                 autocorrect = true,
             )
             Field(
-                "Job title",
+                stringResource(R.string.qr_make_field_job_title),
                 form.jobTitle,
                 { onChange(form.copy(jobTitle = it)) },
                 "make.field.jobTitle",
@@ -556,7 +557,7 @@ private fun MakeFields(
                 autocorrect = true,
             )
             Field(
-                "Phone",
+                stringResource(R.string.qr_field_phone),
                 form.contactPhone,
                 { onChange(form.copy(contactPhone = it)) },
                 "make.field.contactPhone",
@@ -565,7 +566,7 @@ private fun MakeFields(
                 KeyboardType.Phone,
             )
             Field(
-                "Email",
+                stringResource(R.string.qr_make_field_email),
                 form.contactEmail,
                 { onChange(form.copy(contactEmail = it)) },
                 "make.field.contactEmail",
@@ -574,14 +575,14 @@ private fun MakeFields(
                 KeyboardType.Email,
             )
             Field(
-                "Website",
+                stringResource(R.string.qr_make_field_website),
                 form.contactUrl,
                 { onChange(form.copy(contactUrl = it)) },
                 "make.field.contactURL",
                 keyboard = KeyboardType.Uri,
             )
             Field(
-                "Address",
+                stringResource(R.string.qr_contact_address),
                 form.contactAddress,
                 { onChange(form.copy(contactAddress = it)) },
                 "make.field.address",
@@ -590,7 +591,7 @@ private fun MakeFields(
                 multiline = true,
             )
             Field(
-                "Note",
+                stringResource(R.string.qr_make_field_note),
                 form.contactNote,
                 { onChange(form.copy(contactNote = it)) },
                 "make.field.note",
@@ -601,7 +602,7 @@ private fun MakeFields(
         }
         MakeFormKind.EVENT -> {
             Field(
-                "Title",
+                stringResource(R.string.qr_make_field_title),
                 form.eventTitle,
                 { onChange(form.copy(eventTitle = it)) },
                 "make.field.eventTitle",
@@ -610,20 +611,20 @@ private fun MakeFields(
                 caps = sentences,
                 autocorrect = true,
             )
-            SwitchRow("All day", form.eventAllDay, "make.field.allDay") {
+            SwitchRow(stringResource(R.string.qr_make_field_all_day), form.eventAllDay, "make.field.allDay") {
                 onChange(form.copy(eventAllDay = it))
             }
-            DateTimeField("Starts", form.eventStart.toDouble(), withTime = !form.eventAllDay) {
+            DateTimeField(stringResource(R.string.qr_make_field_starts), form.eventStart.toDouble(), withTime = !form.eventAllDay) {
                 onChange(form.copy(eventStart = it.toLong()))
             }
-            DateTimeField("Ends", form.eventEnd.toDouble(), withTime = !form.eventAllDay) {
+            DateTimeField(stringResource(R.string.qr_make_field_ends), form.eventEnd.toDouble(), withTime = !form.eventAllDay) {
                 onChange(form.copy(eventEnd = it.toLong()))
             }
             issue
                 ?.takeIf { it.field == MakeFormField.EVENT_END }
-                ?.let { InlineMessage(it.message, isError = true) }
+                ?.let { InlineMessage(stringResource(it.message), isError = true) }
             Field(
-                "Location",
+                stringResource(R.string.qr_make_field_location),
                 form.eventLocation,
                 { onChange(form.copy(eventLocation = it)) },
                 "make.field.eventLocation",
@@ -631,14 +632,14 @@ private fun MakeFields(
                 autocorrect = true,
             )
             Field(
-                "Web address",
+                stringResource(R.string.qr_make_field_web_address),
                 form.eventUrl,
                 { onChange(form.copy(eventUrl = it)) },
                 "make.field.eventURL",
                 keyboard = KeyboardType.Uri,
             )
             Field(
-                "Notes",
+                stringResource(R.string.qr_make_field_notes),
                 form.eventDescription,
                 { onChange(form.copy(eventDescription = it)) },
                 "make.field.eventNotes",
@@ -649,7 +650,7 @@ private fun MakeFields(
         }
         MakeFormKind.EMAIL -> {
             Field(
-                "Email address",
+                stringResource(R.string.qr_make_field_email_address),
                 form.emailAddress,
                 { onChange(form.copy(emailAddress = it)) },
                 "make.field.email",
@@ -658,7 +659,7 @@ private fun MakeFields(
                 KeyboardType.Email,
             )
             Field(
-                "Subject (optional)",
+                stringResource(R.string.qr_make_field_subject),
                 form.emailSubject,
                 { onChange(form.copy(emailSubject = it)) },
                 "make.field.subject",
@@ -666,7 +667,7 @@ private fun MakeFields(
                 autocorrect = true,
             )
             Field(
-                "Message (optional)",
+                stringResource(R.string.qr_make_field_message),
                 form.emailBody,
                 { onChange(form.copy(emailBody = it)) },
                 "make.field.body",
@@ -677,17 +678,17 @@ private fun MakeFields(
         }
         MakeFormKind.SMS -> {
             Field(
-                "Phone number",
+                stringResource(R.string.qr_make_field_phone_number),
                 form.smsNumber,
                 { onChange(form.copy(smsNumber = it)) },
                 "make.field.smsNumber",
                 issue,
                 MakeFormField.SMS_NUMBER,
                 KeyboardType.Phone,
-                hint = INTERNATIONAL_HINT,
+                hint = stringResource(R.string.qr_make_international_hint),
             )
             Field(
-                "Message (optional)",
+                stringResource(R.string.qr_make_field_message),
                 form.smsBody,
                 { onChange(form.copy(smsBody = it)) },
                 "make.field.smsBody",
@@ -698,18 +699,18 @@ private fun MakeFields(
         }
         MakeFormKind.PHONE ->
             Field(
-                "Phone number",
+                stringResource(R.string.qr_make_field_phone_number),
                 form.phone,
                 { onChange(form.copy(phone = it)) },
                 "make.field.phone",
                 issue,
                 MakeFormField.PHONE,
                 KeyboardType.Phone,
-                hint = INTERNATIONAL_HINT,
+                hint = stringResource(R.string.qr_make_international_hint),
             )
         MakeFormKind.LOCATION -> {
             Field(
-                "Latitude",
+                stringResource(R.string.qr_make_field_latitude),
                 form.latitude,
                 { onChange(form.copy(latitude = it)) },
                 "make.field.latitude",
@@ -718,7 +719,7 @@ private fun MakeFields(
                 KeyboardType.Decimal,
             )
             Field(
-                "Longitude",
+                stringResource(R.string.qr_make_field_longitude),
                 form.longitude,
                 { onChange(form.copy(longitude = it)) },
                 "make.field.longitude",
@@ -727,7 +728,7 @@ private fun MakeFields(
                 KeyboardType.Decimal,
             )
             Field(
-                "Place name (optional)",
+                stringResource(R.string.qr_make_field_place),
                 form.locationQuery,
                 { onChange(form.copy(locationQuery = it)) },
                 "make.field.place",
@@ -754,7 +755,7 @@ private fun SwitchRow(label: String, checked: Boolean, tag: String, onChange: (B
 }
 
 /**
- * "Same link, smaller code" and the offer to remove tracking tags. Nothing changes the link without
+ * stringResource(R.string.qr_make_smaller) and the offer to remove tracking tags. Nothing changes the link without
  * a tap.
  */
 @Composable
@@ -768,6 +769,7 @@ private fun LinkOptions(
         Modifier.padding(horizontal = Space.m),
         verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
+        val smaller = stringResource(R.string.qr_make_smaller)
         if (g.smallerAvailable)
             Row(
                 Modifier.fillMaxWidth().testTag("make.link.smaller"),
@@ -775,22 +777,22 @@ private fun LinkOptions(
                 horizontalArrangement = Arrangement.spacedBy(Space.m),
             ) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-                    Text("Same link, smaller code", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.qr_make_smaller), style = MaterialTheme.typography.bodyLarge)
                     Caption(
-                        "The web address is written in capitals, which fit a smaller code. It opens the same place."
+                        stringResource(R.string.qr_make_smaller_text)
                     )
                 }
                 Switch(
                     checked = useSmaller,
                     onCheckedChange = onSmaller,
-                    modifier = Modifier.semantics { contentDescription = "Same link, smaller code" },
+                    modifier = Modifier.semantics { contentDescription = smaller },
                 )
             }
         val free = g.trackingFree
         if (free != null && g.trackingTags.isNotEmpty())
             QrCard(Modifier.testTag("make.link.tracking")) {
                 Text(
-                    "This link carries tracking tags. Remove them?",
+                    stringResource(R.string.qr_make_tracking),
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Caption(g.trackingTags.joinToString(", "))
@@ -808,7 +810,7 @@ private fun LinkOptions(
                     onClick = onRemoveTracking,
                     modifier = Modifier.testTag("make.link.tracking.remove"),
                 ) {
-                    Text("Remove tracking tags")
+                    Text(stringResource(R.string.qr_make_tracking_remove))
                 }
             }
     }
@@ -826,38 +828,37 @@ private fun CodeOptions(
         verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
         Text(
-            "Code options",
+            stringResource(R.string.qr_make_code_options),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
         )
         DropdownField(
-            "Code type",
+            stringResource(R.string.qr_history_code_type),
             symbology,
-            MakeSymbology.entries.map { it to it.title },
+            MakeSymbology.entries.map { it to stringResource(it.title) },
             Modifier.fillMaxWidth().testTag("make.symbology"),
             onSelect = onSymbology,
         )
         if (symbology.supportsCorrection) {
             DropdownField(
-                "Error correction",
+                stringResource(R.string.qr_make_correction),
                 correction,
-                Correction.entries.map { it to it.title },
+                Correction.entries.map { it to stringResource(it.title) },
                 Modifier.fillMaxWidth().testTag("make.correction"),
                 onSelect = onCorrection,
             )
             Caption(
-                "Auto keeps the code as small as it can. Higher levels survive more damage but make a denser code."
+                stringResource(R.string.qr_make_correction_text)
             )
         }
     }
 }
 
+@Composable
 private fun warningText(warning: ContrastWarning): String =
     when (warning) {
-        is ContrastWarning.LowContrast ->
-            "Low contrast (${String.format(java.util.Locale.getDefault(), "%.1f", warning.ratio)} to 1). Phones may not be able to scan this code."
-        ContrastWarning.Inverted ->
-            "The code is lighter than its background. Many scanners can’t read light-on-dark codes."
+        is ContrastWarning.LowContrast -> stringResource(R.string.qr_make_low_contrast, warning.ratio)
+        ContrastWarning.Inverted -> stringResource(R.string.qr_make_inverted)
     }
 
 /** Two colour pickers and the contrast warning. */
@@ -875,12 +876,12 @@ private fun ColorsSection(
         verticalArrangement = Arrangement.spacedBy(Space.s),
     ) {
         Text(
-            "Colors",
+            stringResource(R.string.qr_make_colors),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
         )
-        ColorRow("Code color", foreground, "make.style.foreground") { picking = true }
-        ColorRow("Background color", background, "make.style.background") { picking = false }
+        ColorRow(stringResource(R.string.qr_make_code_color), foreground, "make.style.foreground") { picking = true }
+        ColorRow(stringResource(R.string.qr_make_background_color), background, "make.style.background") { picking = false }
         warnings.forEach { warning ->
             Row(
                 Modifier.semantics(mergeDescendants = true) {}.testTag("make.style.warning"),
@@ -897,12 +898,12 @@ private fun ColorsSection(
                     onBackground(WHITE)
                 }
             ) {
-                Text("Back to black on white")
+                Text(stringResource(R.string.qr_make_reset_colors))
             }
     }
     picking?.let { fg ->
         ColorDialog(
-            if (fg) "Code color" else "Background color",
+            stringResource(if (fg) R.string.qr_make_code_color else R.string.qr_make_background_color),
             if (fg) foreground else background,
             onDismiss = { picking = null },
         ) {
@@ -994,19 +995,19 @@ private fun ColorDialog(
                                 controller.selectByColor(chosen, fromUser = false)
                             }
                     },
-                    label = { Text("Hex") },
+                    label = { Text(stringResource(R.string.qr_make_hex)) },
                     prefix = { Text("#") },
                     singleLine = true,
                     isError = hex.length != 6,
-                    supportingText = { if (hex.length != 6) Text("Enter six hexadecimal digits") },
+                    supportingText = { if (hex.length != 6) Text(stringResource(R.string.qr_make_hex_hint)) },
                     textStyle = LocalTextStyle.current.numeric(),
                 )
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(KitR.string.seven_cancel)) } },
         confirmButton = {
             TextButton(enabled = hex.length == 6, onClick = { onPick(chosen.rgb()) }) {
-                Text("Done")
+                Text(stringResource(KitR.string.seven_done))
             }
         },
     )
@@ -1094,9 +1095,9 @@ private fun ExportSheet(
                 .imePadding(),
             verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
-            Text("Export", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.qr_history_export), style = MaterialTheme.typography.titleLarge)
             ConnectedChoice(
-                MakeExportFormat.entries.map { it to it.title },
+                MakeExportFormat.entries.map { it to stringResource(it.title) },
                 options.format,
                 Modifier.testTag("make.export.format"),
             ) {
@@ -1105,9 +1106,10 @@ private fun ExportSheet(
             when (options.format) {
                 MakeExportFormat.PNG -> {
                     DropdownField(
-                        "Size",
+                        stringResource(R.string.qr_export_size),
                         options.preset ?: 0,
-                        MakeExportOptions.PRESETS.map { it to "$it pixels" } + (0 to "Custom"),
+                        MakeExportOptions.PRESETS.map { it to pluralStringResource(R.plurals.qr_export_pixels, it, it) } +
+                            (0 to stringResource(R.string.qr_export_custom)),
                         Modifier.fillMaxWidth().testTag("make.export.size"),
                     ) {
                         options = options.copy(preset = it.takeIf { size -> size != 0 })
@@ -1120,31 +1122,31 @@ private fun ExportSheet(
                                     options.copy(customSize = it.filter(Char::isDigit).take(6))
                             },
                             modifier = Modifier.fillMaxWidth().testTag("make.export.customSize"),
-                            label = { Text("Width in pixels (up to 4096)") },
+                            label = { Text(stringResource(R.string.qr_export_width)) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             textStyle = LocalTextStyle.current.numeric(),
                         )
                         if (options.customSizeWasClamped)
                             InlineMessage(
-                                "Sizes run from ${MakeExportOptions.MIN_PIXEL_SIZE} to ${PngRenderer.MAX_PIXEL_SIZE}. This will be ${options.pixelSize}.",
+                                stringResource(R.string.qr_export_clamped, MakeExportOptions.MIN_PIXEL_SIZE, PngRenderer.MAX_PIXEL_SIZE, options.pixelSize),
                                 isError = false,
                             )
                     }
                     Caption(
-                        "The image is a whole number of pixels per square, so it can be a little smaller than the size you pick."
+                        stringResource(R.string.qr_export_png_note)
                     )
                 }
                 MakeExportFormat.SVG ->
                     Text(
-                        "A vector file that stays sharp at any size. Good for print and design tools.",
+                        stringResource(R.string.qr_export_svg_note),
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 MakeExportFormat.PDF -> {
                     ConnectedChoice(
                         listOf(
-                            PdfLayout.SINGLE to "One code",
-                            PdfLayout.SHEET to "Sheet of labels",
+                            PdfLayout.SINGLE to stringResource(R.string.qr_export_one_code),
+                            PdfLayout.SHEET to stringResource(R.string.qr_export_sheet),
                         ),
                         options.pdfLayout,
                         Modifier.testTag("make.export.layout"),
@@ -1153,17 +1155,17 @@ private fun ExportSheet(
                     }
                     if (options.pdfLayout == PdfLayout.SHEET)
                         DropdownField(
-                            "Labels per page",
+                            stringResource(R.string.qr_export_labels_per_page),
                             options.grid,
-                            SheetGrid.entries.map { it to it.title },
+                            SheetGrid.entries.map { it to stringResource(it.title) },
                             Modifier.fillMaxWidth().testTag("make.export.grid"),
                         ) {
                             options = options.copy(grid = it)
                         }
                     DropdownField(
-                        "Paper",
+                        stringResource(R.string.qr_export_paper),
                         options.paper,
-                        PaperSize.entries.map { it to it.title },
+                        PaperSize.entries.map { it to stringResource(it.title) },
                         Modifier.fillMaxWidth().testTag("make.export.paper"),
                     ) {
                         options = options.copy(paper = it)
@@ -1172,7 +1174,7 @@ private fun ExportSheet(
                         options.caption,
                         { options = options.copy(caption = it) },
                         modifier = Modifier.fillMaxWidth().testTag("make.export.captionField"),
-                        label = { Text("Caption (optional)") },
+                        label = { Text(stringResource(R.string.qr_export_caption)) },
                         singleLine = true,
                         keyboardOptions =
                             KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
@@ -1180,9 +1182,9 @@ private fun ExportSheet(
                 }
             }
             if (failed)
-                InlineMessage("The file couldn’t be created. Try a smaller size.", isError = true)
+                InlineMessage(stringResource(R.string.qr_export_failed), isError = true)
             if (saveFailed)
-                InlineMessage("The file couldn’t be saved there. Try again.", isError = true)
+                InlineMessage(stringResource(R.string.qr_export_save_failed), isError = true)
             // Save (the system's Create document screen) leads; Share hands the same file to apps.
             Button(
                 onClick = {
@@ -1203,7 +1205,7 @@ private fun ExportSheet(
                         Modifier.size(ButtonDefaults.IconSize),
                     )
                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                Text(if (saved) "Saved" else "Save file")
+                Text(stringResource(if (saved) R.string.qr_saved else R.string.qr_export_save_file))
             }
             OutlinedButton(
                 onClick = {
@@ -1219,7 +1221,7 @@ private fun ExportSheet(
             ) {
                 Icon(Icons.Rounded.Share, null, Modifier.size(ButtonDefaults.IconSize))
                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                Text("Share")
+                Text(stringResource(R.string.qr_action_share))
             }
             OutlinedButton(
                 onClick = {
@@ -1272,7 +1274,7 @@ private fun ExportSheet(
                     Modifier.size(ButtonDefaults.IconSize),
                 )
                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                Text(if (copied) "Copied" else "Copy image")
+                Text(stringResource(if (copied) R.string.qr_copied else R.string.qr_export_copy_image))
             }
             Caption(fileName)
         }

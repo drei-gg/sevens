@@ -28,7 +28,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -41,6 +43,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.currentStateAsState
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import gg.seven.kit.R as KitR
 import gg.seven.kit.Space
 import gg.seven.qr.core.Analysis
 import gg.seven.qr.core.HistoryKind
@@ -56,7 +59,6 @@ import kotlinx.coroutines.launch
 
 /** One row of the pick list shown when a photo or the clipboard holds several codes. */
 data class ScanCandidate(val index: Int, val analysis: Analysis) {
-    val typeName = QrText.typeName(analysis.payload.typeId)
     /** For links: the registrable domain, else the host. */
     val domain: String? = (analysis.payload as? Payload.Link)?.info?.let { it.registrableDomain ?: it.hostUnicode }?.takeIf { it.isNotEmpty() }
 }
@@ -68,6 +70,7 @@ private fun markCameraAsked(context: Context) = context.getSharedPreferences("qr
 @Composable
 fun ScanScreen(model: QrModel, nav: QrNav) {
     val context = LocalContext.current
+    val res = LocalResources.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -131,22 +134,22 @@ fun ScanScreen(model: QrModel, nav: QrNav) {
             message = null
             val codes = ImageScanner.scan(context, uri)
             working = false
-            if (codes == null) message = "That photo couldn’t be read" else handle(codes, "No code found in this image")
+            if (codes == null) message = res.getString(R.string.qr_scan_photo_unreadable) else handle(codes, res.getString(R.string.qr_scan_photo_empty))
         }
     }
     val onPhoto = { photo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
-    val onPaste: () -> Unit = { scope.launch { handle(PasteScanner.codes(context), "Nothing to scan on the clipboard") } }
+    val onPaste: () -> Unit = { scope.launch { handle(PasteScanner.codes(context), res.getString(R.string.qr_scan_clipboard_empty)) } }
     val showsCamera = availability == ScannerAvailability.AVAILABLE
 
     Scaffold(
         containerColor = if (showsCamera) MaterialTheme.colorScheme.scrim else MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Scan") },
+                title = { Text(stringResource(R.string.qr_scan_title)) },
                 actions = {
-                    IconButton(onClick = { nav.push(Route.History) }, Modifier.testTag("scan.history")) { Icon(Icons.Rounded.History, "History") }
-                    IconButton(onClick = { nav.push(Route.Make(null)) }, Modifier.testTag("scan.make")) { Icon(Icons.Rounded.QrCode2, "Make a code") }
-                    IconButton(onClick = { nav.push(Route.Settings) }, Modifier.testTag("scan.settings")) { Icon(Icons.Rounded.Settings, "Settings") }
+                    IconButton(onClick = { nav.push(Route.History) }, Modifier.testTag("scan.history")) { Icon(Icons.Rounded.History, stringResource(R.string.qr_settings_history)) }
+                    IconButton(onClick = { nav.push(Route.Make(null)) }, Modifier.testTag("scan.make")) { Icon(Icons.Rounded.QrCode2, stringResource(R.string.qr_make_title)) }
+                    IconButton(onClick = { nav.push(Route.Settings) }, Modifier.testTag("scan.settings")) { Icon(Icons.Rounded.Settings, stringResource(R.string.qr_settings_title)) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -170,7 +173,7 @@ fun ScanScreen(model: QrModel, nav: QrNav) {
                 ) {
                     Spacer(Modifier.weight(1f))
                     ViewfinderFrame(onCamera = true, modifier = Modifier.sizeIn(maxWidth = 280.dp, maxHeight = 280.dp).fillMaxWidth(0.7f))
-                    Hint(if (multipleInView) "Tap a code" else "Point at a code", announce = multipleInView)
+                    Hint(stringResource(if (multipleInView) R.string.qr_scan_tap_a_code else R.string.qr_scan_point), announce = multipleInView)
                     Spacer(Modifier.weight(1f))
                     StatusLine(message, working)
                     Controls(showTorch = torchAvailable, torchOn = torchOn, onTorch = {
@@ -241,7 +244,8 @@ private fun StatusLine(message: String?, working: Boolean) {
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun LoadingIndicatorBox() {
-    LoadingIndicator(Modifier.padding(Space.xs).semantics { stateDescription = "Reading" })
+    val reading = stringResource(R.string.qr_scan_reading)
+    LoadingIndicator(Modifier.padding(Space.xs).semantics { stateDescription = reading })
 }
 
 /** Photo and Paste flank the torch, the one control people reach for while aiming, on one platter. */
@@ -250,24 +254,25 @@ private fun Controls(showTorch: Boolean, torchOn: Boolean, onTorch: () -> Unit, 
     HorizontalFloatingToolbar(expanded = true) {
         TooltipBox(
             positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-            tooltip = { PlainTooltip { Text("Scan a photo") } }, state = rememberTooltipState(),
+            tooltip = { PlainTooltip { Text(stringResource(R.string.qr_scan_photo)) } }, state = rememberTooltipState(),
         ) {
             IconButton(onClick = onPhoto, modifier = Modifier.testTag("scan.photo")) {
-                Icon(Icons.Rounded.Image, "Scan a photo")
+                Icon(Icons.Rounded.Image, stringResource(R.string.qr_scan_photo))
             }
         }
-        if (showTorch) FilledIconToggleButton(
+        val torchState = stringResource(if (torchOn) R.string.qr_scan_torch_on else R.string.qr_scan_torch_off)
+    if (showTorch) FilledIconToggleButton(
             checked = torchOn, onCheckedChange = { onTorch() },
-            modifier = Modifier.size(56.dp).semantics { stateDescription = if (torchOn) "On" else "Off" },
+            modifier = Modifier.size(56.dp).semantics { stateDescription = torchState },
         ) {
-            Icon(if (torchOn) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff, "Torch")
+            Icon(if (torchOn) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff, stringResource(R.string.qr_scan_torch))
         }
         TooltipBox(
             positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-            tooltip = { PlainTooltip { Text("Scan clipboard") } }, state = rememberTooltipState(),
+            tooltip = { PlainTooltip { Text(stringResource(R.string.qr_scan_clipboard)) } }, state = rememberTooltipState(),
         ) {
             IconButton(onClick = onPaste, modifier = Modifier.testTag("scan.paste")) {
-                Icon(Icons.Rounded.ContentPaste, "Scan clipboard")
+                Icon(Icons.Rounded.ContentPaste, stringResource(R.string.qr_scan_clipboard))
             }
         }
     }
@@ -287,17 +292,19 @@ private fun Fallback(availability: ScannerAvailability, openSettings: () -> Unit
             )
         }
         Text(
-            when (availability) {
-                ScannerAvailability.DENIED -> "Camera access is off. You can still scan a photo or what you copied, or turn the camera on in Settings."
-                ScannerAvailability.NOT_ASKED -> "The camera needs your permission to scan. You can still scan a photo or what you copied."
-                else -> "This phone can’t scan with the camera. You can still scan a photo or what you copied."
-            },
+            stringResource(
+                when (availability) {
+                    ScannerAvailability.DENIED -> R.string.qr_scan_camera_denied
+                    ScannerAvailability.NOT_ASKED -> R.string.qr_scan_camera_not_asked
+                    else -> R.string.qr_scan_camera_unsupported
+                }
+            ),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(max = 560.dp),
         )
         if (availability == ScannerAvailability.DENIED)
-            Button(onClick = openSettings, modifier = Modifier.heightIn(min = 56.dp)) { Text("Open Settings") }
+            Button(onClick = openSettings, modifier = Modifier.heightIn(min = 56.dp)) { Text(stringResource(R.string.qr_scan_open_settings)) }
     }
 }
 
@@ -306,7 +313,7 @@ private fun Fallback(availability: ScannerAvailability, openSettings: () -> Unit
 private fun PickListSheet(candidates: List<ScanCandidate>, onPick: (ScanCandidate) -> Unit, onCancel: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onCancel, containerColor = MaterialTheme.colorScheme.background) {
         Column(Modifier.padding(horizontal = Space.m).padding(bottom = Space.l)) {
-            Text("Pick a code", Modifier.padding(start = Space.s, bottom = Space.m), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.qr_scan_pick_a_code), Modifier.padding(start = Space.s, bottom = Space.m), style = MaterialTheme.typography.titleLarge)
             Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
                 candidates.forEachIndexed { index, candidate ->
                     SegmentedListItem(
@@ -316,11 +323,11 @@ private fun PickListSheet(candidates: List<ScanCandidate>, onPick: (ScanCandidat
                         supportingContent = candidate.domain?.let { { Text(it) } },
                         trailingContent = { VerdictLabel(candidate.analysis.level) },
                     ) {
-                        Text(candidate.typeName)
+                        Text(QrText.typeName(LocalResources.current, candidate.analysis.payload.typeId))
                     }
                 }
             }
-            TextButton(onClick = onCancel, modifier = Modifier.align(Alignment.End).padding(top = Space.s)) { Text("Cancel") }
+            TextButton(onClick = onCancel, modifier = Modifier.align(Alignment.End).padding(top = Space.s)) { Text(stringResource(KitR.string.seven_cancel)) }
         }
     }
 }

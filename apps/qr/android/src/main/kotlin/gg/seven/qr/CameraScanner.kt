@@ -44,6 +44,8 @@ import gg.seven.qr.core.ScannedCode
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalResources
 
 /*
  * The live camera scanner (SPEC §2), the counterpart of iOS ScannerView and its coordinator:
@@ -201,13 +203,16 @@ fun CameraScanner(
 
     LaunchedEffect(torchOn) { runCatching { controller.enableTorch(torchOn) } }
 
+    val res = LocalResources.current
+    val viewfinder = stringResource(R.string.qr_scan_viewfinder)
+    val pickLabel = stringResource(R.string.qr_scan_pick_code)
     Box(modifier) {
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).apply {
                     scaleType = PreviewView.ScaleType.FILL_CENTER
                     this.controller = controller
-                    contentDescription = "Camera viewfinder for scanning codes"
+                    contentDescription = viewfinder
                     // A tap on an outlined code picks it; pinches reach CameraX's zoom.
                     val taps =
                         GestureDetector(
@@ -231,7 +236,7 @@ fun CameraScanner(
                     previewView = this
                 }
             },
-            modifier = Modifier.fillMaxSize().semantics { contentDescription = "Camera viewfinder for scanning codes" },
+            modifier = Modifier.fillMaxSize().semantics { contentDescription = viewfinder },
         )
         // Several codes in view: outline each, so the person can tap the one they want.
         if (outlines.size > 1)
@@ -252,14 +257,14 @@ fun CameraScanner(
             outlines.forEach { located ->
                 key(located.code.key) {
                     val box = located.bounds
-                    val label = CodeInViewLabel.of(located.code)
+                    val label = CodeInViewLabel.of(res, located.code)
                     Box(
                         Modifier.offset { IntOffset(box.left.roundToInt(), box.top.roundToInt()) }
                             .size(with(density) { box.width().toDp() }, with(density) { box.height().toDp() })
                             .semantics {
                                 contentDescription = label
                                 role = Role.Button
-                                onClick("Pick this code") {
+                                onClick(pickLabel) {
                                     finish(debouncer.tap(located.code))
                                     true
                                 }

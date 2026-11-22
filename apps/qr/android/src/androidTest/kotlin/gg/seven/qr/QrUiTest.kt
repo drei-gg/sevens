@@ -18,7 +18,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** The main flows on a device: a scan's verdict, History saving behind the trial, Make. */
+/**
+ * The main flows on a device: a scan's verdict, History, Make. The generic build is unlocked, so
+ * the trial and the gate are tested on the personal flavor (src/androidTestPersonal).
+ */
 @RunWith(AndroidJUnit4::class)
 class QrUiTest {
     @get:Rule val ui = createAndroidComposeRule<MainActivity>()
@@ -171,7 +174,7 @@ class QrUiTest {
         MakeFormKind.entries.forEach { kind ->
             ui.onNodeWithTag("make.type").performScrollTo().performClick()
             if (kind == MakeFormKind.entries.first()) capture("m3-qr-content-menu")
-            ui.onNode(hasText(kind.title) and hasAnyAncestor(isPopup()))
+            ui.onNode(hasText(ui.activity.getString(kind.title)) and hasAnyAncestor(isPopup()))
                 .performScrollTo()
                 .performClick()
             assertEquals(kind, (model.nav.stack.value.last() as Route.Make).draft.kind.value)
@@ -246,8 +249,6 @@ class QrUiTest {
         ui.onNodeWithTag("result.verdict")
             .assertContentDescriptionContains("Likely scam", substring = true)
         ui.onNodeWithTag("result.action.peek").assertExists()
-        // Without the trial, nothing new is saved.
-        assertTrue(model.historyState.value.items.isEmpty())
     }
 
     @Test
@@ -302,7 +303,7 @@ class QrStoreTest {
         val again = HistoryStore(dir, kotlinx.coroutines.GlobalScope)
         again.load()
         assertEquals("Lunch", again.state.value.items.single().note)
-        assertEquals(1, again.search("wi-fi").size)
+        assertEquals(1, again.search(context.resources, "wi-fi").size)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package gg.seven.qr
 
+import android.content.res.Resources
 import gg.seven.qr.core.Analysis
 import gg.seven.qr.core.EventInfo
 import gg.seven.qr.core.Level
@@ -37,8 +38,6 @@ enum class ResultAction { OPEN, PEEK, JOIN_WIFI, COPY_PASSWORD, WIFI_SETTINGS, A
 
 /** What this device and build can do. Read once per sheet; tests pass their own. */
 data class ResultCapabilities(
-    /** Android 11+: the system's "Save this network?" sheet (NEHotspotConfiguration's counterpart). */
-    val wifiJoinAvailable: Boolean = false,
     /** A calendar app takes new events. */
     val canAddEvent: Boolean = true,
 )
@@ -109,7 +108,7 @@ object ResultActionPlan {
                 list += ResultAction.COPY
             }
             is Payload.Wifi -> {
-                val plan = wifiJoinPlan(payload.info, capabilities)
+                val plan = wifiJoinPlan(payload.info)
                 if (plan == WiFiJoinPlan.JOIN) list += ResultAction.JOIN_WIFI
                 if (hasPassword(payload.info)) list += ResultAction.COPY_PASSWORD
                 // Plans the system sheet can't take still get a way there: the Wi-Fi panel.
@@ -134,11 +133,11 @@ object ResultActionPlan {
         return list
     }
 
-    fun wifiJoinPlan(info: WiFiInfo, capabilities: ResultCapabilities): WiFiJoinPlan =
+    fun wifiJoinPlan(info: WiFiInfo): WiFiJoinPlan =
         when {
             info.isEnterprise -> WiFiJoinPlan.SETTINGS_ONLY
             // Android's network suggestions don't take WEP or SSIDs over 32 bytes.
-            !capabilities.wifiJoinAvailable || info.security?.uppercase() == "WEP" || info.ssid.toByteArray().size > 32 -> WiFiJoinPlan.COPY_AND_SETTINGS
+            info.security?.uppercase() == "WEP" || info.ssid.toByteArray().size > 32 -> WiFiJoinPlan.COPY_AND_SETTINGS
             info.isOpen || hasPassword(info) -> WiFiJoinPlan.JOIN
             else -> WiFiJoinPlan.CANNOT_JOIN
         }
@@ -204,11 +203,11 @@ object ResultLinkDisplay {
 
 /** The text that Copy and Share carry, per payload. */
 object ResultPayloadText {
-    fun copyText(analysis: Analysis): String? =
+    fun copyText(res: Resources, analysis: Analysis): String? =
         when (val p = analysis.payload) {
             is Payload.Link -> p.info.original
             is Payload.AppLink -> p.info.original
-            is Payload.Payment -> paymentDetails(p.info)
+            is Payload.Payment -> paymentDetails(res, p.info)
             is Payload.Crypto -> p.info.address
             is Payload.Wifi -> p.info.password
             is Payload.Phone -> p.info.number
@@ -226,19 +225,20 @@ object ResultPayloadText {
         }
 
     /** "Copy details" for a payment: one `label: value` line per fact the code states. */
-    fun paymentDetails(info: PaymentInfo): String {
+    fun paymentDetails(res: Resources, info: PaymentInfo): String {
         val lines = mutableListOf<String>()
         fun add(label: String, value: String?) {
-            if (!value.isNullOrEmpty()) lines += "$label: $value"
+            if (!value.isNullOrEmpty()) lines += res.getString(R.string.qr_label_value, label, value)
         }
-        add("Pays", info.payeeName)
-        add("Account", info.payeeAccount)
-        if (!info.amount.isNullOrEmpty()) add("Amount", listOfNotNull(info.currency, info.amount).joinToString(" "))
-        add("Network", info.network)
-        add("City", info.city)
-        add("Country", info.country)
-        add("Reference", info.reference)
-        add("Note", info.note)
+        fun add(label: Int, value: String?) = add(res.getString(label), value)
+        add(R.string.qr_payment_pays, info.payeeName)
+        add(R.string.qr_payment_account, info.payeeAccount)
+        if (!info.amount.isNullOrEmpty()) add(R.string.qr_payment_amount, listOfNotNull(info.currency, info.amount).joinToString(" "))
+        add(R.string.qr_payment_network, info.network)
+        add(R.string.qr_payment_city, info.city)
+        add(R.string.qr_payment_country, info.country)
+        add(R.string.qr_payment_reference, info.reference)
+        add(R.string.qr_payment_note, info.note)
         info.extra.keys.sorted().forEach { add(it, info.extra[it]) }
         return lines.joinToString("\n")
     }
@@ -268,15 +268,15 @@ object ResultMakeMapping {
 object ResultKnownText {
     val listBased: Set<SignalId> by lazy { knownAddressesListBased().toSet() }
 
-    fun question(analysis: Analysis, domain: String): String {
+    fun question(res: Resources, analysis: Analysis, domain: String): String {
         val brand = analysis.signals.asSequence().filter { it.id in listBased }.mapNotNull { SignalText.arg(it.args, "brand") }.firstOrNull()
-        if (brand != null) return "This address uses $brand’s name, but it isn’t one we know."
+        if (brand != null) return res.getString(R.string.qr_known_brand, brand)
         val name = SignalText.arg(mapOf("d" to domain), "d") ?: domain
         val ids = analysis.signals.map { it.id }.toSet()
         return when {
-            SignalId.SHORTENER in ids -> "$name is a link shortener, so we can’t tell where it leads."
-            SignalId.RISKY_TLD in ids -> "$name ends in a domain ending scammers use a lot, and it isn’t an address we know."
-            else -> "$name isn’t an address we know."
+            SignalId.SHORTENER in ids -> res.getString(R.string.qr_known_shortener, name)
+            SignalId.RISKY_TLD in ids -> res.getString(R.string.qr_known_risky_tld, name)
+            else -> res.getString(R.string.qr_known_unknown, name)
         }
     }
 }
@@ -320,13 +320,13 @@ object ResultEventFormat {
     }
 
     /** For an absolute time given in another zone: the start in that zone. Null when nothing to add. */
-    fun organiserText(event: EventInfo, locale: Locale = Locale.getDefault(), zone: ZoneId = ZoneId.systemDefault()): String? {
+    fun organiserText(res: Resources, event: EventInfo, locale: Locale = Locale.getDefault(), zone: ZoneId = ZoneId.systemDefault()): String? {
         if (isWallClock(event)) return null
         val start = event.start ?: return null
         val id = event.timeZoneId ?: return null
         val other = runCatching { ZoneId.of(id) }.getOrNull() ?: return null
         if (other.rules.getOffset(start) == zone.rules.getOffset(start)) return null
-        return "${fmt(start, null, FormatStyle.SHORT, other, locale)} in $id"
+        return res.getString(R.string.qr_event_time_in_zone, fmt(start, null, FormatStyle.SHORT, other, locale), id)
     }
 
     /** Reads GMT wall-clock fields and returns the same fields in [zone]. */
@@ -378,126 +378,127 @@ fun dialable(number: String): String = number.filter { it in "0123456789+*#,;" }
 object PaymentText {
     data class Row(val label: String, val value: String)
 
-    /** D11's fallback when the network doesn't say person or business. Exactly as the spec words it. */
-    const val CHECK_MATCH = "Check this matches where you are."
-
     /** An IBAN for SEPA and Swiss QR-bill, a payee address (UPI ID) for UPI, the account for EMVCo. */
-    fun accountLabel(format: PaymentFormat): String =
-        when (format) {
-            PaymentFormat.EPC, PaymentFormat.SWISS -> "IBAN"
-            PaymentFormat.UPI -> "Payee address"
-            PaymentFormat.EMV -> "Account"
-        }
+    fun accountLabel(res: Resources, format: PaymentFormat): String =
+        res.getString(
+            when (format) {
+                PaymentFormat.EPC, PaymentFormat.SWISS -> R.string.qr_payment_iban
+                PaymentFormat.UPI -> R.string.qr_payment_payee_address
+                PaymentFormat.EMV -> R.string.qr_payment_account
+            }
+        )
 
     /**
      * The rows under the payee and the amount, in SPEC §5's order: city, country, network, account
      * (IBAN or payee address), reference, note. Empty values are left out.
      */
-    fun rows(info: PaymentInfo, locale: Locale = Locale.getDefault()): List<Row> = buildList {
+    fun rows(res: Resources, info: PaymentInfo, locale: Locale = Locale.getDefault()): List<Row> = buildList {
         fun add(label: String, value: String?) {
             value?.trim()?.takeIf { it.isNotEmpty() }?.let { add(Row(label, it)) }
         }
-        add("City", info.city)
-        add("Country", country(info.country, locale))
-        add("Network", info.network)
-        add(accountLabel(info.format), info.payeeAccount)
-        add("Reference", info.reference)
-        add("Note", info.note)
+        add(res.getString(R.string.qr_payment_city), info.city)
+        add(res.getString(R.string.qr_payment_country), country(res, info.country, locale))
+        add(res.getString(R.string.qr_payment_network), info.network)
+        add(accountLabel(res, info.format), info.payeeAccount)
+        add(res.getString(R.string.qr_payment_reference), info.reference)
+        add(res.getString(R.string.qr_payment_note), info.note)
     }
 
     /** "PHP 250.00", or the line saying the payer types it. */
-    fun amount(info: PaymentInfo): String =
+    fun amount(res: Resources, info: PaymentInfo): String =
         info.amount?.trim()?.takeIf { it.isNotEmpty() }?.let { listOfNotNull(info.currency?.trim()?.takeIf { c -> c.isNotEmpty() }, it).joinToString(" ") }
-            ?: "No amount in the code; you enter it"
+            ?: res.getString(R.string.qr_payment_no_amount)
 
-    fun kind(info: PaymentInfo): String? =
-        info.isDynamic?.let { if (it) "Dynamic code, made for one payment" else "Static code, the same every time" }
+    fun kind(res: Resources, info: PaymentInfo): String? =
+        info.isDynamic?.let { res.getString(if (it) R.string.qr_payment_dynamic else R.string.qr_payment_static) }
 
-    fun checksum(info: PaymentInfo): String? =
+    fun checksum(res: Resources, info: PaymentInfo): String? =
         when (info.checksum) {
-            PaymentChecksum.VALID -> "Checksum matches"
-            PaymentChecksum.INVALID -> "Checksum doesn’t match. The code may be damaged or altered."
-            PaymentChecksum.ABSENT -> if (info.format == PaymentFormat.EMV) "This code has no checksum" else null
+            PaymentChecksum.VALID -> res.getString(R.string.qr_payment_checksum_valid)
+            PaymentChecksum.INVALID -> res.getString(R.string.qr_payment_checksum_invalid)
+            PaymentChecksum.ABSENT -> if (info.format == PaymentFormat.EMV) res.getString(R.string.qr_payment_checksum_absent) else null
         }
 
     /** More details: the format, then every extra with a human label. `alternateName` shows under the payee. */
-    fun moreDetails(info: PaymentInfo): List<Row> = buildList {
-        add(Row("Format", formatName(info.format)))
+    fun moreDetails(res: Resources, info: PaymentInfo): List<Row> = buildList {
+        add(Row(res.getString(R.string.qr_payment_format), formatName(res, info.format)))
         info.extra.keys.filter { it != "alternateName" }.sortedBy(::order).forEach { key ->
             val raw = info.extra[key]?.trim()
-            if (!raw.isNullOrEmpty()) add(Row(label(key), value(key, raw)))
+            if (!raw.isNullOrEmpty()) add(Row(label(res, key), value(res, key, raw)))
         }
     }
 
-    fun formatName(format: PaymentFormat): String =
-        when (format) {
-            PaymentFormat.EMV -> "EMVCo merchant QR"
-            PaymentFormat.UPI -> "UPI"
-            PaymentFormat.EPC -> "SEPA credit transfer (EPC)"
-            PaymentFormat.SWISS -> "Swiss QR-bill"
-        }
+    fun formatName(res: Resources, format: PaymentFormat): String =
+        res.getString(
+            when (format) {
+                PaymentFormat.EMV -> R.string.qr_payment_format_emv
+                PaymentFormat.UPI -> R.string.qr_payment_format_upi
+                PaymentFormat.EPC -> R.string.qr_payment_format_epc
+                PaymentFormat.SWISS -> R.string.qr_payment_format_swiss
+            }
+        )
 
     /** "PH" → "Philippines (PH)"; anything the system doesn't know stays as written. */
-    fun country(code: String?, locale: Locale = Locale.getDefault()): String? {
+    fun country(res: Resources, code: String?, locale: Locale = Locale.getDefault()): String? {
         val c = code?.trim()?.takeIf { it.isNotEmpty() } ?: return null
         if (c.length != 2 || !c.all { it.isLetter() }) return c
         val upper = c.uppercase(Locale.ROOT)
         val name = runCatching { Locale.Builder().setRegion(upper).build().getDisplayCountry(locale) }.getOrNull()
-        return if (name.isNullOrEmpty() || name == upper) c else "$name ($upper)"
+        return if (name.isNullOrEmpty() || name == upper) c else res.getString(R.string.qr_payment_country_named, name, upper)
     }
 
     /** A label for every key `apps/qr/core/src/payments.rs` writes; an unknown key still reads as words. */
-    fun label(key: String): String =
+    fun label(res: Resources, key: String): String =
         when (key) {
-            "mcc" -> "Merchant category code"
-            "currencyNumeric" -> "Currency code"
-            "networkID" -> "Network identifier"
-            "alternateName" -> "Name in another language"
-            "alternateCity" -> "City in another language"
-            "alternateLanguage" -> "Other language"
-            "bic" -> "Bank (BIC)"
-            "purpose" -> "Purpose code"
-            "information" -> "Message to the payer"
-            "creditorAddress" -> "Payee’s address"
-            "debtorName" -> "Payer"
-            "referenceType" -> "Reference type"
-            "billingInfo" -> "Billing information"
-            "kind" -> "Request"
-            "mode" -> "Initiation mode"
-            "url" -> "Link"
+            "mcc" -> res.getString(R.string.qr_payment_key_mcc)
+            "currencyNumeric" -> res.getString(R.string.qr_payment_key_currency_numeric)
+            "networkID" -> res.getString(R.string.qr_payment_key_network_id)
+            "alternateName" -> res.getString(R.string.qr_payment_key_alternate_name)
+            "alternateCity" -> res.getString(R.string.qr_payment_key_alternate_city)
+            "alternateLanguage" -> res.getString(R.string.qr_payment_key_alternate_language)
+            "bic" -> res.getString(R.string.qr_payment_key_bic)
+            "purpose" -> res.getString(R.string.qr_payment_key_purpose)
+            "information" -> res.getString(R.string.qr_payment_key_information)
+            "creditorAddress" -> res.getString(R.string.qr_payment_key_creditor_address)
+            "debtorName" -> res.getString(R.string.qr_payment_key_debtor_name)
+            "referenceType" -> res.getString(R.string.qr_payment_key_reference_type)
+            "billingInfo" -> res.getString(R.string.qr_payment_key_billing_info)
+            "kind" -> res.getString(R.string.qr_payment_key_kind)
+            "mode" -> res.getString(R.string.qr_payment_key_mode)
+            "url" -> res.getString(R.string.qr_payment_key_url)
             else ->
-                if (key.startsWith("additional.")) additional(key.removePrefix("additional.")) else readable(key)
+                if (key.startsWith("additional.")) additional(res, key.removePrefix("additional.")) else readable(res, key)
         }
 
     /** EMVCo merchant-presented QR, ID 62 (Additional Data Field Template). */
-    private fun additional(tag: String): String =
+    private fun additional(res: Resources, tag: String): String =
         when (tag) {
-            "01" -> "Bill number"
-            "02" -> "Mobile number"
-            "03" -> "Store"
-            "04" -> "Loyalty number"
-            "05" -> "Reference"
-            "06" -> "Customer label"
-            "07" -> "Terminal"
-            "08" -> "Purpose"
-            "09" -> "Details the payer is asked for"
-            "10" -> "Merchant tax ID"
-            "11" -> "Merchant channel"
-            else -> "Additional data $tag"
+            "01" -> res.getString(R.string.qr_payment_additional_bill)
+            "02" -> res.getString(R.string.qr_payment_additional_mobile)
+            "03" -> res.getString(R.string.qr_payment_additional_store)
+            "04" -> res.getString(R.string.qr_payment_additional_loyalty)
+            "05" -> res.getString(R.string.qr_payment_reference)
+            "06" -> res.getString(R.string.qr_payment_additional_customer)
+            "07" -> res.getString(R.string.qr_payment_additional_terminal)
+            "08" -> res.getString(R.string.qr_payment_additional_purpose)
+            "09" -> res.getString(R.string.qr_payment_additional_payer_asked)
+            "10" -> res.getString(R.string.qr_payment_additional_tax_id)
+            "11" -> res.getString(R.string.qr_payment_additional_channel)
+            else -> res.getString(R.string.qr_payment_additional_other, tag)
         }
 
-    fun value(key: String, raw: String): String =
+    fun value(res: Resources, key: String, raw: String): String =
         when (key to raw.lowercase(Locale.ROOT)) {
-            "kind" to "pay" -> "One payment"
-            "kind" to "mandate" -> "Mandate (repeating payments)"
-            "referenceType" to "qrr" -> "QR reference"
-            "referenceType" to "scor" -> "Creditor reference"
-            "referenceType" to "non" -> "No reference"
+            "kind" to "pay" -> res.getString(R.string.qr_payment_value_pay)
+            "kind" to "mandate" -> res.getString(R.string.qr_payment_value_mandate)
+            "referenceType" to "qrr" -> res.getString(R.string.qr_payment_value_qrr)
+            "referenceType" to "scor" -> res.getString(R.string.qr_payment_value_scor)
+            "referenceType" to "non" -> res.getString(R.string.qr_payment_value_non)
             else -> raw
         }
 
     /** "debtorName" → "Debtor name"; "some_key.x" → "Some key x". Never a dotted or camel-cased key. */
-    fun readable(key: String): String {
+    fun readable(res: Resources, key: String): String {
         val words = mutableListOf<String>()
         val current = StringBuilder()
         for (ch in key) {
@@ -516,7 +517,7 @@ object PaymentText {
         }
         if (current.isNotEmpty()) words += current.toString()
         val joined = words.joinToString(" ") { if (it.length > 1 && it == it.uppercase(Locale.ROOT)) it else it.lowercase(Locale.ROOT) }
-        if (joined.isEmpty()) return "Other detail"
+        if (joined.isEmpty()) return res.getString(R.string.qr_payment_other_detail)
         return joined.replaceFirstChar { it.uppercase(Locale.ROOT) }
     }
 
@@ -535,34 +536,34 @@ data class ResultReason(val sentence: String, val isInfo: Boolean)
  * link says which one; then what Peek found. Identical sentences appear once.
  */
 object ResultReasons {
-    fun rows(analysis: Analysis, allSignals: (Analysis) -> List<Signal> = ::analysisAllSignals): List<ResultReason> {
-        val rows = analysis.signals.map { ResultReason(SignalText.sentence(it), it.severity == Severity.INFO) }.toMutableList()
+    fun rows(res: Resources, analysis: Analysis, allSignals: (Analysis) -> List<Signal> = ::analysisAllSignals): List<ResultReason> {
+        val rows = analysis.signals.map { ResultReason(SignalText.sentence(res, it), it.severity == Severity.INFO) }.toMutableList()
         for (item in analysis.embedded) {
             val domain = ResultEmbedded.domain(item)
-            allSignals(item).filter { it.severity != Severity.INFO }.forEach { rows += ResultReason(inLink(domain, SignalText.sentence(it)), false) }
+            allSignals(item).filter { it.severity != Severity.INFO }.forEach { rows += ResultReason(inLink(res, domain, SignalText.sentence(res, it)), false) }
         }
         return rows.distinctBy { it.sentence }
     }
 
     /** Peek's own signals, then the warning signals of each redirect that isn't the scanned link. */
-    fun peekRows(report: PeekReport, original: Analysis, allSignals: (Analysis) -> List<Signal> = ::analysisAllSignals): List<ResultReason> {
-        val rows = report.signals.map { ResultReason(SignalText.sentence(it), it.severity == Severity.INFO) }.toMutableList()
+    fun peekRows(res: Resources, report: PeekReport, original: Analysis, allSignals: (Analysis) -> List<Signal> = ::analysisAllSignals): List<ResultReason> {
+        val rows = report.signals.map { ResultReason(SignalText.sentence(res, it), it.severity == Severity.INFO) }.toMutableList()
         val scanned = (original.payload as? Payload.Link)?.info?.normalized
         for (hop in report.hopAnalyses) {
             val link = (hop.payload as? Payload.Link)?.info ?: continue
             if (link.normalized == scanned) continue
             val domain = ResultLinkDisplay.headline(link)
-            allSignals(hop).filter { it.severity != Severity.INFO }.forEach { rows += ResultReason(redirect(domain, SignalText.sentence(it)), false) }
+            allSignals(hop).filter { it.severity != Severity.INFO }.forEach { rows += ResultReason(redirect(res, domain, SignalText.sentence(res, it)), false) }
         }
         return rows.distinctBy { it.sentence }
     }
 
-    fun rows(analysis: Analysis, peek: PeekReport?): List<ResultReason> =
-        (rows(analysis) + (peek?.let { peekRows(it, analysis) }.orEmpty())).distinctBy { it.sentence }
+    fun rows(res: Resources, analysis: Analysis, peek: PeekReport?): List<ResultReason> =
+        (rows(res, analysis) + (peek?.let { peekRows(res, it, analysis) }.orEmpty())).distinctBy { it.sentence }
 
-    fun inLink(domain: String, sentence: String) = "Link to $domain: $sentence"
+    fun inLink(res: Resources, domain: String, sentence: String): String = res.getString(R.string.qr_reason_in_link, domain, sentence)
 
-    fun redirect(domain: String, sentence: String) = "Redirect to $domain: $sentence"
+    fun redirect(res: Resources, domain: String, sentence: String): String = res.getString(R.string.qr_reason_redirect, domain, sentence)
 }
 
 /** "Links inside": worst first, the first [VISIBLE] shown until the person asks for all. */

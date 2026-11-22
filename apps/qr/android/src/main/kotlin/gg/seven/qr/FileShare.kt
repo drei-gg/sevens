@@ -83,7 +83,7 @@ object FileShare {
     fun copyImage(context: Context, file: File) {
         context
             .getSystemService(ClipboardManager::class.java)
-            ?.setPrimaryClip(ClipData.newUri(context.contentResolver, "QR code", uri(context, file)))
+            ?.setPrimaryClip(ClipData.newUri(context.contentResolver, context.getString(R.string.qr_symbology_qr), uri(context, file)))
     }
 
     /** The type the Create document screen offers, from the file's extension. */

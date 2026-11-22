@@ -7,7 +7,6 @@
 package gg.seven.qr
 
 import android.app.Activity
-import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -27,13 +26,16 @@ import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.annotation.StringRes
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -41,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.kit.LocalSevenGate
+import gg.seven.kit.R as KitR
 import gg.seven.kit.Space
 import gg.seven.qr.core.Analysis
 import gg.seven.qr.core.MakeRequest
@@ -105,11 +108,7 @@ fun ResultSheet(
     ) {
         BackHandler(pages.isNotEmpty()) { pages = pages.dropLast(1) }
         val page = pages.lastOrNull()
-        val title =
-            when (page) {
-                is ResultPage.Peek -> "Peek"
-                else -> "Result"
-            }
+        val title = stringResource(if (page is ResultPage.Peek) R.string.qr_peek else R.string.qr_result_title)
         Column(Modifier.fillMaxSize()) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = Space.xs),
@@ -117,7 +116,7 @@ fun ResultSheet(
             ) {
                 if (pages.isNotEmpty())
                     IconButton(onClick = { pages = pages.dropLast(1) }) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(KitR.string.seven_back))
                     }
                 else Spacer(Modifier.width(Space.m))
                 Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
@@ -125,7 +124,7 @@ fun ResultSheet(
                     onClick = { scope.launch { state.hide() }.invokeOnCompletion { onDismiss() } },
                     modifier = Modifier.testTag("result.done"),
                 ) {
-                    Icon(Icons.Rounded.Close, "Done")
+                    Icon(Icons.Rounded.Close, stringResource(KitR.string.seven_done))
                 }
             }
             AnimatedContent(
@@ -146,7 +145,7 @@ fun ResultSheet(
                                         {
                                             KnownOffer(
                                                 question =
-                                                    ResultKnownText.question(analysis, domain),
+                                                    ResultKnownText.question(LocalResources.current, analysis, domain),
                                                 domain = domain,
                                                 onKeep = { dismissedOffer = true },
                                                 onKnow = {
@@ -198,15 +197,12 @@ fun ResultContent(
     afterSignals: (@Composable () -> Unit)? = null,
 ) {
     val context = LocalContext.current
+    val res = LocalResources.current
     val view = LocalView.current
     val gate = LocalSevenGate.current
     val scope = rememberCoroutineScope()
-    val capabilities = remember {
-        ResultCapabilities(
-            wifiJoinAvailable = Build.VERSION.SDK_INT >= 30,
-            canAddEvent = Handoffs.canAddEvent(context),
-        )
-    }
+    val peekName = stringResource(R.string.qr_peek)
+    val capabilities = remember { ResultCapabilities(canAddEvent = Handoffs.canAddEvent(context)) }
     // A finished Peek raises the verdict for this result: shown, ordered and asked about on Open.
     val peekReport by
         produceState<PeekReport?>(null, peek) {
@@ -229,26 +225,24 @@ fun ResultContent(
     var pendingOpen by remember { mutableStateOf<Pair<android.net.Uri, Boolean>?>(null) }
     val wifi = (analysis.payload as? Payload.Wifi)?.info
     val wifiPlan =
-        wifi?.let { ResultActionPlan.wifiJoinPlan(it, capabilities) } ?: WiFiJoinPlan.JOIN
+        wifi?.let { ResultActionPlan.wifiJoinPlan(it) } ?: WiFiJoinPlan.JOIN
     val joinLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result
             ->
             val ssid = wifi?.ssid.orEmpty()
             notice =
-                if (result.resultCode != Activity.RESULT_OK) "Not joined."
-                else if (Build.VERSION.SDK_INT >= 30) {
+                if (result.resultCode != Activity.RESULT_OK) res.getString(R.string.qr_wifi_not_joined)
+                else {
                     val codes =
                         result.data
                             ?.getIntegerArrayListExtra(Settings.EXTRA_WIFI_NETWORK_RESULT_LIST)
                             .orEmpty()
                     when (codes.firstOrNull()) {
-                        Settings.ADD_WIFI_RESULT_SUCCESS ->
-                            "Saved $ssid. Your phone joins it when it’s in range."
-                        Settings.ADD_WIFI_RESULT_ALREADY_EXISTS ->
-                            "$ssid is already saved on this phone."
-                        else -> "Couldn’t join. Try Settings › Network & internet › Wi-Fi."
+                        Settings.ADD_WIFI_RESULT_SUCCESS -> res.getString(R.string.qr_wifi_saved, ssid)
+                        Settings.ADD_WIFI_RESULT_ALREADY_EXISTS -> res.getString(R.string.qr_wifi_already_saved, ssid)
+                        else -> res.getString(R.string.qr_wifi_join_failed)
                     }
-                } else "Not joined."
+                }
         }
 
     fun open(external: Boolean) {
@@ -261,7 +255,7 @@ fun ResultContent(
     fun copy(action: ResultAction) {
         val text =
             if (action == ResultAction.COPY_PASSWORD) wifi?.password
-            else ResultPayloadText.copyText(analysis)
+            else ResultPayloadText.copyText(res, analysis)
         if (text.isNullOrEmpty()) return
         Handoffs.copy(context, text, sensitive = action == ResultAction.COPY_PASSWORD)
         view.confirmHaptic()
@@ -275,27 +269,23 @@ fun ResultContent(
     val perform: (ResultAction) -> Unit = { action ->
         when (action) {
             ResultAction.OPEN -> open(external = false)
-            ResultAction.PEEK -> gate.run("Peek") { onPeek(analysis) }
+            ResultAction.PEEK -> gate.run(peekName) { onPeek(analysis) }
             ResultAction.MAKE_CODE -> ResultMakeMapping.request(analysis)?.let(onMake)
             ResultAction.SHARE ->
                 ResultPayloadText.shareText(analysis)?.let { Handoffs.share(context, it) }
             ResultAction.COPY,
             ResultAction.COPY_DETAILS,
             ResultAction.COPY_PASSWORD -> copy(action)
-            ResultAction.JOIN_WIFI ->
-                if (Build.VERSION.SDK_INT >= 30) {
-                    val intent = wifi?.let(Handoffs::wifiIntent)
-                    if (intent == null)
-                        notice = "Couldn’t join. Try Settings › Network & internet › Wi-Fi."
-                    else
-                        runCatching { joinLauncher.launch(intent) }
-                            .onFailure {
-                                notice = "Couldn’t join. Try Settings › Network & internet › Wi-Fi."
-                            }
-                }
+            ResultAction.JOIN_WIFI -> {
+                val intent = wifi?.let(Handoffs::wifiIntent)
+                if (intent == null) notice = res.getString(R.string.qr_wifi_join_failed)
+                else
+                    runCatching { joinLauncher.launch(intent) }
+                        .onFailure { notice = res.getString(R.string.qr_wifi_join_failed) }
+            }
             ResultAction.WIFI_SETTINGS ->
                 if (!Handoffs.wifiSettings(context))
-                    notice = "Couldn’t open Wi-Fi settings. Open them from your phone’s Settings."
+                    notice = res.getString(R.string.qr_wifi_settings_failed)
             ResultAction.ADD_CONTACT ->
                 (analysis.payload as? Payload.Contact)?.let {
                     Handoffs.addContact(context, it.info)
@@ -327,11 +317,11 @@ fun ResultContent(
             ReadableColumn {
                 VerdictHeader(
                     level,
-                    QrText.typeName(analysis.payload.typeId),
+                    QrText.typeName(res, analysis.payload.typeId),
                     analysisAllSignals(analysis) + peekReport?.signals.orEmpty(),
                     Modifier.testTag("result.verdict"),
                 )
-                ReasonList(ResultReasons.rows(analysis, peekReport))
+                ReasonList(ResultReasons.rows(res, analysis, peekReport))
                 afterSignals?.invoke()
                 PayloadView(analysis.payload, wifiPlan)
                 if (pins && layout.chips.isNotEmpty())
@@ -414,9 +404,9 @@ fun ResultContent(
             (analysis.payload as? Payload.Link)?.info?.let(ResultLinkDisplay::headline).orEmpty()
         AlertDialog(
             onDismissRequest = { pendingOpen = null },
-            title = { Text("Open this link?") },
-            text = { Text("This looks like a scam. It would take you to $domain.") },
-            dismissButton = { TextButton(onClick = { pendingOpen = null }) { Text("Don’t open") } },
+            title = { Text(stringResource(R.string.qr_open_confirm_title)) },
+            text = { Text(stringResource(R.string.qr_open_confirm_text, domain)) },
+            dismissButton = { TextButton(onClick = { pendingOpen = null }) { Text(stringResource(R.string.qr_open_confirm_dont)) } },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -428,7 +418,7 @@ fun ResultContent(
                             contentColor = MaterialTheme.colorScheme.error
                         ),
                 ) {
-                    Text("Open $domain anyway")
+                    Text(stringResource(R.string.qr_open_confirm_anyway, domain))
                 }
             },
         )
@@ -443,24 +433,25 @@ enum class ActionRole {
 }
 
 object ResultActionText {
-    fun title(action: ResultAction): String =
+    @StringRes
+    fun title(action: ResultAction): Int =
         when (action) {
-            ResultAction.OPEN -> "Open link"
-            ResultAction.PEEK -> "Peek"
-            ResultAction.JOIN_WIFI -> "Join Wi-Fi"
-            ResultAction.COPY_PASSWORD -> "Copy password"
-            ResultAction.WIFI_SETTINGS -> "Wi-Fi settings"
-            ResultAction.ADD_CONTACT -> "Add to Contacts"
-            ResultAction.ADD_EVENT -> "Add to Calendar"
-            ResultAction.CALL -> "Call"
-            ResultAction.MESSAGE -> "Message"
-            ResultAction.MAIL -> "Email"
-            ResultAction.MAPS -> "Open in Maps"
-            ResultAction.OPEN_PAYMENT_IN -> "Open in…"
-            ResultAction.COPY -> "Copy"
-            ResultAction.COPY_DETAILS -> "Copy details"
-            ResultAction.SHARE -> "Share"
-            ResultAction.MAKE_CODE -> "Make a code"
+            ResultAction.OPEN -> R.string.qr_action_open
+            ResultAction.PEEK -> R.string.qr_peek
+            ResultAction.JOIN_WIFI -> R.string.qr_action_join_wifi
+            ResultAction.COPY_PASSWORD -> R.string.qr_action_copy_password
+            ResultAction.WIFI_SETTINGS -> R.string.qr_action_wifi_settings
+            ResultAction.ADD_CONTACT -> R.string.qr_action_add_contact
+            ResultAction.ADD_EVENT -> R.string.qr_action_add_event
+            ResultAction.CALL -> R.string.qr_action_call
+            ResultAction.MESSAGE -> R.string.qr_action_message
+            ResultAction.MAIL -> R.string.qr_type_email
+            ResultAction.MAPS -> R.string.qr_action_maps
+            ResultAction.OPEN_PAYMENT_IN -> R.string.qr_action_open_payment_in
+            ResultAction.COPY -> R.string.qr_action_copy
+            ResultAction.COPY_DETAILS -> R.string.qr_action_copy_details
+            ResultAction.SHARE -> R.string.qr_action_share
+            ResultAction.MAKE_CODE -> R.string.qr_make_title
         }
 
     fun icon(action: ResultAction): ImageVector =
@@ -495,7 +486,7 @@ private fun ActionButton(
     onExternal: () -> Unit,
     perform: (ResultAction) -> Unit,
 ) {
-    val title = if (copied) "Copied" else ResultActionText.title(action)
+    val title = stringResource(if (copied) R.string.qr_copied else ResultActionText.title(action))
     val icon = if (copied) Icons.Rounded.Check else ResultActionText.icon(action)
     val tag = Modifier.testTag("result.action.${action.name.lowercase()}")
     val label: @Composable RowScope.() -> Unit = {
@@ -529,7 +520,7 @@ private fun ActionButton(
                                 onClick = { menu = !menu },
                                 modifier = Modifier.heightIn(min = 56.dp),
                             ) {
-                                Icon(Icons.Rounded.ArrowDropDown, "More ways to open")
+                                Icon(Icons.Rounded.ArrowDropDown, stringResource(R.string.qr_action_more_ways_to_open))
                             }
                         else
                             SplitButtonDefaults.OutlinedTrailingButton(
@@ -537,11 +528,11 @@ private fun ActionButton(
                                 onCheckedChange = { menu = it },
                                 modifier = Modifier.heightIn(min = 56.dp),
                             ) {
-                                Icon(Icons.Rounded.ArrowDropDown, "More ways to open")
+                                Icon(Icons.Rounded.ArrowDropDown, stringResource(R.string.qr_action_more_ways_to_open))
                             }
                         DropdownMenu(menu, onDismissRequest = { menu = false }) {
                             DropdownMenuItem(
-                                text = { Text("Open in browser") },
+                                text = { Text(stringResource(R.string.qr_action_open_in_browser)) },
                                 leadingIcon = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null) },
                                 onClick = {
                                     menu = false
@@ -582,7 +573,7 @@ private fun ActionButton(
 /** The reasons behind a verdict, one plain sentence each. Info signals are quieter. */
 @Composable
 fun SignalList(signals: List<gg.seven.qr.core.Signal>) =
-    ReasonList(signals.map { ResultReason(SignalText.sentence(it), it.severity == Severity.INFO) }.distinctBy { it.sentence })
+    LocalResources.current.let { res -> ReasonList(signals.map { ResultReason(SignalText.sentence(res, it), it.severity == Severity.INFO) }.distinctBy { it.sentence }) }
 
 /** Reasons under a verdict, warnings in body colour and info quieter. */
 @Composable
@@ -621,7 +612,7 @@ private fun EmbeddedList(embedded: List<Analysis>, onOpen: (Analysis) -> Unit) {
     var showAll by rememberSaveable(embedded.size) { mutableStateOf(false) }
     val shown = remember(embedded, showAll) { ResultEmbedded.visible(embedded, showAll) }
     Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-        Caption("Links inside", Modifier.padding(start = Space.xs))
+        Caption(stringResource(R.string.qr_links_inside), Modifier.padding(start = Space.xs))
         Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
             shown.forEachIndexed { index, item ->
                 val domain = ResultEmbedded.domain(item)
@@ -637,7 +628,7 @@ private fun EmbeddedList(embedded: List<Analysis>, onOpen: (Analysis) -> Unit) {
         }
         if (!showAll && embedded.size > shown.size)
             TextButton(onClick = { showAll = true }, modifier = Modifier.testTag("result.embedded.showAll")) {
-                Text("Show all ${embedded.size}")
+                Text(stringResource(R.string.qr_links_show_all, embedded.size))
             }
     }
 }
@@ -659,8 +650,8 @@ private fun KnownOffer(question: String, domain: String, onKeep: () -> Unit, onK
                         .semantics {},
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Keep warning me")
-                    Text("Recommended", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.qr_known_keep_warning))
+                    Text(stringResource(R.string.qr_known_recommended), style = MaterialTheme.typography.bodySmall)
                 }
             }
             OutlinedButton(
@@ -668,9 +659,9 @@ private fun KnownOffer(question: String, domain: String, onKeep: () -> Unit, onK
                 modifier =
                     Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("result.known.know"),
             ) {
-                Text("I know this address")
+                Text(stringResource(R.string.qr_known_i_know))
             }
-            Caption("Remembers $domain on this phone. Other checks still run.")
+            Caption(stringResource(R.string.qr_known_remembers, domain))
         }
     }
 }

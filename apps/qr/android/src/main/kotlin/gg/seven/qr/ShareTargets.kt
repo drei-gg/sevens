@@ -54,6 +54,11 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import gg.seven.kit.R as KitR
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalResources
+import androidx.annotation.StringRes
+import android.content.res.Resources
 
 /*
  * The two share targets (SPEC §9), the counterparts of iOS's Check this code and Make QR code
@@ -94,7 +99,7 @@ private fun ShareScaffold(title: String, onDone: () -> Unit, content: @Composabl
         topBar = {
             TopAppBar(
                 title = { Text(title) },
-                navigationIcon = { IconButton(onClick = onDone, Modifier.testTag("share.done")) { Icon(Icons.Rounded.Close, "Done") } },
+                navigationIcon = { IconButton(onClick = onDone, Modifier.testTag("share.done")) { Icon(Icons.Rounded.Close, stringResource(KitR.string.seven_done)) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
@@ -116,26 +121,28 @@ object CheckRules {
 object ShareSummary {
     private const val MAX_VALUE_LENGTH = 160
 
-    fun main(payload: Payload): Pair<String, String>? {
-        fun make(label: String, value: String?): Pair<String, String>? = value?.trim()?.takeIf { it.isNotEmpty() }?.let { label to QrText.cut(it, MAX_VALUE_LENGTH) }
+    fun main(res: Resources, payload: Payload): Pair<String, String>? {
+        fun make(@StringRes label: Int, value: String?): Pair<String, String>? =
+            value?.trim()?.takeIf { it.isNotEmpty() }?.let { res.getString(label) to QrText.cut(it, MAX_VALUE_LENGTH) }
         return when (payload) {
-            is Payload.Link -> make("Domain", payload.info.hostUnicode.ifEmpty { payload.info.scheme })
-            is Payload.AppLink -> make("App", payload.info.scheme)
-            is Payload.Payment -> make("Payee", payload.info.payeeName ?: payload.info.payeeAccount)
-            is Payload.Crypto -> make("Address", payload.info.address)
-            is Payload.Wifi -> make("Network", payload.info.ssid)
+            is Payload.Link -> make(R.string.qr_summary_domain, payload.info.hostUnicode.ifEmpty { payload.info.scheme })
+            is Payload.AppLink -> make(R.string.qr_summary_app, payload.info.scheme)
+            is Payload.Payment -> make(R.string.qr_summary_payee, payload.info.payeeName ?: payload.info.payeeAccount)
+            is Payload.Crypto -> make(R.string.qr_crypto_address, payload.info.address)
+            is Payload.Wifi -> make(R.string.qr_payment_network, payload.info.ssid)
             is Payload.Contact -> {
                 val i = payload.info
                 val joined = listOfNotNull(i.givenName, i.familyName).joinToString(" ")
-                make("Name", i.name ?: joined.ifEmpty { i.organization })
+                make(R.string.qr_summary_name, i.name ?: joined.ifEmpty { i.organization })
             }
-            is Payload.Event -> make("Event", payload.info.summary)
-            is Payload.Phone -> make("Number", payload.info.number)
-            is Payload.Sms -> make("Number", payload.info.number)
-            is Payload.Email -> make("Address", payload.info.address)
-            is Payload.Geo -> make("Location", "${payload.info.latitude}, ${payload.info.longitude}")
-            is Payload.Text -> make("Text", payload.info.text)
-            is Payload.Binary -> make("Size", "${payload.byteCount} bytes")
+            is Payload.Event -> make(R.string.qr_type_event, payload.info.summary)
+            is Payload.Phone -> make(R.string.qr_summary_number, payload.info.number)
+            is Payload.Sms -> make(R.string.qr_summary_number, payload.info.number)
+            is Payload.Email -> make(R.string.qr_summary_email_address, payload.info.address)
+            is Payload.Geo -> make(R.string.qr_type_geo, "${payload.info.latitude}, ${payload.info.longitude}")
+            is Payload.Text -> make(R.string.qr_type_text, payload.info.text)
+            is Payload.Binary ->
+                make(R.string.qr_summary_size, payload.byteCount.coerceAtMost(Int.MAX_VALUE.toLong()).toInt().let { res.getQuantityString(R.plurals.qr_bytes, it, it) })
         }
     }
 }
@@ -168,7 +175,7 @@ private fun CheckScreen(uris: List<Uri>, onDone: () -> Unit) {
         if (uris.isEmpty()) results = listOf(CheckedImage(1, emptyList(), unreadable = false))
         finished = true
     }
-    ShareScaffold("Check this code", onDone) { padding ->
+    ShareScaffold(stringResource(R.string.share_check), onDone) { padding ->
         Column(
             Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.m).navigationBarsPadding().padding(bottom = Space.l),
             verticalArrangement = Arrangement.spacedBy(Space.m),
@@ -176,10 +183,10 @@ private fun CheckScreen(uris: List<Uri>, onDone: () -> Unit) {
             ReadableColumn {
                 results.forEach { image ->
                     Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                        if (results.size > 1) Text("Image ${image.position}", Modifier.semantics { heading() }, style = MaterialTheme.typography.titleMedium, color = QrColors.muted)
+                        if (results.size > 1) Text(stringResource(R.string.qr_check_image, image.position), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleMedium, color = QrColors.muted)
                         when {
-                            image.unreadable -> QrCard { Text("This image couldn’t be read.", style = MaterialTheme.typography.bodyLarge) }
-                            image.codes.isEmpty() -> QrCard { Text("No code found in this image", style = MaterialTheme.typography.bodyLarge) }
+                            image.unreadable -> QrCard { Text(stringResource(R.string.qr_check_image_unreadable), style = MaterialTheme.typography.bodyLarge) }
+                            image.codes.isEmpty() -> QrCard { Text(stringResource(R.string.qr_scan_photo_empty), style = MaterialTheme.typography.bodyLarge) }
                             else -> image.codes.forEach { CheckCard(it) }
                         }
                     }
@@ -195,13 +202,14 @@ private fun CheckCard(analysis: Analysis) {
     val context = LocalContext.current
     val view = LocalView.current
     var copied by remember { mutableStateOf(false) }
-    val typeName = QrText.typeName(analysis.payload.typeId)
+    val res = LocalResources.current
+    val typeName = QrText.typeName(res, analysis.payload.typeId)
     val all = analysisAllSignals(analysis)
     Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
         VerdictHeader(analysis.level, typeName, all)
         QrCard {
-            SignalText.sentences(all.filter { it.severity != Severity.INFO }).forEach { Text(it, style = MaterialTheme.typography.bodyLarge) }
-            ShareSummary.main(analysis.payload)?.let { (label, value) -> ResultField(label, value) }
+            SignalText.sentences(res, all.filter { it.severity != Severity.INFO }).forEach { Text(it, style = MaterialTheme.typography.bodyLarge) }
+            ShareSummary.main(res, analysis.payload)?.let { (label, value) -> ResultField(label, value) }
             analysis.code.text?.let { text ->
                 OutlinedButton(onClick = {
                     Handoffs.copy(context, text)
@@ -210,7 +218,7 @@ private fun CheckCard(analysis: Analysis) {
                 }) {
                     Icon(if (copied) Icons.Rounded.Check else Icons.Rounded.ContentCopy, null, Modifier.size(ButtonDefaults.IconSize))
                     Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                    Text(if (copied) "Copied" else "Copy")
+                    Text(stringResource(if (copied) R.string.qr_copied else R.string.qr_action_copy))
                 }
             }
         }
@@ -289,7 +297,7 @@ private sealed interface MakePhase {
 
     data object Unsupported : MakePhase
 
-    data class Failed(val message: String) : MakePhase
+    data class Failed(@StringRes val message: Int) : MakePhase
 
     class Ready(val bitmap: Bitmap, val png: ByteArray) : MakePhase
 }
@@ -319,6 +327,7 @@ class MakeShareActivity : ComponentActivity() {
 @Composable
 private fun MakeShareScreen(model: ShareModel, source: ShareMakeSource?, onDone: () -> Unit, onBright: (Boolean) -> Unit) {
     val context = LocalContext.current
+    val res = LocalResources.current
     val view = LocalView.current
     val purchase by model.store.purchase.collectAsStateWithLifecycle()
     val entitlement by model.store.entitlement.collectAsStateWithLifecycle()
@@ -354,26 +363,26 @@ private fun MakeShareScreen(model: ShareModel, source: ShareMakeSource?, onDone:
         onBright(ready)
         onDispose { onBright(false) }
     }
-    ShareScaffold("Make QR code", onDone) { padding ->
+    ShareScaffold(stringResource(R.string.share_make), onDone) { padding ->
         Column(
             Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(Space.m).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
             when (val p = phase) {
                 MakePhase.Loading -> LoadingIndicator()
-                MakePhase.Locked -> Text("Make QR code is part of the unlock. Open the app to see what it adds.", style = MaterialTheme.typography.bodyLarge)
-                MakePhase.Unsupported -> Text("Can’t make a code from this file.", style = MaterialTheme.typography.bodyLarge)
-                is MakePhase.Failed -> Text(p.message, style = MaterialTheme.typography.bodyLarge)
+                MakePhase.Locked -> Text(stringResource(R.string.qr_share_make_locked), style = MaterialTheme.typography.bodyLarge)
+                MakePhase.Unsupported -> Text(stringResource(R.string.qr_share_make_unsupported), style = MaterialTheme.typography.bodyLarge)
+                is MakePhase.Failed -> Text(stringResource(p.message), style = MaterialTheme.typography.bodyLarge)
                 is MakePhase.Ready -> {
                     Image(
                         p.bitmap.asImageBitmap(),
-                        contentDescription = "QR code",
+                        contentDescription = stringResource(R.string.qr_symbology_qr),
                         modifier = Modifier.fillMaxWidth().aspectRatio(1f).testTag("share.make.code"),
                         filterQuality = FilterQuality.None,
                     )
                     ReadableColumn {
                         Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                            if (saved == false) Text("The image couldn’t be saved there. Try again.", color = MaterialTheme.colorScheme.error)
+                            if (saved == false) Text(stringResource(R.string.qr_share_make_save_failed), color = MaterialTheme.colorScheme.error)
                             Button(
                                 onClick = {
                                     saved = null
@@ -383,18 +392,18 @@ private fun MakeShareScreen(model: ShareModel, source: ShareMakeSource?, onDone:
                             ) {
                                 Icon(if (saved == true) Icons.Rounded.Check else Icons.Rounded.Download, null, Modifier.size(ButtonDefaults.IconSize))
                                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                                Text(if (saved == true) "Saved" else "Save image")
+                                Text(stringResource(if (saved == true) R.string.qr_saved else R.string.qr_share_make_save_image))
                             }
                             OutlinedButton(
                                 onClick = {
                                     val file = FileShare.write(context, "QR code.png", p.png)
-                                    FileShare.share(context, file, "image/png", "QR code")
+                                    FileShare.share(context, file, "image/png", res.getString(R.string.qr_symbology_qr))
                                 },
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("share.make.share"),
                             ) {
                                 Icon(Icons.Rounded.Share, null, Modifier.size(ButtonDefaults.IconSize))
                                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                                Text("Share")
+                                Text(stringResource(R.string.qr_action_share))
                             }
                             OutlinedButton(
                                 onClick = {
@@ -406,7 +415,7 @@ private fun MakeShareScreen(model: ShareModel, source: ShareMakeSource?, onDone:
                             ) {
                                 Icon(if (copied) Icons.Rounded.Check else Icons.Rounded.ContentCopy, null, Modifier.size(ButtonDefaults.IconSize))
                                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                                Text(if (copied) "Copied" else "Copy")
+                                Text(stringResource(if (copied) R.string.qr_copied else R.string.qr_action_copy))
                             }
                         }
                     }

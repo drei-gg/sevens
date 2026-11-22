@@ -1,5 +1,6 @@
 package gg.seven.qr
 
+import android.content.res.Resources
 import android.util.Base64
 import gg.seven.qr.core.HistoryItem
 import gg.seven.qr.core.HistoryKind
@@ -23,10 +24,10 @@ object HistoryRowSummary {
     const val MAX_PAYLOAD_LENGTH = 60
     const val MAX_NOTE_LENGTH = 80
 
-    fun shortPayload(item: HistoryItem): String {
+    fun shortPayload(res: Resources, item: HistoryItem): String {
         if (item.payloadEncoding == PayloadEncoding.BASE64) {
-            val bytes = runCatching { Base64.decode(item.payload, Base64.DEFAULT) }.getOrNull() ?: return "Binary data"
-            return "Binary data, ${bytes.size} bytes"
+            val bytes = runCatching { Base64.decode(item.payload, Base64.DEFAULT) }.getOrNull() ?: return res.getString(R.string.qr_history_binary)
+            return res.getQuantityString(R.plurals.qr_history_binary_bytes, bytes.size, bytes.size)
         }
         if (item.typeId == "link" || item.typeId == "appLink") host(item.payload)?.let { return truncated(it, MAX_PAYLOAD_LENGTH) }
         if (item.typeId == "wifi") field("S", item.payload, ';')?.let { return truncated(it, MAX_PAYLOAD_LENGTH) }
@@ -129,27 +130,30 @@ object HistoryRowSummary {
 }
 
 object HistoryLabels {
-    fun kind(kind: HistoryKind) = if (kind == HistoryKind.SCANNED) "Scanned" else "Made"
+    fun kind(res: Resources, kind: HistoryKind): String =
+        res.getString(if (kind == HistoryKind.SCANNED) R.string.qr_history_scanned else R.string.qr_history_made)
 
-    fun symbology(symbology: Symbology): String =
-        when (symbology) {
-            Symbology.QR -> "QR code"
-            Symbology.MICRO_QR -> "Micro QR code"
-            Symbology.AZTEC -> "Aztec"
-            Symbology.PDF417 -> "PDF417"
-            Symbology.MICRO_PDF417 -> "MicroPDF417"
-            Symbology.DATA_MATRIX -> "Data Matrix"
-            Symbology.CODE128 -> "Code 128"
-            Symbology.CODE39 -> "Code 39"
-            Symbology.CODE93 -> "Code 93"
-            Symbology.EAN13 -> "EAN-13"
-            Symbology.EAN8 -> "EAN-8"
-            Symbology.UPCE -> "UPC-E"
-            Symbology.ITF14 -> "ITF-14"
-            Symbology.CODABAR -> "Codabar"
-            Symbology.GS1_DATA_BAR -> "GS1 DataBar"
-            Symbology.OTHER -> "Other barcode"
-        }
+    fun symbology(res: Resources, symbology: Symbology): String =
+        res.getString(
+            when (symbology) {
+                Symbology.QR -> R.string.qr_symbology_name_qr
+                Symbology.MICRO_QR -> R.string.qr_symbology_name_micro_qr
+                Symbology.AZTEC -> R.string.qr_symbology_name_aztec
+                Symbology.PDF417 -> R.string.qr_symbology_pdf417
+                Symbology.MICRO_PDF417 -> R.string.qr_symbology_name_micro_pdf417
+                Symbology.DATA_MATRIX -> R.string.qr_symbology_name_data_matrix
+                Symbology.CODE128 -> R.string.qr_symbology_name_code128
+                Symbology.CODE39 -> R.string.qr_symbology_name_code39
+                Symbology.CODE93 -> R.string.qr_symbology_name_code93
+                Symbology.EAN13 -> R.string.qr_symbology_name_ean13
+                Symbology.EAN8 -> R.string.qr_symbology_name_ean8
+                Symbology.UPCE -> R.string.qr_symbology_name_upce
+                Symbology.ITF14 -> R.string.qr_symbology_name_itf14
+                Symbology.CODABAR -> R.string.qr_symbology_name_codabar
+                Symbology.GS1_DATA_BAR -> R.string.qr_symbology_name_gs1_databar
+                Symbology.OTHER -> R.string.qr_symbology_name_other
+            }
+        )
 }
 
 /** Which body the History screen shows (SPEC §10), decided by the saved items, not the search. */

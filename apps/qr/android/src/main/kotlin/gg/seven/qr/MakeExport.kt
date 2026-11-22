@@ -7,6 +7,7 @@ import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.text.TextPaint
 import android.text.TextUtils
+import androidx.annotation.StringRes
 import androidx.core.graphics.createBitmap
 import gg.seven.qr.core.BitMatrix
 import gg.seven.qr.core.PaperSize
@@ -35,10 +36,10 @@ fun RgbColor.argb(): Int =
 val BLACK = RgbColor(0.0, 0.0, 0.0)
 val WHITE = RgbColor(1.0, 1.0, 1.0)
 
-enum class MakeExportFormat(val title: String, val ext: String, val mime: String) {
-    PNG("PNG image", "png", "image/png"),
-    SVG("SVG (vector)", "svg", "image/svg+xml"),
-    PDF("PDF", "pdf", "application/pdf"),
+enum class MakeExportFormat(@StringRes val title: Int, val ext: String, val mime: String) {
+    PNG(R.string.qr_export_png, "png", "image/png"),
+    SVG(R.string.qr_export_svg, "svg", "image/svg+xml"),
+    PDF(R.string.qr_export_pdf, "pdf", "application/pdf"),
 }
 
 enum class PdfLayout {
@@ -46,19 +47,21 @@ enum class PdfLayout {
     SHEET,
 }
 
-val SheetGrid.title
+val SheetGrid.title: Int
+    @StringRes
     get() =
         when (this) {
-            SheetGrid.GRID2X3 -> "2 by 3 (6 labels)"
-            SheetGrid.GRID3X4 -> "3 by 4 (12 labels)"
-            SheetGrid.GRID4X6 -> "4 by 6 (24 labels)"
+            SheetGrid.GRID2X3 -> R.string.qr_sheet_grid_2x3
+            SheetGrid.GRID3X4 -> R.string.qr_sheet_grid_3x4
+            SheetGrid.GRID4X6 -> R.string.qr_sheet_grid_4x6
         }
 
-val PaperSize.title
+val PaperSize.title: Int
+    @StringRes
     get() =
         when (this) {
-            PaperSize.A4 -> "A4"
-            PaperSize.LETTER -> "US Letter"
+            PaperSize.A4 -> R.string.qr_paper_a4
+            PaperSize.LETTER -> R.string.qr_paper_letter
         }
 
 /** The export choices and the pure rules around them. */

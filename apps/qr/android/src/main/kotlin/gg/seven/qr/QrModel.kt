@@ -99,7 +99,7 @@ class QrModel(app: Application) : AndroidViewModel(app) {
 
     // MARK: History: never gated
 
-    suspend fun searchHistory(query: String) = history.search(query)
+    suspend fun searchHistory(query: String) = history.search(getApplication<Application>().resources, query)
 
     suspend fun setNote(note: String?, id: UUID) = history.updateNote(note, id)
 

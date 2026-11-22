@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -146,7 +147,8 @@ fun PayloadTitle(text: String) {
  */
 @Composable
 fun VerdictHeader(level: Level, typeName: String, signals: List<Signal>, modifier: Modifier = Modifier, caption: String = typeName) {
-    val sentence = QrText.accessibilitySentence(level, typeName, signals)
+    val res = LocalResources.current
+    val sentence = QrText.accessibilitySentence(res, level, typeName, signals)
     Surface(
         modifier.fillMaxWidth().clearAndSetSemantics {
             contentDescription = sentence
@@ -161,7 +163,7 @@ fun VerdictHeader(level: Level, typeName: String, signals: List<Signal>, modifie
             verticalArrangement = Arrangement.spacedBy(Space.s),
         ) {
             Icon(VerdictIcons.style(level).filled, null, Modifier.size(64.dp).padding(bottom = Space.xs), tint = VerdictIcons.color(level))
-            Text(QrText.verdict(level), style = MaterialTheme.typography.displaySmall, textAlign = TextAlign.Center)
+            Text(QrText.verdict(res, level), style = MaterialTheme.typography.displaySmall, textAlign = TextAlign.Center)
             Caption(caption, Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally))
         }
     }
@@ -172,7 +174,7 @@ fun VerdictHeader(level: Level, typeName: String, signals: List<Signal>, modifie
 fun VerdictLabel(level: Level, modifier: Modifier = Modifier) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
         Icon(VerdictIcons.style(level).outlined, null, Modifier.size(20.dp), tint = VerdictIcons.color(level))
-        Text(QrText.verdict(level), style = MaterialTheme.typography.bodyMedium)
+        Text(QrText.verdict(LocalResources.current, level), style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -242,9 +244,9 @@ fun ReadableColumn(modifier: Modifier = Modifier, content: @Composable ColumnSco
 
 val PillShape = RoundedCornerShape(50)
 
-/** "Task finished" (polish guide §3.8): CONFIRM on Android 11+, a plain tap before. */
+/** "Task finished" (polish guide §3.8). */
 fun android.view.View.confirmHaptic() {
-    performHapticFeedback(if (android.os.Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.CONFIRM else android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+    performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
 }
 
 /**

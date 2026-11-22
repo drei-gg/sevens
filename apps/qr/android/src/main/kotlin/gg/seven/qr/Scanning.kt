@@ -3,13 +3,12 @@ package gg.seven.qr
 import androidx.core.graphics.scale
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.graphics.PointF
 import android.graphics.RectF
 import android.net.Uri
-import android.os.Build
 import gg.seven.qr.core.ScannedCode
 import gg.seven.qr.core.Symbology
 import java.nio.ByteBuffer
@@ -205,16 +204,16 @@ class ScanDebouncer(private val dwellMillis: Long = 400, private val repeatSuppr
 object CodeInViewLabel {
     const val PREVIEW_LENGTH = 40
 
-    fun of(code: ScannedCode): String {
-        val type = HistoryLabels.symbology(code.symbology)
+    fun of(res: Resources, code: ScannedCode): String {
+        val type = HistoryLabels.symbology(res, code.symbology)
         val text = code.text?.replace(Regex("\\s+"), " ")?.trim()
         val preview =
             when {
-                text.isNullOrEmpty() -> "Data that isn’t text"
+                text.isNullOrEmpty() -> res.getString(R.string.qr_scan_not_text)
                 text.length > PREVIEW_LENGTH -> QrText.prefix(text, PREVIEW_LENGTH) + "…"
                 else -> text
             }
-        return "$type: $preview"
+        return res.getString(R.string.qr_label_value, type, preview)
     }
 }
 
@@ -266,59 +265,22 @@ object ImageScanner {
         return rows.flatMap { row -> row.sortedBy { it.bounds.left } }.map { it.code }.filter { seen.add(it.key) }
     }
 
-    private fun sampleSize(width: Int, height: Int): Int {
-        var sample = 1
-        while (max(width, height) / (sample * 2) >= MAX_PIXEL_SIZE) sample *= 2
-        return sample
-    }
-
-    private fun downscaled(bitmap: Bitmap): Bitmap {
-        val long = max(bitmap.width, bitmap.height)
-        if (long <= MAX_PIXEL_SIZE) return bitmap
-        val scale = MAX_PIXEL_SIZE.toFloat() / long
-        return bitmap.scale(max(1, (bitmap.width * scale).toInt()), max(1, (bitmap.height * scale).toInt()))
-    }
-
-    /** Applies EXIF orientation (ImageDecoder, Android 9+) and bounds memory. */
+    /** Applies EXIF orientation (ImageDecoder) and bounds memory. */
     fun decode(context: Context, uri: Uri): Bitmap? =
-        runCatching {
-                if (Build.VERSION.SDK_INT >= 28) {
-                    val source = ImageDecoder.createSource(context.contentResolver, uri)
-                    ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-                        decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                        val long = max(info.size.width, info.size.height)
-                        if (long > MAX_PIXEL_SIZE) {
-                            val scale = MAX_PIXEL_SIZE.toFloat() / long
-                            decoder.setTargetSize(max(1, (info.size.width * scale).toInt()), max(1, (info.size.height * scale).toInt()))
-                        }
-                    }
-                } else {
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-                    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight) }
-                    context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }?.let(::downscaled)
-                }
-            }
-            .getOrNull()
+        runCatching { ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri), ::bounded) }.getOrNull()
 
     fun decode(bytes: ByteArray): Bitmap? =
-        runCatching {
-                if (Build.VERSION.SDK_INT >= 28)
-                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(ByteBuffer.wrap(bytes))) { decoder, info, _ ->
-                        decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                        val long = max(info.size.width, info.size.height)
-                        if (long > MAX_PIXEL_SIZE) {
-                            val scale = MAX_PIXEL_SIZE.toFloat() / long
-                            decoder.setTargetSize(max(1, (info.size.width * scale).toInt()), max(1, (info.size.height * scale).toInt()))
-                        }
-                    }
-                else {
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight) })?.let(::downscaled)
-                }
-            }
-            .getOrNull()
+        runCatching { ImageDecoder.decodeBitmap(ImageDecoder.createSource(ByteBuffer.wrap(bytes)), ::bounded) }.getOrNull()
+
+    /** Software pixels, the long side at most [MAX_PIXEL_SIZE]. */
+    private fun bounded(decoder: ImageDecoder, info: ImageDecoder.ImageInfo, @Suppress("UNUSED_PARAMETER") source: ImageDecoder.Source) {
+        decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+        val long = max(info.size.width, info.size.height)
+        if (long > MAX_PIXEL_SIZE) {
+            val scale = MAX_PIXEL_SIZE.toFloat() / long
+            decoder.setTargetSize(max(1, (info.size.width * scale).toInt()), max(1, (info.size.height * scale).toInt()))
+        }
+    }
 }
 
 /**

@@ -1,6 +1,683 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- The share-menu names of the two share targets (iOS share extensions). -->
     <string name="share_check">Check this code</string>
     <string name="share_make">Make QR code</string>
+
+    <!-- Verdicts (SPEC §4.1). Level 0 is "Looks normal", never a reassurance. -->
+    <string name="qr_verdict_normal">Looks normal</string>
+    <string name="qr_verdict_careful">Be careful</string>
+    <string name="qr_verdict_scam">Likely scam</string>
+
+    <!-- Payload type names (also what History search matches) -->
+    <string name="qr_type_link">Web link</string>
+    <string name="qr_type_app_link">App link</string>
+    <string name="qr_type_payment">Payment code</string>
+    <string name="qr_type_crypto">Crypto address</string>
+    <string name="qr_type_wifi">Wi-Fi network</string>
+    <string name="qr_type_contact">Contact</string>
+    <string name="qr_type_event">Event</string>
+    <string name="qr_type_phone">Phone number</string>
+    <string name="qr_type_sms">Text message</string>
+    <string name="qr_type_email">Email</string>
+    <string name="qr_type_geo">Location</string>
+    <string name="qr_type_text">Text</string>
+    <string name="qr_type_binary">Other data</string>
+    <string name="qr_type_other">Other</string>
+
+    <!-- Signal sentences (D5): one plain sentence each, at most 20 words, no blame, no scores.
+         Arguments come from scanned codes and are already cleaned and cut to 40 characters. -->
+    <!-- %1$s: a URL scheme such as javascript -->
+    <string name="qr_signal_dangerous_scheme_named">This code starts with “%1$s:”, which can run code or open files instead of showing a website.</string>
+    <string name="qr_signal_dangerous_scheme">This code can run a script or open a file instead of showing a website.</string>
+    <!-- %1$s: the host the link really goes to -->
+    <string name="qr_signal_userinfo_trick_named">The text before the @ sign is a name, not the destination. The link really goes to %1$s.</string>
+    <string name="qr_signal_userinfo_trick">The text before the @ sign is a name, not the destination. The link goes to the address after it.</string>
+    <string name="qr_signal_mixed_script">The address mixes letters from different alphabets, a trick used to imitate real sites.</string>
+    <!-- %1$s: a brand name -->
+    <string name="qr_signal_lookalike_brand_named">This address imitates the look of %1$s, and it isn’t one we know for them.</string>
+    <string name="qr_signal_lookalike_brand">This address imitates the look of a well-known brand, and it isn’t one we know for them.</string>
+    <!-- %1$s: a brand name -->
+    <string name="qr_signal_brand_in_domain_named">The name %1$s appears in this address, but it isn’t one we know for them.</string>
+    <string name="qr_signal_brand_in_domain">A well-known brand’s name appears in this address, but it isn’t one we know for them.</string>
+    <!-- %1$s: a brand name -->
+    <string name="qr_signal_near_brand_named">This address is one letter away from %1$s. Check the spelling closely.</string>
+    <string name="qr_signal_near_brand">This address is one letter away from a well-known brand. Check the spelling closely.</string>
+    <string name="qr_signal_ip_host">The address is a string of numbers instead of a name. Real services rarely do this.</string>
+    <string name="qr_signal_shortener">This is a shortened link, so its real destination is hidden until you follow it.</string>
+    <string name="qr_signal_plain_http">This link isn’t encrypted, so anyone on the network could read or change what you send.</string>
+    <!-- %1$s: a domain ending without its dot, such as zip -->
+    <string name="qr_signal_risky_tld_named">Addresses ending in .%1$s show up often in scam reports.</string>
+    <string name="qr_signal_risky_tld">This address uses an ending that shows up often in scam reports.</string>
+    <string name="qr_signal_deep_subdomains">The address has an unusually long chain of parts before the main name, which can hide the real site.</string>
+    <string name="qr_signal_obfuscated_path">The address is very long or heavily encoded, which can hide where it really goes.</string>
+    <!-- %1$s: a URL scheme -->
+    <string name="qr_signal_unknown_scheme_named">This code opens another app (“%1$s:”) instead of a website.</string>
+    <string name="qr_signal_unknown_scheme">This code opens another app instead of a website.</string>
+    <string name="qr_signal_open_wifi">This Wi-Fi network has no password, so others nearby could see what you do on it.</string>
+    <string name="qr_signal_payment_checksum_fail">This payment code failed its built-in check. It may be damaged or altered.</string>
+    <string name="qr_signal_tls_problem">The site’s certificate didn’t check out, so this connection can’t be trusted.</string>
+    <!-- %1$s: what is asked for (qr_secret_*); %2$s: a brand name -->
+    <string name="qr_signal_secret_form_brand_named">This page asks for %1$s and mentions %2$s, but it isn’t their site.</string>
+    <!-- %1$s: what is asked for (qr_secret_*) -->
+    <string name="qr_signal_secret_form_brand">This page asks for %1$s and mentions a well-known brand, but it isn’t their site.</string>
+    <!-- %1$s: a number of days (qr_days) -->
+    <string name="qr_signal_domain_very_new_days">This domain was registered %1$s ago, which is very recent.</string>
+    <string name="qr_signal_domain_very_new">This domain was registered within the last month.</string>
+    <string name="qr_signal_redirects_to_http">This link sends you on to a page that isn’t encrypted.</string>
+    <!-- %1$s: a URL scheme -->
+    <string name="qr_signal_redirect_leaves_web_named">This link redirects out of the web to open another app (“%1$s:”).</string>
+    <string name="qr_signal_redirect_leaves_web">This link redirects out of the web to open another app.</string>
+    <string name="qr_signal_too_many_redirects">This link bounces you through an unusually long chain of redirects.</string>
+    <string name="qr_signal_script_redirect">The page uses a script to send you somewhere else as soon as it loads.</string>
+    <!-- %1$s: what is asked for (qr_secret_*) -->
+    <string name="qr_signal_asks_for_secret">This page asks you to enter %1$s.</string>
+    <string name="qr_signal_form_posts_elsewhere">A form on this page sends what you type to a different website.</string>
+    <string name="qr_signal_downloads_file">This link downloads a file instead of showing a page.</string>
+    <!-- %1$s: a number of days (qr_days) -->
+    <string name="qr_signal_domain_new_days">This domain was registered %1$s ago.</string>
+    <string name="qr_signal_domain_new">This domain was registered within the last six months.</string>
+    <string name="qr_signal_assumed_https">The code had no prefix, so it was read as an https web address.</string>
+    <string name="qr_signal_shared_hosting_domain">This site sits on a shared hosting domain, so the domain’s age says little about it.</string>
+    <string name="qr_signal_needs_javascript">The page shows almost nothing without JavaScript, so its contents couldn’t be read.</string>
+    <string name="qr_signal_age_unknown">The age of this domain couldn’t be found.</string>
+    <string name="qr_signal_peek_incomplete">Peek didn’t finish, so what it shows may be incomplete.</string>
+    <!-- %1$s: a brand name -->
+    <string name="qr_signal_brand_other_ending_named">This isn’t an address we know for %1$s.</string>
+    <string name="qr_signal_brand_other_ending">This uses a well-known brand’s name, but it isn’t an address we know for them.</string>
+    <string name="qr_signal_unknown_ending">We don’t recognize this domain ending.</string>
+    <string name="qr_signal_known_by_you">You told us you know this address.</string>
+    <string name="qr_secret_password">a password</string>
+    <string name="qr_secret_code">a one-time code or PIN</string>
+    <string name="qr_secret_card">card details</string>
+    <string name="qr_secret_other">private details</string>
+    <plurals name="qr_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+
+    <!-- A label and its value on one line, as in copied details and spoken rows -->
+    <string name="qr_label_value">%1$s: %2$s</string>
+
+    <!-- Reasons under a verdict: %1$s the domain of the link or redirect, %2$s a signal sentence -->
+    <string name="qr_reason_in_link">Link to %1$s: %2$s</string>
+    <string name="qr_reason_redirect">Redirect to %1$s: %2$s</string>
+
+    <!-- The "I know this address" question (SPEC §3). Plain, no verdict language. -->
+    <!-- %1$s: a brand name -->
+    <string name="qr_known_brand">This address uses %1$s’s name, but it isn’t one we know.</string>
+    <!-- %1$s: a domain -->
+    <string name="qr_known_shortener">%1$s is a link shortener, so we can’t tell where it leads.</string>
+    <string name="qr_known_risky_tld">%1$s ends in a domain ending scammers use a lot, and it isn’t an address we know.</string>
+    <string name="qr_known_unknown">%1$s isn’t an address we know.</string>
+
+    <!-- %1$s: a time; %2$s: the organiser's time-zone ID, such as Europe/Paris -->
+    <string name="qr_event_time_in_zone">%1$s in %2$s</string>
+
+    <!-- Payments (SPEC §5) -->
+    <string name="qr_payment_pays">Pays</string>
+    <string name="qr_payment_account">Account</string>
+    <string name="qr_payment_amount">Amount</string>
+    <string name="qr_payment_network">Network</string>
+    <string name="qr_payment_city">City</string>
+    <string name="qr_payment_country">Country</string>
+    <string name="qr_payment_reference">Reference</string>
+    <string name="qr_payment_note">Note</string>
+    <string name="qr_payment_iban">IBAN</string>
+    <string name="qr_payment_payee_address">Payee address</string>
+    <!-- D11's fallback when the network doesn't say person or business. Exactly as the spec words it. -->
+    <string name="qr_payment_check_match">Check this matches where you are.</string>
+    <string name="qr_payment_no_amount">No amount in the code; you enter it</string>
+    <string name="qr_payment_dynamic">Dynamic code, made for one payment</string>
+    <string name="qr_payment_static">Static code, the same every time</string>
+    <string name="qr_payment_checksum_valid">Checksum matches</string>
+    <string name="qr_payment_checksum_invalid">Checksum doesn’t match. The code may be damaged or altered.</string>
+    <string name="qr_payment_checksum_absent">This code has no checksum</string>
+    <string name="qr_payment_format">Format</string>
+    <string name="qr_payment_format_emv">EMVCo merchant QR</string>
+    <string name="qr_payment_format_upi">UPI</string>
+    <string name="qr_payment_format_epc">SEPA credit transfer (EPC)</string>
+    <string name="qr_payment_format_swiss">Swiss QR-bill</string>
+    <!-- %1$s: a country's name; %2$s: its two-letter code -->
+    <string name="qr_payment_country_named">%1$s (%2$s)</string>
+    <string name="qr_payment_key_mcc">Merchant category code</string>
+    <string name="qr_payment_key_currency_numeric">Currency code</string>
+    <string name="qr_payment_key_network_id">Network identifier</string>
+    <string name="qr_payment_key_alternate_name">Name in another language</string>
+    <string name="qr_payment_key_alternate_city">City in another language</string>
+    <string name="qr_payment_key_alternate_language">Other language</string>
+    <string name="qr_payment_key_bic">Bank (BIC)</string>
+    <string name="qr_payment_key_purpose">Purpose code</string>
+    <string name="qr_payment_key_information">Message to the payer</string>
+    <string name="qr_payment_key_creditor_address">Payee’s address</string>
+    <string name="qr_payment_key_debtor_name">Payer</string>
+    <string name="qr_payment_key_reference_type">Reference type</string>
+    <string name="qr_payment_key_billing_info">Billing information</string>
+    <string name="qr_payment_key_kind">Request</string>
+    <string name="qr_payment_key_mode">Initiation mode</string>
+    <string name="qr_payment_key_url">Link</string>
+    <!-- EMVCo merchant-presented QR, ID 62 (Additional Data Field Template) -->
+    <string name="qr_payment_additional_bill">Bill number</string>
+    <string name="qr_payment_additional_mobile">Mobile number</string>
+    <string name="qr_payment_additional_store">Store</string>
+    <string name="qr_payment_additional_loyalty">Loyalty number</string>
+    <string name="qr_payment_additional_customer">Customer label</string>
+    <string name="qr_payment_additional_terminal">Terminal</string>
+    <string name="qr_payment_additional_purpose">Purpose</string>
+    <string name="qr_payment_additional_payer_asked">Details the payer is asked for</string>
+    <string name="qr_payment_additional_tax_id">Merchant tax ID</string>
+    <string name="qr_payment_additional_channel">Merchant channel</string>
+    <!-- %1$s: the two-digit tag of a field this app has no name for -->
+    <string name="qr_payment_additional_other">Additional data %1$s</string>
+    <string name="qr_payment_value_pay">One payment</string>
+    <string name="qr_payment_value_mandate">Mandate (repeating payments)</string>
+    <string name="qr_payment_value_qrr">QR reference</string>
+    <string name="qr_payment_value_scor">Creditor reference</string>
+    <string name="qr_payment_value_non">No reference</string>
+    <string name="qr_payment_other_detail">Other detail</string>
+
+    <!-- Make: symbologies, correction and form checks (SPEC §8) -->
+    <string name="qr_symbology_qr">QR code</string>
+    <string name="qr_symbology_aztec">Aztec code</string>
+    <string name="qr_symbology_pdf417">PDF417</string>
+    <string name="qr_symbology_code128">Code 128 barcode</string>
+    <!-- TalkBack description of a made code: %1$s the symbology, %2$s the start of its payload -->
+    <string name="qr_make_code_for">%1$s for %2$s</string>
+    <string name="qr_correction_auto">Auto</string>
+    <string name="qr_correction_l">L, lowest</string>
+    <string name="qr_correction_m">M, medium</string>
+    <string name="qr_correction_q">Q, higher</string>
+    <string name="qr_correction_h">H, highest</string>
+    <string name="qr_make_error_empty">Enter something to turn into a code.</string>
+    <string name="qr_make_error_too_long">This is too long for the chosen code type. Shorten it or pick another type.</string>
+    <string name="qr_make_error_not_ascii">Code 128 only supports plain ASCII characters. Remove accents and symbols, or pick another type.</string>
+    <string name="qr_make_error_failed">The code couldn’t be created. Try different content.</string>
+    <string name="qr_wifi_security_wpa">WPA, WPA2 or WPA3</string>
+    <string name="qr_wifi_security_wep">WEP</string>
+    <string name="qr_wifi_security_none">None (open network)</string>
+    <string name="qr_make_issue_required">Fill in this field to make a code.</string>
+    <string name="qr_make_issue_email">This doesn’t look like an email address. Use the form name@example.com.</string>
+    <string name="qr_make_issue_contact_phone">Use digits, and + ( ) - . or spaces. At least 3 digits.</string>
+    <string name="qr_make_issue_phone">Start with + and the country code, then the number. Spaces, dashes and brackets are fine.</string>
+    <string name="qr_make_issue_latitude">Latitude is a number from -90 to 90.</string>
+    <string name="qr_make_issue_longitude">Longitude is a number from -180 to 180.</string>
+    <string name="qr_make_issue_end_before_start">The event can’t end before it starts.</string>
+
+    <!-- History rows and labels (SPEC §10) -->
+    <string name="qr_history_binary">Binary data</string>
+    <plurals name="qr_history_binary_bytes">
+        <item quantity="one">Binary data, %1$d byte</item>
+        <item quantity="other">Binary data, %1$d bytes</item>
+    </plurals>
+    <string name="qr_history_scanned">Scanned</string>
+    <string name="qr_history_made">Made</string>
+    <!-- Symbology names as History shows them; standard names stay as they are. -->
+    <string name="qr_symbology_name_qr">QR code</string>
+    <string name="qr_symbology_name_micro_qr">Micro QR code</string>
+    <string name="qr_symbology_name_aztec" translatable="false">Aztec</string>
+    <string name="qr_symbology_name_micro_pdf417" translatable="false">MicroPDF417</string>
+    <string name="qr_symbology_name_data_matrix" translatable="false">Data Matrix</string>
+    <string name="qr_symbology_name_code128" translatable="false">Code 128</string>
+    <string name="qr_symbology_name_code39" translatable="false">Code 39</string>
+    <string name="qr_symbology_name_code93" translatable="false">Code 93</string>
+    <string name="qr_symbology_name_ean13" translatable="false">EAN-13</string>
+    <string name="qr_symbology_name_ean8" translatable="false">EAN-8</string>
+    <string name="qr_symbology_name_upce" translatable="false">UPC-E</string>
+    <string name="qr_symbology_name_itf14" translatable="false">ITF-14</string>
+    <string name="qr_symbology_name_codabar" translatable="false">Codabar</string>
+    <string name="qr_symbology_name_gs1_databar" translatable="false">GS1 DataBar</string>
+    <string name="qr_symbology_name_other">Other barcode</string>
+
+    <!-- Joins a short list of things, such as what a page asks for -->
+    <string name="qr_list_separator">", "</string>
+
+    <!-- Peek (SPEC §6) -->
+    <string name="qr_peek_age_unknown">Age unknown</string>
+    <string name="qr_peek_age_today">Registered today</string>
+    <plurals name="qr_peek_age_days">
+        <item quantity="one">Registered %1$d day ago</item>
+        <item quantity="other">Registered %1$d days ago</item>
+    </plurals>
+    <string name="qr_peek_connection_rejected">The site’s certificate was rejected</string>
+    <string name="qr_peek_connection_plain_http">Not fetched: plain http</string>
+    <!-- %1$s: the TLS version, such as TLS 1.3 -->
+    <string name="qr_peek_connection_encrypted">Encrypted (%1$s)</string>
+    <string name="qr_peek_connection_unknown">Not known</string>
+    <string name="qr_peek_not_fetched">Peek doesn’t open pages that aren’t encrypted, so it didn’t fetch this one. It still looked up how old the domain is. The warning about plain http stands, and you can still open the link.</string>
+    <string name="qr_peek_checking_age">Checking the domain’s age…</string>
+    <string name="qr_peek_fetching">Fetching…</string>
+    <string name="qr_peek_starting">Starting…</string>
+    <string name="qr_peek_not_a_link">This isn’t a web link, so there is nothing to Peek at.</string>
+    <string name="qr_peek_where_it_goes">Where it goes</string>
+    <!-- One step of a redirect chain: %1$d its number, %2$s its domain -->
+    <string name="qr_peek_hop">%1$d. %2$s</string>
+    <!-- %1$d: the HTTP status code -->
+    <string name="qr_peek_hop_answered">Answered %1$d</string>
+    <string name="qr_peek_hop_not_fetched">Not fetched</string>
+    <string name="qr_peek_the_page">The page</string>
+    <string name="qr_peek_title">Title</string>
+    <string name="qr_peek_no_title">No title found</string>
+    <string name="qr_peek_connection">Connection</string>
+    <string name="qr_peek_asks_for">Asks for</string>
+    <string name="qr_peek_asks_nothing">No password, code or card field found</string>
+    <string name="qr_peek_not_read">The page wasn’t read</string>
+    <string name="qr_peek_domain_age">Domain age</string>
+
+    <!-- Scam lists in Settings (SPEC §4.3) -->
+    <string name="qr_lists_title">Scam lists</string>
+    <!-- %1$s: the date the lists were built -->
+    <string name="qr_lists_title_dated">Scam lists from %1$s</string>
+    <string name="qr_lists_old">These lists are more than six months old.</string>
+    <string name="qr_lists_check">Check for newer lists</string>
+    <string name="qr_lists_checking">Checking…</string>
+    <string name="qr_lists_reset">Use the lists that came with the app</string>
+    <string name="qr_lists_reset_done">Using the lists that came with the app.</string>
+    <!-- %1$s: the date the new lists were built -->
+    <string name="qr_lists_updated_dated">Updated to lists from %1$s.</string>
+    <string name="qr_lists_updated">Updated to newer lists.</string>
+    <string name="qr_lists_unreachable">Couldn’t reach GitHub. Your lists are unchanged.</string>
+    <string name="qr_lists_save_failed">Couldn’t save the newer lists. Your lists are unchanged.</string>
+    <string name="qr_lists_not_newer">No newer lists.</string>
+    <string name="qr_lists_too_large">The download was larger than expected, so we kept your lists.</string>
+    <string name="qr_lists_bad_signature">The download didn’t carry a valid signature, so we kept your lists.</string>
+    <string name="qr_lists_unreadable">The download couldn’t be read, so we kept your lists.</string>
+    <string name="qr_lists_unknown_schema">These lists are for a newer version of the app, so we kept yours.</string>
+    <string name="qr_lists_bad_shape">The download didn’t pass our checks, so we kept your lists.</string>
+
+    <!-- Scanning -->
+    <string name="qr_scan_not_text">Data that isn’t text</string>
+    <string name="qr_scan_viewfinder">Camera viewfinder for scanning codes</string>
+    <string name="qr_scan_pick_code">Pick this code</string>
+
+    <string name="qr_history_read_only">This version can’t read the saved history, so new scans aren’t being saved.</string>
+
+    <!-- Settings and About (SPEC §11) -->
+    <string name="qr_undo">Undo</string>
+    <string name="qr_settings_title">Settings</string>
+    <string name="qr_settings_network_contact">Network contact</string>
+    <string name="qr_settings_history">History</string>
+    <string name="qr_settings_history_locked">Saving new scans needs the unlock. What is already saved stays readable.</string>
+    <string name="qr_settings_history_footer">Turning this off stops saving new codes. It doesn’t delete what is already saved.</string>
+    <string name="qr_settings_keep_history">Keep history</string>
+    <string name="qr_settings_clear_history">Clear history</string>
+    <string name="qr_settings_known_footer">Addresses you told us you know stop getting list-based warnings. Every other check still runs.</string>
+    <string name="qr_settings_clear_title">Clear all history?</string>
+    <string name="qr_settings_clear_text">This removes every saved scan and made code, with its notes. It can’t be undone.</string>
+    <string name="qr_settings_trademark">QR Code is a registered trademark of DENSO WAVE INCORPORATED.</string>
+    <string name="qr_settings_whats_new">What’s new</string>
+    <string name="qr_settings_source_code">Source code (GPL-3.0)</string>
+    <string name="qr_settings_contact_support">Contact support</string>
+    <!-- The subject line of a support email; %1$s: the app’s name -->
+    <string name="qr_settings_support_subject">%1$s support</string>
+
+    <!-- Network contact (SPEC §12), row for row -->
+    <string name="qr_network_intro">This is the complete list of when this app contacts anyone.</string>
+    <string name="qr_network_who">Who we contact</string>
+    <string name="qr_network_sent">What’s sent</string>
+    <string name="qr_network_peek_when">You tap Peek</string>
+    <string name="qr_network_peek_who">The address in the code, and each redirect</string>
+    <string name="qr_network_peek_sent">A normal page request with no cookies</string>
+    <string name="qr_network_registry_who">The public registry for that domain ending</string>
+    <string name="qr_network_registry_sent">The domain name</string>
+    <string name="qr_network_open_when">You tap Open</string>
+    <string name="qr_network_open_who">Your browser opens the link</string>
+    <string name="qr_network_open_sent">Whatever your browser sends</string>
+    <string name="qr_network_buy_when">You buy or restore</string>
+    <string name="qr_network_buy_who">Google, through Google Play</string>
+    <string name="qr_network_buy_sent">Handled by Google Play</string>
+    <string name="qr_network_lists_when">You tap Check for newer lists</string>
+    <string name="qr_network_lists_who">GitHub, where our public code lives</string>
+    <string name="qr_network_lists_sent">A request for one file. Nothing about you or what you scanned.</string>
+    <string name="qr_network_nothing_else">Anything not listed here doesn’t happen.</string>
+    <string name="qr_network_play_listing">The Google Play listing says it: no data collected.</string>
+
+    <!-- Addresses you know (SPEC §4.4) -->
+    <string name="qr_known_title">Addresses you know</string>
+    <string name="qr_known_empty_title">No addresses yet</string>
+    <string name="qr_known_empty_text">You haven’t told us you know any addresses.</string>
+    <!-- %1$s: a domain -->
+    <string name="qr_known_removed">Removed %1$s</string>
+    <!-- %1$s: a domain -->
+    <string name="qr_known_remove">Remove %1$s</string>
+    <!-- %1$s: the date it was added -->
+    <string name="qr_known_added">Added %1$s</string>
+    <string name="qr_known_forget_all">Forget all</string>
+    <string name="qr_known_forget_all_title">Forget all addresses?</string>
+    <string name="qr_known_forget_all_text">These addresses will get their warnings again. It can’t be undone.</string>
+
+    <!-- The result sheet (SPEC §3) -->
+    <string name="qr_result_title">Result</string>
+    <!-- The paid feature that fetches a link to see where it goes -->
+    <string name="qr_peek">Peek</string>
+    <string name="qr_make_title">Make a code</string>
+    <string name="qr_copied">Copied</string>
+    <string name="qr_action_open">Open link</string>
+    <string name="qr_action_join_wifi">Join Wi-Fi</string>
+    <string name="qr_action_copy_password">Copy password</string>
+    <string name="qr_action_wifi_settings">Wi-Fi settings</string>
+    <string name="qr_action_add_contact">Add to Contacts</string>
+    <string name="qr_action_add_event">Add to Calendar</string>
+    <string name="qr_action_call">Call</string>
+    <string name="qr_action_message">Message</string>
+    <string name="qr_action_maps">Open in Maps</string>
+    <string name="qr_action_open_payment_in">Open in…</string>
+    <string name="qr_action_copy">Copy</string>
+    <string name="qr_action_copy_details">Copy details</string>
+    <string name="qr_action_share">Share</string>
+    <string name="qr_action_more_ways_to_open">More ways to open</string>
+    <string name="qr_action_open_in_browser">Open in browser</string>
+    <string name="qr_wifi_not_joined">Not joined.</string>
+    <!-- %1$s: the network name -->
+    <string name="qr_wifi_saved">Saved %1$s. Your phone joins it when it’s in range.</string>
+    <!-- %1$s: the network name -->
+    <string name="qr_wifi_already_saved">%1$s is already saved on this phone.</string>
+    <string name="qr_wifi_join_failed">Couldn’t join. Try Settings › Network &amp; internet › Wi-Fi.</string>
+    <string name="qr_wifi_settings_failed">Couldn’t open Wi-Fi settings. Open them from your phone’s Settings.</string>
+    <string name="qr_open_confirm_title">Open this link?</string>
+    <!-- %1$s: the domain the link goes to -->
+    <string name="qr_open_confirm_text">This looks like a scam. It would take you to %1$s.</string>
+    <string name="qr_open_confirm_dont">Don’t open</string>
+    <!-- %1$s: the domain the link goes to -->
+    <string name="qr_open_confirm_anyway">Open %1$s anyway</string>
+    <string name="qr_links_inside">Links inside</string>
+    <!-- %1$d: how many links there are -->
+    <string name="qr_links_show_all">Show all %1$d</string>
+    <string name="qr_known_keep_warning">Keep warning me</string>
+    <string name="qr_known_recommended">Recommended</string>
+    <string name="qr_known_i_know">I know this address</string>
+    <!-- %1$s: a domain -->
+    <string name="qr_known_remembers">Remembers %1$s on this phone. Other checks still run.</string>
+
+    <!-- Payload cards of a result (SPEC §3) -->
+    <string name="qr_field_full_address">Full address of the site</string>
+    <string name="qr_field_plain_letters">Written in plain letters as</string>
+    <string name="qr_field_before_at">Text before the @ sign</string>
+    <string name="qr_field_whole_link">The whole link</string>
+    <string name="qr_field_opens_as">Opens as</string>
+    <string name="qr_field_opens_app">Opens an app</string>
+    <string name="qr_field_starts_with">Starts with</string>
+    <string name="qr_field_whole_code">The whole code</string>
+    <string name="qr_payment_no_name">No name in this code</string>
+    <string name="qr_payment_person">Person</string>
+    <string name="qr_payment_business">Business</string>
+    <string name="qr_payment_who">Who you would pay</string>
+    <string name="qr_more_details">More details</string>
+    <string name="qr_crypto_invoice">Invoice</string>
+    <string name="qr_crypto_address">Address</string>
+    <string name="qr_field_label">Label</string>
+    <string name="qr_field_message">Message</string>
+    <string name="qr_crypto_chain">Chain</string>
+    <string name="qr_wifi_open">Open, no password</string>
+    <string name="qr_wifi_no_name">No network name</string>
+    <string name="qr_wifi_security">Security</string>
+    <string name="qr_wifi_hidden">Hidden network</string>
+    <string name="qr_wifi_password">Password</string>
+    <string name="qr_wifi_has_password">The code includes a password</string>
+    <string name="qr_wifi_hide_password">Hide password</string>
+    <string name="qr_wifi_show_password">Show password</string>
+    <string name="qr_wifi_no_password">The code doesn’t include one</string>
+    <string name="qr_wifi_settings_only">Join this one in Wi-Fi settings.</string>
+    <string name="qr_wifi_copy_then_settings">Copy the password, then join in Wi-Fi settings.</string>
+    <string name="qr_wifi_join_in_settings">Join in Wi-Fi settings.</string>
+    <string name="qr_wifi_cannot_join">The code has no password for this network. Join in Wi-Fi settings.</string>
+    <string name="qr_contact_no_name">No name</string>
+    <string name="qr_field_phone">Phone</string>
+    <string name="qr_contact_websites">Websites</string>
+    <string name="qr_contact_birthday">Birthday</string>
+    <string name="qr_event_no_title">Event with no title</string>
+    <string name="qr_event_when">When</string>
+    <string name="qr_event_no_time">No time in the code</string>
+    <string name="qr_event_where">Where</string>
+    <string name="qr_event_details">Details</string>
+    <string name="qr_field_to">To</string>
+    <string name="qr_field_subject">Subject</string>
+    <string name="qr_geo_coordinates">Coordinates</string>
+    <string name="qr_geo_altitude">Altitude</string>
+    <string name="qr_text_title">Text in the code</string>
+    <string name="qr_text_empty">The code holds no text.</string>
+    <string name="qr_text_truncated">The code holds more text than this. Only the first part is shown and checked.</string>
+    <string name="qr_binary_title">Data, not text</string>
+
+    <string name="qr_contact_address">Address</string>
+    <!-- %1$s: the network's security, such as WPA2-EAP -->
+    <string name="qr_wifi_enterprise">Company or school network (%1$s)</string>
+    <plurals name="qr_binary_bytes">
+        <item quantity="one">%1$d byte. This app can’t show what is inside.</item>
+        <item quantity="other">%1$d bytes. This app can’t show what is inside.</item>
+    </plurals>
+
+    <!-- The scanner, the home screen (SPEC §2) -->
+    <string name="qr_scan_title">Scan</string>
+    <string name="qr_scan_photo_unreadable">That photo couldn’t be read</string>
+    <string name="qr_scan_photo_empty">No code found in this image</string>
+    <string name="qr_scan_clipboard_empty">Nothing to scan on the clipboard</string>
+    <string name="qr_scan_tap_a_code">Tap a code</string>
+    <string name="qr_scan_point">Point at a code</string>
+    <string name="qr_scan_reading">Reading</string>
+    <string name="qr_scan_photo">Scan a photo</string>
+    <string name="qr_scan_clipboard">Scan clipboard</string>
+    <string name="qr_scan_torch">Torch</string>
+    <string name="qr_scan_torch_on">On</string>
+    <string name="qr_scan_torch_off">Off</string>
+    <string name="qr_scan_camera_denied">Camera access is off. You can still scan a photo or what you copied, or turn the camera on in Settings.</string>
+    <string name="qr_scan_camera_not_asked">The camera needs your permission to scan. You can still scan a photo or what you copied.</string>
+    <string name="qr_scan_camera_unsupported">This phone can’t scan with the camera. You can still scan a photo or what you copied.</string>
+    <string name="qr_scan_open_settings">Open Settings</string>
+    <string name="qr_scan_pick_a_code">Pick a code</string>
+
+    <!-- History (SPEC §10) -->
+    <string name="qr_history_cancel_selection">Cancel selection</string>
+    <string name="qr_history_select_all">Select all shown</string>
+    <string name="qr_history_delete_selected">Delete selected</string>
+    <string name="qr_history_select">Select history</string>
+    <string name="qr_history_export">Export</string>
+    <string name="qr_history_search">Search history</string>
+    <string name="qr_history_no_results_hint">Check the spelling or try another word.</string>
+    <string name="qr_history_delete">Delete</string>
+    <string name="qr_history_unreadable">History can’t be read</string>
+    <string name="qr_history_off">Keep history is off</string>
+    <string name="qr_history_off_text">Nothing you scan or make is being saved.</string>
+    <string name="qr_history_nothing_saved">Nothing saved</string>
+    <string name="qr_history_empty">Nothing here yet</string>
+    <string name="qr_history_empty_text">Codes you scan or make will show up here.</string>
+    <string name="qr_history_export_failed">The export didn’t work. Try again.</string>
+    <string name="qr_history_warnings">Warnings</string>
+    <string name="qr_history_summary">Summary</string>
+    <string name="qr_history_save_note">Save note</string>
+    <string name="qr_history_delete_title">Delete this item?</string>
+    <string name="qr_history_note_failed">The note wasn’t saved. Try again.</string>
+
+    <plurals name="qr_history_deleted">
+        <item quantity="one">Deleted from history</item>
+        <item quantity="other">Deleted %1$d items</item>
+    </plurals>
+    <string name="qr_saved">Saved</string>
+    <plurals name="qr_history_selected">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <!-- %1$s: a file format, JSON or CSV -->
+    <string name="qr_history_save_as">Save as %1$s</string>
+    <!-- %1$s: a file format, JSON or CSV -->
+    <string name="qr_history_share_as">Share as %1$s</string>
+    <!-- %1$s: what was searched for -->
+    <string name="qr_history_no_results">No results for “%1$s”</string>
+    <string name="qr_history_locked">Your history stays here. Saving new scans needs the unlock.</string>
+    <!-- The line under a History row: %1$s the type, %2$s scanned or made, %3$s the date -->
+    <string name="qr_history_row_meta">%1$s · %2$s · %3$s</string>
+    <!-- %1$s: the start of a saved note -->
+    <string name="qr_history_row_note">Note: %1$s</string>
+    <!-- %1$s: the payload type -->
+    <string name="qr_history_verdict_when_saved">%1$s · the verdict when it was saved</string>
+    <string name="qr_history_contents">Contents</string>
+    <string name="qr_history_contents_base64">Contents (binary, shown as base64)</string>
+    <string name="qr_history_scanned_or_made">Scanned or made</string>
+    <string name="qr_history_code_type">Code type</string>
+    <string name="qr_history_date">Date</string>
+    <string name="qr_history_check_again">Check again</string>
+    <string name="qr_history_check_again_footer">Runs today’s checks on this code. The verdict above is the one it got when it was saved.</string>
+    <string name="qr_history_note_saved">Note saved</string>
+    <string name="qr_history_delete_item">Delete from history</string>
+
+    <string name="qr_history_note">Note</string>
+
+    <!-- Make's export (SPEC §8) -->
+    <string name="qr_export_png">PNG image</string>
+    <string name="qr_export_svg">SVG (vector)</string>
+    <string name="qr_export_pdf" translatable="false">PDF</string>
+    <string name="qr_sheet_grid_2x3">2 by 3 (6 labels)</string>
+    <string name="qr_sheet_grid_3x4">3 by 4 (12 labels)</string>
+    <string name="qr_sheet_grid_4x6">4 by 6 (24 labels)</string>
+    <string name="qr_paper_a4" translatable="false">A4</string>
+    <string name="qr_paper_letter">US Letter</string>
+
+    <!-- Make (SPEC §8) -->
+    <string name="qr_make_batch">Batch</string>
+    <string name="qr_make_blank">Fill in the fields below and your code appears here.</string>
+    <string name="qr_make_content_type">Content type</string>
+    <string name="qr_make_field_web_address">Web address</string>
+    <string name="qr_make_field_text">Text</string>
+    <string name="qr_make_field_network_name">Network name</string>
+    <string name="qr_make_field_first_name">First name</string>
+    <string name="qr_make_field_last_name">Last name</string>
+    <string name="qr_make_field_company">Company</string>
+    <string name="qr_make_field_job_title">Job title</string>
+    <string name="qr_make_field_website">Website</string>
+    <string name="qr_make_field_note">Note</string>
+    <string name="qr_make_field_title">Title</string>
+    <string name="qr_make_field_all_day">All day</string>
+    <string name="qr_make_field_starts">Starts</string>
+    <string name="qr_make_field_ends">Ends</string>
+    <string name="qr_make_field_location">Location</string>
+    <string name="qr_make_field_notes">Notes</string>
+    <string name="qr_make_field_email_address">Email address</string>
+    <string name="qr_make_field_subject">Subject (optional)</string>
+    <string name="qr_make_field_message">Message (optional)</string>
+    <string name="qr_make_field_latitude">Latitude</string>
+    <string name="qr_make_field_longitude">Longitude</string>
+    <string name="qr_make_field_place">Place name (optional)</string>
+    <string name="qr_make_smaller">Same link, smaller code</string>
+    <string name="qr_make_smaller_text">The web address is written in capitals, which fit a smaller code. It opens the same place.</string>
+    <string name="qr_make_tracking">This link carries tracking tags. Remove them?</string>
+    <string name="qr_make_tracking_remove">Remove tracking tags</string>
+    <string name="qr_make_code_options">Code options</string>
+    <string name="qr_make_correction">Error correction</string>
+    <string name="qr_make_correction_text">Auto keeps the code as small as it can. Higher levels survive more damage but make a denser code.</string>
+    <string name="qr_make_colors">Colors</string>
+    <string name="qr_make_code_color">Code color</string>
+    <string name="qr_make_background_color">Background color</string>
+    <string name="qr_make_reset_colors">Back to black on white</string>
+    <string name="qr_make_hex">Hex</string>
+    <string name="qr_make_hex_hint">Enter six hexadecimal digits</string>
+    <string name="qr_export_size">Size</string>
+    <string name="qr_export_width">Width in pixels (up to 4096)</string>
+    <string name="qr_export_png_note">The image is a whole number of pixels per square, so it can be a little smaller than the size you pick.</string>
+    <string name="qr_export_svg_note">A vector file that stays sharp at any size. Good for print and design tools.</string>
+    <string name="qr_export_one_code">One code</string>
+    <string name="qr_export_sheet">Sheet of labels</string>
+    <string name="qr_export_labels_per_page">Labels per page</string>
+    <string name="qr_export_paper">Paper</string>
+    <string name="qr_export_caption">Caption (optional)</string>
+    <string name="qr_export_failed">The file couldn’t be created. Try a smaller size.</string>
+    <string name="qr_export_save_failed">The file couldn’t be saved there. Try again.</string>
+
+    <string name="qr_make_field_phone_number">Phone number</string>
+    <string name="qr_make_field_email">Email</string>
+    <!-- Phone and Text message codes need an international number (SPEC §8) -->
+    <string name="qr_make_international_hint">Include + and the country code.</string>
+    <!-- %1$.1f: the contrast ratio, such as 2.3 -->
+    <string name="qr_make_low_contrast">Low contrast (%1$.1f to 1). Phones may not be able to scan this code.</string>
+    <string name="qr_make_inverted">The code is lighter than its background. Many scanners can’t read light-on-dark codes.</string>
+    <plurals name="qr_export_pixels">
+        <item quantity="one">%1$d pixel</item>
+        <item quantity="other">%1$d pixels</item>
+    </plurals>
+    <string name="qr_export_custom">Custom</string>
+    <!-- %1$d and %2$d: the smallest and largest size; %3$d: the size that will be used -->
+    <string name="qr_export_clamped">Sizes run from %1$d to %2$d. This will be %3$d.</string>
+    <string name="qr_export_save_file">Save file</string>
+    <string name="qr_export_copy_image">Copy image</string>
+
+    <!-- The brand moments: Before you buy, the unlock sheet and the trial-ended sheet -->
+    <string name="qr_gate_before_you_buy">Before you buy</string>
+    <string name="qr_gate_phone_scans">Your phone already scans QR codes. Point the Camera at one, or use Google Lens. If that’s all you need, delete this app and keep your money.</string>
+    <!-- Keep {price} as it is: it becomes the Google Play price, such as $7.00 -->
+    <string name="qr_gate_what_this_adds">What this adds: it checks where a code really goes before you open it, shows who a payment code pays, makes codes from anything you share, and remembers what you scanned. Free for 7 days from when you tap Start, no card. Then {price} once, if you want to keep it.</string>
+    <string name="qr_gate_what_this_adds_no_price">What this adds: it checks where a code really goes before you open it, shows who a payment code pays, makes codes from anything you share, and remembers what you scanned. Free for 7 days from when you tap Start, no card. Then a one-time price, if you want to keep it.</string>
+    <string name="qr_gate_look_around">Just scan for free</string>
+    <string name="qr_gate_feature_peek">Peek: follow a link’s redirects and see what its page asks for before you open it</string>
+    <string name="qr_gate_feature_make">Make QR codes from text, links, Wi-Fi, contacts and more, and export them</string>
+    <string name="qr_gate_feature_share">Make QR code from the share menu in any app</string>
+    <string name="qr_gate_feature_history">History: save what you scan and make, with search, notes and export</string>
+    <string name="qr_gate_free_scanning">Scanning from the camera, photos and clipboard</string>
+    <string name="qr_gate_free_verdict">The verdict and every scam check</string>
+    <string name="qr_gate_free_payments">Payment-code details</string>
+    <string name="qr_gate_free_opening">Opening links</string>
+    <string name="qr_gate_free_check_share">Check this code from the share menu</string>
+    <string name="qr_gate_free_history">Reading and exporting the history you already saved</string>
+    <string name="qr_gate_keeps_make">Make and export</string>
+    <string name="qr_gate_keeps_share">Make QR code from the share menu</string>
+    <string name="qr_gate_keeps_history">Saving new scans to History</string>
+    <string name="qr_gate_not_started">Free trial not started. Scanning stays free.</string>
+    <!-- Make’s name as a paid feature, as in “Make is part of the unlock.” -->
+    <string name="qr_gate_make">Make</string>
+
+    <!-- Batch codes: one PDF of labels from many lines -->
+    <!-- %1$d: the most kilobytes a batch may hold -->
+    <string name="qr_batch_too_large">The batch is too large. Use at most %1$d KB of text.</string>
+    <!-- %1$d: the line's number -->
+    <string name="qr_batch_line_too_long">Line %1$d is too long for a code.</string>
+    <!-- %1$d: the most lines a batch may hold -->
+    <plurals name="qr_batch_too_many_lines">
+        <item quantity="one">Use at most %1$d nonblank line per batch.</item>
+        <item quantity="other">Use at most %1$d nonblank lines per batch.</item>
+    </plurals>
+    <string name="qr_batch_empty">Enter one code’s text or link per line.</string>
+    <!-- %1$d: the code's number in the batch (a label, not a count) -->
+    <string name="qr_batch_code_failed" tools:ignore="PluralsCandidate">Code %1$d could not be generated. Shorten that line and review again.</string>
+    <string name="qr_batch_create_failed">Could not create the PDF. Your inputs are still here.</string>
+    <string name="qr_batch_save_failed">The PDF couldn’t be saved there. Your file and inputs are still here.</string>
+    <string name="qr_batch_no_app">No app could open the PDF. Your file and inputs are still here.</string>
+    <!-- The clipboard label of a shared batch PDF -->
+    <string name="qr_batch_clip_label">QR batch</string>
+    <string name="qr_batch_title">Batch codes</string>
+    <string name="qr_batch_review">Review</string>
+    <string name="qr_batch_share_pdf">Share PDF</string>
+    <string name="qr_batch_create_pdf">Create PDF</string>
+    <string name="qr_batch_creating">Creating PDF…</string>
+    <string name="qr_batch_intro">One text or link per line, up to 100 codes. Blank lines are skipped; other characters and duplicate lines stay unchanged.</string>
+    <string name="qr_batch_contents">Code contents</string>
+    <plurals name="qr_batch_codes">
+        <item quantity="one">%1$d code</item>
+        <item quantity="other">%1$d codes</item>
+    </plurals>
+    <string name="qr_batch_review_text">Review each code below. PDF labels keep this order and exact text. Nothing is added to History.</string>
+    <!-- %1$s: the paper size; %2$s: the labels per page -->
+    <string name="qr_batch_paper_grid">%1$s · %2$s</string>
+    <string name="qr_batch_pdf_saved">PDF saved</string>
+    <string name="qr_batch_pdf_ready">PDF ready</string>
+    <string name="qr_batch_save_pdf">Save PDF</string>
+    <string name="qr_batch_edit_inputs">Edit inputs</string>
+    <!-- %1$d: the code's number in the batch -->
+    <string name="qr_batch_code_number">Code %1$d</string>
+
+    <!-- The share targets: Check this code and Make QR code -->
+    <string name="qr_summary_domain">Domain</string>
+    <string name="qr_summary_app">App</string>
+    <string name="qr_summary_payee">Payee</string>
+    <string name="qr_summary_name">Name</string>
+    <string name="qr_summary_number">Number</string>
+    <string name="qr_summary_email_address">Address</string>
+    <string name="qr_summary_size">Size</string>
+    <plurals name="qr_bytes">
+        <item quantity="one">%1$d byte</item>
+        <item quantity="other">%1$d bytes</item>
+    </plurals>
+    <!-- %1$d: the image's position among the shared ones -->
+    <string name="qr_check_image">Image %1$d</string>
+    <string name="qr_check_image_unreadable">This image couldn’t be read.</string>
+    <string name="qr_share_make_locked">Make QR code is part of the unlock. Open the app to see what it adds.</string>
+    <string name="qr_share_make_unsupported">Can’t make a code from this file.</string>
+    <string name="qr_share_make_save_failed">The image couldn’t be saved there. Try again.</string>
+    <string name="qr_share_make_save_image">Save image</string>
 </resources>

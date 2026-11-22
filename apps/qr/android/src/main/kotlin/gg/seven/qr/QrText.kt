@@ -1,5 +1,6 @@
 package gg.seven.qr
 
+import android.content.res.Resources
 import gg.seven.qr.core.Level
 import gg.seven.qr.core.Severity
 import gg.seven.qr.core.Signal
@@ -10,48 +11,51 @@ import java.text.Normalizer
 
 /*
  * The app's words, from the iOS String Catalog defaults (QRUI's VerdictText, SignalText and the
- * screens). One place, so a translation pass has one file to read. Typographic punctuation: ’ and …
+ * screens), are in res/values/strings.xml; these objects pick which one applies. Typographic
+ * punctuation: ’ and …
  */
 
 object QrText {
     // MARK: verdict (SPEC §4.1). Level 0 is "Looks normal", never a reassurance.
 
-    fun verdict(level: Level): String =
-        when (level) {
-            Level.NORMAL -> "Looks normal"
-            Level.CAREFUL -> "Be careful"
-            Level.LIKELY_SCAM -> "Likely scam"
-        }
+    fun verdict(res: Resources, level: Level): String =
+        res.getString(
+            when (level) {
+                Level.NORMAL -> R.string.qr_verdict_normal
+                Level.CAREFUL -> R.string.qr_verdict_careful
+                Level.LIKELY_SCAM -> R.string.qr_verdict_scam
+            }
+        )
 
     /** Display name of a payload type ID (also what History search matches). */
-    fun typeName(typeId: String): String =
-        when (typeId) {
-            "link" -> "Web link"
-            "appLink" -> "App link"
-            "payment" -> "Payment code"
-            "crypto" -> "Crypto address"
-            "wifi" -> "Wi-Fi network"
-            "contact" -> "Contact"
-            "event" -> "Event"
-            "phone" -> "Phone number"
-            "sms" -> "Text message"
-            "email" -> "Email"
-            "geo" -> "Location"
-            "text" -> "Text"
-            "binary" -> "Other data"
-            else -> "Other"
-        }
+    fun typeName(res: Resources, typeId: String): String =
+        res.getString(
+            when (typeId) {
+                "link" -> R.string.qr_type_link
+                "appLink" -> R.string.qr_type_app_link
+                "payment" -> R.string.qr_type_payment
+                "crypto" -> R.string.qr_type_crypto
+                "wifi" -> R.string.qr_type_wifi
+                "contact" -> R.string.qr_type_contact
+                "event" -> R.string.qr_type_event
+                "phone" -> R.string.qr_type_phone
+                "sms" -> R.string.qr_type_sms
+                "email" -> R.string.qr_type_email
+                "geo" -> R.string.qr_type_geo
+                "text" -> R.string.qr_type_text
+                "binary" -> R.string.qr_type_binary
+                else -> R.string.qr_type_other
+            }
+        )
 
     /** "Be careful. Web link. This link isn’t encrypted…": info signals are left out. */
-    fun accessibilitySentence(level: Level, typeName: String, signals: List<Signal>): String {
-        val reasons = SignalText.sentences(signals.filter { it.severity != Severity.INFO })
-        return (listOf(verdict(level), typeName) + reasons)
+    fun accessibilitySentence(res: Resources, level: Level, typeName: String, signals: List<Signal>): String {
+        val reasons = SignalText.sentences(res, signals.filter { it.severity != Severity.INFO })
+        return (listOf(verdict(res, level), typeName) + reasons)
             .map { it.trim('.', ' ') }
             .filter { it.isNotEmpty() }
             .joinToString(" ") { "$it." }
     }
-
-    val historyReadOnlyReason = "This version can’t read the saved history, so new scans aren’t being saved."
 
     // MARK: text helpers
 
@@ -98,73 +102,60 @@ object SignalText {
     /** The longest an arg is shown (they come from scanned codes). */
     const val MAX_ARG_LENGTH = 40
 
-    fun sentence(signal: Signal): String {
+    fun sentence(res: Resources, signal: Signal): String {
         val args = signal.args
+        fun with(key: String, withArg: Int, without: Int): String =
+            arg(args, key)?.let { res.getString(withArg, it) } ?: res.getString(without)
         return when (signal.id) {
-            SignalId.DANGEROUS_SCHEME ->
-                arg(args, "scheme")?.let { "This code starts with “$it:”, which can run code or open files instead of showing a website." }
-                    ?: "This code can run a script or open a file instead of showing a website."
-            SignalId.USERINFO_TRICK ->
-                arg(args, "host")?.let { "The text before the @ sign is a name, not the destination. The link really goes to $it." }
-                    ?: "The text before the @ sign is a name, not the destination. The link goes to the address after it."
-            SignalId.MIXED_SCRIPT -> "The address mixes letters from different alphabets, a trick used to imitate real sites."
-            SignalId.LOOKALIKE_BRAND ->
-                arg(args, "brand")?.let { "This address imitates the look of $it, and it isn’t one we know for them." }
-                    ?: "This address imitates the look of a well-known brand, and it isn’t one we know for them."
-            SignalId.BRAND_IN_DOMAIN ->
-                arg(args, "brand")?.let { "The name $it appears in this address, but it isn’t one we know for them." }
-                    ?: "A well-known brand’s name appears in this address, but it isn’t one we know for them."
-            SignalId.NEAR_BRAND ->
-                arg(args, "brand")?.let { "This address is one letter away from $it. Check the spelling closely." }
-                    ?: "This address is one letter away from a well-known brand. Check the spelling closely."
-            SignalId.IP_HOST -> "The address is a string of numbers instead of a name. Real services rarely do this."
-            SignalId.SHORTENER -> "This is a shortened link, so its real destination is hidden until you follow it."
-            SignalId.PLAIN_HTTP -> "This link isn’t encrypted, so anyone on the network could read or change what you send."
+            SignalId.DANGEROUS_SCHEME -> with("scheme", R.string.qr_signal_dangerous_scheme_named, R.string.qr_signal_dangerous_scheme)
+            SignalId.USERINFO_TRICK -> with("host", R.string.qr_signal_userinfo_trick_named, R.string.qr_signal_userinfo_trick)
+            SignalId.MIXED_SCRIPT -> res.getString(R.string.qr_signal_mixed_script)
+            SignalId.LOOKALIKE_BRAND -> with("brand", R.string.qr_signal_lookalike_brand_named, R.string.qr_signal_lookalike_brand)
+            SignalId.BRAND_IN_DOMAIN -> with("brand", R.string.qr_signal_brand_in_domain_named, R.string.qr_signal_brand_in_domain)
+            SignalId.NEAR_BRAND -> with("brand", R.string.qr_signal_near_brand_named, R.string.qr_signal_near_brand)
+            SignalId.IP_HOST -> res.getString(R.string.qr_signal_ip_host)
+            SignalId.SHORTENER -> res.getString(R.string.qr_signal_shortener)
+            SignalId.PLAIN_HTTP -> res.getString(R.string.qr_signal_plain_http)
             SignalId.RISKY_TLD ->
-                arg(args, "tld")?.trimStart('.')?.takeIf { it.isNotEmpty() }?.let { "Addresses ending in .$it show up often in scam reports." }
-                    ?: "This address uses an ending that shows up often in scam reports."
-            SignalId.DEEP_SUBDOMAINS -> "The address has an unusually long chain of parts before the main name, which can hide the real site."
-            SignalId.OBFUSCATED_PATH -> "The address is very long or heavily encoded, which can hide where it really goes."
-            SignalId.UNKNOWN_SCHEME ->
-                arg(args, "scheme")?.let { "This code opens another app (“$it:”) instead of a website." }
-                    ?: "This code opens another app instead of a website."
-            SignalId.OPEN_WI_FI -> "This Wi-Fi network has no password, so others nearby could see what you do on it."
-            SignalId.PAYMENT_CHECKSUM_FAIL -> "This payment code failed its built-in check. It may be damaged or altered."
-            SignalId.TLS_PROBLEM -> "The site’s certificate didn’t check out, so this connection can’t be trusted."
+                arg(args, "tld")?.trimStart('.')?.takeIf { it.isNotEmpty() }?.let { res.getString(R.string.qr_signal_risky_tld_named, it) }
+                    ?: res.getString(R.string.qr_signal_risky_tld)
+            SignalId.DEEP_SUBDOMAINS -> res.getString(R.string.qr_signal_deep_subdomains)
+            SignalId.OBFUSCATED_PATH -> res.getString(R.string.qr_signal_obfuscated_path)
+            SignalId.UNKNOWN_SCHEME -> with("scheme", R.string.qr_signal_unknown_scheme_named, R.string.qr_signal_unknown_scheme)
+            SignalId.OPEN_WI_FI -> res.getString(R.string.qr_signal_open_wifi)
+            SignalId.PAYMENT_CHECKSUM_FAIL -> res.getString(R.string.qr_signal_payment_checksum_fail)
+            SignalId.TLS_PROBLEM -> res.getString(R.string.qr_signal_tls_problem)
             SignalId.SECRET_FORM_BRAND_MISMATCH -> {
-                val what = secret(args["kind"])
-                arg(args, "brand")?.let { "This page asks for $what and mentions $it, but it isn’t their site." }
-                    ?: "This page asks for $what and mentions a well-known brand, but it isn’t their site."
+                val what = secret(res, args["kind"])
+                arg(args, "brand")?.let { res.getString(R.string.qr_signal_secret_form_brand_named, what, it) }
+                    ?: res.getString(R.string.qr_signal_secret_form_brand, what)
             }
             SignalId.DOMAIN_VERY_NEW ->
-                dayCount(args)?.let { "This domain was registered $it ago, which is very recent." }
-                    ?: "This domain was registered within the last month."
-            SignalId.REDIRECTS_TO_HTTP -> "This link sends you on to a page that isn’t encrypted."
-            SignalId.REDIRECT_LEAVES_WEB ->
-                arg(args, "scheme")?.let { "This link redirects out of the web to open another app (“$it:”)." }
-                    ?: "This link redirects out of the web to open another app."
-            SignalId.TOO_MANY_REDIRECTS -> "This link bounces you through an unusually long chain of redirects."
-            SignalId.SCRIPT_REDIRECT -> "The page uses a script to send you somewhere else as soon as it loads."
-            SignalId.ASKS_FOR_SECRET -> "This page asks you to enter ${secret(args["kind"])}."
-            SignalId.FORM_POSTS_ELSEWHERE -> "A form on this page sends what you type to a different website."
-            SignalId.DOWNLOADS_FILE -> "This link downloads a file instead of showing a page."
+                dayCount(res, args)?.let { res.getString(R.string.qr_signal_domain_very_new_days, it) }
+                    ?: res.getString(R.string.qr_signal_domain_very_new)
+            SignalId.REDIRECTS_TO_HTTP -> res.getString(R.string.qr_signal_redirects_to_http)
+            SignalId.REDIRECT_LEAVES_WEB -> with("scheme", R.string.qr_signal_redirect_leaves_web_named, R.string.qr_signal_redirect_leaves_web)
+            SignalId.TOO_MANY_REDIRECTS -> res.getString(R.string.qr_signal_too_many_redirects)
+            SignalId.SCRIPT_REDIRECT -> res.getString(R.string.qr_signal_script_redirect)
+            SignalId.ASKS_FOR_SECRET -> res.getString(R.string.qr_signal_asks_for_secret, secret(res, args["kind"]))
+            SignalId.FORM_POSTS_ELSEWHERE -> res.getString(R.string.qr_signal_form_posts_elsewhere)
+            SignalId.DOWNLOADS_FILE -> res.getString(R.string.qr_signal_downloads_file)
             SignalId.DOMAIN_NEW ->
-                dayCount(args)?.let { "This domain was registered $it ago." } ?: "This domain was registered within the last six months."
-            SignalId.ASSUMED_HTTPS -> "The code had no prefix, so it was read as an https web address."
-            SignalId.SHARED_HOSTING_DOMAIN -> "This site sits on a shared hosting domain, so the domain’s age says little about it."
-            SignalId.NEEDS_JAVA_SCRIPT -> "The page shows almost nothing without JavaScript, so its contents couldn’t be read."
-            SignalId.AGE_UNKNOWN -> "The age of this domain couldn’t be found."
-            SignalId.PEEK_INCOMPLETE -> "Peek didn’t finish, so what it shows may be incomplete."
-            SignalId.BRAND_OTHER_ENDING ->
-                arg(args, "brand")?.let { "This isn’t an address we know for $it." }
-                    ?: "This uses a well-known brand’s name, but it isn’t an address we know for them."
-            SignalId.UNKNOWN_ENDING -> "We don’t recognize this domain ending."
-            SignalId.KNOWN_BY_YOU -> "You told us you know this address."
+                dayCount(res, args)?.let { res.getString(R.string.qr_signal_domain_new_days, it) }
+                    ?: res.getString(R.string.qr_signal_domain_new)
+            SignalId.ASSUMED_HTTPS -> res.getString(R.string.qr_signal_assumed_https)
+            SignalId.SHARED_HOSTING_DOMAIN -> res.getString(R.string.qr_signal_shared_hosting_domain)
+            SignalId.NEEDS_JAVA_SCRIPT -> res.getString(R.string.qr_signal_needs_javascript)
+            SignalId.AGE_UNKNOWN -> res.getString(R.string.qr_signal_age_unknown)
+            SignalId.PEEK_INCOMPLETE -> res.getString(R.string.qr_signal_peek_incomplete)
+            SignalId.BRAND_OTHER_ENDING -> with("brand", R.string.qr_signal_brand_other_ending_named, R.string.qr_signal_brand_other_ending)
+            SignalId.UNKNOWN_ENDING -> res.getString(R.string.qr_signal_unknown_ending)
+            SignalId.KNOWN_BY_YOU -> res.getString(R.string.qr_signal_known_by_you)
         }
     }
 
     /** One sentence per signal, in order; identical sentences appear once. */
-    fun sentences(signals: List<Signal>): List<String> = signals.map(::sentence).distinct()
+    fun sentences(res: Resources, signals: List<Signal>): List<String> = signals.map { sentence(res, it) }.distinct()
 
     /** A non-empty arg without control or invisible formatting characters, cut to [MAX_ARG_LENGTH]. */
     fun arg(args: Map<String, String>, key: String): String? {
@@ -185,18 +176,20 @@ object SignalText {
         return QrText.cut(kept, MAX_ARG_LENGTH)
     }
 
-    private fun secret(kind: String?): String =
-        when (kind) {
-            "password" -> "a password"
-            "code" -> "a one-time code or PIN"
-            "card" -> "card details"
-            else -> "private details"
-        }
+    private fun secret(res: Resources, kind: String?): String =
+        res.getString(
+            when (kind) {
+                "password" -> R.string.qr_secret_password
+                "code" -> R.string.qr_secret_code
+                "card" -> R.string.qr_secret_card
+                else -> R.string.qr_secret_other
+            }
+        )
 
     /** "1 day" / "12 days" from `args["days"]`; null when absent or not a count. */
-    private fun dayCount(args: Map<String, String>): String? {
+    private fun dayCount(res: Resources, args: Map<String, String>): String? {
         val days = args["days"]?.trim()?.toIntOrNull()?.takeIf { it >= 0 } ?: return null
-        return if (days == 1) "1 day" else "$days days"
+        return res.getQuantityString(R.plurals.qr_days, days, days)
     }
 }
 

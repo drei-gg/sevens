@@ -6,6 +6,8 @@ import android.util.Base64
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.ViewModelProvider
 import gg.seven.kit.SevenRoot
 import gg.seven.kit.SevenTheme
@@ -22,7 +24,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         if (savedInstanceState == null) applyDebugExtras(intent)
         val model = model
-        setContent { SevenTheme { SevenRoot(model.store, QrContent) { QrApp(model) } } }
+        setContent {
+            val res = LocalResources.current
+            val content = remember(res) { qrContent(res) }
+            SevenTheme { SevenRoot(model.store, content) { QrApp(model) } }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

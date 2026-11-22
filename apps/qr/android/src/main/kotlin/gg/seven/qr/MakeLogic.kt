@@ -1,5 +1,7 @@
 package gg.seven.qr
 
+import android.content.res.Resources
+import androidx.annotation.StringRes
 import com.google.zxing.EncodeHintType
 import com.google.zxing.WriterException
 import com.google.zxing.oned.Code128Writer
@@ -32,16 +34,16 @@ import java.time.temporal.ChronoUnit
  */
 
 /** The nine kinds of code Make builds (SPEC §8). */
-enum class MakeFormKind(val title: String, val typeId: String) {
-    LINK("Web link", "link"),
-    TEXT("Text", "text"),
-    WIFI("Wi-Fi network", "wifi"),
-    CONTACT("Contact", "contact"),
-    EVENT("Event", "event"),
-    EMAIL("Email", "email"),
-    SMS("Text message", "sms"),
-    PHONE("Phone number", "phone"),
-    LOCATION("Location", "geo");
+enum class MakeFormKind(@StringRes val title: Int, val typeId: String) {
+    LINK(R.string.qr_type_link, "link"),
+    TEXT(R.string.qr_type_text, "text"),
+    WIFI(R.string.qr_type_wifi, "wifi"),
+    CONTACT(R.string.qr_type_contact, "contact"),
+    EVENT(R.string.qr_type_event, "event"),
+    EMAIL(R.string.qr_type_email, "email"),
+    SMS(R.string.qr_type_sms, "sms"),
+    PHONE(R.string.qr_type_phone, "phone"),
+    LOCATION(R.string.qr_type_geo, "geo");
 
     /** Short, ASCII, used in export file names. */
     val fileToken
@@ -64,20 +66,20 @@ enum class MakeFormKind(val title: String, val typeId: String) {
 }
 
 /** The four symbologies Make offers. */
-enum class MakeSymbology(val raw: String, val title: String, val symbology: Symbology) {
-    QR("qr", "QR code", Symbology.QR),
-    AZTEC("aztec", "Aztec code", Symbology.AZTEC),
-    PDF417("pdf417", "PDF417", Symbology.PDF417),
-    CODE128("code128", "Code 128 barcode", Symbology.CODE128);
+enum class MakeSymbology(val raw: String, @StringRes val title: Int, val symbology: Symbology) {
+    QR("qr", R.string.qr_symbology_qr, Symbology.QR),
+    AZTEC("aztec", R.string.qr_symbology_aztec, Symbology.AZTEC),
+    PDF417("pdf417", R.string.qr_symbology_pdf417, Symbology.PDF417),
+    CODE128("code128", R.string.qr_symbology_code128, Symbology.CODE128);
 
     /** Only QR and Aztec use the correction setting. */
     val supportsCorrection
         get() = this == QR || this == AZTEC
 
     /** "QR code for <short payload>": the TalkBack description of the picture. */
-    fun accessibilityLabel(payload: String): String {
+    fun accessibilityLabel(res: Resources, payload: String): String {
         val flat = payload.replace("\r\n", " ").replace("\n", " ")
-        return "$title for ${QrText.cut(flat, 40)}"
+        return res.getString(R.string.qr_make_code_for, res.getString(title), QrText.cut(flat, 40))
     }
 }
 
@@ -85,12 +87,12 @@ enum class MakeSymbology(val raw: String, val title: String, val symbology: Symb
  * Error correction. For QR, Auto is the smallest version at M, then the highest level that fits
  * that same version. Aztec takes a percentage: L 5, M/Auto 23, Q 40, H 60.
  */
-enum class Correction(val title: String) {
-    AUTO("Auto"),
-    L("L, lowest"),
-    M("M, medium"),
-    Q("Q, higher"),
-    H("H, highest");
+enum class Correction(@StringRes val title: Int) {
+    AUTO(R.string.qr_correction_auto),
+    L(R.string.qr_correction_l),
+    M(R.string.qr_correction_m),
+    Q(R.string.qr_correction_q),
+    H(R.string.qr_correction_h);
 
     val qrLevel: ErrorCorrectionLevel
         get() =
@@ -112,14 +114,14 @@ enum class Correction(val title: String) {
 }
 
 /** Why a code could not be made; [message] is the inline text under the field. */
-enum class MakeError(val message: String) {
-    EMPTY("Enter something to turn into a code."),
-    TOO_LONG("This is too long for the chosen code type. Shorten it or pick another type."),
-    NOT_ASCII("Code 128 only supports plain ASCII characters. Remove accents and symbols, or pick another type."),
-    GENERATOR_FAILED("The code couldn’t be created. Try different content."),
+enum class MakeError(@StringRes val message: Int) {
+    EMPTY(R.string.qr_make_error_empty),
+    TOO_LONG(R.string.qr_make_error_too_long),
+    NOT_ASCII(R.string.qr_make_error_not_ascii),
+    GENERATOR_FAILED(R.string.qr_make_error_failed),
 }
 
-class MakeException(val error: MakeError) : Exception(error.message)
+class MakeException(val error: MakeError) : Exception(error.name)
 
 /** Text to a module grid (dark = true), with the core's quiet zone around it. */
 object CodeGenerator {
@@ -312,10 +314,10 @@ object MakeFormValidation {
     fun normalizedNumber(raw: String) = trimmed(raw).replace(',', '.')
 }
 
-enum class MakeWiFiSecurity(val code: String, val title: String) {
-    WPA("WPA", "WPA, WPA2 or WPA3"),
-    WEP("WEP", "WEP"),
-    NONE("nopass", "None (open network)");
+enum class MakeWiFiSecurity(val code: String, @StringRes val title: Int) {
+    WPA("WPA", R.string.qr_wifi_security_wpa),
+    WEP("WEP", R.string.qr_wifi_security_wep),
+    NONE("nopass", R.string.qr_wifi_security_none);
 
     companion object {
         fun of(code: String?): MakeWiFiSecurity {
@@ -348,17 +350,18 @@ sealed class MakeFormIssue(val field: MakeFormField) {
     val isBlank
         get() = this is Required
 
-    val message: String
+    @get:StringRes
+    val message: Int
         get() =
             when (this) {
-                is Required -> "Fill in this field to make a code."
-                is BadEmail -> "This doesn’t look like an email address. Use the form name@example.com."
+                is Required -> R.string.qr_make_issue_required
+                is BadEmail -> R.string.qr_make_issue_email
                 is BadPhone ->
-                    if (this.field == MakeFormField.CONTACT_PHONE) "Use digits, and + ( ) - . or spaces. At least 3 digits."
-                    else "Start with + and the country code, then the number. Spaces, dashes and brackets are fine."
-                BadLatitude -> "Latitude is a number from -90 to 90."
-                BadLongitude -> "Longitude is a number from -180 to 180."
-                EndBeforeStart -> "The event can’t end before it starts."
+                    if (this.field == MakeFormField.CONTACT_PHONE) R.string.qr_make_issue_contact_phone
+                    else R.string.qr_make_issue_phone
+                BadLatitude -> R.string.qr_make_issue_latitude
+                BadLongitude -> R.string.qr_make_issue_longitude
+                EndBeforeStart -> R.string.qr_make_issue_end_before_start
             }
 }
 

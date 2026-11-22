@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.kit.Gated
 import gg.seven.kit.LocalSevenStore
 import gg.seven.kit.SevenTopBar
+import androidx.compose.ui.res.stringResource
 
 /**
  * The app's root (SPEC §2, §13): the scan screen, with Make, History and Settings pushed over it,
@@ -43,7 +44,7 @@ fun QrApp(model: QrModel) {
                 Route.KnownAddresses -> KnownAddressesScreen(model, nav)
                 Route.WhatsNew -> WhatsNewScreen(nav)
                 is Route.Make ->
-                    GatedScreen("Make", onBack = nav::pop) { MakeScreen(model, nav, route.draft) }
+                    GatedScreen(stringResource(R.string.qr_gate_make), onBack = nav::pop) { MakeScreen(model, nav, route.draft) }
             }
         }
     }
@@ -67,7 +68,7 @@ private fun GatedScreen(feature: String, onBack: () -> Unit, content: @Composabl
     if (entitlement.paidFeaturesAvailable) return content()
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { SevenTopBar("Make a code", onBack = onBack) },
+        topBar = { SevenTopBar(stringResource(R.string.qr_make_title), onBack = onBack) },
     ) { padding ->
         Box(Modifier.padding(padding)) { Gated(feature) { content() } }
     }

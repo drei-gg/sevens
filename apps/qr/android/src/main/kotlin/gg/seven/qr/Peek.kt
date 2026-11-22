@@ -2,6 +2,7 @@
 
 package gg.seven.qr
 
+import android.content.res.Resources
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -10,7 +11,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import gg.seven.kit.Space
 import gg.seven.qr.core.Analysis
@@ -116,44 +119,45 @@ class PeekModel(
 
 /** The wording of a Peek result (iOS PeekViewText). */
 object PeekText {
-    fun age(days: Long?): String =
+    fun age(res: Resources, days: Long?): String =
         when {
-            days == null || days < 0 -> "Age unknown"
-            days == 0L -> "Registered today"
-            days == 1L -> "Registered 1 day ago"
-            else -> "Registered $days days ago"
+            days == null || days < 0 -> res.getString(R.string.qr_peek_age_unknown)
+            days == 0L -> res.getString(R.string.qr_peek_age_today)
+            else -> days.coerceAtMost(Int.MAX_VALUE.toLong()).toInt().let { res.getQuantityString(R.plurals.qr_peek_age_days, it, it) }
         }
 
-    fun connection(capture: PeekCapture): String {
-        if (capture.stoppedBecause == StopReason.TLS_FAILURE) return "The site’s certificate was rejected"
+    fun connection(res: Resources, capture: PeekCapture): String {
+        if (capture.stoppedBecause == StopReason.TLS_FAILURE) return res.getString(R.string.qr_peek_connection_rejected)
         val last = capture.hops.lastOrNull()
-        if (last != null && last.status == null && last.url.lowercase().startsWith("http://")) return "Not fetched: plain http"
-        capture.tlsVersion?.takeIf { it.isNotEmpty() }?.let { return "Encrypted ($it)" }
-        return "Not known"
+        if (last != null && last.status == null && last.url.lowercase().startsWith("http://")) return res.getString(R.string.qr_peek_connection_plain_http)
+        capture.tlsVersion?.takeIf { it.isNotEmpty() }?.let { return res.getString(R.string.qr_peek_connection_encrypted, it) }
+        return res.getString(R.string.qr_peek_connection_unknown)
     }
 
     /** "a password, a one-time code or PIN" from the secret-field signals; null when none. */
-    fun asks(signals: List<Signal>): String? {
+    fun asks(res: Resources, signals: List<Signal>): String? {
         val kinds = signals.filter { it.id == SignalId.ASKS_FOR_SECRET || it.id == SignalId.SECRET_FORM_BRAND_MISMATCH }
             .map {
-                when (it.args["kind"]) {
-                    "password" -> "a password"
-                    "code" -> "a one-time code or PIN"
-                    "card" -> "card details"
-                    else -> "private details"
-                }
+                res.getString(
+                    when (it.args["kind"]) {
+                        "password" -> R.string.qr_secret_password
+                        "code" -> R.string.qr_secret_code
+                        "card" -> R.string.qr_secret_card
+                        else -> R.string.qr_secret_other
+                    }
+                )
             }
             .distinct()
-        return kinds.takeIf { it.isNotEmpty() }?.joinToString(", ")
+        return kinds.takeIf { it.isNotEmpty() }?.joinToString(res.getString(R.string.qr_list_separator))
     }
 
     /**
      * Why Peek didn't fetch the scanned link itself, or null when it did (SPEC §6.1: plain http
      * links aren't fetched; their warning stands and they can still be opened).
      */
-    fun notFetched(capture: PeekCapture?): String? {
+    fun notFetched(res: Resources, capture: PeekCapture?): String? {
         if (capture == null || capture.stoppedBecause != StopReason.HTTP_TARGET || capture.hops.size > 1) return null
-        return "Peek doesn’t open pages that aren’t encrypted, so it didn’t fetch this one. It still looked up how old the domain is. The warning about plain http stands, and you can still open the link."
+        return res.getString(R.string.qr_peek_not_fetched)
     }
 
     /** The page was read, so "asks for nothing" means something. */
@@ -190,33 +194,34 @@ fun PeekPage(model: PeekModel) {
     val report = (state as? PeekState.Finished)?.report
     val level = ResultActionPlan.effectiveLevel(original.level, report)
     val signals = analysisAllSignals(original) + report?.signals.orEmpty()
+    val res = LocalResources.current
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.m).navigationBarsPadding().padding(bottom = Space.l),
         verticalArrangement = Arrangement.spacedBy(Space.l),
     ) {
         ReadableColumn {
-            VerdictHeader(level, QrText.typeName(original.payload.typeId), signals, Modifier.testTag("peek.verdict"))
+            VerdictHeader(level, QrText.typeName(res, original.payload.typeId), signals, Modifier.testTag("peek.verdict"))
             when (val s = state) {
                 is PeekState.Running ->
                     Row(Modifier.semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                         LoadingIndicator()
-                        Text(if (s.checkingAge) "Checking the domain’s age…" else "Fetching…", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(if (s.checkingAge) R.string.qr_peek_checking_age else R.string.qr_peek_fetching), style = MaterialTheme.typography.bodyLarge)
                     }
-                PeekState.Idle -> Text("Starting…", style = MaterialTheme.typography.bodyLarge, color = QrColors.muted)
-                PeekState.Failed -> Text("This isn’t a web link, so there is nothing to Peek at.", style = MaterialTheme.typography.bodyLarge)
+                PeekState.Idle -> Text(stringResource(R.string.qr_peek_starting), style = MaterialTheme.typography.bodyLarge, color = QrColors.muted)
+                PeekState.Failed -> Text(stringResource(R.string.qr_peek_not_a_link), style = MaterialTheme.typography.bodyLarge)
                 is PeekState.Finished -> Unit
             }
-            PeekText.notFetched(capture)?.let { Text(it, Modifier.testTag("peek.notFetched"), style = MaterialTheme.typography.bodyLarge) }
-            report?.let { ReasonList(ResultReasons.peekRows(it, original)) }
+            PeekText.notFetched(res, capture)?.let { Text(it, Modifier.testTag("peek.notFetched"), style = MaterialTheme.typography.bodyLarge) }
+            report?.let { ReasonList(ResultReasons.peekRows(res, it, original)) }
             val hops = capture?.hops.orEmpty()
             if (hops.isNotEmpty()) {
                 val rows = remember(hops, report) { PeekHopRow.rows(hops, report?.hopAnalyses.orEmpty(), QrLists.shared()) }
-                ResultCard(title = "Where it goes") {
+                ResultCard(title = stringResource(R.string.qr_peek_where_it_goes)) {
                     rows.forEach { row ->
                         Column(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-                            Text("${row.number}. ${row.domain}", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.qr_peek_hop, row.number, row.domain), style = MaterialTheme.typography.titleMedium)
                             SelectionContainer { Caption(row.url) }
-                            Caption(row.status?.let { "Answered $it" } ?: "Not fetched")
+                            Caption(row.status?.let { stringResource(R.string.qr_peek_hop_answered, it) } ?: stringResource(R.string.qr_peek_hop_not_fetched))
                             row.level?.takeIf { it != Level.NORMAL }?.let { VerdictLabel(it) }
                         }
                     }
@@ -224,15 +229,15 @@ fun PeekPage(model: PeekModel) {
             }
             val shownCapture = capture
             if (report != null && shownCapture != null)
-                ResultCard(title = "The page") {
-                    ResultField("Title", report.title ?: "No title found")
-                    ResultField("Connection", PeekText.connection(shownCapture))
+                ResultCard(title = stringResource(R.string.qr_peek_the_page)) {
+                    ResultField(stringResource(R.string.qr_peek_title), report.title ?: stringResource(R.string.qr_peek_no_title))
+                    ResultField(stringResource(R.string.qr_peek_connection), PeekText.connection(res, shownCapture))
                     ResultField(
-                        "Asks for",
-                        PeekText.asks(report.signals)
-                            ?: if (PeekText.pageWasRead(shownCapture)) "No password, code or card field found" else "The page wasn’t read",
+                        stringResource(R.string.qr_peek_asks_for),
+                        PeekText.asks(res, report.signals)
+                            ?: stringResource(if (PeekText.pageWasRead(shownCapture)) R.string.qr_peek_asks_nothing else R.string.qr_peek_not_read),
                     )
-                    ResultField("Domain age", PeekText.age(age))
+                    ResultField(stringResource(R.string.qr_peek_domain_age), PeekText.age(res, age))
                 }
         }
     }

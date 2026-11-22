@@ -101,10 +101,10 @@ class PlatformFixesTest {
     fun eachCodeInViewIsNamedByTypeAndPreview() {
         fun code(text: String?, symbology: Symbology = Symbology.QR) =
             ScannedCode(text, (text ?: "x").toByteArray(), symbology)
-        assertEquals("QR code: https://example.com", CodeInViewLabel.of(code("https://example.com")))
-        assertEquals("Aztec: two words", CodeInViewLabel.of(code("two\n  words", Symbology.AZTEC)))
-        assertEquals("QR code: Data that isn’t text", CodeInViewLabel.of(code(null)))
-        val long = CodeInViewLabel.of(code("a".repeat(100)))
+        assertEquals("QR code: https://example.com", CodeInViewLabel.of(testRes, code("https://example.com")))
+        assertEquals("Aztec: two words", CodeInViewLabel.of(testRes, code("two\n  words", Symbology.AZTEC)))
+        assertEquals("QR code: Data that isn’t text", CodeInViewLabel.of(testRes, code(null)))
+        val long = CodeInViewLabel.of(testRes, code("a".repeat(100)))
         assertEquals("QR code: " + "a".repeat(CodeInViewLabel.PREVIEW_LENGTH) + "…", long)
     }
 
@@ -126,18 +126,18 @@ class PlatformFixesTest {
                 checksum = gg.seven.qr.core.PaymentChecksum.VALID,
                 extra = mapOf("mcc" to "5411", "networkID" to "ph.ppmi", "additional.05" to "R-9", "additional.42" to "x", "someNewKey" to "y", "alternateName" to "Tindahan"),
             )
-        val rows = PaymentText.rows(info, java.util.Locale.ENGLISH)
+        val rows = PaymentText.rows(testRes, info, java.util.Locale.ENGLISH)
         assertEquals(listOf("City", "Country", "Network", "Account", "Reference"), rows.map { it.label })
         assertEquals("Philippines (PH)", rows[1].value)
-        assertEquals("PHP 250.00", PaymentText.amount(info))
-        val more = PaymentText.moreDetails(info).map { it.label }
+        assertEquals("PHP 250.00", PaymentText.amount(testRes, info))
+        val more = PaymentText.moreDetails(testRes, info).map { it.label }
         assertEquals("Format", more.first())
         assertTrue(more.containsAll(listOf("Merchant category code", "Network identifier", "Reference", "Additional data 42", "Some new key")))
         assertTrue(more.none { it == "mcc" || it == "networkID" || it.contains('.') || it == "Name in another language" })
-        assertEquals("IBAN", PaymentText.accountLabel(gg.seven.qr.core.PaymentFormat.EPC))
-        assertEquals("Payee address", PaymentText.accountLabel(gg.seven.qr.core.PaymentFormat.UPI))
-        assertEquals("Check this matches where you are.", PaymentText.CHECK_MATCH)
-        assertEquals("Mandate (repeating payments)", PaymentText.value("kind", "MANDATE"))
-        assertEquals("XK1", PaymentText.country("XK1"))
+        assertEquals("IBAN", PaymentText.accountLabel(testRes, gg.seven.qr.core.PaymentFormat.EPC))
+        assertEquals("Payee address", PaymentText.accountLabel(testRes, gg.seven.qr.core.PaymentFormat.UPI))
+        assertEquals("Check this matches where you are.", testRes.getString(R.string.qr_payment_check_match))
+        assertEquals("Mandate (repeating payments)", PaymentText.value(testRes, "kind", "MANDATE"))
+        assertEquals("XK1", PaymentText.country(testRes, "XK1"))
     }
 }

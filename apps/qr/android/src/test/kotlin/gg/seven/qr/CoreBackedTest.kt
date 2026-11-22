@@ -81,7 +81,7 @@ class CoreBackedTest {
         val analysis = analyzeOffline(text)
         assertTrue(analysis.payload is Payload.Wifi)
         assertEquals("Cafe; Guest", (analysis.payload as Payload.Wifi).info.ssid)
-        val actions = ResultActionPlan.actions(analysis.payload, ResultCapabilities(wifiJoinAvailable = true))
+        val actions = ResultActionPlan.actions(analysis.payload, ResultCapabilities())
         assertEquals(listOf(ResultAction.JOIN_WIFI, ResultAction.COPY_PASSWORD, ResultAction.MAKE_CODE), actions)
     }
 
@@ -89,7 +89,7 @@ class CoreBackedTest {
     fun aLookalikeLinkIsALikelyScamWithSentences() {
         val analysis = analyzeOffline("http://paypa1-verify.help/login")
         assertEquals(Level.LIKELY_SCAM, analysis.level)
-        val sentences = SignalText.sentences(analysis.signals)
+        val sentences = SignalText.sentences(testRes, analysis.signals)
         assertTrue(sentences.isNotEmpty())
         assertTrue(sentences.none { it.contains("safe", ignoreCase = true) })
         assertEquals(ResultAction.PEEK, ResultActionPlan.layout(ResultActionPlan.actions(analysis.payload, ResultCapabilities()), analysis.level).primary)
@@ -107,8 +107,8 @@ class CoreBackedTest {
         val again = HistoryStore(dir, kotlinx.coroutines.GlobalScope)
         again.load()
         assertEquals("menu", again.state.value.items.single().note)
-        assertEquals(1, again.search("web link").size)
-        assertEquals(1, again.search("example").size)
+        assertEquals(1, again.search(testRes, "web link").size)
+        assertEquals(1, again.search(testRes, "example").size)
     }
 
     private fun analyzeOffline(text: String) = gg.seven.qr.core.Analyzer(gg.seven.qr.core.bundledDataLoad(null), gg.seven.qr.core.KnownAddresses()).use { it.analyze(scannedCodeFromText(text, Symbology.QR)) }
@@ -116,17 +116,18 @@ class CoreBackedTest {
     @Test
     fun wifiTheSystemSheetCantTakeOffersWifiSettings() {
         val wpa = Payload.Wifi(WiFiInfo("Cafe", "WPA", "hunter22", false, null, null))
-        val older = ResultActionPlan.actions(wpa, ResultCapabilities(wifiJoinAvailable = false))
-        assertEquals(listOf(ResultAction.COPY_PASSWORD, ResultAction.WIFI_SETTINGS, ResultAction.MAKE_CODE), older)
-        val layout = ResultActionPlan.layout(older, Level.NORMAL)
+        // WEP is one the system sheet can't take: copy the password, then the Wi-Fi panel.
+        val wep = ResultActionPlan.actions(Payload.Wifi(WiFiInfo("Old", "WEP", "hunter22", false, null, null)), ResultCapabilities())
+        assertEquals(listOf(ResultAction.COPY_PASSWORD, ResultAction.WIFI_SETTINGS, ResultAction.MAKE_CODE), wep)
+        val layout = ResultActionPlan.layout(wep, Level.NORMAL)
         assertEquals(ResultAction.COPY_PASSWORD, layout.primary)
         assertEquals(ResultAction.WIFI_SETTINGS, layout.secondary)
         val enterprise = Payload.Wifi(WiFiInfo("Office", "WPA2-EAP", null, false, "PEAP", null))
-        assertEquals(WiFiJoinPlan.SETTINGS_ONLY, ResultActionPlan.wifiJoinPlan(enterprise.info, ResultCapabilities(wifiJoinAvailable = true)))
-        assertTrue(ResultAction.WIFI_SETTINGS in ResultActionPlan.actions(enterprise, ResultCapabilities(wifiJoinAvailable = true)))
+        assertEquals(WiFiJoinPlan.SETTINGS_ONLY, ResultActionPlan.wifiJoinPlan(enterprise.info))
+        assertTrue(ResultAction.WIFI_SETTINGS in ResultActionPlan.actions(enterprise, ResultCapabilities()))
         val noPassword = Payload.Wifi(WiFiInfo("Cafe", "WPA", null, false, null, null))
-        assertEquals(listOf(ResultAction.WIFI_SETTINGS), ResultActionPlan.actions(noPassword, ResultCapabilities(wifiJoinAvailable = true), hasText = false))
-        val joinable = ResultActionPlan.actions(wpa, ResultCapabilities(wifiJoinAvailable = true))
+        assertEquals(listOf(ResultAction.WIFI_SETTINGS), ResultActionPlan.actions(noPassword, ResultCapabilities(), hasText = false))
+        val joinable = ResultActionPlan.actions(wpa, ResultCapabilities())
         assertTrue(ResultAction.WIFI_SETTINGS !in joinable)
     }
 
@@ -149,10 +150,10 @@ class CoreBackedTest {
         val original = analyzeOffline("http://shop.example.com/x")
         val notFetched = gg.seven.qr.core.PeekCapture(listOf(gg.seven.qr.core.PeekHop("http://shop.example.com/x", null)), gg.seven.qr.core.StopReason.HTTP_TARGET)
         assertEquals("example.com", gg.seven.qr.core.peekAgeLink(original, notFetched, data)?.registrableDomain)
-        assertTrue(PeekText.notFetched(notFetched)!!.startsWith("Peek doesn’t open pages that aren’t encrypted"))
+        assertTrue(PeekText.notFetched(testRes, notFetched)!!.startsWith("Peek doesn’t open pages that aren’t encrypted"))
         val timedOut = gg.seven.qr.core.PeekCapture(listOf(gg.seven.qr.core.PeekHop("https://shop.example.com/x", null)), gg.seven.qr.core.StopReason.TIMEOUT)
         assertEquals("example.com", gg.seven.qr.core.peekAgeLink(analyzeOffline("https://shop.example.com/x"), timedOut, data)?.registrableDomain)
-        assertEquals(null, PeekText.notFetched(timedOut))
+        assertEquals(null, PeekText.notFetched(testRes, timedOut))
         // A page reached on another domain is the one whose age counts.
         val moved = gg.seven.qr.core.PeekCapture(
             listOf(gg.seven.qr.core.PeekHop("https://shop.example.com/x", 301), gg.seven.qr.core.PeekHop("https://other.org/y", 200)),
@@ -181,7 +182,7 @@ class CoreBackedTest {
     fun aTextWhoseVerdictComesFromALinkNamesItInTheReasons() {
         val analysis = analyzeOffline("Your parcel is waiting: http://paypa1-verify.help/login")
         assertTrue(analysis.embedded.isNotEmpty())
-        val reasons = ResultReasons.rows(analysis)
+        val reasons = ResultReasons.rows(testRes, analysis)
         assertTrue(reasons.toString(), reasons.any { it.sentence.startsWith("Link to ") && !it.isInfo })
         assertEquals(reasons.size, reasons.map { it.sentence }.distinct().size)
     }
@@ -201,7 +202,7 @@ class CoreBackedTest {
     fun phoneAndTextMessageCodesNeedACountryCode() {
         val local = MakeFormState(phone = "0917 123 4567").result(MakeFormKind.PHONE)
         assertTrue(local is MakeOutcome.Invalid && local.issue is MakeFormIssue.BadPhone)
-        assertTrue((local as MakeOutcome.Invalid).issue.message.contains("country code"))
+        assertTrue(testRes.getString((local as MakeOutcome.Invalid).issue.message).contains("country code"))
         assertTrue(MakeFormState(phone = "+63 917 123 4567").result(MakeFormKind.PHONE) is MakeOutcome.Request)
         assertTrue(MakeFormState(smsNumber = "0063 (917) 123-4567").result(MakeFormKind.SMS) is MakeOutcome.Request)
         assertTrue(MakeFormState(smsNumber = "555-0100").result(MakeFormKind.SMS) is MakeOutcome.Invalid)
@@ -211,11 +212,11 @@ class CoreBackedTest {
 
     @Test
     fun batchIssuesAreWordedHere() {
-        assertEquals("Enter one code’s text or link per line.", BatchText.issue(gg.seven.qr.core.batchReview("   \n")))
+        assertEquals("Enter one code’s text or link per line.", BatchText.issue(testRes, gg.seven.qr.core.batchReview("   \n")))
         val tooMany = gg.seven.qr.core.batchReview((1..500).joinToString("\n") { "line $it" })
         assertTrue(tooMany.issueKind is gg.seven.qr.core.BatchIssue.TooManyLines)
-        assertTrue(BatchText.issue(tooMany)!!.startsWith("Use at most "))
-        assertEquals(null, BatchText.issue(gg.seven.qr.core.batchReview("one\ntwo")))
+        assertTrue(BatchText.issue(testRes, tooMany)!!.startsWith("Use at most "))
+        assertEquals(null, BatchText.issue(testRes, gg.seven.qr.core.batchReview("one\ntwo")))
     }
 
     @Test

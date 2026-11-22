@@ -2,11 +2,15 @@ package gg.seven.qr
 
 import android.content.ClipData
 import android.content.Intent
+import android.content.res.Resources
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -38,17 +42,20 @@ internal fun batchFileName(at: java.time.LocalDateTime): String =
 
 /** The batch's words (iOS BatchMakeScreen): the core says what is wrong, the app says it. */
 object BatchText {
-    fun issue(kind: BatchIssue): String =
+    fun issue(res: Resources, kind: BatchIssue): String =
         when (kind) {
-            is BatchIssue.TooLarge -> "The batch is too large. Use at most ${kind.maxKilobytes} KB of text."
-            is BatchIssue.LineTooLong -> "Line ${kind.line} is too long for a code."
-            is BatchIssue.TooManyLines -> "Use at most ${kind.max} nonblank lines per batch."
-            BatchIssue.Empty -> "Enter one code’s text or link per line."
+            is BatchIssue.TooLarge -> res.getString(R.string.qr_batch_too_large, kind.maxKilobytes)
+            is BatchIssue.LineTooLong -> res.getString(R.string.qr_batch_line_too_long, kind.line)
+            is BatchIssue.TooManyLines -> kind.max.coerceAtMost(Int.MAX_VALUE.toLong()).toInt().let { res.getQuantityString(R.plurals.qr_batch_too_many_lines, it, it) }
+            BatchIssue.Empty -> res.getString(R.string.qr_batch_empty)
         }
 
     /** The worded issue, or the core's English sentence from an older core that has no kind. */
-    fun issue(review: BatchReview): String? = review.issueKind?.let(::issue) ?: review.issue
+    fun issue(res: Resources, review: BatchReview): String? = review.issueKind?.let { issue(res, it) } ?: review.issue
 }
+
+/** Code [number] (counting from 1) of a batch couldn't be generated. */
+internal class BatchCodeException(val number: Int, cause: Throwable) : IllegalArgumentException("code $number", cause)
 
 internal fun batchPdf(items: List<String>, grid: SheetGrid, paper: PaperSize): ByteArray {
     val matrices =
@@ -56,10 +63,7 @@ internal fun batchPdf(items: List<String>, grid: SheetGrid, paper: PaperSize): B
             try {
                 CodeGenerator.generate(text, MakeSymbology.QR, Correction.AUTO)
             } catch (e: Exception) {
-                throw IllegalArgumentException(
-                    "Code ${index + 1} could not be generated. Shorten that line and review again.",
-                    e,
-                )
+                throw BatchCodeException(index + 1, e)
             }
         }
     return PdfRenderer.batch(matrices, grid, paper)
@@ -68,13 +72,14 @@ internal fun batchPdf(items: List<String>, grid: SheetGrid, paper: PaperSize): B
 @Composable
 fun BatchMakeForm(draft: BatchDraft, close: () -> Unit) {
     val context = LocalContext.current
+    val res = LocalResources.current
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     val items = draft.items
     var saved by remember { mutableStateOf(false) }
     val saveFile = rememberSaveFile { ok ->
         saved = ok
-        draft.issue = if (ok) null else "The PDF couldn’t be saved there. Your file and inputs are still here."
+        draft.issue = if (ok) null else res.getString(R.string.qr_batch_save_failed)
     }
     fun share(file: File) {
         try {
@@ -84,26 +89,28 @@ fun BatchMakeForm(draft: BatchDraft, close: () -> Unit) {
                     .setType("application/pdf")
                     .putExtra(Intent.EXTRA_STREAM, uri)
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            intent.clipData = ClipData.newRawUri("QR batch", uri)
-            context.startActivity(Intent.createChooser(intent, "Share PDF"))
+            intent.clipData = ClipData.newRawUri(res.getString(R.string.qr_batch_clip_label), uri)
+            context.startActivity(Intent.createChooser(intent, res.getString(R.string.qr_batch_share_pdf)))
         } catch (_: Exception) {
-            draft.issue = "No app could open the PDF. Your file and inputs are still here."
+            draft.issue = res.getString(R.string.qr_batch_no_app)
         }
     }
     FullScreenForm(
-        title = if (items == null) "Batch codes" else "Review",
+        title = stringResource(if (items == null) R.string.qr_batch_title else R.string.qr_batch_review),
         onClose = close,
         confirmDiscard = draft.input.isNotEmpty() && draft.prepared == null,
         busy = busy,
         saveLabel =
-            if (items == null) "Review"
-            else if (draft.prepared != null) "Share PDF" else "Create PDF",
+            stringResource(
+                if (items == null) R.string.qr_batch_review
+                else if (draft.prepared != null) R.string.qr_batch_share_pdf else R.string.qr_batch_create_pdf
+            ),
         onSave = {
             val prepared = draft.prepared
             if (prepared != null) share(prepared)
             else if (items == null) {
                 val review = batchReview(draft.input)
-                draft.issue = BatchText.issue(review)
+                draft.issue = BatchText.issue(res, review)
                 if (review.issue == null && review.issueKind == null) draft.items = review.items
             } else
                 scope.launch {
@@ -130,7 +137,8 @@ fun BatchMakeForm(draft: BatchDraft, close: () -> Unit) {
                         throw e
                     } catch (e: Exception) {
                         draft.issue =
-                            e.message ?: "Could not create the PDF. Your inputs are still here."
+                            if (e is BatchCodeException) res.getString(R.string.qr_batch_code_failed, e.number)
+                            else res.getString(R.string.qr_batch_create_failed)
                     } finally {
                         busy = false
                     }
@@ -139,12 +147,12 @@ fun BatchMakeForm(draft: BatchDraft, close: () -> Unit) {
     ) {
         if (busy) {
             LinearProgressIndicator(Modifier.fillMaxWidth())
-            Text("Creating PDF…")
+            Text(stringResource(R.string.qr_batch_creating))
         }
         draft.issue?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (items == null) {
             Text(
-                "One text or link per line, up to 100 codes. Blank lines are skipped; other characters and duplicate lines stay unchanged."
+                stringResource(R.string.qr_batch_intro)
             )
             OutlinedTextField(
                 draft.input,
@@ -152,31 +160,31 @@ fun BatchMakeForm(draft: BatchDraft, close: () -> Unit) {
                     draft.input = it
                     draft.issue = null
                 },
-                label = { Text("Code contents") },
+                label = { Text(stringResource(R.string.qr_batch_contents)) },
                 minLines = 6,
                 keyboardOptions =
                     androidx.compose.foundation.text.KeyboardOptions(autoCorrectEnabled = false),
                 modifier = Modifier.fillMaxWidth().testTag("batch-input"),
             )
         } else {
-            Text("${items.size} codes", style = MaterialTheme.typography.titleLarge)
+            Text(pluralStringResource(R.plurals.qr_batch_codes, items.size, items.size), style = MaterialTheme.typography.titleLarge)
             Text(
-                "Review each code below. PDF labels keep this order and exact text. Nothing is added to History."
+                stringResource(R.string.qr_batch_review_text)
             )
             if (!busy && draft.prepared == null) {
-                DropdownField("Paper", draft.paper, PaperSize.entries.map { it to it.title }) {
+                DropdownField(stringResource(R.string.qr_export_paper), draft.paper, PaperSize.entries.map { it to stringResource(it.title) }) {
                     draft.paper = it
                 }
                 DropdownField(
-                    "Labels per page",
+                    stringResource(R.string.qr_export_labels_per_page),
                     draft.grid,
-                    SheetGrid.entries.map { it to it.title },
+                    SheetGrid.entries.map { it to stringResource(it.title) },
                 ) {
                     draft.grid = it
                 }
-            } else Text("${draft.paper.title} · ${draft.grid.title}")
+            } else Text(stringResource(R.string.qr_batch_paper_grid, stringResource(draft.paper.title), stringResource(draft.grid.title)))
             draft.prepared?.let { file ->
-                Text(if (saved) "PDF saved" else "PDF ready", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(if (saved) R.string.qr_batch_pdf_saved else R.string.qr_batch_pdf_ready), style = MaterialTheme.typography.titleMedium)
                 // Share PDF stays in the fixed action slot; Save puts a copy where the person picks.
                 Button(
                     onClick = {
@@ -186,7 +194,7 @@ fun BatchMakeForm(draft: BatchDraft, close: () -> Unit) {
                     enabled = !busy,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("batch-save"),
                 ) {
-                    Text("Save PDF")
+                    Text(stringResource(R.string.qr_batch_save_pdf))
                 }
             }
 
@@ -199,12 +207,12 @@ fun BatchMakeForm(draft: BatchDraft, close: () -> Unit) {
                 },
                 enabled = !busy,
             ) {
-                Text("Edit inputs")
+                Text(stringResource(R.string.qr_batch_edit_inputs))
             }
             items.forEachIndexed { index, text ->
                 ListItem(
                     headlineContent = { Text(text) },
-                    overlineContent = { Text("Code ${index + 1}") },
+                    overlineContent = { Text(stringResource(R.string.qr_batch_code_number, index + 1)) },
                 )
             }
         }

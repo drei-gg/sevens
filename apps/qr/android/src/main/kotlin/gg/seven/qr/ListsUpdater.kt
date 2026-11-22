@@ -1,6 +1,7 @@
 package gg.seven.qr
 
 import android.content.Context
+import android.content.res.Resources
 import android.util.Log
 import gg.seven.qr.core.ListsBundleException
 import gg.seven.qr.core.ListsVersion
@@ -199,7 +200,8 @@ object ListsText {
     fun dateText(built: String, locale: Locale = Locale.getDefault()): String? =
         date(built)?.let { DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale).format(it) }
 
-    fun title(lists: ListsVersion): String = dateText(lists.built)?.let { "Scam lists from $it" } ?: "Scam lists"
+    fun title(res: Resources, lists: ListsVersion): String =
+        dateText(lists.built)?.let { res.getString(R.string.qr_lists_title_dated, it) } ?: res.getString(R.string.qr_lists_title)
 
     /** More than six months before [today]; an unreadable date counts as old. */
     fun isOld(built: String, today: LocalDate = LocalDate.now(ZoneOffset.UTC)): Boolean {
@@ -207,25 +209,22 @@ object ListsText {
         return today.isAfter(day.plusMonths(6))
     }
 
-    const val OLD_LINE = "These lists are more than six months old."
-    const val CHECK = "Check for newer lists"
-    const val CHECKING = "Checking…"
-    const val RESET = "Use the lists that came with the app"
-    const val RESET_DONE = "Using the lists that came with the app."
-
-    fun sentence(result: ListsUpdateResult): String =
+    fun sentence(res: Resources, result: ListsUpdateResult): String =
         when (result) {
-            is ListsUpdateResult.Updated -> dateText(result.lists.built)?.let { "Updated to lists from $it." } ?: "Updated to newer lists."
-            ListsUpdateResult.Unreachable -> "Couldn’t reach GitHub. Your lists are unchanged."
-            ListsUpdateResult.SaveFailed -> "Couldn’t save the newer lists. Your lists are unchanged."
+            is ListsUpdateResult.Updated ->
+                dateText(result.lists.built)?.let { res.getString(R.string.qr_lists_updated_dated, it) } ?: res.getString(R.string.qr_lists_updated)
+            ListsUpdateResult.Unreachable -> res.getString(R.string.qr_lists_unreachable)
+            ListsUpdateResult.SaveFailed -> res.getString(R.string.qr_lists_save_failed)
             is ListsUpdateResult.Refused ->
-                when (result.reason) {
-                    is ListsBundleException.NotNewer -> "No newer lists."
-                    is ListsBundleException.TooLarge -> "The download was larger than expected, so we kept your lists."
-                    is ListsBundleException.BadSignature -> "The download didn’t carry a valid signature, so we kept your lists."
-                    is ListsBundleException.Unreadable -> "The download couldn’t be read, so we kept your lists."
-                    is ListsBundleException.UnknownSchema -> "These lists are for a newer version of the app, so we kept yours."
-                    is ListsBundleException.BadShape -> "The download didn’t pass our checks, so we kept your lists."
-                }
+                res.getString(
+                    when (result.reason) {
+                        is ListsBundleException.NotNewer -> R.string.qr_lists_not_newer
+                        is ListsBundleException.TooLarge -> R.string.qr_lists_too_large
+                        is ListsBundleException.BadSignature -> R.string.qr_lists_bad_signature
+                        is ListsBundleException.Unreadable -> R.string.qr_lists_unreadable
+                        is ListsBundleException.UnknownSchema -> R.string.qr_lists_unknown_schema
+                        is ListsBundleException.BadShape -> R.string.qr_lists_bad_shape
+                    }
+                )
         }
 }
