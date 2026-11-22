@@ -329,26 +329,55 @@ pub fn append_page_allowance(existing_page_count: u64) -> u64 {
 }
 
 /// Where a camera capture's pages go, in capture order: the first `append` pages join the existing
-/// document, and each following batch becomes a new document of at most 50 pages. Every captured
-/// page has a place, so a capture is never discarded for exceeding the page limit.
+/// document, and each following batch becomes a new document. Every batch stays within both the
+/// 50-page and the 100 MB image limits, so a capture is never discarded for exceeding either.
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct CapturePlan {
     pub append: u64,
     pub new_documents: Vec<u64>,
 }
 
-/// `existing_page_count` is the target document's current page count, or `None` for a new document.
+/// `existing_page_count`/`existing_bytes` describe the target document, or `None`/0 for a new
+/// document; `image_sizes` are the captured pages' encoded sizes, in capture order. Only a page that
+/// no document could hold (empty, or over 20 MB) is refused, before anything is planned.
 #[uniffi::export]
-pub fn capture_plan(existing_page_count: Option<u64>, captured: u64) -> CapturePlan {
-    let append = existing_page_count.map_or(0, |n| append_page_allowance(n).min(captured));
-    let mut rest = captured - append;
-    let mut new_documents = Vec::new();
-    while rest > 0 {
-        let batch = rest.min(MAX_PAGES as u64);
-        new_documents.push(batch);
-        rest -= batch;
+pub fn capture_plan(
+    existing_page_count: Option<u64>,
+    existing_bytes: u64,
+    image_sizes: Vec<u64>,
+) -> Result<CapturePlan, ScanError> {
+    if !check_images(&image_sizes) {
+        return Err(ScanError::TooLarge);
     }
-    CapturePlan { append, new_documents }
+    let mut sizes = image_sizes.iter().copied().peekable();
+    let mut append = 0;
+    if let Some(existing) = existing_page_count {
+        let (mut pages, mut bytes) = (existing, existing_bytes);
+        while let Some(&size) = sizes.peek() {
+            if pages >= MAX_PAGES as u64 || bytes.saturating_add(size) > MAX_DOCUMENT_IMAGE_BYTES {
+                break;
+            }
+            pages += 1;
+            bytes += size;
+            append += 1;
+            sizes.next();
+        }
+    }
+    let mut new_documents = Vec::new();
+    let (mut pages, mut bytes) = (0u64, 0u64);
+    for size in sizes {
+        if pages == MAX_PAGES as u64 || bytes + size > MAX_DOCUMENT_IMAGE_BYTES {
+            new_documents.push(pages);
+            pages = 0;
+            bytes = 0;
+        }
+        pages += 1;
+        bytes += size;
+    }
+    if pages > 0 {
+        new_documents.push(pages);
+    }
+    Ok(CapturePlan { append, new_documents })
 }
 
 /// `updatePage`: settings are checked first; the page's OCR text is cleared, because it was read

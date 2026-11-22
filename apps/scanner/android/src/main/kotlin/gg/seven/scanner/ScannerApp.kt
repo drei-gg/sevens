@@ -155,6 +155,7 @@ fun ScannerApp(model: ScannerModel = viewModel()) {
     val nav = remember(keys, snackbar) { ScannerNav(keys, snackbar, appScope) }
     val error by model.error.collectAsStateWithLifecycle()
     val notice by model.notice.collectAsStateWithLifecycle()
+    val unsaved by model.unsavedCapture.collectAsStateWithLifecycle()
     BackHandler(nav.depth > 1 && nav.top !is Route.Capture) { nav.pop() }
     CompositionLocalProvider(LocalNav provides nav) {
         when (val route = nav.top) {
@@ -180,8 +181,9 @@ fun ScannerApp(model: ScannerModel = viewModel()) {
                         model.capture(
                             uris,
                             route.appendTo,
-                            onSaved = nav::pop,
-                            retainOnFailure = true,
+                            // Saved or kept by the model (Try again / Discard pages): either way
+                            // the capture screen can close without losing the pages.
+                            onHandled = nav::pop,
                             cleanUp = cleanUp,
                         )
                     },
@@ -209,7 +211,32 @@ fun ScannerApp(model: ScannerModel = viewModel()) {
             },
         )
     }
-    error?.let {
+    if (unsaved != null)
+        error?.let {
+            // Unsaved scanned pages leave only by being saved or by an explicit discard.
+            AlertDialog(
+                onDismissRequest = {},
+                title = { Text("Could not complete") },
+                text = { Text(it) },
+                confirmButton = {
+                    TextButton(
+                        onClick = { model.retryCapture() },
+                        modifier = Modifier.testTag("scanner.capture.retry"),
+                    ) {
+                        Text("Try again")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { model.discardCapture() },
+                        modifier = Modifier.testTag("scanner.capture.discard"),
+                    ) {
+                        Text("Discard pages", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+            )
+        }
+    else error?.let {
         AlertDialog(
             onDismissRequest = { model.error.value = null },
             title = { Text("Could not complete") },

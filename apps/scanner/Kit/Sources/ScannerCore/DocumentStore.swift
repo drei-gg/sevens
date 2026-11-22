@@ -6,6 +6,15 @@ internal import ScannerFiles
 /// valid, the manifest bytes, the order, which folders count, which page images are left over).
 /// Manifests commit atomically after immutable page files. A failed creation removes only its own
 /// staging directory.
+/// A capture whose save failed part-way: the first `written` pages are stored (in `documents`);
+/// the rest were not written and are still the caller's to keep.
+public struct PartialCapture: Error, LocalizedError {
+    public let written: Int
+    public let documents: [ScanDocument]
+    public let underlying: any Error
+    public var errorDescription: String? { underlying.localizedDescription }
+}
+
 public actor DocumentStore {
     public let root: URL
     private let limits = scanLimits()
@@ -120,6 +129,31 @@ public actor DocumentStore {
         let current = try documentWithPageText(document: load(documentID), expected: expected, text: text)
         try save(current)
         return current
+    }
+
+    /// A camera capture, by the core's plan: the pages that fit (by page count and image bytes) join
+    /// `appendTo`, and the rest become new documents, each within both limits. Planned against the
+    /// document as stored now, inside the store, so nothing in between can change what fits.
+    public func addCapture(_ images: [Data], appendTo: UUID?, title: String) throws -> (plan: CapturePlan, documents: [ScanDocument]) {
+        var existingPages: UInt64?, existingBytes: UInt64 = 0
+        if let appendTo {
+            let current = try load(appendTo)
+            existingPages = UInt64(current.pages.count)
+            existingBytes = UInt64(try pageURLs(current).reduce(0) { $0 + (try ScanFiles.size($1)) })
+        }
+        let plan = try capturePlan(existingPageCount: existingPages, existingBytes: existingBytes, imageSizes: images.map { UInt64($0.count) })
+        var written = 0, saved: [ScanDocument] = []
+        do {
+            if let appendTo, plan.append > 0 {
+                saved.append(try append(documentID: appendTo, images: Array(images[0..<Int(plan.append)])))
+                written = Int(plan.append)
+            }
+            for count in plan.newDocuments.map({ Int($0) }) {
+                saved.append(try create(title: title, images: Array(images[written..<written + count]), text: Array(repeating: "", count: count)))
+                written += count
+            }
+        } catch { throw PartialCapture(written: written, documents: saved, underlying: error) }
+        return (plan, saved)
     }
 
     public func append(documentID: UUID, images: [Data]) throws -> ScanDocument {

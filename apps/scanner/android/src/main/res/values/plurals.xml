@@ -17,15 +17,19 @@
         <item quantity="other">%d document folders could not be read. Their files have been preserved. Backup is paused until they can be recovered.</item>
     </plurals>
     <plurals name="overflow">
-        <item quantity="one">This document holds 50 pages at most, so the last %d page you scanned was saved as a new document.</item>
-        <item quantity="other">This document holds 50 pages at most, so the last %d pages you scanned were saved as a new document.</item>
+        <item quantity="one">Not every page fit in this document (50 pages and 100 MB of images at most), so the last %d page you scanned was saved as a new document.</item>
+        <item quantity="other">Not every page fit in this document (50 pages and 100 MB of images at most), so the last %d pages you scanned were saved as a new document.</item>
     </plurals>
     <plurals name="overflow_documents">
-        <item quantity="one">This document holds 50 pages at most, so the pages that didn’t fit were saved as %d new document.</item>
-        <item quantity="other">This document holds 50 pages at most, so the pages that didn’t fit were saved as %d new documents.</item>
+        <item quantity="one">Not every page fit in this document (50 pages and 100 MB of images at most), so the rest were saved as %d new document.</item>
+        <item quantity="other">Not every page fit in this document (50 pages and 100 MB of images at most), so the rest were saved as %d new documents.</item>
     </plurals>
     <plurals name="split">
-        <item quantity="one">Documents hold 50 pages at most, so this scan was saved as %d document.</item>
-        <item quantity="other">Documents hold 50 pages at most, so this scan was saved as %d documents.</item>
+        <item quantity="one">A document holds 50 pages and 100 MB of images at most, so this scan was saved as %d document.</item>
+        <item quantity="other">A document holds 50 pages and 100 MB of images at most, so this scan was saved as %d documents.</item>
+    </plurals>
+    <plurals name="unsaved">
+        <item quantity="one">%d scanned page couldn’t be saved. It is kept until you try again or discard it.</item>
+        <item quantity="other">%d scanned pages couldn’t be saved. They are kept until you try again or discard them.</item>
     </plurals>
 </resources>

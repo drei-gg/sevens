@@ -42,6 +42,9 @@ fun describe(error: Throwable): String =
 const val NEEDS_ACCESS =
     "Start a trial or unlock to scan or import pages. Your saved documents remain available."
 
+/** Captured pages not yet written, with the cleanup that deletes their files once resolved. */
+class UnsavedCapture(val sources: List<Uri>, val appendTo: UUID?, val cleanUp: () -> Unit)
+
 class ScannerModel(app: Application) : AndroidViewModel(app) {
     val annotationDraft = MutableStateFlow<AnnotationDraft?>(null)
     val textCorrection = MutableStateFlow<TextCorrectionDraft?>(null)
@@ -65,6 +68,8 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
     val error = MutableStateFlow<String?>(null)
     /** Worth knowing after a successful save, such as pages placed in a new document. */
     val notice = MutableStateFlow<String?>(null)
+    /** Captured pages a failed save did not write, kept until saved or explicitly discarded. */
+    val unsavedCapture = MutableStateFlow<UnsavedCapture?>(null)
     val loaded = MutableStateFlow(false)
     val appearance = MutableStateFlow(prefs.getString(APPEARANCE, "system") ?: "system")
     val order =
@@ -121,50 +126,102 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Camera pages (or ML Kit's), normalized off the main thread, then saved and recognized. Pages
-     * beyond the document's limit become new documents rather than discarding the capture.
+     * Camera pages (or ML Kit's), normalized off the main thread, then saved by the core's plan and
+     * recognized: what fits joins [appendTo], the rest become new documents within both limits.
+     * [cleanUp] deletes the captured files only once every page is written; after a failure the
+     * unwritten pages wait in [unsavedCapture] for Try again or an explicit Discard. [onHandled]
+     * runs once the model owns the pages (saved or kept), so a capture screen can close.
      */
     fun capture(
         sources: List<Uri>,
         appendTo: UUID? = null,
-        onSaved: () -> Unit = {},
-        retainOnFailure: Boolean = false,
+        onHandled: () -> Unit = {},
         cleanUp: () -> Unit = {},
-    ) =
-        viewModelScope.launch {
-            var committed = false
-            try {
-                addPages(
-                    "Preparing pages…",
-                    appendTo,
-                    split = true,
-                    onSaved = {
-                        committed = true
-                        onSaved()
-                    },
-                ) { staging ->
-                    if (sources.isEmpty()) throw ScanException.TooLarge()
-                    val resolver = getApplication<Application>().contentResolver
-                    sources.map { uri ->
-                        val bitmap =
-                            Processing.decode(
-                                {
-                                    resolver.openInputStream(uri)
-                                        ?: throw ScanException.MissingPage()
-                                },
-                                pageProcessing().normalizedMaxPixels.toInt(),
-                            )
-                        val out = File(staging, "${UUID.randomUUID()}.jpg")
-                        Processing.normalize(bitmap, out)
-                        bitmap.recycle()
-                        out
-                    }
-                }
-            } finally {
-                if (committed || !retainOnFailure)
-                    withContext(Dispatchers.IO) { runCatching(cleanUp) }
-            }
+    ) = viewModelScope.launch { saveCapture(sources, appendTo, onHandled, cleanUp) }
+
+    /** Saves the kept pages again; the plan is made afresh against the document as it is now. */
+    fun retryCapture() {
+        val pending = unsavedCapture.value ?: return
+        error.value = null
+        val target = pending.appendTo?.takeIf { id -> _documents.value.any { it.id == id } }
+        viewModelScope.launch { saveCapture(pending.sources, target, {}, pending.cleanUp) }
+    }
+
+    /** The person chose to discard the kept pages: only now are their files deleted. */
+    fun discardCapture() {
+        val pending = unsavedCapture.value ?: return
+        unsavedCapture.value = null
+        error.value = null
+        viewModelScope.launch { withContext(Dispatchers.IO) { runCatching(pending.cleanUp) } }
+    }
+
+    private suspend fun saveCapture(
+        sources: List<Uri>,
+        appendTo: UUID?,
+        onHandled: () -> Unit,
+        cleanUp: () -> Unit,
+    ) {
+        val resources = getApplication<Application>().resources
+        fun keep(written: Int, reason: String?) {
+            val left = sources.size - written
+            unsavedCapture.value = UnsavedCapture(sources.drop(written), appendTo, cleanUp)
+            error.value =
+                listOfNotNull(resources.getQuantityString(R.plurals.unsaved, left, left), reason)
+                    .joinToString(" ")
+            onHandled()
         }
+        if (busy.value) return keep(0, null)
+        // Adding pages is new scanning, so it needs access like a new document.
+        if (!store.paidFeaturesAvailable) return keep(0, NEEDS_ACCESS)
+        if (sources.isEmpty()) return onHandled()
+        busy.value = true
+        progress.value = "Preparing pages…"
+        val staging =
+            File(getApplication<Application>().cacheDir, "ScannerStaging/${UUID.randomUUID()}")
+                .apply { mkdirs() }
+        try {
+            val result =
+                try {
+                    val pages =
+                        withContext(Dispatchers.Default) {
+                            val resolver = getApplication<Application>().contentResolver
+                            sources.map { uri ->
+                                val bitmap =
+                                    Processing.decode(
+                                        {
+                                            resolver.openInputStream(uri)
+                                                ?: throw ScanException.MissingPage()
+                                        },
+                                        pageProcessing().normalizedMaxPixels.toInt(),
+                                    )
+                                val out = File(staging, "${UUID.randomUUID()}.jpg")
+                                Processing.normalize(bitmap, out)
+                                bitmap.recycle()
+                                out
+                            }
+                        }
+                    progress.value = "Saving document…"
+                    val title = "Scan " + titleStamp(System.currentTimeMillis())
+                    repository.io { addCapture(pages, appendTo, title) }
+                } catch (e: Exception) {
+                    reload()
+                    keep((e as? PartialCapture)?.written ?: 0, describe((e as? PartialCapture)?.cause ?: e))
+                    return
+                }
+            val (plan, saved) = result
+            unsavedCapture.value = null
+            withContext(Dispatchers.IO) { runCatching(cleanUp) }
+            reload()
+            onHandled()
+            notice.value = overflowNotice(plan, appendTo != null)
+            progress.value = "Scan saved. Recognizing text…"
+            for (document in saved) recognizeNow(document, onlyEmpty = true)
+        } finally {
+            withContext(Dispatchers.IO) { staging.deleteRecursively() }
+            busy.value = false
+            progress.value = ""
+        }
+    }
 
     /** Images and PDFs from the system picker. */
     fun importFiles(uris: List<Uri>, appendTo: UUID? = null) =
@@ -177,7 +234,6 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
     private suspend fun addPages(
         message: String,
         appendTo: UUID?,
-        split: Boolean = false,
         onSaved: () -> Unit = {},
         prepare: suspend (File) -> List<File>,
     ) {
@@ -196,38 +252,20 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
         try {
             val pages = withContext(Dispatchers.Default) { prepare(staging) }
             progress.value = "Saving document…"
-            val title = "Scan " + titleStamp(System.currentTimeMillis())
-            val (plan, saved) =
+            val saved =
                 repository.io {
-                    if (!split)
-                        null to
-                            listOf(
-                                if (appendTo != null) append(appendTo, pages)
-                                else create(title, pages, List(pages.size) { "" })
-                            )
-                    else {
-                        val existing = appendTo?.let { load(it).pages.size.toULong() }
-                        val plan = capturePlan(existing, pages.size.toULong())
-                        var rest = pages
-                        plan to
-                            buildList {
-                                val first = plan.append.toInt()
-                                if (appendTo != null && first > 0) {
-                                    add(append(appendTo, rest.take(first)))
-                                    rest = rest.drop(first)
-                                }
-                                for (count in plan.newDocuments.map { it.toInt() }) {
-                                    add(create(title, rest.take(count), List(count) { "" }))
-                                    rest = rest.drop(count)
-                                }
-                            }
-                    }
+                    if (appendTo != null) append(appendTo, pages)
+                    else
+                        create(
+                            "Scan " + titleStamp(System.currentTimeMillis()),
+                            pages,
+                            List(pages.size) { "" },
+                        )
                 }
             reload()
             onSaved()
-            notice.value = plan?.let { overflowNotice(it, appendTo != null) }
             progress.value = "Scan saved. Recognizing text…"
-            for (document in saved) recognizeNow(document, onlyEmpty = true)
+            recognizeNow(saved, onlyEmpty = true)
         } catch (e: Exception) {
             error.value = describe(e)
         } finally {

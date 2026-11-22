@@ -698,6 +698,18 @@
         }
       }
     },
+    "Discard pages": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard pages"
+          }
+        }
+      }
+    },
     "Discard text changes?": {
       "comment": "Scanner interface copy. Keep it plain and specific.",
       "extractionState": "manual",
@@ -2230,6 +2242,18 @@
         }
       }
     },
+    "Try again": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
     "US Letter": {
       "comment": "Scanner interface copy. Keep it plain and specific.",
       "extractionState": "manual",
@@ -2441,13 +2465,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "This document holds 50 pages at most, so the last %lld page you scanned was saved as a new document."
+                  "value": "Not every page fit in this document (50 pages and 100 MB of images at most), so the last %lld page you scanned was saved as a new document."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "This document holds 50 pages at most, so the last %lld pages you scanned were saved as a new document."
+                  "value": "Not every page fit in this document (50 pages and 100 MB of images at most), so the last %lld pages you scanned were saved as a new document."
                 }
               }
             }
@@ -2465,13 +2489,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "This document holds 50 pages at most, so the pages that didn’t fit were saved as %lld new document."
+                  "value": "Not every page fit in this document (50 pages and 100 MB of images at most), so the rest were saved as %lld new document."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "This document holds 50 pages at most, so the pages that didn’t fit were saved as %lld new documents."
+                  "value": "Not every page fit in this document (50 pages and 100 MB of images at most), so the rest were saved as %lld new documents."
                 }
               }
             }
@@ -2489,13 +2513,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Documents hold 50 pages at most, so this scan was saved as %lld document."
+                  "value": "A document holds 50 pages and 100 MB of images at most, so this scan was saved as %lld document."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Documents hold 50 pages at most, so this scan was saved as %lld documents."
+                  "value": "A document holds 50 pages and 100 MB of images at most, so this scan was saved as %lld documents."
                 }
               }
             }
@@ -2520,6 +2544,30 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld document folders could not be read. Their files have been preserved. Backup is paused until they can be recovered."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "scanner.count.unsaved": {
+      "comment": "Scanner count. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld scanned page couldn’t be saved. It is kept until you try again or discard it."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld scanned pages couldn’t be saved. They are kept until you try again or discard them."
                 }
               }
             }

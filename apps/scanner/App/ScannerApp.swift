@@ -129,7 +129,13 @@ struct ScannerLibrary: View {
         .confirmationDialog("Move this document to Recently Deleted?", isPresented: Binding(get: { trashing != nil }, set: { if !$0 { trashing = nil } }), titleVisibility: .visible) {
             if let document = trashing { Button("Move to Recently Deleted", role: .destructive) { Task { _ = await model.delete(document); trashing = nil } } }
         }
-        .alert("Could not complete", isPresented: Binding(get: { model.error != nil }, set: { shown in if !shown { model.error = nil } })) { Button("OK", role: .cancel) { model.error = nil } } message: { Text(model.error ?? "") }
+        .alert("Could not complete", isPresented: Binding(get: { model.error != nil }, set: { shown in if !shown { model.error = nil } })) {
+            if model.unsavedCapture != nil {
+                // Unsaved scanned pages leave only by being saved or by an explicit discard.
+                Button("Try again") { Task { await model.retryCapture() } }
+                Button("Discard pages", role: .destructive) { model.discardCapture() }
+            } else { Button("OK", role: .cancel) { model.error = nil } }
+        } message: { Text(model.error ?? "") }
         .alert("Scan saved", isPresented: Binding(get: { model.notice != nil && model.error == nil }, set: { shown in if !shown { model.notice = nil } })) { Button("OK", role: .cancel) { model.notice = nil } } message: { Text(model.notice ?? "") }
     }
 

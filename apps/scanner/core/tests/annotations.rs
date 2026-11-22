@@ -162,22 +162,58 @@ fn capture_plan_appends_what_fits_and_never_drops_pages() {
     assert_eq!(append_page_allowance(48), 2);
     assert_eq!(append_page_allowance(50), 0);
     assert_eq!(append_page_allowance(70), 0);
-    let plan = capture_plan(Some(45), 12);
+    let pages = |n: usize| vec![1_000u64; n];
+    let plan = capture_plan(Some(45), 0, pages(12)).unwrap();
     assert_eq!((plan.append, plan.new_documents.clone()), (5, vec![7]));
-    let plan = capture_plan(Some(50), 3);
+    let plan = capture_plan(Some(50), 0, pages(3)).unwrap();
     assert_eq!((plan.append, plan.new_documents.clone()), (0, vec![3]));
-    let plan = capture_plan(None, 120);
+    let plan = capture_plan(None, 0, pages(120)).unwrap();
     assert_eq!((plan.append, plan.new_documents.clone()), (0, vec![50, 50, 20]));
-    let plan = capture_plan(Some(10), 4);
+    let plan = capture_plan(Some(10), 0, pages(4)).unwrap();
     assert_eq!((plan.append, plan.new_documents.clone()), (4, vec![]));
-    assert_eq!(capture_plan(None, 0).new_documents, Vec::<u64>::new());
+    assert_eq!(capture_plan(None, 0, vec![]).unwrap().new_documents, Vec::<u64>::new());
     for existing in [None, Some(0), Some(30), Some(50)] {
         for captured in 0..130 {
-            let plan = capture_plan(existing, captured);
-            assert_eq!(plan.append + plan.new_documents.iter().sum::<u64>(), captured);
+            let plan = capture_plan(existing, 0, pages(captured)).unwrap();
+            assert_eq!(plan.append + plan.new_documents.iter().sum::<u64>(), captured as u64);
             assert!(plan.new_documents.iter().all(|n| (1..=50).contains(n)));
         }
     }
+}
+#[test]
+fn capture_plan_respects_the_byte_limit_in_every_batch() {
+    const MB: u64 = 1_000_000;
+    // 90 MB already stored: two 4 MB pages fit (98 MB), the third would pass 100 MB.
+    let plan = capture_plan(Some(10), 90 * MB, vec![4 * MB; 6]).unwrap();
+    assert_eq!((plan.append, plan.new_documents.clone()), (2, vec![4]));
+    // A full-by-bytes document takes nothing; 30 × 15 MB pages split into 6-page documents.
+    let plan = capture_plan(Some(3), 99 * MB, vec![15 * MB; 30]).unwrap();
+    assert_eq!((plan.append, plan.new_documents.clone()), (0, vec![6, 6, 6, 6, 6]));
+    // Exactly 100 MB fits.
+    let plan = capture_plan(None, 0, vec![20 * MB; 5]).unwrap();
+    assert_eq!(plan.new_documents, vec![5]);
+    // Each batch, rebuilt from the plan, passes the store's own create/append checks.
+    let mut seed: u64 = 7;
+    for _ in 0..300 {
+        let mut next = || { seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407); seed >> 33 };
+        let existing_pages = next() % 51;
+        let existing_bytes = next() % (100 * MB);
+        let sizes: Vec<u64> = (0..next() % 140).map(|_| 1 + next() % (20 * MB)).collect();
+        let plan = capture_plan(Some(existing_pages), existing_bytes, sizes.clone()).unwrap();
+        let (head, mut rest) = sizes.split_at(plan.append as usize);
+        if !head.is_empty() {
+            check_append_images(existing_pages, head.to_vec(), existing_bytes).unwrap();
+        }
+        for &count in &plan.new_documents {
+            let (batch, tail) = rest.split_at(count as usize);
+            new_document_from_scan("Scan".into(), batch.to_vec(), vec![String::new(); batch.len()], 0.0).unwrap();
+            rest = tail;
+        }
+        assert!(rest.is_empty());
+    }
+    // A page no document could hold is refused before anything is planned.
+    assert!(capture_plan(None, 0, vec![MB, 21 * MB]).is_err());
+    assert!(capture_plan(None, 0, vec![0]).is_err());
 }
 #[test]
 fn rounding_just_past_an_edge_snaps_but_real_overflow_is_rejected() {

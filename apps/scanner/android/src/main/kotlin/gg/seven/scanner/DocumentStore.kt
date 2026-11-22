@@ -162,6 +162,36 @@ class DocumentStore(val root: File) {
         return current
     }
 
+    /**
+     * A camera capture, by the core's plan: the pages that fit (page count and image bytes) join
+     * [appendTo], the rest become new documents within both limits. Planned against the document as
+     * stored now. A failure part-way says how many pages were written ([PartialCapture]).
+     */
+    fun addCapture(images: List<File>, appendTo: UUID?, title: String): Pair<CapturePlan, List<ScanDocument>> {
+        val current = appendTo?.let { load(it) }
+        val plan =
+            capturePlan(
+                current?.pages?.size?.toULong(),
+                current?.let { doc -> pageFiles(doc).sumOf { it.length() } }?.toULong() ?: 0uL,
+                images.map { it.length().toULong() },
+            )
+        var written = 0
+        val saved = mutableListOf<ScanDocument>()
+        try {
+            if (appendTo != null && plan.append > 0uL) {
+                saved += append(appendTo, images.take(plan.append.toInt()))
+                written = plan.append.toInt()
+            }
+            for (count in plan.newDocuments.map { it.toInt() }) {
+                saved += create(title, images.subList(written, written + count), List(count) { "" })
+                written += count
+            }
+        } catch (e: Exception) {
+            throw PartialCapture(written, saved.toList(), e)
+        }
+        return plan to saved
+    }
+
     fun append(documentId: UUID, images: List<File>): ScanDocument {
         val current = load(documentId)
         val existing = pageFiles(current).sumOf { it.length() }
@@ -402,3 +432,7 @@ val ScanDocument.createdMillis: Long
 
 val ScanPage.settings: PageSettings
     get() = scanPageSettings(this)
+
+/** A capture save that failed after [written] pages were stored; the rest are still the caller's. */
+class PartialCapture(val written: Int, val documents: List<ScanDocument>, cause: Exception) :
+    Exception(cause.message, cause)

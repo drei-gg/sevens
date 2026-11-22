@@ -95,3 +95,23 @@ import Foundation
     #expect(try await store.images(doc) == [Data([1])])
     #expect(try fm.contentsOfDirectory(atPath: root.path).filter { $0.hasPrefix(".pending-") || $0.hasPrefix(".restore-") }.isEmpty)
 }
+
+@Test func captureBeyondTheLimitsKeepsEveryPage() async throws {
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    let store = DocumentStore(root: root)
+    let doc = try await store.create(title: "Full-ish", images: Array(repeating: Data([1]), count: 48), text: Array(repeating: "", count: 48))
+    let captured = (0..<5).map { Data([UInt8($0 + 10)]) }
+    let (plan, saved) = try await store.addCapture(captured, appendTo: doc.id, title: "Scan")
+    #expect(plan.append == 2 && plan.newDocuments == [3])
+    #expect(saved.count == 2)
+    #expect(try await store.load(doc.id).pages.count == 50)
+    let extra = try #require(saved.last)
+    #expect(try await store.images(extra) == Array(captured.suffix(3)))
+    // Byte limit: 5 × 20 MB is a full document by bytes, so the next capture goes to a new one.
+    let big = Data(count: 20_000_000)
+    let heavy = try await store.create(title: "Heavy", images: Array(repeating: big, count: 5), text: Array(repeating: "", count: 5))
+    let (byBytes, more) = try await store.addCapture([Data([7]), Data([8])], appendTo: heavy.id, title: "Scan")
+    #expect(byBytes.append == 0 && byBytes.newDocuments == [2] && more.count == 1)
+    #expect(try await store.load(heavy.id).pages.count == 5)
+}

@@ -13,6 +13,8 @@ import ScannerCore
     var error: String?
     /// Something worth knowing after a successful save, such as pages placed in a new document.
     var notice: String?
+    /// Captured pages a failed save did not write, kept until saved or explicitly discarded.
+    var unsavedCapture: UnsavedCapture?
     var started = false
     init() {
         let config = SevenConfig(bundle: .main) ?? SevenConfig(trialProductID: "scanner.trial7", unlockProductID: "scanner.unlock")
@@ -61,22 +63,17 @@ import ScannerCore
             let data = try await Task.detached(priority: .userInitiated) { () throws -> [Data] in
                 try pages.images.map { image in try autoreleasepool { try DocumentProcessing.normalized(image) } }
             }.value
-            // VisionKit has no page limit, so a capture can outgrow the document. Pages that don't fit
-            // become new documents rather than being discarded with the rest of the capture.
-            var existing: UInt64?
-            if let appendTo { existing = UInt64(try await repository.load(appendTo).pages.count) }
-            let plan = capturePlan(existingPageCount: existing, captured: UInt64(data.count))
-            progress = String(localized: "Saving document…")
-            var rest = data[...]
-            var saved: [ScanDocument] = []
-            if let appendTo, plan.append > 0 {
-                saved.append(try await repository.append(documentID: appendTo, images: Array(rest.prefix(Int(plan.append)))))
-                rest = rest.dropFirst(Int(plan.append))
-            }
-            for count in plan.newDocuments.map({ Int($0) }) {
-                saved.append(try await repository.create(title: newTitle(), images: Array(rest.prefix(count)), text: Array(repeating: "", count: count)))
-                rest = rest.dropFirst(count)
-            }
+            await saveCapture(data, appendTo: appendTo)
+        } catch { self.error = error.localizedDescription }
+    }
+    /// Writes normalized capture pages by the core's plan: what fits joins the document, the rest
+    /// become new documents. Pages are dropped from memory only once written; after a failure the
+    /// unwritten ones wait in `unsavedCapture` for Try again or an explicit Discard.
+    private func saveCapture(_ data: [Data], appendTo: UUID?) async {
+        progress = String(localized: "Saving document…")
+        do {
+            let (plan, saved) = try await repository.addCapture(data, appendTo: appendTo, title: newTitle())
+            unsavedCapture = nil
             await reload()
             if appendTo != nil, !plan.newDocuments.isEmpty {
                 let moved = Int(plan.newDocuments.reduce(0, +))
@@ -86,8 +83,22 @@ import ScannerCore
             }
             progress = String(localized: "Scan saved. Recognizing text…")
             for document in saved { await recognize(document, onlyEmpty: true) }
-        } catch { self.error = error.localizedDescription }
+        } catch {
+            let written = (error as? PartialCapture)?.written ?? 0
+            let underlying = (error as? PartialCapture)?.underlying ?? error
+            await reload()
+            unsavedCapture = UnsavedCapture(pages: Array(data.dropFirst(written)), appendTo: appendTo)
+            self.error = scCount(data.count - written, key: "unsaved") + " " + underlying.localizedDescription
+        }
     }
+    /// Tries the kept pages again (the document may have changed; the plan is made afresh).
+    func retryCapture() async {
+        guard let pending = unsavedCapture, !busy else { return }
+        error = nil
+        busy = true; defer { busy = false; progress = "" }
+        await saveCapture(pending.pages, appendTo: documents.contains { $0.id == pending.appendTo } ? pending.appendTo : nil)
+    }
+    func discardCapture() { unsavedCapture = nil; error = nil }
     func importFiles(_ urls: [URL], appendTo: UUID? = nil) async {
         guard !busy else { return }
         guard store.paidFeaturesAvailable else { error = String(localized: "Start a trial or unlock to scan or import pages. Your saved documents remain available."); return }
@@ -208,6 +219,8 @@ import ScannerCore
     }
     #endif
 }
+
+struct UnsavedCapture { let pages: [Data]; let appendTo: UUID? }
 
 /// Camera output is immutable once captured; it is only read while normalizing.
 struct CapturedPages: @unchecked Sendable { let images: [UIImage] }
