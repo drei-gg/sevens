@@ -52,10 +52,9 @@ fn bounded_plan_reports_omissions_and_rejects_long_queries() {
     let plan = note_search_plan(small.clone(), "text".into(), false, false);
     assert_eq!(plan.ids.len(), 500);
     assert_eq!(plan.omitted, 2);
-    assert!(
-        note_search_plan(small, "a".repeat(201), false, false)
-            .issue
-            .is_some()
+    assert_eq!(
+        note_search_plan(small, "a".repeat(201), false, false).issue,
+        Some(VaultIssue::QueryTooLong { maximum: 200 })
     );
     let big: Vec<_> = (0..10).map(|_| note("b", 4_000_000)).collect();
     let plan = note_search_plan(big, "text".into(), false, false);

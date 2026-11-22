@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -63,9 +64,9 @@ fun VaultApp() {
     model.error?.let { message ->
         AlertDialog(
             onDismissRequest = { model.error = null },
-            title = { Text("Could not complete") },
+            title = { Text(stringResource(R.string.error_title)) },
             text = { Text(message) },
-            confirmButton = { TextButton(onClick = { model.error = null }) { Text("OK") } },
+            confirmButton = { TextButton(onClick = { model.error = null }) { Text(stringResource(gg.seven.kit.R.string.seven_ok)) } },
         )
     }
     when (val shown = model.presentation) {
@@ -97,7 +98,7 @@ fun LockScreen(model: VaultModel) {
     val context = LocalContext.current
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { SevenTopBar("Vault") },
+        topBar = { SevenTopBar(stringResource(R.string.lock_title)) },
     ) { padding ->
         Column(
             Modifier.padding(padding)
@@ -121,21 +122,22 @@ fun LockScreen(model: VaultModel) {
                             tint = MaterialTheme.colorScheme.primary,
                         )
                         Text(
-                            "Yours to keep.",
+                            stringResource(R.string.lock_heading),
                             Modifier.semantics { heading() },
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            "Draw its pattern or enter its PIN or passphrase. Your private library stays encrypted when locked.",
+                            stringResource(R.string.lock_body),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 Column(verticalArrangement = Arrangement.spacedBy(Space.m)) {
-                    FormHeading("Open your vault")
+                    FormHeading(stringResource(R.string.lock_open_heading))
+                    val useRecovery = stringResource(R.string.lock_use_recovery)
                     Section {
-                        switch("Use a recovery key", recovery) {
+                        switch(useRecovery, recovery) {
                             recovery = it
                             credential = ""
                         }
@@ -155,7 +157,7 @@ fun LockScreen(model: VaultModel) {
                     CredentialInput(
                         if (recovery) VaultCredentialKind.PASSPHRASE else kind,
                         credential,
-                        if (recovery) "Recovery key" else kind.title,
+                        if (recovery) stringResource(R.string.recovery_key) else kind.title,
                         "vault.credential",
                         onSubmit = unlock,
                     ) {
@@ -168,7 +170,7 @@ fun LockScreen(model: VaultModel) {
                         modifier =
                             Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("vault.unlock"),
                     ) {
-                        Text("Unlock")
+                        Text(stringResource(R.string.lock_unlock))
                     }
                     if (model.hasBiometricKey)
                         OutlinedButton(
@@ -178,16 +180,19 @@ fun LockScreen(model: VaultModel) {
                         ) {
                             Icon(Icons.Outlined.Fingerprint, null)
                             Spacer(Modifier.width(Space.s))
-                            Text("Unlock with fingerprint or face")
+                            Text(stringResource(R.string.lock_unlock_biometric))
                         }
                     if (model.busy) Progress(model.progress)
                 }
+                val create = stringResource(R.string.lock_create)
+                val restore = stringResource(R.string.lock_restore)
+                val about = stringResource(R.string.lock_about)
                 Section {
-                    action("Create a vault", Icons.Outlined.Add, enabled = !model.busy) {
-                        gate.run("Create a vault") { creating = true }
+                    action(create, Icons.Outlined.Add, enabled = !model.busy) {
+                        gate.run(create) { creating = true }
                     }
                     action(
-                        "Restore encrypted backup",
+                        restore,
                         Icons.Outlined.SettingsBackupRestore,
                         enabled = !model.busy,
                     ) {
@@ -195,13 +200,13 @@ fun LockScreen(model: VaultModel) {
                     }
                 }
                 Text(
-                    "A recovery key opens existing encrypted data. It cannot bring back files after the app is uninstalled unless you kept a backup.",
+                    stringResource(R.string.lock_recovery_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Section {
                     item(
-                        "About & ownership",
+                        about,
                         icon = Icons.Outlined.Info,
                         onClick = { settings = true },
                     )
@@ -245,7 +250,7 @@ fun CreateVaultScreen(model: VaultModel, onClose: () -> Unit) {
             acknowledged &&
             !model.busy
     FullScreenForm(
-        title = "Create vault",
+        title = stringResource(R.string.create_title),
         onClose = onClose,
         onSave = {
             val secret = password
@@ -256,48 +261,44 @@ fun CreateVaultScreen(model: VaultModel, onClose: () -> Unit) {
         busy = model.busy,
         confirmDiscard = name.isNotEmpty() || password.isNotEmpty() || repeated.isNotEmpty(),
         saveEnabled = ready,
-        saveLabel = "Create",
+        saveLabel = stringResource(R.string.create_save),
     ) {
-        TextInput("Vault name", name, Modifier.testTag("vault.newName")) { name = it }
+        TextInput(stringResource(R.string.create_name), name, Modifier.testTag("vault.newName")) { name = it }
         CredentialKindPicker(kind) {
             kind = it
             password = ""
             repeated = ""
         }
-        CredentialInput(kind, password, "New " + kind.title.lowercaseTitle(), "vault.newPassword") {
+        CredentialInput(kind, password, stringResource(kind.label(KindLabel.NEW)), "vault.newPassword") {
             password = it
         }
         CredentialInput(
             kind,
             repeated,
-            "Repeat " + kind.title.lowercaseTitle(),
+            stringResource(kind.label(KindLabel.REPEAT)),
             "vault.repeatPassword",
         ) {
             repeated = it
         }
         if (repeated.length >= password.length && repeated.isNotEmpty() && password != repeated)
             Text(
-                "These don’t match.",
+                stringResource(R.string.credential_mismatch),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
             )
         Text(
-            "Use 12+ characters, an 8–32 digit PIN, or 8+ dots. Each secret opens its own vault. Longer, unpredictable secrets resist guessing better; avoid dates, letters and simple shapes.",
+            stringResource(R.string.create_rules),
             style = MaterialTheme.typography.bodyMedium,
         )
-        Section {
-            checkbox("I understand there is no account reset", acknowledged) { acknowledged = it }
-        }
+        val acknowledgement = stringResource(R.string.create_acknowledge)
+        Section { checkbox(acknowledgement, acknowledged) { acknowledged = it } }
         Text(
-            "Next, save your recovery key somewhere outside this app. Keep a separate encrypted backup too.",
+            stringResource(R.string.create_next),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
-
-/** "PIN" stays upper-case in "New PIN"; the others read as words. */
-fun String.lowercaseTitle() = if (this == "PIN") this else lowercase()
 
 /** iOS `RecoverySheet`: shown once; it can't be dismissed until the person says they saved it. */
 @Composable
@@ -315,7 +316,7 @@ fun RecoveryKeyScreen(model: VaultModel) {
                 dismissOnClickOutside = false,
             ),
     ) {
-        Scaffold(topBar = { TopAppBar(title = { Text("Recovery key") }) }) { padding ->
+        Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.recovery_key)) }) }) { padding ->
             Column(
                 Modifier.padding(padding)
                     .fillMaxSize()
@@ -327,10 +328,8 @@ fun RecoveryKeyScreen(model: VaultModel) {
                     Modifier.widthIn(max = ContentWidth).fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(Space.m),
                 ) {
-                    FormHeading("Keep this key outside Vault")
-                    Text(
-                        "This key can open your vault without its usual unlock secret. Store it somewhere private, such as your password manager."
-                    )
+                    FormHeading(stringResource(R.string.recovery_heading))
+                    Text(stringResource(R.string.recovery_body))
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         shape = MaterialTheme.shapes.medium,
@@ -349,13 +348,14 @@ fun RecoveryKeyScreen(model: VaultModel) {
                     OutlinedButton(onClick = { copySensitive(context, key) }) {
                         Icon(Icons.Outlined.ContentCopy, null)
                         Spacer(Modifier.width(Space.s))
-                        Text("Copy")
+                        Text(stringResource(R.string.recovery_copy))
                     }
                     Text(
-                        "We do not retain a readable copy. A backup is still needed if the local files are lost.",
+                        stringResource(R.string.recovery_not_retained),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Section { checkbox("I’ve saved my recovery key", saved) { saved = it } }
+                    val savedLabel = stringResource(R.string.recovery_saved)
+                    Section { checkbox(savedLabel, saved) { saved = it } }
                     if (model.busy) Progress(model.progress)
                     Button(
                         shapes = ButtonDefaults.shapes(),
@@ -364,7 +364,7 @@ fun RecoveryKeyScreen(model: VaultModel) {
                         modifier =
                             Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("vault.continue"),
                     ) {
-                        Text("Continue to vault")
+                        Text(stringResource(R.string.recovery_continue))
                     }
                     Spacer(Modifier.navigationBarsPadding())
                 }
@@ -383,8 +383,8 @@ fun RecoveryReplacementScreen(model: VaultModel) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            SevenTopBar("Recovery key") {
-                IconButton(onClick = model::lock) { Icon(Icons.Outlined.Lock, "Lock") }
+            SevenTopBar(stringResource(R.string.recovery_key)) {
+                IconButton(onClick = model::lock) { Icon(Icons.Outlined.Lock, stringResource(R.string.lock_action)) }
             }
         },
     ) { padding ->
@@ -402,16 +402,16 @@ fun RecoveryReplacementScreen(model: VaultModel) {
             ) {
                 Icon(Icons.Outlined.Key, null, Modifier.size(44.dp), tint = MaterialTheme.colorScheme.primary)
                 Text(
-                    "Save a new recovery key",
+                    stringResource(R.string.replacement_heading),
                     Modifier.semantics { heading() },
                     style = MaterialTheme.typography.headlineSmall,
                 )
                 Text(
-                    "Vault locked before you confirmed saving this vault’s recovery key, and it isn’t kept anywhere it can be shown again. Make a replacement now and save it before you continue.",
+                    stringResource(R.string.replacement_body),
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
-                    "Old backups still open with the recovery key they were made with.",
+                    stringResource(R.string.replacement_old_backups),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -423,7 +423,7 @@ fun RecoveryReplacementScreen(model: VaultModel) {
                     modifier =
                         Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("vault.replaceRecovery"),
                 ) {
-                    Text("Create a new recovery key")
+                    Text(stringResource(R.string.replacement_create))
                 }
                 Spacer(Modifier.navigationBarsPadding())
             }
@@ -444,8 +444,8 @@ fun NewSecretScreen(model: VaultModel) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            SevenTopBar("New unlock secret") {
-                IconButton(onClick = model::lock) { Icon(Icons.Outlined.Lock, "Lock") }
+            SevenTopBar(stringResource(R.string.new_secret_title)) {
+                IconButton(onClick = model::lock) { Icon(Icons.Outlined.Lock, stringResource(R.string.lock_action)) }
             }
         },
     ) { padding ->
@@ -463,12 +463,12 @@ fun NewSecretScreen(model: VaultModel) {
                 verticalArrangement = Arrangement.spacedBy(Space.m),
             ) {
                 Text(
-                    "Choose a new unlock secret",
+                    stringResource(R.string.new_secret_heading),
                     Modifier.semantics { heading() },
                     style = MaterialTheme.typography.headlineSmall,
                 )
                 Text(
-                    "This vault was restored with its recovery key, so its old secret couldn’t be checked against your other vaults. Choose a new PIN, pattern or passphrase to open it from now on.",
+                    stringResource(R.string.new_secret_body),
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 CredentialKindPicker(kind) {
@@ -476,15 +476,16 @@ fun NewSecretScreen(model: VaultModel) {
                     password = ""
                     repeated = ""
                 }
-                CredentialInput(kind, password, "New " + kind.title.lowercaseTitle(), "vault.newSecret") { password = it }
-                CredentialInput(kind, repeated, "Repeat " + kind.title.lowercaseTitle(), "vault.repeatNewSecret") { repeated = it }
+                CredentialInput(kind, password, stringResource(kind.label(KindLabel.NEW)), "vault.newSecret") { password = it }
+                CredentialInput(kind, repeated, stringResource(kind.label(KindLabel.REPEAT)), "vault.repeatNewSecret") { repeated = it }
                 if (repeated.length >= password.length && repeated.isNotEmpty() && password != repeated)
                     Text(
-                        "These don’t match.",
+                        stringResource(R.string.credential_mismatch),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
                 if (model.busy) Progress(model.progress)
+                val setNotice = stringResource(R.string.new_secret_set_notice)
                 Button(
                     shapes = ButtonDefaults.shapes(),
                     onClick = {
@@ -493,16 +494,16 @@ fun NewSecretScreen(model: VaultModel) {
                         model.update(then = {
                             password = ""
                             repeated = ""
-                            model.showNotice("Unlock secret set. Older backups still open with their old one.")
+                            model.showNotice(setNotice)
                         }) { model.repository.changeCredential(secret, chosen) }
                     },
                     enabled = kind.valid(password) && password == repeated && !model.busy,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("vault.setNewSecret"),
                 ) {
-                    Text("Set unlock secret")
+                    Text(stringResource(R.string.new_secret_set))
                 }
                 Text(
-                    "Older backups still open with the secret they were made with.",
+                    stringResource(R.string.new_secret_old_backups),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -514,7 +515,7 @@ fun NewSecretScreen(model: VaultModel) {
 
 /** Copied as sensitive, so Android 13+ hides it from the clipboard preview. */
 fun copySensitive(context: Context, text: String) {
-    val clip = ClipData.newPlainText("Recovery key", text)
+    val clip = ClipData.newPlainText(context.getString(R.string.recovery_key), text)
     clip.description.extras =
         PersistableBundle().apply {
             putBoolean(
@@ -535,6 +536,7 @@ fun RestoreVaultScreen(model: VaultModel, onClose: () -> Unit) {
     var recovery by rememberSaveable { mutableStateOf(false) }
     var kind by rememberSaveable { mutableStateOf(VaultCredentialKind.PASSPHRASE) }
     val context = LocalContext.current
+    val chosenBackup = stringResource(R.string.restore_chosen_backup)
     val choose =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             model.endSystemFlow()
@@ -552,11 +554,11 @@ fun RestoreVaultScreen(model: VaultModel, onClose: () -> Unit) {
                                 )
                                 ?.use { if (it.moveToFirst()) it.getString(0) else null }
                         }
-                        .getOrNull() ?: "Chosen backup"
+                        .getOrNull() ?: chosenBackup
             }
         }
     FullScreenForm(
-        title = "Restore vault",
+        title = stringResource(R.string.restore_title),
         onClose = onClose,
         onSave = {
             val chosen = file ?: return@FullScreenForm
@@ -566,18 +568,20 @@ fun RestoreVaultScreen(model: VaultModel, onClose: () -> Unit) {
         },
         busy = model.busy,
         saveEnabled = file != null && credential.isNotEmpty() && !model.busy,
-        saveLabel = "Restore",
+        saveLabel = stringResource(R.string.restore_save),
     ) {
+        val chooseLabel = fileName ?: stringResource(R.string.restore_choose)
+        val useRecovery = stringResource(R.string.restore_use_recovery)
         Section {
             item(
-                fileName ?: "Choose a .vault7 backup",
+                chooseLabel,
                 icon = Icons.Outlined.FileOpen,
                 onClick = {
                     model.beginSystemFlow()
                     choose.launch(arrayOf("*/*"))
                 },
             )
-            switch("Use recovery key", recovery) {
+            switch(useRecovery, recovery) {
                 recovery = it
                 credential = ""
             }
@@ -590,13 +594,13 @@ fun RestoreVaultScreen(model: VaultModel, onClose: () -> Unit) {
         CredentialInput(
             if (recovery) VaultCredentialKind.PASSPHRASE else kind,
             credential,
-            if (recovery) "Recovery key" else "Backup " + kind.title.lowercaseTitle(),
+            stringResource(if (recovery) R.string.recovery_key else kind.label(KindLabel.BACKUP)),
             "vault.restoreCredential",
         ) {
             credential = it
         }
         Text(
-            "Use the pattern, PIN, passphrase or recovery key that applied when this backup was made. The whole backup is verified before it is added. Existing vaults are never overwritten.",
+            stringResource(R.string.restore_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

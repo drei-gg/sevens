@@ -29,7 +29,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -71,13 +74,13 @@ fun PreviewScreen(model: VaultModel, shown: Presentation.Preview) {
                     title = { Text(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     navigationIcon = {
                         IconButton(onClick = model::cleanPresentation) {
-                            Icon(Icons.Outlined.Close, "Done")
+                            Icon(Icons.Outlined.Close, stringResource(gg.seven.kit.R.string.seven_done))
                         }
                     },
                     actions = {
-                        IconButton(onClick = model::lock) { Icon(Icons.Outlined.Lock, "Lock") }
+                        IconButton(onClick = model::lock) { Icon(Icons.Outlined.Lock, stringResource(R.string.lock_action)) }
                         IconButton(onClick = { model.export(setOf(item.id)) }) {
-                            Icon(Icons.Outlined.Share, "Export original")
+                            Icon(Icons.Outlined.Share, stringResource(R.string.item_export))
                         }
                     },
                 )
@@ -102,10 +105,10 @@ fun PreviewScreen(model: VaultModel, shown: Presentation.Preview) {
 @Composable
 private fun Unsupported(model: VaultModel, id: java.util.UUID) {
     EmptyState(
-        "No preview for this kind of file",
-        "Export the original to open it in another app. The exported copy is no longer protected by Vault.",
+        stringResource(R.string.preview_unsupported_title),
+        stringResource(R.string.preview_unsupported_detail),
         icon = Icons.Outlined.InsertDriveFile,
-        action = "Export original" to { model.export(setOf(id)) },
+        action = stringResource(R.string.item_export) to { model.export(setOf(id)) },
     )
 }
 
@@ -231,14 +234,14 @@ private fun PdfPreview(file: File, fallback: @Composable () -> Unit) {
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                         Text(
-                            "Page ${index + 1} of $pages",
+                            stringResource(R.string.preview_page_of, index + 1, pages),
                             style = MaterialTheme.typography.labelLarge,
                         )
                         val shown = bitmap
                         if (shown != null)
                             Image(
                                 shown.asImageBitmap(),
-                                "Page ${index + 1}",
+                                stringResource(R.string.preview_page, index + 1),
                                 Modifier.fillMaxWidth(),
                                 contentScale = ContentScale.FillWidth,
                             )
@@ -247,7 +250,7 @@ private fun PdfPreview(file: File, fallback: @Composable () -> Unit) {
                                 Modifier.fillMaxWidth().aspectRatio(0.7f),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                if (failed) Text("This page could not be displayed.")
+                                if (failed) Text(stringResource(R.string.preview_page_failed))
                                 else LoadingIndicator()
                             }
                     }
@@ -258,31 +261,31 @@ private fun PdfPreview(file: File, fallback: @Composable () -> Unit) {
 
 @Composable
 private fun TextPreview(file: File) {
-    var text by remember(file) { mutableStateOf<String?>(null) }
+    // The first megabyte, or null when the file could not be read.
+    var text by remember(file) { mutableStateOf<Result<String>?>(null) }
     LaunchedEffect(file) {
         text =
             withContext(Dispatchers.IO) {
                 runCatching {
-                        file.inputStream().use {
-                            String(it.readNBytesCompat(1_000_000), Charsets.UTF_8)
-                        }
-                    }
-                    .getOrElse { "This text file could not be read." }
+                    file.inputStream().use { String(it.readNBytesCompat(1_000_000), Charsets.UTF_8) }
+                }
             }
     }
     val shown = text
     if (shown == null) LoadingIndicator()
     else
         SelectionContainer(Modifier.fillMaxSize()) {
-            Text(
-                (if (file.length() > 1_000_000)
-                    "Preview shows the first 1 MB. Export the original to read the complete file.\n\n"
-                else "") + shown,
+            Column(
                 Modifier.verticalScroll(rememberScrollState())
                     .padding(Space.m)
                     .widthIn(max = ContentWidth),
-                style = MaterialTheme.typography.bodyLarge,
-            )
+                verticalArrangement = Arrangement.spacedBy(Space.m),
+            ) {
+                val content = shown.getOrNull()
+                if (content != null && file.length() > 1_000_000)
+                    Text(stringResource(R.string.preview_text_truncated), style = MaterialTheme.typography.bodyLarge)
+                Text(content ?: stringResource(R.string.preview_text_failed), style = MaterialTheme.typography.bodyLarge)
+            }
         }
 }
 
@@ -304,6 +307,7 @@ private fun Context.shareUri(file: File): Uri =
 @Composable
 fun FilesReadySheet(model: VaultModel, shown: Presentation.Files) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val files = shown.files
     val one = files.singleOrNull()
     val scope = rememberCoroutineScope()
@@ -332,11 +336,13 @@ fun FilesReadySheet(model: VaultModel, shown: Presentation.Files) {
                     result
                         .onSuccess {
                             model.showNotice(
-                                if (shown.backup) "Encrypted backup saved." else "Original saved."
+                                resources.getString(
+                                    if (shown.backup) R.string.files_backup_saved else R.string.files_original_saved
+                                )
                             )
                         }
                         .onFailure {
-                            model.error = "The file could not be saved there. ${it.vaultMessage}"
+                            model.error = resources.getString(R.string.files_save_failed, it.vaultMessage(context))
                         }
                 }
             }
@@ -376,8 +382,10 @@ fun FilesReadySheet(model: VaultModel, shown: Presentation.Files) {
                         }
                     }
                 saving = false
-                if (saved == files.size) model.showNotice("$saved originals saved.")
-                else model.error = "${files.size - saved} originals could not be saved there."
+                val failed = files.size - saved
+                if (failed == 0)
+                    model.showNotice(resources.getQuantityString(R.plurals.files_saved, saved, saved))
+                else model.error = resources.getQuantityString(R.plurals.files_save_some_failed, failed, failed)
             }
         }
     ModalBottomSheet(
@@ -392,15 +400,13 @@ fun FilesReadySheet(model: VaultModel, shown: Presentation.Files) {
             verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
             Text(
-                if (shown.backup) "Encrypted backup ready"
-                else if (one != null) "Original ready" else "${files.size} originals ready",
+                if (shown.backup) stringResource(R.string.files_backup_ready)
+                else if (one != null) stringResource(R.string.files_original_ready)
+                else pluralStringResource(R.plurals.files_ready, files.size, files.size),
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(
-                if (shown.backup)
-                    "Save the .vault7 file outside this app, then test a restore on another device. It opens only with this vault’s secret or recovery key."
-                else
-                    "These are decrypted copies. Once saved or shared, they are no longer protected by Vault.",
+                stringResource(if (shown.backup) R.string.files_backup_note else R.string.files_decrypted_note),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -414,7 +420,7 @@ fun FilesReadySheet(model: VaultModel, shown: Presentation.Files) {
             ) {
                 Icon(Icons.Outlined.SaveAlt, null)
                 Spacer(Modifier.width(Space.s))
-                Text(if (one != null) "Save to device" else "Save to a folder")
+                Text(stringResource(if (one != null) R.string.files_save_device else R.string.files_save_folder))
             }
             OutlinedButton(
                 onClick = {
@@ -446,7 +452,7 @@ fun FilesReadySheet(model: VaultModel, shown: Presentation.Files) {
             ) {
                 Icon(Icons.Outlined.Share, null)
                 Spacer(Modifier.width(Space.s))
-                Text("Share")
+                Text(stringResource(R.string.files_share))
             }
             if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
             TextButton(
@@ -454,7 +460,7 @@ fun FilesReadySheet(model: VaultModel, shown: Presentation.Files) {
                 enabled = !saving,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Done")
+                Text(stringResource(gg.seven.kit.R.string.seven_done))
             }
         }
     }

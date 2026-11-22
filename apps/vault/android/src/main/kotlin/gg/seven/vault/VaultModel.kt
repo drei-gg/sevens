@@ -33,8 +33,7 @@ sealed interface Presentation {
                 recognitionPlan(pageCount, first.toUIntOrNull() ?: 0u, last.toUIntOrNull() ?: 0u)
     }
 
-    class TextReview(val item: VaultItem, val original: String) : Presentation {
-        val initialName = item.name.substringBeforeLast('.') + " text"
+    class TextReview(val item: VaultItem, val original: String, val initialName: String) : Presentation {
         var name by mutableStateOf(initialName)
         var text by mutableStateOf(original)
     }
@@ -98,6 +97,14 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
     /** Call when its result arrives (Vault's return to the front also ends it). */
     fun endSystemFlow() = systemFlow.end()
 
+    private fun words(id: Int, vararg args: Any) = application.getString(id, *args)
+
+    private val Throwable.shown: String
+        get() = vaultMessage(application)
+
+    /** "Receipt text": the default name for a note recognized from [item]. */
+    private fun recognizedName(item: VaultItem) = words(R.string.review_default_name, item.name.substringBeforeLast('.'))
+
     private var started = false
     private var operation = 0
     private var automaticTask: Job? = null
@@ -110,12 +117,12 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
             try {
                 repository.prepare()
             } catch (e: Exception) {
-                error = e.vaultMessage
+                error = e.shown
             }
             try {
                 automatic.prepare()
             } catch (e: Exception) {
-                automaticMessage = e.vaultMessage
+                automaticMessage = e.shown
             }
             retryAutomaticBackups()
         }
@@ -140,7 +147,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
         importResult = ""
         // Stay busy until the repository has discarded keys and any in-flight operation finished.
         busy = true
-        progress = "Locking…"
+        progress = words(R.string.progress_locking)
         val token = operation
         viewModelScope.launch {
             repository.lock()
@@ -173,7 +180,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
             } catch (e: BiometricKey.Cancelled) {
                 // The person chose their secret instead.
             } catch (e: Exception) {
-                if (token == operation) error = e.vaultMessage
+                if (token == operation) error = e.shown
             } finally {
                 if (token == operation) {
                     busy = false
@@ -184,7 +191,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** A change to the open vault; the UI follows the committed library only if still unlocked. */
-    fun update(label: String = "Saving…", then: () -> Unit = {}, action: suspend () -> Unit) {
+    fun update(label: String = words(R.string.progress_saving), then: () -> Unit = {}, action: suspend () -> Unit) {
         if (busy || library == null) return
         busy = true
         progress = label
@@ -199,7 +206,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                     then()
                 }
             } catch (e: BiometricKey.Cancelled) {} catch (e: Exception) {
-                if (token == operation) error = e.vaultMessage
+                if (token == operation) error = e.shown
             } finally {
                 if (token == operation) {
                     busy = false
@@ -216,17 +223,17 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
         onCreated: () -> Unit = {},
     ) {
         if (!store.paidFeaturesAvailable) {
-            error = "Start the trial or unlock to add a vault."
+            error = words(R.string.create_gated)
             return
         }
-        perform("Creating encrypted vault…", onCreated) {
+        perform(words(R.string.progress_creating), onCreated) {
             val result = repository.create(name, secret, kind)
             result.library to result.recoveryKey
         }
     }
 
     fun unlock(credential: String, recovery: Boolean, kind: VaultCredentialKind) =
-        perform("Opening vault…") { repository.unlock(credential, recovery, kind) to null }
+        perform(words(R.string.progress_opening)) { repository.unlock(credential, recovery, kind) to null }
 
     private fun displayName(uri: Uri): String =
         runCatching {
@@ -236,7 +243,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
             }
             .getOrNull()
             ?.takeIf { it.isNotBlank() }
-            ?: (uri.lastPathSegment?.substringAfterLast('/') ?: "Imported file")
+            ?: (uri.lastPathSegment?.substringAfterLast('/') ?: words(R.string.import_unnamed))
 
     /**
      * Files (Storage Access Framework) or the Photo Picker: each read once, straight from its
@@ -253,8 +260,11 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                 for ((index, uri) in uris.withIndex()) {
                     if (token != operation) return@launch
                     progress =
-                        if (fromPhotos) "Loading and encrypting ${index + 1} of ${uris.size}…"
-                        else "Encrypting ${index + 1} of ${uris.size}…"
+                        words(
+                            if (fromPhotos) R.string.progress_loading_encrypting else R.string.progress_encrypting,
+                            index + 1,
+                            uris.size,
+                        )
                     val name = displayName(uri)
                     try {
                         val type = Types.identifier(application.contentResolver.getType(uri), name)
@@ -265,21 +275,26 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                         successes += 1
                     } catch (e: Exception) {
                         failures +=
-                            if (fromPhotos) "Item ${index + 1}: ${e.vaultMessage}"
-                            else "$name: ${e.vaultMessage}"
+                            if (fromPhotos) words(R.string.import_failed_item, index + 1, e.shown)
+                            else words(R.string.import_failed_file, name, e.shown)
                     }
                 }
                 if (token != operation) return@launch
                 library = runCatching { repository.snapshot() }.getOrNull()
                 scheduleAutomaticBackup()
                 importResult =
-                    if (fromPhotos) "$successes imported. Originals stay in your gallery."
-                    else "$successes imported. Originals stay where they were."
+                    application.resources.getQuantityString(
+                        if (fromPhotos) R.plurals.import_result_photos else R.plurals.import_result_files,
+                        successes,
+                        successes,
+                    )
                 if (failures.isNotEmpty())
                     error =
-                        (if (fromPhotos) "${failures.size} imports failed:\n"
-                        else "${failures.size} could not be imported:\n") +
-                            failures.joinToString("\n")
+                        application.resources.getQuantityString(
+                            if (fromPhotos) R.plurals.import_failed_photos else R.plurals.import_failed_files,
+                            failures.size,
+                            failures.size,
+                        ) + "\n" + failures.joinToString("\n")
             } finally {
                 if (token == operation) {
                     busy = false
@@ -296,7 +311,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
             return
         }
         busy = true
-        progress = "Encrypting 1 of 1…"
+        progress = words(R.string.progress_encrypting, 1, 1)
         val token = operation
         viewModelScope.launch {
             try {
@@ -304,10 +319,10 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                 if (token == operation) {
                     library = repository.snapshot()
                     scheduleAutomaticBackup()
-                    importResult = "1 imported. Nothing was added to your gallery."
+                    importResult = application.resources.getQuantityString(R.plurals.import_result_camera, 1, 1)
                 }
             } catch (e: Exception) {
-                if (token == operation) error = e.vaultMessage
+                if (token == operation) error = e.shown
             } finally {
                 file.delete()
                 if (token == operation) {
@@ -321,7 +336,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
     fun preview(item: VaultItem) {
         if (busy) return
         val token = operation
-        update("Preparing preview…") {
+        update(words(R.string.progress_preview)) {
             val file = repository.export(item.id)
             if (token == operation) presentation = Presentation.Preview(item, file)
         }
@@ -338,7 +353,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                 .map { it.id }
         val plan = recognitionBatchPlan(items, ids.toList(), supported)
         if (plan.issue != null) {
-            error = plan.issue
+            error = plan.issue?.wording?.resolve(application)
             return
         }
         presentation = RecognitionQueue(plan)
@@ -349,7 +364,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
         val item = queue.item ?: return
         val token = operation
         queue.failure = null
-        update("Recognizing file ${queue.index + 1} of ${queue.plan.items.size}…") {
+        update(words(R.string.progress_recognizing_file, queue.index + 1, queue.plan.items.size)) {
             try {
                 val file = repository.export(item.id)
                 val text =
@@ -358,23 +373,24 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                             throw kotlinx.coroutines.CancellationException()
                         if (Types.isPdf(item.contentType, item.name)) {
                             val count = PdfRecognition.pageCount(file)
-                            require(count in 1u..queue.plan.maximumPdfPages) {
-                                "This PDF needs the individual page-range action (up to ${queue.plan.maximumPdfPages} pages). Skip it here."
-                            }
+                            if (count !in 1u..queue.plan.maximumPdfPages)
+                                throw VaultMessage(
+                                    Wording.count(R.plurals.error_pdf_too_long_for_queue, queue.plan.maximumPdfPages.toInt())
+                                )
                             PdfRecognition.read(getApplication(), file, 1u, count) { page ->
                                 kotlinx.coroutines.withContext(
                                     kotlinx.coroutines.Dispatchers.Main.immediate
                                 ) {
                                     if (token != operation || queue.stopped)
                                         throw kotlinx.coroutines.CancellationException()
-                                    progress = "File ${queue.index + 1}: page $page of $count…"
+                                    progress = words(R.string.progress_file_page, queue.index + 1, page.toInt(), count.toInt())
                                 }
                             }
                         } else
                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
                                 val bitmap =
                                     Images.decode(file, 2400)
-                                        ?: error("This image could not be read.")
+                                        ?: throw VaultMessage(Wording.of(R.string.error_image_unreadable))
                                 try {
                                     gg.seven.ocr.OnDeviceTextRecognizer.open(getApplication()).use {
                                         it.text(bitmap)
@@ -388,13 +404,13 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                     }
                 if (token == operation && presentation === queue && !queue.stopped) {
                     queue.text = recognitionReviewText(text)
-                    queue.name = item.name.substringBeforeLast('.') + " text"
+                    queue.name = recognizedName(item)
                     queue.ready = true
                 }
             } catch (cancel: kotlinx.coroutines.CancellationException) {
                 if (token == operation && !queue.stopped) throw cancel
             } catch (e: Exception) {
-                if (token == operation && !queue.stopped) queue.failure = e.vaultMessage
+                if (token == operation && !queue.stopped) queue.failure = e.shown
             }
         }
     }
@@ -420,7 +436,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
         if (busy) return
         if (Types.isPdf(item.contentType, item.name)) {
             val token = operation
-            update("Reading PDF pages…") {
+            update(words(R.string.progress_reading_pdf)) {
                 val file = repository.export(item.id)
                 val count =
                     try {
@@ -428,20 +444,21 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                     } finally {
                         file.delete()
                     }
-                require(count > 0u) { "This PDF has no readable pages." }
+                if (count == 0u) throw VaultMessage(VaultIssue.NoReadablePages.wording)
                 if (token == operation) presentation = Presentation.PdfRange(item, count)
             }
             return
         }
         if (!Types.isImage(item.contentType, item.name)) return
         val token = operation
-        update("Recognizing text on this device…") {
+        update(words(R.string.progress_recognizing_image)) {
             val file = repository.export(item.id)
             val text =
                 try {
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
                         val bitmap =
-                            Images.decode(file, 2400) ?: error("This image could not be read.")
+                            Images.decode(file, 2400)
+                                ?: throw VaultMessage(Wording.of(R.string.error_image_unreadable))
                         try {
                             gg.seven.ocr.OnDeviceTextRecognizer.open(getApplication()).use {
                                 it.text(bitmap)
@@ -453,7 +470,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                 } finally {
                     file.delete()
                 }
-            if (token == operation) presentation = Presentation.TextReview(item, text)
+            if (token == operation) presentation = Presentation.TextReview(item, text, recognizedName(item))
         }
     }
 
@@ -462,7 +479,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
         val token = operation
         val first = draft.first.toUInt()
         val last = draft.last.toUInt()
-        update("Recognizing PDF on this device…") {
+        update(words(R.string.progress_recognizing_pdf)) {
             val file = repository.export(draft.item.id)
             val text =
                 try {
@@ -472,20 +489,20 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                         ) {
                             if (token != operation)
                                 throw kotlinx.coroutines.CancellationException("Vault locked")
-                            progress = "Recognizing page $page of ${draft.pageCount}…"
+                            progress = words(R.string.progress_recognizing_page, page.toInt(), draft.pageCount.toInt())
                         }
                     }
                 } finally {
                     file.delete()
                 }
-            if (token == operation) presentation = Presentation.TextReview(draft.item, text)
+            if (token == operation) presentation = Presentation.TextReview(draft.item, text, recognizedName(draft.item))
         }
     }
 
     fun export(ids: Set<UUID>) {
         if (ids.isEmpty()) return
         val token = operation
-        update("Preparing originals…") {
+        update(words(R.string.progress_originals)) {
             val files = mutableListOf<File>()
             val failures = mutableListOf<String>()
             for (id in ids.sortedBy { it.upper() }) {
@@ -493,21 +510,21 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                 try {
                     files += repository.export(id)
                 } catch (e: Exception) {
-                    failures += e.vaultMessage
+                    failures += e.shown
                 }
             }
             if (token != operation) return@update
             if (files.isNotEmpty()) presentation = Presentation.Files(files)
             if (failures.isNotEmpty())
                 error =
-                    "${failures.size} exports failed. Successful originals are ready.\n" +
-                        failures.joinToString("\n")
+                    application.resources.getQuantityString(R.plurals.export_failed, failures.size, failures.size) +
+                        "\n" + failures.joinToString("\n")
         }
     }
 
     fun backup() {
         val token = operation
-        update("Verifying and preparing encrypted backup…") {
+        update(words(R.string.progress_backup)) {
             val file = repository.backup()
             if (token == operation) presentation = Presentation.Files(listOf(file), backup = true)
         }
@@ -520,7 +537,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
         kind: VaultCredentialKind,
         onRestored: () -> Unit = {},
     ) =
-        perform("Verifying backup…", onRestored) {
+        perform(words(R.string.progress_verifying_backup), onRestored) {
             val descriptor =
                 application.contentResolver.openFileDescriptor(uri, "r")
                     ?: throw VaultException.MissingFile()
@@ -543,7 +560,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
 
     fun enableBiometrics(activity: FragmentActivity) {
         systemFlow.begin()
-        update(then = { showNotice("Biometric unlock is on for this vault.") }) {
+        update(then = { showNotice(words(R.string.biometric_on_notice)) }) {
             try {
                 val (id, secret) = repository.custodyMaterial()
                 BiometricKey.enable(activity, id, secret)
@@ -557,13 +574,13 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
     fun disableBiometrics() {
         BiometricKey.remove(application)
         hasBiometricKey = false
-        showNotice("Biometric unlock is off.")
+        showNotice(words(R.string.biometric_off))
     }
 
     fun unlockBiometrics(activity: FragmentActivity) {
         if (BiometricKey.storedId(application) == null) return
         systemFlow.begin()
-        perform("Authenticating…") {
+        perform(words(R.string.progress_authenticating)) {
             try {
                 val (id, secret) =
                     try {
@@ -585,7 +602,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
 
     fun replaceRecoveryKey() {
         val token = operation
-        update("Replacing recovery key…") {
+        update(words(R.string.progress_replacing_recovery)) {
             val replacement = repository.replaceRecoveryKey()
             if (token == operation) recoveryKey = replacement
         }
@@ -636,7 +653,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    if (library?.id == id) automaticMessage = e.vaultMessage
+                    if (library?.id == id) automaticMessage = e.shown
                 }
             }
     }
@@ -649,7 +666,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                 automaticMessage = null
                 scheduleAutomaticBackup()
             } catch (e: Exception) {
-                automaticMessage = e.vaultMessage
+                automaticMessage = e.shown
             }
         }
     }
@@ -663,7 +680,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                 automaticStatus = null
                 automaticMessage = null
             } catch (e: Exception) {
-                automaticMessage = e.vaultMessage
+                automaticMessage = e.shown
             }
         }
     }
@@ -701,7 +718,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
             throw e
         } catch (e: Exception) {
             if (library?.id == id)
-                automaticMessage = "Backup needs another attempt: " + e.vaultMessage
+                automaticMessage = words(R.string.automatic_retry, e.shown)
         } finally {
             automaticWorking = false
             if (prepared && library != null) scheduleAutomaticBackup()
@@ -730,7 +747,7 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    if (library != null) automaticMessage = e.vaultMessage
+                    if (library != null) automaticMessage = e.shown
                 }
                 BackupWorker.schedule(
                     application,

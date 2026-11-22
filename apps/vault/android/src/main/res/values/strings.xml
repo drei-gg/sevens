@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Vault's words. English ships; translations arrive as values-<lang>/strings.xml in community pull
+  requests. SevenKit's shared words (OK, Cancel, Save…) are its seven_* strings. File names, MIME
+  types, test tags and keystore aliases stay in code.
+-->
+<resources>
+    <!-- Core errors (VaultError, one per case; Messages.kt) -->
+    <string name="error_weak_pin">Use 8–32 digits. Avoid dates and repeated sequences.</string>
+    <string name="error_weak_pattern">Connect at least 8 different dots on the 5×5 grid.</string>
+    <string name="error_invalid_credential">That didn’t open a vault. Check the PIN, pattern, passphrase or recovery key and try again.</string>
+    <string name="error_weak_password">Use a passphrase of at least 12 characters.</string>
+    <string name="error_damaged">The data could not be verified. The existing vault has not been replaced.</string>
+    <string name="error_unsupported">This format or version is not supported.</string>
+    <string name="error_locked">Unlock the vault to continue.</string>
+    <string name="error_duplicate_vault">A vault with this identity or unlock secret already exists. Choose another secret; restore never replaces an existing vault.</string>
+    <string name="error_invalid_name">Enter a name without path separators, up to 200 characters.</string>
+    <string name="error_missing_file">A file is missing. Existing data has been preserved.</string>
+    <string name="error_no_space">There is not enough available storage to finish this operation.</string>
+    <string name="error_older_backup">This backup is in an older format made by Vault on iPhone, so it can’t be restored here. Update Vault on the iPhone and back up again.</string>
+    <string name="error_secret_in_use">This backup’s unlock secret already opens another vault on this device. Restore it with its recovery key instead; you’ll then choose a new unlock secret.</string>
+    <!-- Core recognition failures (RecognitionFailure) -->
+    <string name="error_recognition_too_much_text">The recognized text is too large for one note. Choose fewer pages.</string>
+    <string name="error_recognition_invalid_page">This PDF page cannot be rendered.</string>
+    <!-- Platform failures -->
+    <string name="error_file_not_found">The file could not be opened. It may have moved or access may have changed.</string>
+    <string name="error_generic">Something went wrong. Existing data has been preserved.</string>
+    <string name="error_image_unreadable">This image could not be read.</string>
+    <plurals name="error_pdf_too_long_for_queue">
+        <item quantity="one">This PDF needs the individual page-range action (up to %d page). Skip it here.</item>
+        <item quantity="other">This PDF needs the individual page-range action (up to %d pages). Skip it here.</item>
+    </plurals>
+
+    <!-- Core issues (VaultIssue): why a recognition or search plan can't go ahead -->
+    <string name="issue_no_readable_pages">This PDF has no readable pages.</string>
+    <!-- %1$d is the document's last page number. -->
+    <string name="issue_page_range">Choose a page range from 1 to %1$d.</string>
+    <plurals name="issue_too_many_pages">
+        <item quantity="one">Choose up to %d page at a time.</item>
+        <item quantity="other">Choose up to %d pages at a time.</item>
+    </plurals>
+    <string name="issue_nothing_selected">Select images or PDFs to recognize.</string>
+    <plurals name="issue_too_many_files">
+        <item quantity="one">Select up to %d file per review queue.</item>
+        <item quantity="other">Select up to %d files per review queue.</item>
+    </plurals>
+    <string name="issue_selection_changed">The selection changed. Select the files again.</string>
+    <string name="issue_unsupported_selection">Select only images and PDFs. Notes and other files cannot be recognized.</string>
+    <plurals name="issue_query_too_long">
+        <item quantity="one">Use up to %d character to search note text.</item>
+        <item quantity="other">Use up to %d characters to search note text.</item>
+    </plurals>
+
+    <!-- Automatic backup delivery failures (BackupFailure.Reason) -->
+    <string name="backup_failure_destination">Choose the backup folder again. Access may have changed.</string>
+    <string name="backup_failure_invalid_artifact">The prepared backup could not be read. Open the vault to prepare it again.</string>
+    <string name="backup_failure_changed_copy">The copied backup did not match. The previous backup has been kept.</string>
+    <string name="backup_failure_copy">The backup could not be copied to the folder. Vault will try again.</string>
+
+    <!-- Biometric unlock (BiometricKey) -->
+    <string name="biometric_not_enrolled">Set up a fingerprint or face unlock in Android settings first.</string>
+    <string name="biometric_no_sensor">This device has no strong biometric sensor Vault can use.</string>
+    <string name="biometric_incomplete">Biometric unlock did not complete.</string>
+    <string name="biometric_off">Biometric unlock is off.</string>
+    <string name="biometric_enrollment_changed">Biometric unlock was turned off because this device’s fingerprints or faces changed. Unlock with your secret, then turn it on again in Settings.</string>
+    <string name="biometric_prompt_unlock">Unlock Vault</string>
+    <string name="biometric_prompt_enable">Turn on biometric unlock</string>
+    <string name="biometric_prompt_subtitle">Open your encrypted vault</string>
+    <string name="biometric_prompt_use_secret">Use your secret</string>
+    <string name="biometric_on_notice">Biometric unlock is on for this vault.</string>
+
+    <!-- Unlock methods and the field labels built on them -->
+    <string name="kind_passphrase">Passphrase</string>
+    <string name="kind_pin">PIN</string>
+    <string name="kind_pattern">Pattern</string>
+    <string name="kind_new_passphrase">New passphrase</string>
+    <string name="kind_new_pin">New PIN</string>
+    <string name="kind_new_pattern">New pattern</string>
+    <string name="kind_repeat_passphrase">Repeat passphrase</string>
+    <string name="kind_repeat_pin">Repeat PIN</string>
+    <string name="kind_repeat_pattern">Repeat pattern</string>
+    <string name="kind_backup_passphrase">Backup passphrase</string>
+    <string name="kind_backup_pin">Backup PIN</string>
+    <string name="kind_backup_pattern">Backup pattern</string>
+    <string name="kind_method">Unlock method</string>
+    <!-- %1$s is the field's label, such as "Passphrase". -->
+    <string name="credential_show">Show %1$s</string>
+    <string name="credential_hide">Hide %1$s</string>
+    <string name="credential_mismatch">These don’t match.</string>
+    <!-- One dot of the 5×5 pattern grid, for TalkBack. -->
+    <string name="pattern_dot">Row %1$d, column %2$d</string>
+    <string name="pattern_dot_selected">Selected</string>
+    <plurals name="pattern_dots">
+        <item quantity="one">%d dot · draw a path or tap dots in order</item>
+        <item quantity="other">%d dots · draw a path or tap dots in order</item>
+    </plurals>
+
+    <!-- Shared -->
+    <string name="error_title">Could not complete</string>
+    <string name="lock_action">Lock</string>
+    <string name="recovery_key">Recovery key</string>
+
+    <!-- Lock screen -->
+    <string name="lock_title">Vault</string>
+    <string name="lock_heading">Yours to keep.</string>
+    <string name="lock_body">Draw its pattern or enter its PIN or passphrase. Your private library stays encrypted when locked.</string>
+    <string name="lock_open_heading">Open your vault</string>
+    <string name="lock_use_recovery">Use a recovery key</string>
+    <string name="lock_unlock">Unlock</string>
+    <string name="lock_unlock_biometric">Unlock with fingerprint or face</string>
+    <!-- Also the feature named on the unlock sheet. -->
+    <string name="lock_create">Create a vault</string>
+    <string name="lock_restore">Restore encrypted backup</string>
+    <string name="lock_recovery_note">A recovery key opens existing encrypted data. It cannot bring back files after the app is uninstalled unless you kept a backup.</string>
+    <string name="lock_about">About &amp; ownership</string>
+    <string name="lock_cover">Vault locked</string>
+
+    <!-- Create a vault -->
+    <string name="create_title">Create vault</string>
+    <string name="create_save">Create</string>
+    <string name="create_name">Vault name</string>
+    <string name="create_rules">Use 12+ characters, an 8–32 digit PIN, or 8+ dots. Each secret opens its own vault. Longer, unpredictable secrets resist guessing better; avoid dates, letters and simple shapes.</string>
+    <string name="create_acknowledge">I understand there is no account reset</string>
+    <string name="create_next">Next, save your recovery key somewhere outside this app. Keep a separate encrypted backup too.</string>
+
+    <!-- Recovery key -->
+    <string name="recovery_heading">Keep this key outside Vault</string>
+    <string name="recovery_body">This key can open your vault without its usual unlock secret. Store it somewhere private, such as your password manager.</string>
+    <string name="recovery_copy">Copy</string>
+    <string name="recovery_not_retained">We do not retain a readable copy. A backup is still needed if the local files are lost.</string>
+    <string name="recovery_saved">I’ve saved my recovery key</string>
+    <string name="recovery_continue">Continue to vault</string>
+    <string name="replacement_heading">Save a new recovery key</string>
+    <string name="replacement_body">Vault locked before you confirmed saving this vault’s recovery key, and it isn’t kept anywhere it can be shown again. Make a replacement now and save it before you continue.</string>
+    <string name="replacement_old_backups">Old backups still open with the recovery key they were made with.</string>
+    <string name="replacement_create">Create a new recovery key</string>
+
+    <!-- New unlock secret after a recovery-key restore -->
+    <string name="new_secret_title">New unlock secret</string>
+    <string name="new_secret_heading">Choose a new unlock secret</string>
+    <string name="new_secret_body">This vault was restored with its recovery key, so its old secret couldn’t be checked against your other vaults. Choose a new PIN, pattern or passphrase to open it from now on.</string>
+    <string name="new_secret_set">Set unlock secret</string>
+    <string name="new_secret_set_notice">Unlock secret set. Older backups still open with their old one.</string>
+    <string name="new_secret_old_backups">Older backups still open with the secret they were made with.</string>
+
+    <!-- Restore a vault -->
+    <string name="restore_title">Restore vault</string>
+    <string name="restore_save">Restore</string>
+    <string name="restore_choose">Choose a .vault7 backup</string>
+    <string name="restore_chosen_backup">Chosen backup</string>
+    <string name="restore_use_recovery">Use recovery key</string>
+    <string name="restore_note">Use the pattern, PIN, passphrase or recovery key that applied when this backup was made. The whole backup is verified before it is added. Existing vaults are never overwritten.</string>
+
+    <!-- Paywall moments (SevenKit's Before you buy, unlock and trial-ended sheets) -->
+    <string name="gate_byb_title">Your phone already has a Locked Folder.</string>
+    <string name="gate_byb_builtin">Google Photos keeps a Locked Folder behind your screen lock, and newer Android versions add a private space. If that’s enough, keep your money.</string>
+    <!-- {price} is replaced by SevenKit with the store price; keep it as written. -->
+    <string name="gate_byb_adds">What this adds: each vault opens with its own passphrase, PIN or pattern, and keeps photos, videos, files and notes encrypted, organized and backed up in a portable file. Try it for 7 days, then {price}, once.</string>
+    <string name="gate_byb_adds_without_price">What this adds: each vault opens with its own passphrase, PIN or pattern, and keeps photos, videos, files and notes encrypted, organized and backed up in a portable file. Try it for 7 days, then one purchase.</string>
+    <string name="gate_byb_limits">What it can’t do: protect an open vault on a compromised phone, take back copies you’ve exported, or hide that Vault is installed. After the trial your files stay readable and exportable. Nobody can reset your secret for you.</string>
+    <string name="gate_byb_look_around">Look around</string>
+    <string name="gate_unlock_encrypted">Encrypted photos, videos, files and notes</string>
+    <string name="gate_unlock_vaults">Independent vaults and useful organization</string>
+    <string name="gate_unlock_backups">Portable encrypted backups. No subscription.</string>
+    <string name="gate_ended_open">Open, organize, export and delete existing files</string>
+    <string name="gate_ended_backup">Back up, restore and recover your vaults</string>
+    <string name="gate_ended_add">Add vaults, files, photos and notes</string>
+
+    <!-- Library -->
+    <string name="order_newest">Newest</string>
+    <string name="order_oldest">Oldest</string>
+    <string name="order_name">Name</string>
+    <string name="order_largest">Largest</string>
+    <string name="order_manual">Manual</string>
+    <!-- %1$s is the order's name, such as "Newest". -->
+    <string name="library_sort">Sort: %1$s</string>
+    <string name="library_favorites">Favorites</string>
+    <plurals name="library_trashed">
+        <item quantity="one">Moved %d to Recently Deleted</item>
+        <item quantity="other">Moved %d to Recently Deleted</item>
+    </plurals>
+    <string name="library_undo">Undo</string>
+    <plurals name="library_selected">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <string name="library_done_selecting">Done selecting</string>
+    <string name="library_select_all">Select all shown</string>
+    <string name="library_recently_deleted">Recently Deleted</string>
+    <string name="library_options">Library options</string>
+    <string name="library_list_view">List view</string>
+    <string name="library_grid_view">Grid view</string>
+    <string name="library_select">Select</string>
+    <string name="library_details">Details</string>
+    <string name="library_show_library">Show library</string>
+    <string name="library_new_folder">New folder</string>
+    <string name="library_rename_folder">Rename folder</string>
+    <string name="library_folder_name">Folder name</string>
+    <string name="library_folders">Folders</string>
+    <string name="library_your_files">Your files</string>
+    <string name="library_vault_root">Vault root</string>
+    <string name="library_export_selected">Export selected originals</string>
+    <string name="library_restore_selected">Restore selected</string>
+    <string name="library_delete_selected">Permanently delete selected</string>
+    <string name="library_recognize_selected">Recognize selected text</string>
+    <string name="library_move_selected">Move selected to…</string>
+    <string name="library_trash_selected">Move selected to trash</string>
+    <string name="library_add_open">Add files, photos, a note or a photo</string>
+    <string name="library_add_close">Close add menu</string>
+    <string name="state_expanded">Expanded</string>
+    <string name="state_collapsed">Collapsed</string>
+    <string name="add_files">Files</string>
+    <string name="add_photos">Photos</string>
+    <string name="add_note">Note</string>
+    <string name="add_camera">Camera</string>
+    <!-- Features named on the unlock sheet when the trial has ended. -->
+    <string name="gate_import_files">Import files</string>
+    <string name="gate_import_photos">Import photos</string>
+    <string name="gate_write_note">Write a note</string>
+    <string name="gate_capture_photo">Capture a photo</string>
+    <string name="library_trial_not_started">Start your free 7 days to add files and notes. Everything here stays readable and exportable.</string>
+    <string name="library_trial_ended">Your free 7 days have ended. Everything here stays readable, exportable and backed up; adding files and notes is part of the unlock.</string>
+    <string name="library_delete_one_title">Permanently delete this file?</string>
+    <plurals name="library_delete_title">
+        <item quantity="one">Permanently delete %d file?</item>
+        <item quantity="other">Permanently delete %d files?</item>
+    </plurals>
+    <string name="library_delete_text">Backups and exported copies are not deleted. This can’t be undone.</string>
+    <string name="library_delete_confirm">Permanently delete</string>
+    <string name="item_favorite">Favorite</string>
+
+    <!-- Search -->
+    <string name="search_names">Search file names</string>
+    <string name="search_names_and_notes">Search names and note text</string>
+    <string name="search_include_notes">Include note text</string>
+    <string name="search_notes_note">Search stays on this device while unlocked. Photos and PDFs need saved text first.</string>
+    <string name="search_searching">Searching note text…</string>
+    <string name="search_failed">Note text could not be searched. Unlock again and retry.</string>
+    <!-- Search coverage: these phrases are joined with search_separator. -->
+    <plurals name="search_searched">
+        <item quantity="one">Searched %d note</item>
+        <item quantity="other">Searched %d notes</item>
+    </plurals>
+    <plurals name="search_unreadable">
+        <item quantity="one">%d unreadable</item>
+        <item quantity="other">%d unreadable</item>
+    </plurals>
+    <plurals name="search_skipped">
+        <item quantity="one">%d skipped (500 notes / 32 MB per search)</item>
+        <item quantity="other">%d skipped (500 notes / 32 MB per search)</item>
+    </plurals>
+    <string name="search_separator">" · "</string>
+    <!-- %1$s is what the person searched for. -->
+    <string name="empty_no_results">No results for “%1$s”</string>
+    <string name="empty_no_results_detail">Search matches file names, ignoring case and accents.</string>
+    <string name="empty_no_results_notes_detail">Matches ignore case and accents. Check search coverage above if some notes could not be searched.</string>
+    <string name="empty_clear_search">Clear search</string>
+    <string name="empty_trash_title">Nothing in the trash</string>
+    <string name="empty_trash_detail">Deleted items stay here until you permanently remove them.</string>
+    <string name="empty_library_title">A place for private things.</string>
+    <string name="empty_library_detail">Add photos, documents or a note. Your files stay on this device until you choose to export or back up.</string>
+
+    <!-- Notes and file details -->
+    <string name="note_new_title">New note</string>
+    <string name="note_name">Note name</string>
+    <string name="note_text">Note text</string>
+    <string name="item_title">File details</string>
+    <string name="item_name">Name</string>
+    <string name="item_size">Size</string>
+    <string name="item_added">Added</string>
+    <string name="item_preview">Preview</string>
+    <string name="item_recognize">Recognize text</string>
+    <string name="item_export">Export original</string>
+    <string name="item_preview_footer">Previews use a temporary decrypted copy on this device. Exported copies are no longer protected by Vault.</string>
+    <string name="item_edit_note">Edit note</string>
+    <string name="item_manual_order">Manual order</string>
+    <string name="item_move_earlier">Move earlier</string>
+    <string name="item_move_later">Move later</string>
+    <string name="item_trash">Move to Recently Deleted</string>
+    <string name="item_trashed_notice">Moved to Recently Deleted</string>
+    <string name="item_restore">Restore file</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_backup_recovery">Backup &amp; recovery</string>
+    <string name="backup_prepare">Prepare encrypted backup</string>
+    <!-- %1$s is a date and time. -->
+    <string name="settings_last_prepared">Last prepared: %1$s. This does not confirm that a provider uploaded it.</string>
+    <string name="settings_no_backup">No backup prepared yet.</string>
+    <string name="settings_restore_another">Restore another vault</string>
+    <string name="settings_replace_recovery">Generate a replacement recovery key</string>
+    <string name="settings_backup_note">Save the .vault7 file outside this app, then test a restore on another device. Uninstalling Vault deletes local files. Android’s own device backup does not include your vaults. Replacing a recovery key affects this device. Old backups keep the previous key until you replace those backups.</string>
+    <string name="settings_biometric">Biometric convenience</string>
+    <string name="settings_biometric_footer">Turning this on keeps this vault’s key in this device’s secure hardware, released only by your current fingerprints or face. Enrolling a new one turns it off. Keep the independent secret and recovery key.</string>
+    <string name="settings_biometric_enable">Turn on fingerprint or face unlock for this vault</string>
+    <string name="settings_biometric_remove">Remove biometric unlock</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_privacy_data">No Vault account, analytics, ads or storage servers. Automatic backups copy encrypted files to the folder you select. That folder’s app handles any cloud storage; Google Play purchases contact Google.</string>
+    <string name="settings_privacy_screen">Vault hides its contents from the recent apps screen and screenshots, covers them when it isn’t in front, and locks when you leave it. A picker or share sheet Vault opens keeps it unlocked for up to two minutes. It does not protect an open session on a compromised device.</string>
+    <string name="settings_built_on">Built on</string>
+    <string name="settings_built_on_text">age encryption (rage, the Rust implementation of age-encryption.org/v1), the Android Keystore and BiometricPrompt, CameraX, Media3, Telephoto and Android’s photo picker and document folders. Original files are preserved without recompression by Vault.</string>
+    <string name="settings_change_method">Change unlock method</string>
+    <string name="settings_change_secret">Change unlock secret</string>
+    <string name="settings_changed_notice">Unlock secret changed. Older backups still open with the old one.</string>
+    <string name="settings_change_note">Older backups still use their old credentials. Make a new backup after changing them.</string>
+
+    <!-- Automatic backup -->
+    <string name="automatic_title">Automatic encrypted backup</string>
+    <string name="automatic_footer">Choose a folder once, on this device or in a cloud drive’s app. Changes are backed up while this vault is open. Completed encrypted backups can retry in the background; Android decides when. If preparation is interrupted, open this vault again to catch up. The latest three copies made by this device are kept. That folder’s app handles cloud upload; a completed copy is not an upload receipt. Backups remain available after the trial ends. Turning this off leaves existing copies in your chosen folder.</string>
+    <string name="automatic_folder">Folder</string>
+    <string name="automatic_chosen_folder">Chosen folder</string>
+    <string name="automatic_preparing">Preparing encrypted backup…</string>
+    <!-- %1$s is a date and time. -->
+    <string name="automatic_last_copied">Last copied to the folder: %1$s.</string>
+    <string name="automatic_no_copy">No completed copy yet.</string>
+    <string name="automatic_waiting">Latest changes are waiting to be prepared.</string>
+    <string name="automatic_queued">Encrypted backup queued for delivery.</string>
+    <string name="automatic_back_up_now">Back up now</string>
+    <string name="automatic_change_folder">Change backup folder</string>
+    <string name="automatic_turn_off">Turn off automatic backup</string>
+    <string name="automatic_choose_folder">Choose automatic backup folder</string>
+    <!-- %1$s is the reason, a sentence of its own. -->
+    <string name="automatic_retry">Backup needs another attempt: %1$s</string>
+
+    <!-- Text recognition: review, PDF pages, queue -->
+    <string name="review_title">Review</string>
+    <string name="review_save">Save note</string>
+    <string name="review_intro">Review the text before saving a separate encrypted note.</string>
+    <string name="review_nothing">No text was recognized. You can enter a note here or close and try another file.</string>
+    <string name="review_text">Recognized text</string>
+    <string name="review_on_device">English recognition runs on this device. The original file stays unchanged.</string>
+    <string name="review_gated">Start the trial or unlock to save new notes. You can still read and copy this text.</string>
+    <!-- %1$s is the default note name: the source file's name without its extension. -->
+    <string name="review_default_name">%1$s text</string>
+    <string name="pages_title">Pages</string>
+    <string name="pages_recognize">Recognize</string>
+    <!-- Two sentences: pages_count, then pages_choose. -->
+    <string name="pages_summary">%1$s %2$s</string>
+    <plurals name="pages_count">
+        <item quantity="one">%d page.</item>
+        <item quantity="other">%d pages.</item>
+    </plurals>
+    <plurals name="pages_choose">
+        <item quantity="one">Choose up to %d page to recognize on this device.</item>
+        <item quantity="other">Choose up to %d pages to recognize on this device.</item>
+    </plurals>
+    <string name="pages_first">First page</string>
+    <string name="pages_last">Last page</string>
+    <string name="pages_note">Review the result before saving a separate encrypted note. The original PDF stays unchanged.</string>
+    <string name="queue_title">Queue</string>
+    <!-- queue_saved, then queue_skipped. -->
+    <string name="queue_counts">%1$s · %2$s</string>
+    <plurals name="queue_saved">
+        <item quantity="one">%d saved</item>
+        <item quantity="other">%d saved</item>
+    </plurals>
+    <plurals name="queue_skipped">
+        <item quantity="one">%d skipped</item>
+        <item quantity="other">%d skipped</item>
+    </plurals>
+    <plurals name="queue_review_files">
+        <item quantity="one">Review %d file</item>
+        <item quantity="other">Review %d files</item>
+    </plurals>
+    <!-- %d is the most pages of one PDF the queue reads. -->
+    <plurals name="queue_intro">
+        <item quantity="one">Recognize one file at a time, then save an encrypted note or skip it. All pages of each PDF are included, up to %d; longer PDFs need the individual page-range action. Originals stay unchanged.</item>
+        <item quantity="other">Recognize one file at a time, then save an encrypted note or skip it. All pages of each PDF are included, up to %d; longer PDFs need the individual page-range action. Originals stay unchanged.</item>
+    </plurals>
+    <string name="queue_session">The queue stays only in this unlocked session. Closing or locking discards unsaved text; notes already saved remain.</string>
+    <string name="queue_start">Start review</string>
+    <string name="queue_stopping">Stopping after current page…</string>
+    <string name="queue_stopped">Queue stopped</string>
+    <string name="queue_complete">Review complete</string>
+    <string name="queue_after">Saved notes remain in their source folders. Skipped or unfinished files were not changed.</string>
+    <!-- %1$d of %2$d files; %3$s is the file's name. -->
+    <string name="queue_file">File %1$d of %2$d: %3$s</string>
+    <string name="queue_retry">Retry this file</string>
+    <string name="queue_nothing">No text was recognized. Enter text or skip this file.</string>
+    <string name="queue_skip">Skip this file</string>
+    <string name="queue_stop">Stop queue</string>
+    <string name="queue_stop_after_page">Stop after current page</string>
+    <string name="queue_stop_title">Stop this queue?</string>
+    <string name="queue_stop_text">Unsaved text will be discarded. Notes already saved remain.</string>
+    <string name="queue_stop_confirm">Stop and discard</string>
+    <string name="queue_keep_reviewing">Keep reviewing</string>
+
+    <!-- Camera -->
+    <string name="camera_off_title">Camera access is off</string>
+    <string name="camera_off_detail">Vault uses the camera only to take a photo straight into this vault. Files, photos and notes still work without it.</string>
+    <string name="camera_open_settings">Open settings</string>
+    <string name="camera_close">Close camera</string>
+    <string name="camera_note">The photo goes straight into this vault, not your gallery.</string>
+    <string name="camera_failed_start">The camera could not start. Close and try again.</string>
+    <string name="camera_failed_take">The photo could not be taken. Try again.</string>
+    <string name="camera_take">Take photo</string>
+
+    <!-- Preview -->
+    <string name="preview_unsupported_title">No preview for this kind of file</string>
+    <string name="preview_unsupported_detail">Export the original to open it in another app. The exported copy is no longer protected by Vault.</string>
+    <string name="preview_page_of">Page %1$d of %2$d</string>
+    <string name="preview_page">Page %1$d</string>
+    <string name="preview_page_failed">This page could not be displayed.</string>
+    <string name="preview_text_failed">This text file could not be read.</string>
+    <string name="preview_text_truncated">Preview shows the first 1 MB. Export the original to read the complete file.</string>
+
+    <!-- Prepared files: save or share -->
+    <string name="files_backup_ready">Encrypted backup ready</string>
+    <string name="files_original_ready">Original ready</string>
+    <plurals name="files_ready">
+        <item quantity="one">%d original ready</item>
+        <item quantity="other">%d originals ready</item>
+    </plurals>
+    <string name="files_backup_note">Save the .vault7 file outside this app, then test a restore on another device. It opens only with this vault’s secret or recovery key.</string>
+    <string name="files_decrypted_note">These are decrypted copies. Once saved or shared, they are no longer protected by Vault.</string>
+    <string name="files_save_device">Save to device</string>
+    <string name="files_save_folder">Save to a folder</string>
+    <string name="files_share">Share</string>
+    <string name="files_backup_saved">Encrypted backup saved.</string>
+    <string name="files_original_saved">Original saved.</string>
+    <plurals name="files_saved">
+        <item quantity="one">%d original saved.</item>
+        <item quantity="other">%d originals saved.</item>
+    </plurals>
+    <!-- %1$s is the reason, a sentence of its own. -->
+    <string name="files_save_failed">The file could not be saved there. %1$s</string>
+    <plurals name="files_save_some_failed">
+        <item quantity="one">%d original could not be saved there.</item>
+        <item quantity="other">%d originals could not be saved there.</item>
+    </plurals>
+
+    <!-- Progress -->
+    <string name="progress_locking">Locking…</string>
+    <string name="progress_saving">Saving…</string>
+    <string name="progress_creating">Creating encrypted vault…</string>
+    <string name="progress_opening">Opening vault…</string>
+    <string name="progress_authenticating">Authenticating…</string>
+    <!-- %1$d of %2$d files. -->
+    <string name="progress_encrypting">Encrypting %1$d of %2$d…</string>
+    <string name="progress_loading_encrypting">Loading and encrypting %1$d of %2$d…</string>
+    <string name="progress_preview">Preparing preview…</string>
+    <string name="progress_originals">Preparing originals…</string>
+    <string name="progress_backup">Verifying and preparing encrypted backup…</string>
+    <string name="progress_verifying_backup">Verifying backup…</string>
+    <string name="progress_replacing_recovery">Replacing recovery key…</string>
+    <string name="progress_reading_pdf">Reading PDF pages…</string>
+    <string name="progress_recognizing_image">Recognizing text on this device…</string>
+    <string name="progress_recognizing_pdf">Recognizing PDF on this device…</string>
+    <!-- Page %1$d of %2$d. -->
+    <string name="progress_recognizing_page">Recognizing page %1$d of %2$d…</string>
+    <!-- File %1$d of %2$d. -->
+    <string name="progress_recognizing_file">Recognizing file %1$d of %2$d…</string>
+    <!-- File %1$d: page %2$d of %3$d. -->
+    <string name="progress_file_page">File %1$d: page %2$d of %3$d…</string>
+
+    <!-- Import and export results -->
+    <string name="create_gated">Start the trial or unlock to add a vault.</string>
+    <string name="import_unnamed">Imported file</string>
+    <plurals name="import_result_files">
+        <item quantity="one">%d imported. Originals stay where they were.</item>
+        <item quantity="other">%d imported. Originals stay where they were.</item>
+    </plurals>
+    <plurals name="import_result_photos">
+        <item quantity="one">%d imported. Originals stay in your gallery.</item>
+        <item quantity="other">%d imported. Originals stay in your gallery.</item>
+    </plurals>
+    <plurals name="import_result_camera">
+        <item quantity="one">%d imported. Nothing was added to your gallery.</item>
+        <item quantity="other">%d imported. Nothing was added to your gallery.</item>
+    </plurals>
+    <!-- Heading above a list of failures, one per line. -->
+    <plurals name="import_failed_files">
+        <item quantity="one">%d could not be imported:</item>
+        <item quantity="other">%d could not be imported:</item>
+    </plurals>
+    <plurals name="import_failed_photos">
+        <item quantity="one">%d import failed:</item>
+        <item quantity="other">%d imports failed:</item>
+    </plurals>
+    <!-- One failure line: %1$s is the file name, %2$s the reason. -->
+    <string name="import_failed_file">%1$s: %2$s</string>
+    <!-- One failure line: item %1$d of the photo selection, %2$s the reason. -->
+    <string name="import_failed_item">Item %1$d: %2$s</string>
+    <plurals name="export_failed">
+        <item quantity="one">%d export failed. Successful originals are ready.</item>
+        <item quantity="other">%d exports failed. Successful originals are ready.</item>
+    </plurals>
+</resources>

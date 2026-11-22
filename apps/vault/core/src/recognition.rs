@@ -1,21 +1,26 @@
 //! Bounded PDF recognition policy. Parsing, rendering and OCR remain native and on-device.
-use crate::format::NOTE_MAX_BYTES;
+use crate::{VaultIssue, format::NOTE_MAX_BYTES};
+
+/// The most pages one recognition reads.
+pub const MAXIMUM_PAGES: u32 = 20;
+/// The most files one review queue takes.
+pub const MAXIMUM_ITEMS: u32 = 10;
 
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct RecognitionPlan {
     /// Zero-based page indices, empty for an invalid request.
     pub pages: Vec<u32>,
-    pub issue: Option<String>,
+    pub issue: Option<VaultIssue>,
     pub maximum_pages: u32,
     pub maximum_pixel_edge: u32,
     pub maximum_text_bytes: u64,
 }
 #[uniffi::export]
 pub fn recognition_plan(page_count: u32, first_page: u32, last_page: u32) -> RecognitionPlan {
-    let maximum_pages = 20;
-    let issue = if page_count == 0 { Some("This PDF has no readable pages.".into()) }
-        else if first_page == 0 || last_page < first_page || last_page > page_count { Some(format!("Choose a page range from 1 to {page_count}.")) }
-        else if last_page - first_page + 1 > maximum_pages { Some("Choose up to 20 pages at a time.".into()) }
+    let maximum_pages = MAXIMUM_PAGES;
+    let issue = if page_count == 0 { Some(VaultIssue::NoReadablePages) }
+        else if first_page == 0 || last_page < first_page || last_page > page_count { Some(VaultIssue::PageRange { page_count }) }
+        else if last_page - first_page + 1 > maximum_pages { Some(VaultIssue::TooManyPages { maximum: maximum_pages }) }
         else { None };
     let pages = if issue.is_none() { (first_page - 1..last_page).collect() } else { vec![] };
     RecognitionPlan { pages, issue, maximum_pages, maximum_pixel_edge: 2400, maximum_text_bytes: NOTE_MAX_BYTES }
@@ -49,6 +54,7 @@ pub fn recognition_append(current: String, page_number: u32, text: String) -> Re
     Ok(result)
 }
 
+/// English text for a failure, for logs and as the fallback where an app has no localized string.
 #[uniffi::export]
 pub fn recognition_failure_description(error: RecognitionFailure) -> String { error.to_string() }
 
@@ -57,7 +63,7 @@ pub fn recognition_failure_description(error: RecognitionFailure) -> String { er
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct RecognitionBatchPlan {
     pub items: Vec<crate::VaultItem>,
-    pub issue: Option<String>,
+    pub issue: Option<VaultIssue>,
     pub maximum_items: u32,
     pub maximum_pdf_pages: u32,
 }
@@ -66,12 +72,12 @@ pub fn recognition_batch_plan(items: Vec<crate::VaultItem>, selected: Vec<uuid::
     let ids: std::collections::HashSet<_> = selected.into_iter().collect();
     let supported: std::collections::HashSet<_> = supported.into_iter().collect();
     let chosen: Vec<_> = items.into_iter().filter(|item| ids.contains(&item.id)).collect();
-    let issue = if ids.is_empty() { Some("Select images or PDFs to recognize.".into()) }
-        else if ids.len() > 10 { Some("Select up to 10 files per review queue.".into()) }
-        else if chosen.len() != ids.len() || chosen.iter().any(|item| item.deleted.is_some()) { Some("The selection changed. Select the files again.".into()) }
-        else if chosen.iter().any(|item| !supported.contains(&item.id)) { Some("Select only images and PDFs. Notes and other files cannot be recognized.".into()) }
+    let issue = if ids.is_empty() { Some(VaultIssue::NothingSelected) }
+        else if ids.len() > MAXIMUM_ITEMS as usize { Some(VaultIssue::TooManyFiles { maximum: MAXIMUM_ITEMS }) }
+        else if chosen.len() != ids.len() || chosen.iter().any(|item| item.deleted.is_some()) { Some(VaultIssue::SelectionChanged) }
+        else if chosen.iter().any(|item| !supported.contains(&item.id)) { Some(VaultIssue::UnsupportedSelection) }
         else { None };
-    RecognitionBatchPlan { items: if issue.is_none() { chosen } else { vec![] }, issue, maximum_items: 10, maximum_pdf_pages: recognition_plan(1,1,1).maximum_pages }
+    RecognitionBatchPlan { items: if issue.is_none() { chosen } else { vec![] }, issue, maximum_items: MAXIMUM_ITEMS, maximum_pdf_pages: MAXIMUM_PAGES }
 }
 #[uniffi::export]
 pub fn recognition_review_text(text: String) -> Result<String, RecognitionFailure> {

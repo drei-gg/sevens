@@ -2,7 +2,6 @@ package gg.seven.vault
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
@@ -36,14 +35,23 @@ object BiometricKey {
     private const val ALIAS = "vault.biometric"
     private const val PREFS = "vault-biometric"
 
-    class Unavailable(message: String) : Exception(message)
+    /** Why biometric unlock isn't available; the UI words it (Messages.kt). */
+    enum class Reason {
+        NOT_ENROLLED,
+        NO_SENSOR,
+        INCOMPLETE,
+        OFF,
+        ENROLLMENT_CHANGED,
+    }
+
+    class Unavailable(val reason: Reason) : Exception(reason.name)
 
     /** Why biometric unlock can't be turned on here, or null when it can. */
-    fun unavailable(context: Context): String? =
+    fun unavailable(context: Context): Reason? =
         when (BiometricManager.from(context).canAuthenticate(BIOMETRIC_STRONG)) {
             BiometricManager.BIOMETRIC_SUCCESS -> null
-            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> "Set up a fingerprint or face unlock in Android settings first."
-            else -> "This device has no strong biometric sensor Vault can use."
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> Reason.NOT_ENROLLED
+            else -> Reason.NO_SENSOR
         }
 
     fun storedId(context: Context): UUID? =
@@ -62,19 +70,16 @@ object BiometricKey {
                 .setKeySize(256)
                 .setUserAuthenticationRequired(true)
                 .setInvalidatedByBiometricEnrollment(true)
-                .apply {
-                    if (Build.VERSION.SDK_INT >= 30) setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG)
-                    @Suppress("DEPRECATION") if (Build.VERSION.SDK_INT < 30) setUserAuthenticationValidityDurationSeconds(-1)
-                    if (Build.VERSION.SDK_INT >= 28 && strongBox) setIsStrongBoxBacked(true)
-                }
+                .setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG)
+                .setIsStrongBoxBacked(strongBox)
                 .build()
         val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, STORE)
-        val strongBox = Build.VERSION.SDK_INT >= 28 && context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
+        val strongBox = context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
         return try {
             generator.init(spec(strongBox))
             generator.generateKey()
         } catch (e: Exception) {
-            if (!strongBox || (Build.VERSION.SDK_INT >= 28 && e !is StrongBoxUnavailableException && e.cause !is StrongBoxUnavailableException)) throw e
+            if (!strongBox || (e !is StrongBoxUnavailableException && e.cause !is StrongBoxUnavailableException)) throw e
             generator.init(spec(false))
             generator.generateKey()
         }
@@ -82,7 +87,7 @@ object BiometricKey {
 
     private fun key(): SecretKey? = (KeyStore.getInstance(STORE).apply { load(null) }.getKey(ALIAS, null) as? SecretKey)
 
-    private suspend fun authenticate(activity: FragmentActivity, title: String, cipher: Cipher): Cipher =
+    private suspend fun authenticate(activity: FragmentActivity, title: Int, cipher: Cipher): Cipher =
         suspendCancellableCoroutine { continuation ->
             val prompt =
                 BiometricPrompt(
@@ -91,7 +96,7 @@ object BiometricKey {
                     object : BiometricPrompt.AuthenticationCallback() {
                         override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                             val authorized = result.cryptoObject?.cipher
-                            if (authorized == null) continuation.resumeWithException(Unavailable("Biometric unlock did not complete."))
+                            if (authorized == null) continuation.resumeWithException(Unavailable(Reason.INCOMPLETE))
                             else continuation.resume(authorized)
                         }
 
@@ -102,9 +107,9 @@ object BiometricKey {
                 )
             val info =
                 BiometricPrompt.PromptInfo.Builder()
-                    .setTitle(title)
-                    .setSubtitle("Open your encrypted vault")
-                    .setNegativeButtonText("Use your secret")
+                    .setTitle(activity.getString(title))
+                    .setSubtitle(activity.getString(R.string.biometric_prompt_subtitle))
+                    .setNegativeButtonText(activity.getString(R.string.biometric_prompt_use_secret))
                     .setAllowedAuthenticators(BIOMETRIC_STRONG)
                     .build()
             prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher))
@@ -120,7 +125,7 @@ object BiometricKey {
         remove(activity)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE, generate(activity)) }
         try {
-            val authorized = authenticate(activity, "Turn on biometric unlock", cipher)
+            val authorized = authenticate(activity, R.string.biometric_prompt_enable, cipher)
             val sealed = authorized.doFinal(secret)
             activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit(commit = true) {
                 putString("id", id.toString())
@@ -141,17 +146,17 @@ object BiometricKey {
      */
     suspend fun read(activity: FragmentActivity): Pair<UUID, ByteArray> {
         val prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val id = storedId(activity) ?: throw Unavailable("Biometric unlock is off.")
-        val iv = Base64.decode(prefs.getString("iv", null) ?: throw Unavailable("Biometric unlock is off."), Base64.NO_WRAP)
-        val sealed = Base64.decode(prefs.getString("sealed", null) ?: throw Unavailable("Biometric unlock is off."), Base64.NO_WRAP)
+        val id = storedId(activity) ?: throw Unavailable(Reason.OFF)
+        val iv = Base64.decode(prefs.getString("iv", null) ?: throw Unavailable(Reason.OFF), Base64.NO_WRAP)
+        val sealed = Base64.decode(prefs.getString("sealed", null) ?: throw Unavailable(Reason.OFF), Base64.NO_WRAP)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         try {
             cipher.init(Cipher.DECRYPT_MODE, key() ?: throw KeyPermanentlyInvalidatedException(), GCMParameterSpec(128, iv))
         } catch (_: KeyPermanentlyInvalidatedException) {
             remove(activity)
-            throw Unavailable("Biometric unlock was turned off because this device’s fingerprints or faces changed. Unlock with your secret, then turn it on again in Settings.")
+            throw Unavailable(Reason.ENROLLMENT_CHANGED)
         }
-        val authorized = authenticate(activity, "Unlock Vault", cipher)
+        val authorized = authenticate(activity, R.string.biometric_prompt_unlock, cipher)
         return id to authorized.doFinal(sealed)
     }
 }

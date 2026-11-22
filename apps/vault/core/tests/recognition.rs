@@ -1,10 +1,10 @@
 use vault_core::*;
 #[test]
 fn page_ranges_are_explicit_and_bounded() {
-    assert!(recognition_plan(0, 1, 1).issue.is_some());
-    for (first,last) in [(0,1),(2,1),(1,22),(1,21)] {
+    assert_eq!(recognition_plan(0, 1, 1).issue, Some(VaultIssue::NoReadablePages));
+    for (first,last,issue) in [(0,1,VaultIssue::PageRange{page_count:21}),(2,1,VaultIssue::PageRange{page_count:21}),(1,22,VaultIssue::PageRange{page_count:21}),(1,21,VaultIssue::TooManyPages{maximum:20})] {
         let plan = recognition_plan(21,first,last);
-        assert!(plan.issue.is_some()); assert!(plan.pages.is_empty());
+        assert_eq!(plan.issue, Some(issue)); assert!(plan.pages.is_empty());
     }
     let plan = recognition_plan(100, 81, 100);
     assert_eq!(plan.pages, (80..100).collect::<Vec<_>>());
@@ -36,15 +36,15 @@ fn batch_plan_keeps_library_order_and_never_silently_truncates() {
     let plan=recognition_batch_plan(vec![a.clone(),b.clone()],vec![b.id,a.id,b.id],vec![a.id,b.id]);
     assert_eq!(plan.items,vec![a,b]); assert!(plan.issue.is_none());
     let items:Vec<_>=(0..11).map(|_|image()).collect(); let ids=items.iter().map(|i|i.id).collect::<Vec<_>>();
-    let plan=recognition_batch_plan(items,ids.clone(),ids); assert!(plan.items.is_empty()); assert!(plan.issue.is_some());
+    let plan=recognition_batch_plan(items,ids.clone(),ids); assert!(plan.items.is_empty()); assert_eq!(plan.issue, Some(VaultIssue::TooManyFiles{maximum:10}));
 }
 #[test]
 fn batch_plan_rejects_missing_trashed_unsupported_and_empty_selection() {
     let mut a=image();
-    for (items,ids,supported) in [(vec![a.clone()],vec![],vec![a.id]),(vec![],vec![a.id],vec![a.id]),(vec![a.clone()],vec![a.id],vec![])] {
-        let plan=recognition_batch_plan(items,ids,supported);assert!(plan.items.is_empty());assert!(plan.issue.is_some());
+    for (items,ids,supported,issue) in [(vec![a.clone()],vec![],vec![a.id],VaultIssue::NothingSelected),(vec![],vec![a.id],vec![a.id],VaultIssue::SelectionChanged),(vec![a.clone()],vec![a.id],vec![],VaultIssue::UnsupportedSelection)] {
+        let plan=recognition_batch_plan(items,ids,supported);assert!(plan.items.is_empty());assert_eq!(plan.issue,Some(issue));
     }
-    a.deleted=Some(std::time::SystemTime::now()); assert!(recognition_batch_plan(vec![a.clone()],vec![a.id],vec![a.id]).issue.is_some());
+    a.deleted=Some(std::time::SystemTime::now()); assert_eq!(recognition_batch_plan(vec![a.clone()],vec![a.id],vec![a.id]).issue,Some(VaultIssue::SelectionChanged));
     assert_eq!(recognition_review_text("café".into()).unwrap(),"café");
     assert!(recognition_review_text("é".repeat(2_500_001)).is_err());
 }

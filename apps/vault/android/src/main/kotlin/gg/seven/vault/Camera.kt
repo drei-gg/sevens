@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -66,16 +67,16 @@ fun CameraScreen(model: VaultModel, onCaptured: (File) -> Unit, onClose: () -> U
                     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.background) {
                         Column {
                             EmptyState(
-                                "Camera access is off",
-                                "Vault uses the camera only to take a photo straight into this vault. Files, photos and notes still work without it.",
+                                stringResource(R.string.camera_off_title),
+                                stringResource(R.string.camera_off_detail),
                                 icon = Icons.Outlined.PhotoCamera,
                                 action =
-                                    if (asked) "Open settings" to {
+                                    if (asked) stringResource(R.string.camera_open_settings) to {
                                         context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)))
                                     }
                                     else null,
                             )
-                            TextButton(onClick = onClose, modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = Space.m)) { Text("Close") }
+                            TextButton(onClick = onClose, modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = Space.m)) { Text(stringResource(gg.seven.kit.R.string.seven_close)) }
                         }
                     }
                 }
@@ -89,7 +90,7 @@ private fun Viewfinder(model: VaultModel, onCaptured: (File) -> Unit, onClose: (
     val owner = LocalLifecycleOwner.current
     val capture = remember { ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build() }
     var taking by remember { mutableStateOf(false) }
-    var failure by remember { mutableStateOf<String?>(null) }
+    var failure by remember { mutableStateOf<Int?>(null) }
     val view = remember { PreviewView(context) }
     DisposableEffect(owner) {
         val future = ProcessCameraProvider.getInstance(context)
@@ -100,7 +101,7 @@ private fun Viewfinder(model: VaultModel, onCaptured: (File) -> Unit, onClose: (
                     provider.unbindAll()
                     provider.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
                 }
-                .onFailure { failure = "The camera could not start. Close and try again." }
+                .onFailure { failure = R.string.camera_failed_start }
         }, ContextCompat.getMainExecutor(context))
         onDispose { runCatching { future.get().unbindAll() } }
     }
@@ -111,7 +112,7 @@ private fun Viewfinder(model: VaultModel, onCaptured: (File) -> Unit, onClose: (
             colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.Black.copy(alpha = 0.55f), contentColor = Color.White),
             modifier = Modifier.statusBarsPadding().padding(Space.s).align(Alignment.TopStart),
         ) {
-            Icon(Icons.Outlined.Close, "Close camera")
+            Icon(Icons.Outlined.Close, stringResource(R.string.camera_close))
         }
         // The controls sit on a dark platter so they read over any scene.
         Column(
@@ -119,7 +120,7 @@ private fun Viewfinder(model: VaultModel, onCaptured: (File) -> Unit, onClose: (
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Space.ms),
         ) {
-            Text(failure ?: "The photo goes straight into this vault, not your gallery.", color = Color.White, style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(failure ?: R.string.camera_note), color = Color.White, style = MaterialTheme.typography.bodySmall)
             FilledIconButton(
                 onClick = {
                     if (taking) return@FilledIconButton
@@ -135,7 +136,7 @@ private fun Viewfinder(model: VaultModel, onCaptured: (File) -> Unit, onClose: (
                             override fun onError(exception: ImageCaptureException) {
                                 file.delete()
                                 taking = false
-                                failure = "The photo could not be taken. Try again."
+                                failure = R.string.camera_failed_take
                             }
                         },
                     )
@@ -144,7 +145,7 @@ private fun Viewfinder(model: VaultModel, onCaptured: (File) -> Unit, onClose: (
                 shape = CircleShape,
                 modifier = Modifier.size(76.dp),
             ) {
-                Icon(Icons.Outlined.PhotoCamera, "Take photo", Modifier.size(32.dp))
+                Icon(Icons.Outlined.PhotoCamera, stringResource(R.string.camera_take), Modifier.size(32.dp))
             }
         }
     }

@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import gg.seven.kit.SevenRoot
@@ -33,7 +34,7 @@ fun PrivacyCover() {
     val covered by LocalCovered.current
     if (covered)
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center) {
-            Text("Vault locked", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.lock_cover), style = MaterialTheme.typography.titleLarge)
         }
 }
 
@@ -62,7 +63,7 @@ class MainActivity : FragmentActivity() {
         setContent {
             SevenTheme {
                 CompositionLocalProvider(LocalCovered provides covered) {
-                    SevenRoot(model.store, VaultContent) { VaultApp() }
+                    SevenRoot(model.store, vaultContent()) { VaultApp() }
                     PrivacyCover()
                 }
             }

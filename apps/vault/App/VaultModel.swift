@@ -178,7 +178,7 @@ struct PresentedFiles: Identifiable { var id = UUID(); let urls: [URL]; var shar
         guard !busy, let library else { return }
         let supported = library.items.filter { UTType($0.type)?.conforms(to: .image) == true || $0.type == UTType.pdf.identifier }.map(\.id)
         let plan = recognitionBatchPlan(items: library.items, selected: Array(ids), supported: supported)
-        if let issue = plan.issue { error = issue; return }
+        if let issue = plan.issue { error = issue.message; return }
         presentation = PresentedFiles(urls: [], batch: RecognitionQueue(plan: plan))
     }
     func stopRecognitionQueue(_ queue: RecognitionQueue) {

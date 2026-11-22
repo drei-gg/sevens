@@ -26,6 +26,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -37,8 +39,9 @@ import gg.seven.kit.ConnectedChoice
 import gg.seven.kit.Space
 import gg.seven.vault.core.*
 
+/** The method's name ("Passphrase", "PIN", "Pattern"). */
 val VaultCredentialKind.title: String
-    get() = credentialKindTitle(this)
+    @Composable get() = stringResource(label())
 
 fun VaultCredentialKind.valid(value: String) = runCatching { credentialKindValidate(this, value) }.isSuccess
 
@@ -62,7 +65,7 @@ fun CredentialKindPicker(kind: VaultCredentialKind, onChange: (VaultCredentialKi
         else
             Column(Modifier.fillMaxWidth().selectableGroup()) {
                 Text(
-                    "Unlock method",
+                    stringResource(R.string.kind_method),
                     Modifier.padding(bottom = Space.xs),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -109,7 +112,7 @@ fun CredentialInput(kind: VaultCredentialKind, value: String, label: String, tag
             keyboardActions = KeyboardActions(onDone = { onSubmit?.invoke() }),
             trailingIcon = {
                 IconButton(onClick = { shown = !shown }) {
-                    Icon(if (shown) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, if (shown) "Hide $label" else "Show $label")
+                    Icon(if (shown) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, stringResource(if (shown) R.string.credential_hide else R.string.credential_show, label))
                 }
             },
         )
@@ -140,7 +143,7 @@ fun PatternPad(value: String, label: String, tag: String, onChange: (String) -> 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-            TextButton(onClick = { change("") }, modifier = Modifier.testTag("$tag.clear")) { Text("Clear") }
+            TextButton(onClick = { change("") }, modifier = Modifier.testTag("$tag.clear")) { Text(stringResource(gg.seven.kit.R.string.seven_clear)) }
         }
         BoxWithConstraints(Modifier.fillMaxWidth().widthIn(max = 360.dp).align(Alignment.CenterHorizontally).aspectRatio(1f)) {
             val side = constraints.maxWidth.toFloat()
@@ -194,22 +197,24 @@ fun PatternPad(value: String, label: String, tag: String, onChange: (String) -> 
             }
             // Accessible dots: invisible buttons over each position, in reading order.
             val size = with(androidx.compose.ui.platform.LocalDensity.current) { step.toDp() }
+            val selectedState = stringResource(R.string.pattern_dot_selected)
             for (dot in 0 until 25) {
+                val description = stringResource(R.string.pattern_dot, dot / 5 + 1, dot % 5 + 1)
                 Box(
                     Modifier.offset(size * (dot % 5), size * (dot / 5))
                         .size(size)
                         .testTag("$tag.dot.$dot")
                         .semantics {
                             role = Role.Button
-                            contentDescription = "Row ${dot / 5 + 1}, column ${dot % 5 + 1}"
-                            if (dot in path) stateDescription = "Selected"
+                            contentDescription = description
+                            if (dot in path) stateDescription = selectedState
                             onClick { append(dot); true }
                         }
                 )
             }
         }
         Text(
-            "${path.size} dots · draw a path or tap dots in order",
+            pluralStringResource(R.plurals.pattern_dots, path.size, path.size),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

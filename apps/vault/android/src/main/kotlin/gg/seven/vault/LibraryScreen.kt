@@ -38,7 +38,10 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,15 +54,26 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** The order names as iOS writes them: "Newest", "Oldest", "Name", "Largest", "Manual". */
+/** The order names as iOS shows them: "Newest", "Oldest", "Name", "Largest", "Manual". */
 val VaultOrder.title: String
-    get() = name.lowercase().replaceFirstChar { it.uppercase() }
+    @Composable
+    get() =
+        stringResource(
+            when (this) {
+                VaultOrder.NEWEST -> R.string.order_newest
+                VaultOrder.OLDEST -> R.string.order_oldest
+                VaultOrder.NAME -> R.string.order_name
+                VaultOrder.LARGEST -> R.string.order_largest
+                VaultOrder.MANUAL -> R.string.order_manual
+            }
+        )
 
 /** iOS `VaultLibraryView`. */
 @Composable
 fun LibraryScreen(model: VaultModel) {
     val library = model.library ?: return
     val context = LocalContext.current
+    val resources = LocalResources.current
     val gate = LocalSevenGate.current
     val store = LocalSevenStore.current
     val entitlement by store.entitlement.collectAsState()
@@ -118,7 +132,7 @@ fun LibraryScreen(model: VaultModel) {
             } catch (cancel: kotlinx.coroutines.CancellationException) {
                 throw cancel
             } catch (_: Exception) {
-                searchFailure = "Note text could not be searched. Unlock again and retry."
+                searchFailure = resources.getString(R.string.search_failed)
             } finally {
                 searching = false
             }
@@ -160,8 +174,8 @@ fun LibraryScreen(model: VaultModel) {
                     scope.launch {
                         val result =
                             snackbar.showSnackbar(
-                                "Moved ${ids.size} to Recently Deleted",
-                                actionLabel = "Undo",
+                                resources.getQuantityString(R.plurals.library_trashed, ids.size, ids.size),
+                                actionLabel = resources.getString(R.string.library_undo),
                                 withDismissAction = true,
                                 duration = SnackbarDuration.Short,
                             )
@@ -209,7 +223,7 @@ fun LibraryScreen(model: VaultModel) {
         topBar = {
             if (selecting)
                 TopAppBar(
-                    title = { Text("${selected.size} selected") },
+                    title = { Text(pluralStringResource(R.plurals.library_selected, selected.size, selected.size)) },
                     navigationIcon = {
                         IconButton(
                             onClick = {
@@ -217,12 +231,12 @@ fun LibraryScreen(model: VaultModel) {
                                 selected = emptySet()
                             }
                         ) {
-                            Icon(Icons.Outlined.Close, "Done selecting")
+                            Icon(Icons.Outlined.Close, stringResource(R.string.library_done_selecting))
                         }
                     },
                     actions = {
                         IconButton(onClick = { selected = visible.map { it.id }.toSet() }) {
-                            Icon(Icons.Outlined.SelectAll, "Select all shown")
+                            Icon(Icons.Outlined.SelectAll, stringResource(R.string.library_select_all))
                         }
                     },
                     colors =
@@ -233,7 +247,7 @@ fun LibraryScreen(model: VaultModel) {
             else
                 SevenTopBar(
                     when {
-                        trash -> "Recently Deleted"
+                        trash -> stringResource(R.string.library_recently_deleted)
                         current != null -> current.name
                         else -> library.name
                     },
@@ -249,15 +263,15 @@ fun LibraryScreen(model: VaultModel) {
                         },
                 ) {
                     IconButton(onClick = model::lock, modifier = Modifier.testTag("vault.lock")) {
-                        Icon(Icons.Outlined.Lock, "Lock")
+                        Icon(Icons.Outlined.Lock, stringResource(R.string.lock_action))
                     }
                     Box {
                         IconButton(onClick = { menu = true }, enabled = !model.busy) {
-                            Icon(Icons.Outlined.MoreVert, "Library options")
+                            Icon(Icons.Outlined.MoreVert, stringResource(R.string.library_options))
                         }
                         DropdownMenu(menu, onDismissRequest = { menu = false }) {
                             DropdownMenuItem(
-                                text = { Text(if (library.grid) "List view" else "Grid view") },
+                                text = { Text(stringResource(if (library.grid) R.string.library_list_view else R.string.library_grid_view)) },
                                 leadingIcon = {
                                     Icon(
                                         if (library.grid) Icons.AutoMirrored.Outlined.Notes
@@ -273,7 +287,7 @@ fun LibraryScreen(model: VaultModel) {
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Select") },
+                                text = { Text(stringResource(R.string.library_select)) },
                                 leadingIcon = { Icon(Icons.Outlined.Checklist, null) },
                                 onClick = {
                                     menu = false
@@ -282,7 +296,7 @@ fun LibraryScreen(model: VaultModel) {
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text(if (trash) "Show library" else "Recently Deleted") },
+                                text = { Text(stringResource(if (trash) R.string.library_show_library else R.string.library_recently_deleted)) },
                                 leadingIcon = { Icon(Icons.Outlined.DeleteOutline, null) },
                                 onClick = {
                                     menu = false
@@ -292,7 +306,7 @@ fun LibraryScreen(model: VaultModel) {
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("New folder") },
+                                text = { Text(stringResource(R.string.library_new_folder)) },
                                 leadingIcon = { Icon(Icons.Outlined.CreateNewFolder, null) },
                                 onClick = {
                                     menu = false
@@ -301,7 +315,7 @@ fun LibraryScreen(model: VaultModel) {
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Prepare encrypted backup") },
+                                text = { Text(stringResource(R.string.backup_prepare)) },
                                 leadingIcon = { Icon(Icons.Outlined.Backup, null) },
                                 onClick = {
                                     menu = false
@@ -310,7 +324,7 @@ fun LibraryScreen(model: VaultModel) {
                             )
                             HorizontalDivider()
                             DropdownMenuItem(
-                                text = { Text("Settings") },
+                                text = { Text(stringResource(R.string.settings_title)) },
                                 leadingIcon = { Icon(Icons.Outlined.Settings, null) },
                                 onClick = {
                                     menu = false
@@ -329,20 +343,20 @@ fun LibraryScreen(model: VaultModel) {
                         onClick = { model.export(selected) },
                         enabled = selected.isNotEmpty() && !model.busy,
                     ) {
-                        Icon(Icons.Outlined.Share, "Export selected originals")
+                        Icon(Icons.Outlined.Share, stringResource(R.string.library_export_selected))
                     }
                     if (trash) {
                         IconButton(
                             onClick = { changeTrash(false) },
                             enabled = selected.isNotEmpty() && !model.busy,
                         ) {
-                            Icon(Icons.Outlined.RestoreFromTrash, "Restore selected")
+                            Icon(Icons.Outlined.RestoreFromTrash, stringResource(R.string.library_restore_selected))
                         }
                         IconButton(
                             onClick = { deleting = true },
                             enabled = selected.isNotEmpty() && !model.busy,
                         ) {
-                            Icon(Icons.Outlined.DeleteForever, "Permanently delete selected")
+                            Icon(Icons.Outlined.DeleteForever, stringResource(R.string.library_delete_selected))
                         }
                     } else {
                         IconButton(
@@ -350,18 +364,18 @@ fun LibraryScreen(model: VaultModel) {
                             enabled = selected.isNotEmpty() && !model.busy,
                             modifier = Modifier.testTag("ocr-batch-open"),
                         ) {
-                            Icon(Icons.Outlined.TextSnippet, "Recognize selected text")
+                            Icon(Icons.Outlined.TextSnippet, stringResource(R.string.library_recognize_selected))
                         }
                         Box {
                             IconButton(
                                 onClick = { moveMenu = true },
                                 enabled = selected.isNotEmpty() && !model.busy,
                             ) {
-                                Icon(Icons.AutoMirrored.Outlined.DriveFileMove, "Move selected to…")
+                                Icon(Icons.AutoMirrored.Outlined.DriveFileMove, stringResource(R.string.library_move_selected))
                             }
                             DropdownMenu(moveMenu, onDismissRequest = { moveMenu = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("Vault root") },
+                                    text = { Text(stringResource(R.string.library_vault_root)) },
                                     onClick = {
                                         moveMenu = false
                                         move(null)
@@ -383,14 +397,22 @@ fun LibraryScreen(model: VaultModel) {
                             onClick = { changeTrash(true) },
                             enabled = selected.isNotEmpty() && !model.busy,
                         ) {
-                            Icon(Icons.Outlined.Delete, "Move selected to trash")
+                            Icon(Icons.Outlined.Delete, stringResource(R.string.library_trash_selected))
                         }
                     }
                     Spacer(Modifier.weight(1f))
                 }
         },
         floatingActionButton = {
-            if (!trash && !selecting)
+            if (!trash && !selecting) {
+                val closeAdd = stringResource(R.string.library_add_close)
+                val openAdd = stringResource(R.string.library_add_open)
+                val expanded = stringResource(R.string.state_expanded)
+                val collapsed = stringResource(R.string.state_collapsed)
+                val importFiles = stringResource(R.string.gate_import_files)
+                val importPhotos = stringResource(R.string.gate_import_photos)
+                val writeNote = stringResource(R.string.gate_write_note)
+                val capturePhoto = stringResource(R.string.gate_capture_photo)
                 FloatingActionButtonMenu(
                     expanded = addMenu,
                     button = {
@@ -399,10 +421,8 @@ fun LibraryScreen(model: VaultModel) {
                             onCheckedChange = { addMenu = !addMenu },
                             modifier =
                                 Modifier.testTag("vault.add").semantics {
-                                    contentDescription =
-                                        if (addMenu) "Close add menu"
-                                        else "Add files, photos, a note or a photo"
-                                    stateDescription = if (addMenu) "Expanded" else "Collapsed"
+                                    contentDescription = if (addMenu) closeAdd else openAdd
+                                    stateDescription = if (addMenu) expanded else collapsed
                                 },
                         ) {
                             Icon(
@@ -422,19 +442,19 @@ fun LibraryScreen(model: VaultModel) {
                     FloatingActionButtonMenuItem(
                         onClick = {
                             addMenu = false
-                            gate.run("Import files") {
+                            gate.run(importFiles) {
                                 model.beginSystemFlow()
                                 documents.launch(arrayOf("*/*"))
                             }
                         },
-                        text = { Text("Files") },
+                        text = { Text(stringResource(R.string.add_files)) },
                         icon = { Icon(Icons.Outlined.UploadFile, null) },
                         modifier = Modifier.testTag("vault.add.files"),
                     )
                     FloatingActionButtonMenuItem(
                         onClick = {
                             addMenu = false
-                            gate.run("Import photos") {
+                            gate.run(importPhotos) {
                                 model.beginSystemFlow()
                                 photos.launch(
                                     PickVisualMediaRequest(
@@ -443,15 +463,15 @@ fun LibraryScreen(model: VaultModel) {
                                 )
                             }
                         },
-                        text = { Text("Photos") },
+                        text = { Text(stringResource(R.string.add_photos)) },
                         icon = { Icon(Icons.Outlined.AddPhotoAlternate, null) },
                     )
                     FloatingActionButtonMenuItem(
                         onClick = {
                             addMenu = false
-                            gate.run("Write a note") { note = true }
+                            gate.run(writeNote) { note = true }
                         },
-                        text = { Text("Note") },
+                        text = { Text(stringResource(R.string.add_note)) },
                         icon = { Icon(Icons.Outlined.EditNote, null) },
                         modifier = Modifier.testTag("vault.add.note"),
                     )
@@ -463,12 +483,13 @@ fun LibraryScreen(model: VaultModel) {
                         FloatingActionButtonMenuItem(
                             onClick = {
                                 addMenu = false
-                                gate.run("Capture a photo") { camera = true }
+                                gate.run(capturePhoto) { camera = true }
                             },
-                            text = { Text("Camera") },
+                            text = { Text(stringResource(R.string.add_camera)) },
                             icon = { Icon(Icons.Outlined.PhotoCamera, null) },
                         )
                 }
+            }
         },
     ) { padding ->
         LazyVerticalGrid(
@@ -500,19 +521,19 @@ fun LibraryScreen(model: VaultModel) {
             item(span = full) {
                 Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                     SearchInput(
-                        if (includeNoteText) "Search names and note text" else "Search file names",
+                        stringResource(if (includeNoteText) R.string.search_names_and_notes else R.string.search_names),
                         state = search,
                         modifier = Modifier.testTag("vault.search"),
                     )
                     FilterChip(
                         selected = includeNoteText,
                         onClick = { includeNoteText = !includeNoteText },
-                        label = { Text("Include note text") },
+                        label = { Text(stringResource(R.string.search_include_notes)) },
                         modifier = Modifier.testTag("vault.searchNotes"),
                     )
                     if (includeNoteText) {
                         Text(
-                            "Search stays on this device while unlocked. Photos and PDFs need saved text first.",
+                            stringResource(R.string.search_notes_note),
                             style = MaterialTheme.typography.bodySmall,
                         )
                         if (searching) {
@@ -522,25 +543,24 @@ fun LibraryScreen(model: VaultModel) {
                             ) {
                                 LoadingIndicator(Modifier.size(32.dp))
                                 Text(
-                                    "Searching note text…",
+                                    stringResource(R.string.search_searching),
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                             }
                         }
                         noteResult?.let { result ->
+                            val searched = result.searched.toInt()
+                            val unreadable = result.unavailable.toInt()
+                            val skipped = result.omitted.toInt()
+                            val coverage =
+                                listOfNotNull(
+                                        pluralStringResource(R.plurals.search_searched, searched, searched),
+                                        if (unreadable > 0) pluralStringResource(R.plurals.search_unreadable, unreadable, unreadable) else null,
+                                        if (skipped > 0) pluralStringResource(R.plurals.search_skipped, skipped, skipped) else null,
+                                    )
+                                    .joinToString(stringResource(R.string.search_separator))
                             Text(
-                                result.issue
-                                    ?: buildString {
-                                        append(
-                                            "Searched ${result.searched} ${if (result.searched == 1u) "note" else "notes"}"
-                                        )
-                                        if (result.unavailable > 0u)
-                                            append(" · ${result.unavailable} unreadable")
-                                        if (result.omitted > 0u)
-                                            append(
-                                                " · ${result.omitted} skipped (500 notes / 32 MB per search)"
-                                            )
-                                    },
+                                result.issue?.wording?.text() ?: coverage,
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.testTag("vault.searchCoverage"),
                             )
@@ -562,7 +582,7 @@ fun LibraryScreen(model: VaultModel) {
                         AssistChip(
                             onClick = { sorting = true },
                             enabled = !model.busy && !selecting,
-                            label = { Text("Sort: ${library.sort.title}") },
+                            label = { Text(stringResource(R.string.library_sort, library.sort.title)) },
                             leadingIcon = { Icon(Icons.Outlined.Sort, null) },
                             modifier = Modifier.testTag("vault.sort"),
                         )
@@ -592,7 +612,7 @@ fun LibraryScreen(model: VaultModel) {
                         selected = favorites,
                         onClick = { favorites = !favorites },
                         enabled = !model.busy && !selecting,
-                        label = { Text("Favorites") },
+                        label = { Text(stringResource(R.string.library_favorites)) },
                         leadingIcon = {
                             Icon(
                                 if (favorites) Icons.Filled.Star else Icons.Outlined.StarOutline,
@@ -608,17 +628,17 @@ fun LibraryScreen(model: VaultModel) {
             if (!paid && !trash)
                 item(span = full) {
                     Caption(
-                        if (entitlement is Entitlement.NotStarted)
-                            "Start your free 7 days to add files and notes. Everything here stays readable and exportable."
-                        else
-                            "Your free 7 days have ended. Everything here stays readable, exportable and backed up; adding files and notes is part of the unlock."
+                        stringResource(
+                            if (entitlement is Entitlement.NotStarted) R.string.library_trial_not_started
+                            else R.string.library_trial_ended
+                        )
                     )
                 }
             if (!trash && query.isEmpty()) {
                 val children = library.folders.filter { it.parent == folder }
                 if (children.isNotEmpty())
                     item(span = full) {
-                        Section(Modifier.padding(top = Space.s), title = "Folders") {
+                        Section(Modifier.padding(top = Space.s), title = stringResource(R.string.library_folders)) {
                             children.forEach { child ->
                                 row { shapes ->
                                     var options by remember { mutableStateOf(false) }
@@ -639,7 +659,7 @@ fun LibraryScreen(model: VaultModel) {
                                             onDismissRequest = { options = false },
                                         ) {
                                             DropdownMenuItem(
-                                                text = { Text("Rename folder") },
+                                                text = { Text(stringResource(R.string.library_rename_folder)) },
                                                 onClick = {
                                                     options = false
                                                     renamingFolder = child.id.toString()
@@ -655,7 +675,7 @@ fun LibraryScreen(model: VaultModel) {
             }
             item(span = full) {
                 Text(
-                    if (trash) "Recently Deleted" else "Your files",
+                    stringResource(if (trash) R.string.library_recently_deleted else R.string.library_your_files),
                     Modifier.padding(start = Space.m, top = Space.m, bottom = Space.xs).semantics {
                         heading()
                     },
@@ -668,25 +688,27 @@ fun LibraryScreen(model: VaultModel) {
                     when {
                         query.isNotEmpty() ->
                             EmptyState(
-                                if (searching) "Searching note text…"
-                                else "No results for “$query”",
-                                if (includeNoteText)
-                                    "Matches ignore case and accents. Check search coverage above if some notes could not be searched."
-                                else "Search matches file names, ignoring case and accents.",
+                                if (searching) stringResource(R.string.search_searching)
+                                else stringResource(R.string.empty_no_results, query),
+                                stringResource(
+                                    if (includeNoteText) R.string.empty_no_results_notes_detail
+                                    else R.string.empty_no_results_detail
+                                ),
                                 icon = Icons.Outlined.SearchOff,
                                 action =
-                                    "Clear search" to { search.edit { replace(0, length, "") } },
+                                    stringResource(R.string.empty_clear_search) to
+                                        { search.edit { replace(0, length, "") } },
                             )
                         trash ->
                             EmptyState(
-                                "Nothing in the trash",
-                                "Deleted items stay here until you permanently remove them.",
+                                stringResource(R.string.empty_trash_title),
+                                stringResource(R.string.empty_trash_detail),
                                 icon = Icons.Outlined.Delete,
                             )
                         else ->
                             EmptyState(
-                                "A place for private things.",
-                                "Add photos, documents or a note. Your files stay on this device until you choose to export or back up.",
+                                stringResource(R.string.empty_library_title),
+                                stringResource(R.string.empty_library_detail),
                                 icon = Icons.Outlined.Lock,
                             )
                     }
@@ -705,6 +727,8 @@ fun LibraryScreen(model: VaultModel) {
                     selected = selected + item.id
                 }
                 val size = Formatter.formatShortFileSize(context, item.bytes)
+                val detailsLabel = stringResource(R.string.library_details)
+                val selectLabel = stringResource(R.string.library_select)
                 if (grid)
                     Surface(
                         shape = MaterialTheme.shapes.medium,
@@ -712,8 +736,8 @@ fun LibraryScreen(model: VaultModel) {
                         modifier =
                             Modifier.testTag("vault.item")
                                 .combinedClickable(
-                                    onClickLabel = "Details",
-                                    onLongClickLabel = "Select",
+                                    onClickLabel = detailsLabel,
+                                    onLongClickLabel = selectLabel,
                                     onClick = open,
                                     onLongClick = startSelecting,
                                 ),
@@ -773,7 +797,7 @@ fun LibraryScreen(model: VaultModel) {
                                 ({
                                     Icon(
                                         Icons.Filled.Star,
-                                        "Favorite",
+                                        stringResource(R.string.item_favorite),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 })
@@ -811,9 +835,9 @@ fun LibraryScreen(model: VaultModel) {
         }
         AlertDialog(
             onDismissRequest = { if (!model.busy) folderDialog = false },
-            title = { Text(if (existing == null) "New folder" else "Rename folder") },
+            title = { Text(stringResource(if (existing == null) R.string.library_new_folder else R.string.library_rename_folder)) },
             text = {
-                TextInput("Folder name", name, Modifier.testTag("vault.folderName")) { name = it }
+                TextInput(stringResource(R.string.library_folder_name), name, Modifier.testTag("vault.folderName")) { name = it }
             },
             confirmButton = {
                 TextButton(
@@ -826,10 +850,10 @@ fun LibraryScreen(model: VaultModel) {
                         }
                     },
                 ) {
-                    Text("Save")
+                    Text(stringResource(gg.seven.kit.R.string.seven_save))
                 }
             },
-            dismissButton = { TextButton(onClick = { folderDialog = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { folderDialog = false }) { Text(stringResource(gg.seven.kit.R.string.seven_cancel)) } },
         )
     }
     if (deleting)
@@ -837,11 +861,11 @@ fun LibraryScreen(model: VaultModel) {
             onDismissRequest = { deleting = false },
             title = {
                 Text(
-                    if (selected.size == 1) "Permanently delete this file?"
-                    else "Permanently delete ${selected.size} files?"
+                    if (selected.size == 1) stringResource(R.string.library_delete_one_title)
+                    else pluralStringResource(R.plurals.library_delete_title, selected.size, selected.size)
                 )
             },
-            text = { Text("Backups and exported copies are not deleted. This can’t be undone.") },
+            text = { Text(stringResource(R.string.library_delete_text)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -857,10 +881,10 @@ fun LibraryScreen(model: VaultModel) {
                         }
                     }
                 ) {
-                    Text("Permanently delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.library_delete_confirm), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { deleting = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { deleting = false }) { Text(stringResource(gg.seven.kit.R.string.seven_cancel)) } },
         )
 }
 

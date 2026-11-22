@@ -257,7 +257,7 @@ struct VaultLibraryView: View {
         })
     }
     private func searchCoverage(_ result: NoteSearchResult) -> String {
-        if let issue = result.issue { return issue }
+        if let issue = result.issue { return issue.message }
         // Each part is its own catalog entry with plural variants; the list separator is a format too.
         var parts = [String(localized: "Searched \(Int(result.searched)) notes")]
         if result.unavailable > 0 { parts.append(String(localized: "\(Int(result.unavailable)) unreadable")) }

@@ -865,6 +865,186 @@
         }
       }
     },
+    "error.damaged": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The data could not be verified. The existing vault has not been replaced."
+          }
+        }
+      }
+    },
+    "error.duplicateVault": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A vault with this identity or unlock secret already exists. Choose another secret; restore never replaces an existing vault."
+          }
+        }
+      }
+    },
+    "error.invalidCredential": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That didn’t open a vault. Check the PIN, pattern, passphrase or recovery key and try again."
+          }
+        }
+      }
+    },
+    "error.invalidName": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a name without path separators, up to 200 characters."
+          }
+        }
+      }
+    },
+    "error.locked": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock the vault to continue."
+          }
+        }
+      }
+    },
+    "error.missingFile": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A file is missing. Existing data has been preserved."
+          }
+        }
+      }
+    },
+    "error.noSpace": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There is not enough available storage to finish this operation."
+          }
+        }
+      }
+    },
+    "error.olderBackup": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This backup is in an older format made by Vault on iPhone, so it can’t be restored here. Update Vault on the iPhone and back up again."
+          }
+        }
+      }
+    },
+    "error.recognition.invalidPage": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This PDF page cannot be rendered."
+          }
+        }
+      }
+    },
+    "error.recognition.tooMuchText": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The recognized text is too large for one note. Choose fewer pages."
+          }
+        }
+      }
+    },
+    "error.secretInUse": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This backup’s unlock secret already opens another vault on this device. Restore it with its recovery key instead; you’ll then choose a new unlock secret."
+          }
+        }
+      }
+    },
+    "error.unsupported": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This format or version is not supported."
+          }
+        }
+      }
+    },
+    "error.weakPassword": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use a passphrase of at least 12 characters."
+          }
+        }
+      }
+    },
+    "error.weakPattern": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect at least 8 different dots on the 5×5 grid."
+          }
+        }
+      }
+    },
+    "error.weakPin": {
+      "comment": "Error from Vault's core, shown in an alert or inline. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use 8–32 digits. Avoid dates and repeated sequences."
+          }
+        }
+      }
+    },
     "Export original": {
       "comment": "Vault interface copy. Keep it calm, concrete and short.",
       "extractionState": "manual",
@@ -1209,6 +1389,138 @@
           "stringUnit": {
             "state": "translated",
             "value": "Include note text"
+          }
+        }
+      }
+    },
+    "issue.noReadablePages": {
+      "comment": "Why a recognition or search can't go ahead, shown in place of running it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This PDF has no readable pages."
+          }
+        }
+      }
+    },
+    "issue.nothingSelected": {
+      "comment": "Why a recognition or search can't go ahead, shown in place of running it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select images or PDFs to recognize."
+          }
+        }
+      }
+    },
+    "issue.pageRange": {
+      "comment": "Why a recognition or search can't go ahead, shown in place of running it. %lld is the PDF's last page number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a page range from 1 to %lld."
+          }
+        }
+      }
+    },
+    "issue.queryTooLong": {
+      "comment": "Why a recognition or search can't go ahead, shown in place of running it. Count with plural variants. %lld is the longest note-text search, in characters.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Use up to %lld character to search note text."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Use up to %lld characters to search note text."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "issue.selectionChanged": {
+      "comment": "Why a recognition or search can't go ahead, shown in place of running it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The selection changed. Select the files again."
+          }
+        }
+      }
+    },
+    "issue.tooManyFiles": {
+      "comment": "Why a recognition or search can't go ahead, shown in place of running it. Count with plural variants. %lld is the most files one review queue takes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Select up to %lld file per review queue."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Select up to %lld files per review queue."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "issue.tooManyPages": {
+      "comment": "Why a recognition or search can't go ahead, shown in place of running it. Count with plural variants. %lld is the most pages one recognition reads.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Choose up to %lld page at a time."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Choose up to %lld pages at a time."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "issue.unsupportedSelection": {
+      "comment": "Why a recognition or search can't go ahead, shown in place of running it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select only images and PDFs. Notes and other files cannot be recognized."
           }
         }
       }

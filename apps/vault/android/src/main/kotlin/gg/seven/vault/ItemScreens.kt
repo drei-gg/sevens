@@ -16,6 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
@@ -35,7 +36,7 @@ fun VaultForm(
     onClose: () -> Unit,
     onSave: (() -> Unit)?,
     saveEnabled: Boolean = true,
-    saveLabel: String = "Save",
+    saveLabel: String = stringResource(gg.seven.kit.R.string.seven_save),
     dirty: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -60,7 +61,7 @@ fun VaultForm(
                             enabled = !model.busy,
                             modifier = Modifier.testTag("editor-cancel"),
                         ) {
-                            Icon(Icons.Outlined.Close, "Close")
+                            Icon(Icons.Outlined.Close, stringResource(gg.seven.kit.R.string.seven_close))
                         }
                     },
                     actions = {
@@ -68,7 +69,7 @@ fun VaultForm(
                             onClick = model::lock,
                             modifier = Modifier.testTag("editor-lock"),
                         ) {
-                            Icon(Icons.Outlined.Lock, "Lock")
+                            Icon(Icons.Outlined.Lock, stringResource(R.string.lock_action))
                         }
                         if (onSave != null)
                             TextButton(
@@ -112,7 +113,7 @@ fun NoteScreen(model: VaultModel, folder: UUID?, onClose: () -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
     var text by remember { mutableStateOf("") }
     VaultForm(
-        "New note",
+        stringResource(R.string.note_new_title),
         model,
         onClose,
         onSave = {
@@ -124,7 +125,7 @@ fun NoteScreen(model: VaultModel, folder: UUID?, onClose: () -> Unit) {
         saveEnabled = name.isNotBlank(),
         dirty = name.isNotEmpty() || text.isNotEmpty(),
     ) {
-        TextInput("Note name", name, Modifier.testTag("vault.noteName")) { name = it }
+        TextInput(stringResource(R.string.note_name), name, Modifier.testTag("vault.noteName")) { name = it }
         OutlinedTextField(
             text,
             { text = it },
@@ -132,7 +133,7 @@ fun NoteScreen(model: VaultModel, folder: UUID?, onClose: () -> Unit) {
                 Modifier.fillMaxWidth()
                     .heightIn(min = androidx.compose.ui.unit.Dp(240f))
                     .testTag("vault.noteText"),
-            label = { Text("Note text") },
+            label = { Text(stringResource(R.string.note_text)) },
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         )
     }
@@ -157,7 +158,7 @@ fun ItemDetailsScreen(model: VaultModel, item: VaultItem, onClose: () -> Unit) {
                 noteText = text
                 noteOriginal = text
             } catch (e: Exception) {
-                model.error = e.vaultMessage
+                model.error = e.vaultMessage(context)
             }
         }
     val changedDetails = name != item.name || favorite != item.favorite
@@ -176,7 +177,7 @@ fun ItemDetailsScreen(model: VaultModel, item: VaultItem, onClose: () -> Unit) {
         )
     }
     VaultForm(
-        "File details",
+        stringResource(R.string.item_title),
         model,
         onClose,
         onSave = {
@@ -192,12 +193,15 @@ fun ItemDetailsScreen(model: VaultModel, item: VaultItem, onClose: () -> Unit) {
         saveEnabled = (changedDetails || changedNote) && name.isNotBlank(),
         dirty = changedDetails || changedNote,
     ) {
-        TextInput("Name", name) { name = it }
+        TextInput(stringResource(R.string.item_name), name) { name = it }
+        val favoriteLabel = stringResource(R.string.item_favorite)
+        val sizeLabel = stringResource(R.string.item_size)
+        val addedLabel = stringResource(R.string.item_added)
         Section {
-            switch("Favorite", favorite) { favorite = it }
-            item("Size", Formatter.formatFileSize(context, item.bytes))
+            switch(favoriteLabel, favorite) { favorite = it }
+            item(sizeLabel, Formatter.formatFileSize(context, item.bytes))
             item(
-                "Added",
+                addedLabel,
                 DateUtils.formatDateTime(
                     context,
                     item.created.toEpochMilli(),
@@ -208,11 +212,11 @@ fun ItemDetailsScreen(model: VaultModel, item: VaultItem, onClose: () -> Unit) {
                 ),
             )
         }
-        Section(
-            footer =
-                "Previews use a temporary decrypted copy on this device. Exported copies are no longer protected by Vault."
-        ) {
-            action("Preview", Icons.Outlined.Visibility, enabled = !model.busy) {
+        val previewLabel = stringResource(R.string.item_preview)
+        val recognizeLabel = stringResource(R.string.item_recognize)
+        val exportLabel = stringResource(R.string.item_export)
+        Section(footer = stringResource(R.string.item_preview_footer)) {
+            action(previewLabel, Icons.Outlined.Visibility, enabled = !model.busy) {
                 leave {
                     onClose()
                     model.preview(item)
@@ -222,14 +226,14 @@ fun ItemDetailsScreen(model: VaultModel, item: VaultItem, onClose: () -> Unit) {
                 Types.isImage(item.contentType, item.name) ||
                     Types.isPdf(item.contentType, item.name)
             ) {
-                action("Recognize text", Icons.Outlined.TextFields, enabled = !model.busy) {
+                action(recognizeLabel, Icons.Outlined.TextFields, enabled = !model.busy) {
                     leave {
                         onClose()
                         model.recognizeText(item)
                     }
                 }
             }
-            action("Export original", Icons.Outlined.Share, enabled = !model.busy) {
+            action(exportLabel, Icons.Outlined.Share, enabled = !model.busy) {
                 leave {
                     onClose()
                     model.export(setOf(item.id))
@@ -237,7 +241,7 @@ fun ItemDetailsScreen(model: VaultModel, item: VaultItem, onClose: () -> Unit) {
             }
         }
         if (isNote) {
-            FormHeading("Edit note")
+            FormHeading(stringResource(R.string.item_edit_note))
             val text = noteText
             if (text == null) LoadingIndicator()
             else
@@ -248,24 +252,29 @@ fun ItemDetailsScreen(model: VaultModel, item: VaultItem, onClose: () -> Unit) {
                         Modifier.fillMaxWidth()
                             .heightIn(min = androidx.compose.ui.unit.Dp(160f))
                             .testTag("vault.editNote"),
-                    label = { Text("Note text") },
+                    label = { Text(stringResource(R.string.note_text)) },
                     keyboardOptions =
                         KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 )
         }
+        val earlierLabel = stringResource(R.string.item_move_earlier)
+        val laterLabel = stringResource(R.string.item_move_later)
+        val trashLabel = stringResource(R.string.item_trash)
+        val trashedNotice = stringResource(R.string.item_trashed_notice)
+        val restoreLabel = stringResource(R.string.item_restore)
         if (item.deleted == null)
-            Section(title = "Manual order") {
-                action("Move earlier", Icons.Outlined.ArrowUpward, enabled = !model.busy) {
+            Section(title = stringResource(R.string.item_manual_order)) {
+                action(earlierLabel, Icons.Outlined.ArrowUpward, enabled = !model.busy) {
                     shift(model, item, -1)
                 }
-                action("Move later", Icons.Outlined.ArrowDownward, enabled = !model.busy) {
+                action(laterLabel, Icons.Outlined.ArrowDownward, enabled = !model.busy) {
                     shift(model, item, 1)
                 }
             }
         Section {
             if (item.deleted == null)
                 action(
-                    "Move to Recently Deleted",
+                    trashLabel,
                     Icons.Outlined.Delete,
                     destructive = true,
                     enabled = !model.busy,
@@ -274,7 +283,7 @@ fun ItemDetailsScreen(model: VaultModel, item: VaultItem, onClose: () -> Unit) {
                         model.update(
                             then = {
                                 onClose()
-                                model.showNotice("Moved to Recently Deleted")
+                                model.showNotice(trashedNotice)
                             }
                         ) {
                             model.repository.updateItem(item.id, trashed = true)
@@ -282,7 +291,7 @@ fun ItemDetailsScreen(model: VaultModel, item: VaultItem, onClose: () -> Unit) {
                     }
                 }
             else
-                action("Restore file", Icons.Outlined.RestoreFromTrash, enabled = !model.busy) {
+                action(restoreLabel, Icons.Outlined.RestoreFromTrash, enabled = !model.busy) {
                     leave {
                         model.update(then = onClose) {
                             model.repository.updateItem(item.id, trashed = false)

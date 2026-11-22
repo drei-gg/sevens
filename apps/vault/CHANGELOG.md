@@ -1,5 +1,11 @@
 # Changelog
 
+## 22 November 2026 — localization groundwork, not released
+
+- The core's errors and refusals are typed cases (`VaultError`, `RecognitionFailure`, and the new `VaultIssue` with its numbers as fields) that each app words through its own catalog: iOS `Localizable.xcstrings`, Android `strings.xml`. The core's English is a fallback and log text only. Tests on both platforms check every core case has a sentence.
+- Android: every user-facing string is in `res/values/strings.xml` (English), with plurals for counts, ready for translation pull requests. Automatic-backup failures are stored as reasons, not sentences.
+- Android 11+ only: the pre-Android 11 image decoder and Keystore fallbacks are gone. The trial-expiry device test runs on the personal flavor, since the generic build is unlocked.
+
 ## 18 November 2026 — feature continuation, not released
 
 - Selected-file OCR review queue on both phones: up to ten images/PDFs, explicit review/save/skip, corrupt-file retry, full bounded PDFs, committed counts and lock cleanup. Originals remain unchanged; no background queue or plaintext index.

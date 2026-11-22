@@ -136,7 +136,7 @@ struct PdfRangeScreen: View {
                     LabeledContent("First page") { TextField("First page", text: $first).keyboardType(.numberPad).multilineTextAlignment(.trailing).accessibilityIdentifier("ocr-first") }
                     LabeledContent("Last page") { TextField("Last page", text: $last).keyboardType(.numberPad).multilineTextAlignment(.trailing).accessibilityIdentifier("ocr-last") }
                 } header: { Text("\(Int(draft.pages)) pages") } footer: {
-                    if let issue = plan.issue { Text(issue) }
+                    if let issue = plan.issue { Text(issue.message) }
                     else { Text("Choose up to \(Int(plan.maximumPages)) pages. Review the result before saving a separate encrypted note. The original PDF stays unchanged.") }
                 }
                 if model.busy { ProgressView("Recognizing selected pages…") }

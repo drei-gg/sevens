@@ -37,17 +37,34 @@ data class BackupStatus(
     val copiedAt: Instant? = null,
     val copiedRevision: String? = null,
     val pendingRevision: String? = null,
-    val failure: String? = null,
+    val failure: BackupFailure.Reason? = null,
     val nextAttempt: Instant? = null,
 )
 
-class BackupFailure(message: String) : Exception(message) {
+/** Why a delivery failed. The status keeps the reason, not words, so it shows in today's language. */
+class BackupFailure(val reason: Reason) : Exception(reason.code) {
+    enum class Reason(val code: String) {
+        /** The folder is gone or no longer writable. */
+        DESTINATION("destination"),
+        /** The prepared artifact is missing or malformed. */
+        INVALID_ARTIFACT("invalid-artifact"),
+        /** The copy in the folder doesn't match the artifact. */
+        CHANGED_COPY("changed-copy"),
+        /** Anything else the provider threw while copying. */
+        COPY("copy");
+
+        companion object {
+            /** A stored reason; an unknown one (or an older build's sentence) reads as a failed copy. */
+            fun of(code: String) = entries.firstOrNull { it.code == code } ?: COPY
+        }
+    }
+
     companion object {
-        fun destination() = BackupFailure("Choose the backup folder again. Access may have changed.")
+        fun destination() = BackupFailure(Reason.DESTINATION)
 
-        fun invalidArtifact() = BackupFailure("The prepared backup could not be read. Open the vault to prepare it again.")
+        fun invalidArtifact() = BackupFailure(Reason.INVALID_ARTIFACT)
 
-        fun changedCopy() = BackupFailure("The copied backup did not match. The previous backup has been kept.")
+        fun changedCopy() = BackupFailure(Reason.CHANGED_COPY)
     }
 }
 
@@ -182,7 +199,7 @@ class AutomaticBackup(val root: File, private val writer: BackupFolderWriter) {
                 val failed = all[index]
                 failed.failures += 1
                 val delay = min(3600.0, 30 * 2.0.pow(min(failed.failures, 7)))
-                failed.status = failed.status.copy(failure = e.message ?: BackupFailure.destination().message, nextAttempt = now.plusSeconds(delay.toLong()))
+                failed.status = failed.status.copy(failure = (e as? BackupFailure)?.reason ?: BackupFailure.Reason.COPY, nextAttempt = now.plusSeconds(delay.toLong()))
                 save(all)
             }
         }
@@ -203,7 +220,7 @@ class AutomaticBackup(val root: File, private val writer: BackupFolderWriter) {
             s.copiedAt?.let { put("copiedAt", it.toEpochMilli()) }
             s.copiedRevision?.let { put("copiedRevision", it) }
             s.pendingRevision?.let { put("pendingRevision", it) }
-            s.failure?.let { put("failure", it) }
+            s.failure?.let { put("failure", it.code) }
             s.nextAttempt?.let { put("nextAttempt", it.toEpochMilli()) }
             put("destination", record.destination)
             record.pendingFile?.let { put("pendingFile", it) }
@@ -222,7 +239,7 @@ class AutomaticBackup(val root: File, private val writer: BackupFolderWriter) {
                 instant("copiedAt"),
                 string("copiedRevision"),
                 string("pendingRevision"),
-                string("failure"),
+                string("failure")?.let(BackupFailure.Reason::of),
                 instant("nextAttempt"),
             ),
             o.getString("destination"),
@@ -254,7 +271,7 @@ class DocumentTreeWriter(private val context: Context) : BackupFolderWriter {
         return folder
     }
 
-    override fun name(destination: String) = tree(destination).name ?: "Chosen folder"
+    override fun name(destination: String) = tree(destination).name ?: context.getString(R.string.automatic_chosen_folder)
 
     override fun write(source: File, destination: String, filename: String) {
         val folder = tree(destination)

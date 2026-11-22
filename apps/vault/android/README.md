@@ -6,8 +6,11 @@ The iOS app's screens and behaviour on Android 11+ (API 30), Material 3 Expressi
 export JAVA_HOME=$(mise where java@temurin-21) ANDROID_SERIAL=emulator-5564
 android/gradlew -p android :vault-core:test :vault:testGenericDebugUnitTest :vault:assembleGenericDebug :vault:lintGenericDebug
 android/gradlew -p android :vault:connectedGenericDebugAndroidTest      # one emulator, ANDROID_SERIAL set
+android/gradlew -p android :vault:connectedPersonalDebugAndroidTest     # adds trial expiry (generic is unlocked)
 scripts/rust-core vault test                                            # the format's own gates
 ```
+
+Words live in `src/main/res/values/strings.xml` (English; translations arrive as `values-<lang>/strings.xml`). The core reports typed cases (`VaultException`, `RecognitionFailure`, `VaultIssue`) and `Messages.kt` words each one; `MessagesTest` checks every core case has a sentence.
 
 Debug builds only: `adb shell run-as org.example.sevens.vault.debug touch files/allow-screenshots` lifts FLAG_SECURE so screens can be captured for review. Release builds always set it.
 

@@ -72,7 +72,7 @@ class AutomaticBackupTest {
             queue.deliverPending(now, force = true)
             val status = queue.status(target)!!
             assertEquals(revision(1), status.pendingRevision)
-            assertNotNull(status.failure)
+            assertEquals(BackupFailure.Reason.DESTINATION, status.failure)
             val wait = status.nextAttempt!!.epochSecond - now.epochSecond
             assertTrue(wait >= last && wait <= 3600)
             last = wait

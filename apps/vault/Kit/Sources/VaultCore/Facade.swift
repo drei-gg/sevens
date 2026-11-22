@@ -8,12 +8,80 @@ import Foundation
 
 // MARK: errors
 
+// The core reports typed cases; the app words them through its String Catalog
+// (App/Localizable.xcstrings, looked up in the main bundle), so translations never pass through the
+// core. The core's English is only the fallback when a key is missing (and in this package's tests,
+// whose main bundle has no catalog). Every switch is exhaustive: a new core case fails to compile
+// here until it has a key, and FacadeTests checks each key is in the catalog.
+
+/// The catalog's format for `key`, filled with `arguments`, or `fallback` when the key is missing.
+func catalogMessage(_ key: String, _ arguments: [CVarArg] = [], fallback: () -> String) -> String {
+    let format = Bundle.main.localizedString(forKey: key, value: key, table: nil)
+    if format == key { return fallback() }
+    return arguments.isEmpty ? format : String(format: format, locale: .current, arguments: arguments)
+}
+
+public extension VaultError {
+    var catalogKey: String {
+        switch self {
+        case .WeakPin: "error.weakPin"
+        case .WeakPattern: "error.weakPattern"
+        case .InvalidCredential: "error.invalidCredential"
+        case .WeakPassword: "error.weakPassword"
+        case .Damaged: "error.damaged"
+        case .Unsupported: "error.unsupported"
+        case .Locked: "error.locked"
+        case .DuplicateVault: "error.duplicateVault"
+        case .InvalidName: "error.invalidName"
+        case .MissingFile: "error.missingFile"
+        case .NoSpace: "error.noSpace"
+        case .OlderBackup: "error.olderBackup"
+        case .SecretInUse: "error.secretInUse"
+        }
+    }
+    var message: String { catalogMessage(catalogKey) { vaultErrorDescription(error: self) } }
+}
+
+public extension RecognitionFailure {
+    var catalogKey: String {
+        switch self {
+        case .TooMuchText: "error.recognition.tooMuchText"
+        case .InvalidPage: "error.recognition.invalidPage"
+        }
+    }
+    var message: String { catalogMessage(catalogKey) { recognitionFailureDescription(error: self) } }
+}
+
+public extension VaultIssue {
+    var catalogKey: String {
+        switch self {
+        case .noReadablePages: "issue.noReadablePages"
+        case .pageRange: "issue.pageRange"
+        case .tooManyPages: "issue.tooManyPages"
+        case .nothingSelected: "issue.nothingSelected"
+        case .tooManyFiles: "issue.tooManyFiles"
+        case .selectionChanged: "issue.selectionChanged"
+        case .unsupportedSelection: "issue.unsupportedSelection"
+        case .queryTooLong: "issue.queryTooLong"
+        }
+    }
+    /// The numbers the sentence names, in order (each `%lld` in the catalog).
+    var arguments: [CVarArg] {
+        switch self {
+        case .noReadablePages, .nothingSelected, .selectionChanged, .unsupportedSelection: []
+        case .pageRange(let pageCount): [Int(pageCount)]
+        case .tooManyPages(let maximum), .tooManyFiles(let maximum), .queryTooLong(let maximum): [Int(maximum)]
+        }
+    }
+    var message: String { catalogMessage(catalogKey, arguments) { vaultIssueDescription(issue: self) } }
+}
+
 public extension Error {
-    /// The sentence to show the user. The generated `VaultError.errorDescription` is only the case
-    /// name, so Vault's own errors take the core's sentence; anything else is Foundation's.
+    /// The sentence to show the user: Vault's own errors through the catalog; anything else is
+    /// Foundation's. (The generated `errorDescription` is only the case name.)
     var vaultMessage: String {
-        if let error = self as? VaultError { return vaultErrorDescription(error: error) }
-        if let error = self as? RecognitionFailure { return recognitionFailureDescription(error: error) }
+        if let error = self as? VaultError { return error.message }
+        if let error = self as? RecognitionFailure { return error.message }
         return localizedDescription
     }
 }

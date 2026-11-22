@@ -22,9 +22,53 @@ import VaultCore
     #expect(VaultCredentialKind.pin.material("00123456") == "Vault/PIN/v1/00123456")
 }
 
-@Test func errorsShowTheCoreSentence() {
+@Test func errorsFallBackToTheCoreSentence() {
+    // This package's main bundle has no catalog, so the core's English shows.
     #expect(VaultError.Damaged.vaultMessage == "The data could not be verified. The existing vault has not been replaced.")
+    #expect(VaultIssue.tooManyPages(maximum: 20).message == "Choose up to 20 pages at a time.")
     #expect(CocoaError(.fileNoSuchFile).vaultMessage == CocoaError(.fileNoSuchFile).localizedDescription)
+}
+
+/// The app's String Catalog, read from the source tree (App/Localizable.xcstrings).
+private func catalog() throws -> [String: Any] {
+    let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        .appendingPathComponent("../../../App/Localizable.xcstrings").standardizedFileURL
+    let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
+    return json?["strings"] as? [String: Any] ?? [:]
+}
+
+/// Every English form of `key` in `strings` (a plain value, or each plural variant).
+private func englishForms(_ key: String, in strings: [String: Any]) -> [String] {
+    guard let entry = strings[key] as? [String: Any], let localizations = entry["localizations"] as? [String: Any],
+          let en = localizations["en"] as? [String: Any] else { return [] }
+    if let unit = en["stringUnit"] as? [String: Any], let value = unit["value"] as? String { return [value] }
+    let plural = (en["variations"] as? [String: Any])?["plural"] as? [String: Any] ?? [:]
+    return plural.values.compactMap { (($0 as? [String: Any])?["stringUnit"] as? [String: Any])?["value"] as? String }
+}
+
+@Test func everyCoreCaseHasACatalogSentence() throws {
+    let strings = try catalog()
+    // The core's case lists are complete (its own test); each case brings its argument count.
+    var cases: [(String, Int, String)] = []
+    cases += vaultErrorCases().map { ($0.catalogKey, 0, $0.message) }
+    cases += recognitionFailureCases().map { ($0.catalogKey, 0, $0.message) }
+    cases += vaultIssueCases().map { ($0.catalogKey, $0.arguments.count, $0.message) }
+    for (key, arguments, fallback) in cases {
+        let forms = englishForms(key, in: strings)
+        #expect(!forms.isEmpty, "\(key) is missing from App/Localizable.xcstrings")
+        for form in forms {
+            #expect(!form.trimmingCharacters(in: .whitespaces).isEmpty, "\(key) is empty")
+            #expect(form.components(separatedBy: "%lld").count - 1 == arguments, "\(key) needs \(arguments) %lld")
+        }
+        #expect(!fallback.isEmpty)
+    }
+}
+
+@Test func catalogKeysAreDistinct() {
+    var keys = vaultErrorCases().map(\.catalogKey)
+    keys += recognitionFailureCases().map(\.catalogKey)
+    keys += vaultIssueCases().map(\.catalogKey)
+    #expect(Set(keys).count == keys.count)
 }
 
 @Test func libraryNamesAndOrder() {

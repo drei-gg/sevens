@@ -7,6 +7,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import gg.seven.vault.core.*
 
@@ -50,17 +52,21 @@ fun BatchRecognitionScreen(model: VaultModel, queue: RecognitionQueue) {
             model.recognizeBatchItem(queue)
     }
     VaultForm(
-        "Queue",
+        stringResource(R.string.queue_title),
         model,
         model::cleanPresentation,
         onSave = if (queue.ready && !queue.stopped) ({ model.saveBatchItem(queue) }) else null,
         saveEnabled =
             queue.name.isNotBlank() && queue.text.isNotBlank() && model.store.paidFeaturesAvailable,
-        saveLabel = "Save note",
+        saveLabel = stringResource(R.string.review_save),
         dirty = queue.ready && queue.text.isNotBlank(),
     ) {
         Text(
-            "${queue.saved} saved · ${queue.skipped} skipped",
+            stringResource(
+                R.string.queue_counts,
+                pluralStringResource(R.plurals.queue_saved, queue.saved, queue.saved),
+                pluralStringResource(R.plurals.queue_skipped, queue.skipped, queue.skipped),
+            ),
             Modifier.testTag("ocr-batch-counts"),
         )
         LinearWavyProgressIndicator(
@@ -69,35 +75,37 @@ fun BatchRecognitionScreen(model: VaultModel, queue: RecognitionQueue) {
         )
         if (!queue.started) {
             Text(
-                "Review ${queue.plan.items.size} files",
+                pluralStringResource(R.plurals.queue_review_files, queue.plan.items.size, queue.plan.items.size),
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(
-                "Recognize one file at a time, then save an encrypted note or skip it. All pages of each PDF are included, up to ${queue.plan.maximumPdfPages}; longer PDFs need the individual page-range action. Originals stay unchanged."
+                pluralStringResource(
+                    R.plurals.queue_intro,
+                    queue.plan.maximumPdfPages.toInt(),
+                    queue.plan.maximumPdfPages.toInt(),
+                )
             )
             queue.plan.items.forEach { Text(it.name) }
-            Text(
-                "The queue stays only in this unlocked session. Closing or locking discards unsaved text; notes already saved remain."
-            )
+            Text(stringResource(R.string.queue_session))
             Button(
                 onClick = { queue.started = true },
                 modifier = Modifier.testTag("ocr-batch-start"),
             ) {
-                Text("Start review")
+                Text(stringResource(R.string.queue_start))
             }
         } else if (queue.stopped || item == null) {
             Text(
-                if (queue.stopped)
-                    (if (model.busy) "Stopping after current page…" else "Queue stopped")
-                else "Review complete",
+                stringResource(
+                    if (queue.stopped)
+                        (if (model.busy) R.string.queue_stopping else R.string.queue_stopped)
+                    else R.string.queue_complete
+                ),
                 style = MaterialTheme.typography.titleMedium,
             )
-            Text(
-                "Saved notes remain in their source folders. Skipped or unfinished files were not changed."
-            )
+            Text(stringResource(R.string.queue_after))
         } else {
             Text(
-                "File ${queue.index + 1} of ${queue.plan.items.size}: ${item.name}",
+                stringResource(R.string.queue_file, queue.index + 1, queue.plan.items.size, item.name),
                 style = MaterialTheme.typography.titleMedium,
             )
             queue.failure?.let {
@@ -110,38 +118,36 @@ fun BatchRecognitionScreen(model: VaultModel, queue: RecognitionQueue) {
                     onClick = { model.recognizeBatchItem(queue) },
                     enabled = !model.busy,
                 ) {
-                    Text("Retry this file")
+                    Text(stringResource(R.string.queue_retry))
                 }
             }
             if (queue.ready) {
                 if (queue.text.isBlank())
-                    Text("No text was recognized. Enter text or skip this file.")
+                    Text(stringResource(R.string.queue_nothing))
                 OutlinedTextField(
                     queue.name,
                     { queue.name = it },
-                    label = { Text("Note name") },
+                    label = { Text(stringResource(R.string.note_name)) },
                     enabled = !model.busy,
                     modifier = Modifier.fillMaxWidth().testTag("ocr-batch-name"),
                 )
                 OutlinedTextField(
                     queue.text,
                     { queue.text = it },
-                    label = { Text("Recognized text") },
+                    label = { Text(stringResource(R.string.review_text)) },
                     enabled = !model.busy,
                     modifier =
                         Modifier.fillMaxWidth().heightIn(min = 240.dp).testTag("ocr-batch-text"),
                 )
                 if (!model.store.paidFeaturesAvailable)
-                    Text(
-                        "Start the trial or unlock to save new notes. You can still read and copy this text."
-                    )
+                    Text(stringResource(R.string.review_gated))
             }
             if (!model.busy)
                 TextButton(
                     onClick = { queue.next(false) },
                     modifier = Modifier.testTag("ocr-batch-skip"),
                 ) {
-                    Text("Skip this file")
+                    Text(stringResource(R.string.queue_skip))
                 }
             TextButton(
                 onClick = {
@@ -154,15 +160,15 @@ fun BatchRecognitionScreen(model: VaultModel, queue: RecognitionQueue) {
                 modifier = Modifier.testTag("ocr-batch-stop"),
                 enabled = !model.busy || !queue.ready,
             ) {
-                Text(if (model.busy) "Stop after current page" else "Stop queue")
+                Text(stringResource(if (model.busy) R.string.queue_stop_after_page else R.string.queue_stop))
             }
         }
     }
     if (stopping)
         AlertDialog(
             onDismissRequest = { stopping = false },
-            title = { Text("Stop this queue?") },
-            text = { Text("Unsaved text will be discarded. Notes already saved remain.") },
+            title = { Text(stringResource(R.string.queue_stop_title)) },
+            text = { Text(stringResource(R.string.queue_stop_text)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -171,11 +177,11 @@ fun BatchRecognitionScreen(model: VaultModel, queue: RecognitionQueue) {
                         stopping = false
                     }
                 ) {
-                    Text("Stop and discard")
+                    Text(stringResource(R.string.queue_stop_confirm))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { stopping = false }) { Text("Keep reviewing") }
+                TextButton(onClick = { stopping = false }) { Text(stringResource(R.string.queue_keep_reviewing)) }
             },
         )
 }

@@ -16,8 +16,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The SPEC's UI tour on a device: create, recovery key, note, lock, unlock, pattern, expiry,
- * export.
+ * The SPEC's UI tour on a device: create, recovery key, note, lock, unlock, pattern, export. Any
+ * flavor; the generic build is unlocked, so trial expiry is VaultTrialTest (personal flavor only).
  */
 @RunWith(AndroidJUnit4::class)
 class VaultUiTest {
@@ -1036,45 +1036,5 @@ class VaultUiTest {
             .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
         waitFor("Pattern library")
         assertEquals("Pattern library", model.library?.name)
-    }
-
-    @Test
-    fun expiredTrialStillOpensAndExportsButGatesAdding() {
-        val photo =
-            File(app.cacheDir, "Weekend.png").apply { writeBytes(ByteArray(4096) { it.toByte() }) }
-        runBlocking {
-            app.repository.create("Archive", secret, VaultCredentialKind.PASSPHRASE)
-            app.repository.importFile(photo.path, "Weekend.png", "public.png")
-            app.repository.lock()
-        }
-        photo.delete()
-        app.getSharedPreferences("seven-trial", 0)
-            .edit()
-            .putLong("start", System.currentTimeMillis() - 8 * 86_400_000L)
-            .commit()
-        ui.runOnUiThread { model.store.refresh() }
-        ui.waitForIdle()
-        org.junit.Assert.assertFalse("trial expired", model.store.paidFeaturesAvailable)
-        if (ui.onAllNodesWithText("Not now").fetchSemanticsNodes().isNotEmpty())
-            ui.onNodeWithText("Not now").performClick()
-        ui.onNodeWithTag("vault.credential").performTextInput(secret)
-        ui.onNodeWithTag("vault.unlock")
-            .performScrollTo()
-            .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
-        waitFor("Weekend.png")
-        // Adding is part of the unlock.
-        ui.onNodeWithTag("vault.add").performClick()
-        ui.onNodeWithTag("vault.add.note").performClick()
-        ui.waitForIdle()
-        waitFor("Write a note is part of the unlock")
-        ui.onNodeWithText("Not now").performScrollTo().performClick()
-        // Export is not.
-        ui.onNodeWithText("Weekend.png").performClick()
-        ui.onNodeWithText("Export original").performScrollTo().performClick()
-        waitFor("Original ready")
-        val files = (model.presentation as Presentation.Files).files
-        assertEquals(4096L, files.single().length())
-        ui.onNodeWithText("Done").performClick()
-        ui.waitUntil(10_000) { app.repository.temporary.listFiles().isNullOrEmpty() }
     }
 }

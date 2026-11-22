@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import gg.seven.kit.*
 import gg.seven.vault.core.*
@@ -40,8 +41,8 @@ fun SettingsScreen(model: VaultModel, onBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbar, Modifier.imePadding()) },
         topBar = {
-            SevenTopBar("Settings", onBack = onBack) {
-                if (model.library != null) IconButton(onClick = model::lock) { Icon(Icons.Outlined.Lock, "Lock") }
+            SevenTopBar(stringResource(R.string.settings_title), onBack = onBack) {
+                if (model.library != null) IconButton(onClick = model::lock) { Icon(Icons.Outlined.Lock, stringResource(R.string.lock_action)) }
             }
         },
     ) { padding ->
@@ -53,42 +54,41 @@ fun SettingsScreen(model: VaultModel, onBack: () -> Unit) {
                 model.library?.let { library ->
                     if (model.busy) Progress(model.progress)
                     AutomaticBackupSection(model)
-                    Section(title = "Backup & recovery") {
-                        action("Prepare encrypted backup", Icons.Outlined.Backup, enabled = !model.busy) { model.backup() }
-                        content {
-                            Text(
-                                library.backupPrepared?.let { "Last prepared: ${it.shown(context)}. This does not confirm that a provider uploaded it." } ?: "No backup prepared yet.",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                        action("Restore another vault", Icons.Outlined.SettingsBackupRestore, enabled = !model.busy) { restore = true }
-                        action("Generate a replacement recovery key", Icons.Outlined.Key, enabled = !model.busy) { model.replaceRecoveryKey() }
+                    val prepareLabel = stringResource(R.string.backup_prepare)
+                    val restoreLabel = stringResource(R.string.settings_restore_another)
+                    val replaceLabel = stringResource(R.string.settings_replace_recovery)
+                    val prepared =
+                        library.backupPrepared?.let { stringResource(R.string.settings_last_prepared, it.shown(context)) }
+                            ?: stringResource(R.string.settings_no_backup)
+                    Section(title = stringResource(R.string.settings_backup_recovery)) {
+                        action(prepareLabel, Icons.Outlined.Backup, enabled = !model.busy) { model.backup() }
+                        content { Text(prepared, style = MaterialTheme.typography.bodyMedium) }
+                        action(restoreLabel, Icons.Outlined.SettingsBackupRestore, enabled = !model.busy) { restore = true }
+                        action(replaceLabel, Icons.Outlined.Key, enabled = !model.busy) { model.replaceRecoveryKey() }
                     }
-                    Caption(
-                        "Save the .vault7 file outside this app, then test a restore on another device. Uninstalling Vault deletes local files. Android’s own device backup does not include your vaults. Replacing a recovery key affects this device. Old backups keep the previous key until you replace those backups."
-                    )
+                    Caption(stringResource(R.string.settings_backup_note))
                     val unavailable = remember { BiometricKey.unavailable(context) }
-                    Section(title = "Biometric convenience", footer = "Turning this on keeps this vault’s key in this device’s secure hardware, released only by your current fingerprints or face. Enrolling a new one turns it off. Keep the independent secret and recovery key.") {
-                        if (unavailable != null) content { Text(unavailable, style = MaterialTheme.typography.bodyMedium) }
-                        action("Turn on fingerprint or face unlock for this vault", Icons.Outlined.Fingerprint, enabled = unavailable == null && !model.busy) {
+                    val unavailableText = unavailable?.wording?.text()
+                    val enableLabel = stringResource(R.string.settings_biometric_enable)
+                    val removeLabel = stringResource(R.string.settings_biometric_remove)
+                    Section(title = stringResource(R.string.settings_biometric), footer = stringResource(R.string.settings_biometric_footer)) {
+                        if (unavailableText != null) content { Text(unavailableText, style = MaterialTheme.typography.bodyMedium) }
+                        action(enableLabel, Icons.Outlined.Fingerprint, enabled = unavailable == null && !model.busy) {
                             context.fragmentActivity()?.let(model::enableBiometrics)
                         }
-                        if (model.hasBiometricKey) action("Remove biometric unlock", Icons.Outlined.Block, destructive = true) { model.disableBiometrics() }
+                        if (model.hasBiometricKey) action(removeLabel, Icons.Outlined.Block, destructive = true) { model.disableBiometrics() }
                     }
                     ChangeCredentialSection(model)
                 }
-                Section(title = "Privacy") {
-                    content {
-                        Text("No Vault account, analytics, ads or storage servers. Automatic backups copy encrypted files to the folder you select. That folder’s app handles any cloud storage; Google Play purchases contact Google.", style = MaterialTheme.typography.bodyMedium)
-                    }
-                    content {
-                        Text("Vault hides its contents from the recent apps screen and screenshots, covers them when it isn’t in front, and locks when you leave it. A picker or share sheet Vault opens keeps it unlocked for up to two minutes. It does not protect an open session on a compromised device.", style = MaterialTheme.typography.bodyMedium)
-                    }
+                val privacy = stringResource(R.string.settings_privacy_data)
+                val screen = stringResource(R.string.settings_privacy_screen)
+                val builtOn = stringResource(R.string.settings_built_on_text)
+                Section(title = stringResource(R.string.settings_privacy)) {
+                    content { Text(privacy, style = MaterialTheme.typography.bodyMedium) }
+                    content { Text(screen, style = MaterialTheme.typography.bodyMedium) }
                 }
-                Section(title = "Built on") {
-                    content {
-                        Text("age encryption (rage, the Rust implementation of age-encryption.org/v1), the Android Keystore and BiometricPrompt, CameraX, Media3, Telephoto and Android’s photo picker and document folders. Original files are preserved without recompression by Vault.", style = MaterialTheme.typography.bodyMedium)
-                    }
+                Section(title = stringResource(R.string.settings_built_on)) {
+                    content { Text(builtOn, style = MaterialTheme.typography.bodyMedium) }
                 }
                 SevenAbout(coreVersion = remember { coreVersion() })
                 Spacer(Modifier.navigationBarsPadding())
@@ -114,29 +114,37 @@ fun AutomaticBackupSection(model: VaultModel) {
         model.beginSystemFlow()
         choose.launch(null)
     }
-    Section(
-        title = "Automatic encrypted backup",
-        footer =
-            "Choose a folder once, on this device or in a cloud drive’s app. Changes are backed up while this vault is open. Completed encrypted backups can retry in the background; Android decides when. If preparation is interrupted, open this vault again to catch up. The latest three copies made by this device are kept. That folder’s app handles cloud upload; a completed copy is not an upload receipt. Backups remain available after the trial ends. Turning this off leaves existing copies in your chosen folder.",
-    ) {
-        val status = model.automaticStatus
+    val status = model.automaticStatus
+    val folderLabel = stringResource(R.string.automatic_folder)
+    val preparing = stringResource(R.string.automatic_preparing)
+    val receipt =
+        status?.copiedAt?.let { stringResource(R.string.automatic_last_copied, it.shown(context)) }
+            ?: stringResource(R.string.automatic_no_copy)
+    val waiting = stringResource(R.string.automatic_waiting)
+    val queued = stringResource(R.string.automatic_queued)
+    val failure = status?.failure?.wording?.text()
+    val backUpNow = stringResource(R.string.automatic_back_up_now)
+    val changeFolder = stringResource(R.string.automatic_change_folder)
+    val turnOff = stringResource(R.string.automatic_turn_off)
+    val chooseFolder = stringResource(R.string.automatic_choose_folder)
+    Section(title = stringResource(R.string.automatic_title), footer = stringResource(R.string.automatic_footer)) {
         if (status != null) {
-            item("Folder", status.destination, icon = Icons.Outlined.Folder)
-            if (model.automaticWorking) content { Progress("Preparing encrypted backup…") }
+            item(folderLabel, status.destination, icon = Icons.Outlined.Folder)
+            if (model.automaticWorking) content { Progress(preparing) }
             content {
                 Text(
-                    status.copiedAt?.let { "Last copied to the folder: ${it.shown(context)}." } ?: "No completed copy yet.",
+                    receipt,
                     Modifier.testTag("vault.backupReceipt"),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            if (model.automaticNeedsPreparation) content { Text("Latest changes are waiting to be prepared.", style = MaterialTheme.typography.bodyMedium) }
-            if (status.pendingRevision != null) content { Text("Encrypted backup queued for delivery.", style = MaterialTheme.typography.bodyMedium) }
-            status.failure?.let { failure -> content { Text(failure, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) } }
-            action("Back up now", Icons.Outlined.CloudUpload, enabled = !model.busy) { model.backUpNow() }
-            action("Change backup folder", Icons.Outlined.DriveFolderUpload) { pick() }
-            action("Turn off automatic backup", Icons.Outlined.CloudOff, destructive = true) { model.disableAutomaticBackup() }
-        } else action("Choose automatic backup folder", Icons.Outlined.CreateNewFolder) { pick() }
+            if (model.automaticNeedsPreparation) content { Text(waiting, style = MaterialTheme.typography.bodyMedium) }
+            if (status.pendingRevision != null) content { Text(queued, style = MaterialTheme.typography.bodyMedium) }
+            failure?.let { failure -> content { Text(failure, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) } }
+            action(backUpNow, Icons.Outlined.CloudUpload, enabled = !model.busy) { model.backUpNow() }
+            action(changeFolder, Icons.Outlined.DriveFolderUpload) { pick() }
+            action(turnOff, Icons.Outlined.CloudOff, destructive = true) { model.disableAutomaticBackup() }
+        } else action(chooseFolder, Icons.Outlined.CreateNewFolder) { pick() }
         model.automaticMessage?.let { message -> content { Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) } }
     }
 }
@@ -149,14 +157,15 @@ private fun ChangeCredentialSection(model: VaultModel) {
     var password by remember { mutableStateOf("") }
     var repeated by remember { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(Space.m)) {
-        FormHeading("Change unlock method")
+        FormHeading(stringResource(R.string.settings_change_method))
         CredentialKindPicker(kind) {
             kind = it
             password = ""
             repeated = ""
         }
-        CredentialInput(kind, password, "New " + kind.title.lowercaseTitle(), "vault.changeCredential") { password = it }
-        CredentialInput(kind, repeated, "Repeat " + kind.title.lowercaseTitle(), "vault.repeatChangeCredential") { repeated = it }
+        CredentialInput(kind, password, stringResource(kind.label(KindLabel.NEW)), "vault.changeCredential") { password = it }
+        CredentialInput(kind, repeated, stringResource(kind.label(KindLabel.REPEAT)), "vault.repeatChangeCredential") { repeated = it }
+        val changedNotice = stringResource(R.string.settings_changed_notice)
         FilledTonalButton(
             onClick = {
                 val secret = password
@@ -171,14 +180,14 @@ private fun ChangeCredentialSection(model: VaultModel) {
                         focus.clearFocus()
                         keyboard?.hide()
                     }
-                    model.showNotice("Unlock secret changed. Older backups still open with the old one.")
+                    model.showNotice(changedNotice)
                 }) { model.repository.changeCredential(secret, chosen) }
             },
             enabled = kind.valid(password) && password == repeated && !model.busy,
             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
         ) {
-            Text("Change unlock secret")
+            Text(stringResource(R.string.settings_change_secret))
         }
-        Caption("Older backups still use their old credentials. Make a new backup after changing them.")
+        Caption(stringResource(R.string.settings_change_note))
     }
 }

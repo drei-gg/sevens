@@ -5,12 +5,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun TextReviewScreen(model: VaultModel, draft: Presentation.TextReview) {
     VaultForm(
-        "Review",
+        stringResource(R.string.review_title),
         model,
         model::cleanPresentation,
         onSave = {
@@ -24,34 +26,31 @@ fun TextReviewScreen(model: VaultModel, draft: Presentation.TextReview) {
         },
         saveEnabled =
             draft.name.isNotBlank() && draft.text.isNotBlank() && model.store.paidFeaturesAvailable,
-        saveLabel = "Save note",
+        saveLabel = stringResource(R.string.review_save),
         dirty = draft.text != draft.original || draft.name != draft.initialName,
     ) {
-        Text("Review the text before saving a separate encrypted note.")
-        if (draft.original.isBlank())
-            Text("No text was recognized. You can enter a note here or close and try another file.")
+        Text(stringResource(R.string.review_intro))
+        if (draft.original.isBlank()) Text(stringResource(R.string.review_nothing))
         OutlinedTextField(
             draft.name,
             { draft.name = it },
-            label = { Text("Note name") },
+            label = { Text(stringResource(R.string.note_name)) },
             modifier = Modifier.fillMaxWidth().testTag("ocr-name"),
             enabled = !model.busy,
         )
         OutlinedTextField(
             draft.text,
             { draft.text = it },
-            label = { Text("Recognized text") },
+            label = { Text(stringResource(R.string.review_text)) },
             modifier = Modifier.fillMaxWidth().heightIn(min = 240.dp).testTag("ocr-text"),
             enabled = !model.busy,
         )
         Text(
-            "English recognition runs on this device. The original file stays unchanged.",
+            stringResource(R.string.review_on_device),
             style = MaterialTheme.typography.bodySmall,
         )
         if (!model.store.paidFeaturesAvailable)
-            Text(
-                "Start the trial or unlock to save new notes. You can still read and copy this text."
-            )
+            Text(stringResource(R.string.review_gated))
     }
 }
 
@@ -59,20 +58,26 @@ fun TextReviewScreen(model: VaultModel, draft: Presentation.TextReview) {
 fun PdfRangeScreen(model: VaultModel, draft: Presentation.PdfRange) {
     val plan = draft.plan
     VaultForm(
-        "Pages",
+        stringResource(R.string.pages_title),
         model,
         model::cleanPresentation,
         onSave = { model.recognizePdf(draft) },
-        saveLabel = "Recognize",
+        saveLabel = stringResource(R.string.pages_recognize),
         saveEnabled = plan.issue == null,
     ) {
+        val pages = draft.pageCount.toInt()
+        val maximum = plan.maximumPages.toInt()
         Text(
-            "${draft.pageCount} pages. Choose up to ${plan.maximumPages} pages to recognize on this device."
+            stringResource(
+                R.string.pages_summary,
+                pluralStringResource(R.plurals.pages_count, pages, pages),
+                pluralStringResource(R.plurals.pages_choose, maximum, maximum),
+            )
         )
         OutlinedTextField(
             draft.first,
             { draft.first = it },
-            label = { Text("First page") },
+            label = { Text(stringResource(R.string.pages_first)) },
             modifier = Modifier.fillMaxWidth().testTag("ocr-first"),
             singleLine = true,
             enabled = !model.busy,
@@ -86,7 +91,7 @@ fun PdfRangeScreen(model: VaultModel, draft: Presentation.PdfRange) {
         OutlinedTextField(
             draft.last,
             { draft.last = it },
-            label = { Text("Last page") },
+            label = { Text(stringResource(R.string.pages_last)) },
             modifier = Modifier.fillMaxWidth().testTag("ocr-last"),
             singleLine = true,
             enabled = !model.busy,
@@ -96,10 +101,10 @@ fun PdfRangeScreen(model: VaultModel, draft: Presentation.PdfRange) {
                     imeAction = androidx.compose.ui.text.input.ImeAction.Done,
                 ),
             isError = plan.issue != null,
-            supportingText = { plan.issue?.let { Text(it) } },
+            supportingText = { plan.issue?.let { Text(it.wording.text()) } },
         )
         Text(
-            "Review the result before saving a separate encrypted note. The original PDF stays unchanged.",
+            stringResource(R.string.pages_note),
             style = MaterialTheme.typography.bodySmall,
         )
     }

@@ -36,7 +36,7 @@ object PdfRecognition {
         withContext(Dispatchers.Default) {
             open(file).use { pdf ->
                 val plan = recognitionPlan(pdf.pageCount.toUInt(), first, last)
-                require(plan.issue == null) { plan.issue.orEmpty() }
+                plan.issue?.let { throw VaultMessage(it.wording) }
                 OnDeviceTextRecognizer.open(context).use { reader ->
                     var text = ""
                     for (index in plan.pages) {
