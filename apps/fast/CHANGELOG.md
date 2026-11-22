@@ -1,5 +1,14 @@
 # Changelog
 
+## 22 November 2026, not released
+
+- Android now uses the shared SevenKit purchase screens: Before you buy (with Health Connect, the Play price and "once, nothing renews"), the unlock sheet and the one-time trial-ended sheet. An existing trial or unlock carries over, and someone who saw the old welcome isn't shown the first-launch page again.
+- Undo after swiping away a drink puts back the same entry, also after the trial; iPhone gets the same Undo.
+- Android History: a legend and journal/rest-day marks on the heatmap, an Open ended filter, Add past fast on the selected day, measurements in the day panel and dates in your locale's format. Android Settings: Delete all records, Network contact and the shared About section. Plans can start a fast now.
+- Resuming water reminders on Android asks for notification permission again when it's off.
+- Open-source notices list the Rust core's crates on both phones and every bundled Android library.
+- The elapsed/remaining switch on Today respects Reduce Motion.
+
 ## 18 November 2026 — feature continuation, not released
 
 - Native Wear/watchOS preset selection now includes built-in and saved durations with versioned commands, stale-state/replay checks, and no private names in the snapshot. Wear persists its pending queue before sending, observes locale changes, and uses native list transformations. Both watches confirm queue clearing.

@@ -6,7 +6,6 @@
 
 package gg.seven.fast
 
-import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -22,10 +21,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.fast.core.*
-import gg.seven.kit.SevenColors
+import gg.seven.kit.LocalSevenGate
 import gg.seven.kit.SevenFormat
 import gg.seven.kit.Space
 import gg.seven.kit.EmptyState
@@ -73,7 +71,6 @@ fun FastApp(m: FastModel) {
     val a by m.archive.collectAsStateWithLifecycle()
     val failure by m.loadFailure.collectAsStateWithLifecycle()
     val now by m.now.collectAsStateWithLifecycle()
-    val purchase by m.purchase.collectAsStateWithLifecycle()
     val busy by m.working.collectAsStateWithLifecycle()
     val message by m.message.collectAsStateWithLifecycle()
     val incoming by m.importPreview.collectAsStateWithLifecycle()
@@ -83,11 +80,11 @@ fun FastApp(m: FastModel) {
     var detailFast by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
     var editorDate by rememberSaveable { mutableStateOf<Double?>(null) }
     var editId by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
-    var unlock by rememberSaveable { mutableStateOf(false) }
+    // SevenRoot (above this) shows Before you buy, the trial-ended sheet and the unlock sheet.
+    val gate = LocalSevenGate.current
+    val offerUnlock = { gate.offer() }
     val context = LocalContext.current
     use24Hour = android.text.format.DateFormat.is24HourFormat(context)
-    val prefs = remember { context.getSharedPreferences("welcome", 0) }
-    var welcome by rememberSaveable { mutableStateOf(!prefs.getBoolean("seen", false)) }
     val snackbar = remember { SnackbarHostState() }
     val undoable by m.undoable.collectAsStateWithLifecycle()
     LaunchedEffect(undoable) {
@@ -109,7 +106,7 @@ fun FastApp(m: FastModel) {
         if (type == "detail") {
             detailFast = id
             page = "Fast details"
-        } else if (id == null && !m.canCreate) unlock = true
+        } else if (id == null && !m.canCreate) offerUnlock()
         else {
             editor = type
             editId = id
@@ -206,7 +203,7 @@ fun FastApp(m: FastModel) {
                     Modifier.padding(padding).fillMaxSize(),
                     contentAlignment = Alignment.TopCenter,
                 ) {
-                    if (failure != null) SettingsScreen(m, null, onUnlock = { unlock = true })
+                    if (failure != null) SettingsScreen(m, null)
                     else if (a == null) LoadingIndicator(Modifier.padding(40.dp))
                     else {
                         val archive = a!!
@@ -218,12 +215,15 @@ fun FastApp(m: FastModel) {
                                     now,
                                     open,
                                     onPage = { page = it },
-                                    onUnlock = { unlock = true },
+                                    onUnlock = offerUnlock,
                                 )
-                            "History" -> HistoryScreen(m, archive, now, open)
+                            "History" ->
+                                HistoryScreen(m, archive, now, open) { type, date ->
+                                    openAt(type, null, date)
+                                }
                             "Journal" -> JournalScreen(archive, open)
                             "Trends" -> TrendsScreen(archive, now, open)
-                            "Settings" -> SettingsScreen(m, archive, onUnlock = { unlock = true })
+                            "Settings" -> SettingsScreen(m, archive)
                             "Water" ->
                                 WaterScreen(
                                     m,
@@ -257,96 +257,6 @@ fun FastApp(m: FastModel) {
             editor = null
             editId = null
         }
-    if (welcome)
-        AlertDialog(
-            onDismissRequest = {
-                welcome = false
-                prefs.edit { putBoolean("seen", true) }
-            },
-            title = { Text("Before you begin") },
-            text = {
-                Column(
-                    Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        "Your phone’s Clock already times things. Notes keeps a journal. You may already have all you need."
-                    )
-                    Text(
-                        "Fast brings editable timers, complete history, a private journal and water tracking together. No account, ads or subscription."
-                    )
-                    Text(
-                        "Timers are records, not prescriptions. A shorter fast is a valid record. Nothing ends or starts automatically."
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        welcome = false
-                        prefs.edit { putBoolean("seen", true) }
-                        if (!BuildConfig.PERSONAL_UNLOCK) m.startTrial()
-                    }
-                ) {
-                    Text(
-                        if (BuildConfig.PERSONAL_UNLOCK) "Get started" else "Start free 7-day trial"
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        welcome = false
-                        prefs.edit { putBoolean("seen", true) }
-                    }
-                ) {
-                    Text("Look around")
-                }
-            },
-        )
-    if (unlock)
-        AlertDialog(
-            onDismissRequest = { unlock = false },
-            title = { Text("Yours, paid once") },
-            text = {
-                Column(
-                    Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(m.access.label(purchase, now.toLong()))
-                    Text(
-                        "Editable fasting, complete history, private journal, water and trends. No subscription. Your existing records stay readable, editable and exportable after the trial. You can always finish a running fast."
-                    )
-                    if (m.access.trialStart == 0L)
-                        OutlinedButton(
-                            onClick = {
-                                m.startTrial()
-                                unlock = false
-                            }
-                        ) {
-                            Text("Start free 7-day trial")
-                        }
-                    if (purchase.price != null && !purchase.owned)
-                        Button(
-                            onClick = { m.purchaseSource.purchase(context as Activity) },
-                            enabled = !purchase.busy && !purchase.pending,
-                            colors =
-                                ButtonDefaults.buttonColors(
-                                    containerColor = SevenColors.unlock,
-                                    contentColor = SevenColors.onUnlock,
-                                ),
-                        ) {
-                            Text("Unlock · ${purchase.price}")
-                        }
-                    purchase.message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                    if (purchase.pending) Text("Awaiting payment confirmation")
-                    OutlinedButton(onClick = { m.purchaseSource.refresh() }) {
-                        Text("Restore purchases")
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { unlock = false }) { Text("Done") } },
-        )
     if (incoming != null && a != null) {
         val count =
             runCatching {

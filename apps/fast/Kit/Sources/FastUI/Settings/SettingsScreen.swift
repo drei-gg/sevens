@@ -35,7 +35,9 @@ struct SettingsScreen: View {
                 }
                 AboutWhatsNewRow(text: f("Water tracking now includes quick-add, daily history, an optional personal goal and reminders during hours you choose. Included with your one-time unlock."))
                 AboutLicenseRow(repositoryURL: URL(string: "https://github.com/drei-gg/sevens")!)
-                AboutNoticesRow(notices: [f("Built with Apple’s frameworks and the shared SevenKit package. No third-party libraries or tracking SDKs.")])
+                AboutNoticesRow(notices: [f("Built with Apple’s frameworks, the shared SevenKit package and Fast’s Rust core. No tracking SDKs. Full dependency inventory: https://github.com/drei-gg/sevens/blob/main/THIRD-PARTY.md"),
+                                          Bundle.module.url(forResource: "FastCoreNotices", withExtension: "txt").flatMap { try? String(contentsOf: $0, encoding: .utf8) }
+                                              ?? f("Fast’s Rust core uses open-source crates under the MIT, Apache-2.0, Unlicense, MPL-2.0 and Unicode licences.")])
                 if let email = Bundle.main.object(forInfoDictionaryKey: "SevensSupportEmail") as? String,
                    !email.contains("example.org"), !email.contains("$(") { AboutSupportRow(address: email) }
             }

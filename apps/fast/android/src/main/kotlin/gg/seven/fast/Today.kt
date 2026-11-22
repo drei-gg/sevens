@@ -264,6 +264,8 @@ private fun TimerHero(a: FastArchive, now: Double) {
 
 @Composable
 internal fun PlansScreen(m: FastModel, a: FastArchive, open: OpenEditor) {
+    val gate = LocalSevenGate.current
+    var startPlan by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
     Page {
         Text(
             "Plans are reminders, not records. Nothing starts automatically.",
@@ -286,6 +288,10 @@ internal fun PlansScreen(m: FastModel, a: FastArchive, open: OpenEditor) {
                         supporting = plan.intention.ifBlank { null },
                         onClick = { open("plan", plan.id) },
                     )
+                    if (a.active == null)
+                        action("Start now from this plan", Icons.Outlined.PlayCircle) {
+                            if (m.canCreate) startPlan = plan.id else gate.offer("Starting a fast")
+                        }
                 }
             action("Plan a fast", Icons.Outlined.EventAvailable) { open("plan", null) }
         }
@@ -300,6 +306,37 @@ internal fun PlansScreen(m: FastModel, a: FastArchive, open: OpenEditor) {
             action("Save a custom preset", Icons.Outlined.Add) { open("preset", null) }
         }
     }
+    val plan = a.plans.find { it.id == startPlan }
+    if (plan != null)
+        AlertDialog(
+            onDismissRequest = { startPlan = null },
+            title = { Text("Start this plan now?") },
+            text = { Text("The actual start will be now. You can correct it later.") },
+            dismissButton = { TextButton(onClick = { startPlan = null }) { Text("Cancel") } },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        startPlan = null
+                        val now = nowMillis()
+                        val fast =
+                            fastRecord(
+                                start = now,
+                                goalMinutes = plan.goalMinutes,
+                                eatingMinutes = plan.eatingMinutes,
+                                intention = plan.intention,
+                            )
+                        // Starting turns the plan into a record: the plan itself goes.
+                        m.mutate({ archive ->
+                            archive.save(fast, now).let { saved ->
+                                saved.copy(plans = saved.plans.filterNot { it.id == plan.id })
+                            }
+                        })
+                    }
+                ) {
+                    Text("Start now")
+                }
+            },
+        )
 }
 
 /** The screen's one primary action: an Expressive large button whose shape morphs on press. */
@@ -419,6 +456,17 @@ private fun WaterTodayCard(
 ) {
     var undoId by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
     val busy by m.working.collectAsState()
+    val context = LocalContext.current
+    // Resuming asks again when Android notifications aren't allowed (as iOS does); a denial
+    // leaves tracking as it is.
+    val permission =
+        androidx.activity.compose.rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+        ) {
+            if (!it)
+                m.message.value =
+                    "Notifications are off. Tracking still works; enable notifications in Android Settings when you want reminders."
+        }
     Panel {
         Row(
             Modifier.fillMaxWidth().clickable { onPage("Water") },
@@ -486,19 +534,30 @@ private fun WaterTodayCard(
             }
         if (a.settings.water.remindersEnabled)
             TextButton(
+                enabled = !busy,
                 onClick = {
-                    m.mutate({
-                        it.copy(
-                            settings =
-                                it.settings.copy(
-                                    water =
-                                        it.settings.water.copy(
-                                            remindersPaused = !it.settings.water.remindersPaused
-                                        )
-                                )
-                        )
-                    })
-                }
+                    val resuming = a.settings.water.remindersPaused
+                    m.mutate(
+                        {
+                            it.copy(
+                                settings =
+                                    it.settings.copy(
+                                        water = it.settings.water.copy(remindersPaused = !resuming)
+                                    )
+                            )
+                        },
+                        onSaved = {
+                            if (
+                                resuming &&
+                                    android.os.Build.VERSION.SDK_INT >= 33 &&
+                                    context.checkSelfPermission(
+                                        android.Manifest.permission.POST_NOTIFICATIONS
+                                    ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                            )
+                                permission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        },
+                    )
+                },
             ) {
                 Text(
                     if (a.settings.water.remindersPaused) "Resume water reminders"

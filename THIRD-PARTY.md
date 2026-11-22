@@ -53,7 +53,7 @@ Where each data entry comes from is recorded in `apps/qr/Kit/Sources/QRCore/Data
 
 ## Android Fast and shared kit
 
-Versions are pinned in `android/buildSrc/build.gradle.kts` and module build files. AndroidX transitive versions are selected by the pinned Compose BOM; resolved dependency locks accompany the build. iOS Fast has no third-party dependencies to reuse. Native Apple facilities map to the Android platform or AndroidX; the fasting rules and JSON schema come from the shared Rust core (apps/fast/core), reached through UniFFI's generated Kotlin and JNA.
+Versions are pinned in `android/buildSrc/build.gradle.kts` and module build files. AndroidX transitive versions are selected by the pinned Compose BOM; resolved dependency locks accompany the build. Fast's only third-party code on iOS is its Rust core's crates (UniFFI, serde, serde_json, uuid, jiff with jiff-tzdb, unicode-segmentation, unicode-normalization and thiserror, in the tables above, plus their dependencies pinned in `apps/fast/core/Cargo.lock`); both platforms list every bundled crate with its licence in the app's notices (`apps/fast/Kit/Sources/FastUI/Resources/FastCoreNotices.txt`, `apps/fast/android/src/main/assets/notices/`). Native Apple facilities map to the Android platform or AndroidX; the fasting rules and JSON schema come from the shared Rust core (apps/fast/core), reached through UniFFI's generated Kotlin and JNA.
 
 | Dependency | Version | License / source | Purpose |
 | --- | --- | --- | --- |
@@ -78,6 +78,9 @@ Versions are pinned in `android/buildSrc/build.gradle.kts` and module build file
 | AndroidX Concurrent Futures | 1.3.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | The tile service's future |
 | AndroidX Startup | 1.1.1 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Personal/store phone: starts Wear snapshot publishing at process start |
 | Google Play services Wearable | 20.0.1 | Android SDK terms, https://developers.google.com/android/guides/overview | Wear OS Data Layer between watch and phone: the Wear app and the personal/store phone flavors only |
+| Guava (Android) / failureaccess / Error Prone, J2ObjC, JSR 305, JetBrains and JSpecify annotations | 31.1-android / 1.0.1 / 2.11.0, 1.3, 3.0.2, 23.0.0, 1.0.0 | Apache-2.0, https://github.com/google/guava | Transitive: AndroidX (Glance, WorkManager, Health Connect) in Fast's phone app |
+| Checker Framework qualifiers | 3.12.0 | MIT, https://github.com/typetools/checker-framework | Transitive: Guava's annotations in Fast's phone app |
+| Protocol Buffers runtime (AndroidX Health Connect `connect-client-external-protobuf`) | 1.1.0 | BSD-3-Clause, https://github.com/protocolbuffers/protobuf | Transitive: Health Connect client's bundled message runtime in Fast's phone app |
 | JUnit / AndroidX Test | 4.13.2 / runner 1.7.0 / ext 1.3.0 | EPL-1.0 (JUnit, tests only); Apache-2.0 (AndroidX), https://github.com/junit-team/junit4 and https://github.com/android/android-test | Tests only |
 
 ## Android Cleaner

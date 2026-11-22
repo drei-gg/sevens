@@ -129,6 +129,8 @@ struct WaterScreen: View {
     @State private var day = Date()
     @State private var edit: MetricEntry?
     @State private var selected: Date?
+    /// The drink a swipe just deleted, kept so Undo can put the same record back.
+    @State private var deleted: MetricEntry?
     var body: some View {
         let settings = model.archive.settings
         let total = WaterHistory.total(model.archive.metrics, on: day)
@@ -152,6 +154,15 @@ struct WaterScreen: View {
                 .bareListRow()
             }
             Section(f("Drinks")) {
+                if let entry = deleted, !model.archive.metrics.contains(where: { $0.id == entry.id }) {
+                    Button {
+                        Task { if await model.restoreMetric(entry) { deleted = nil } }
+                    } label: {
+                        Label(f("Undo delete") + " · " + waterAmount(entry.value, settings: settings), systemImage: "arrow.uturn.backward")
+                    }
+                    .disabled(model.busy)
+                    .accessibilityIdentifier("water.undoDelete")
+                }
                 if entries.isEmpty { Text(f("No water logged for this day.")).foregroundStyle(Tokens.muted) }
                 ForEach(entries) { entry in
                     Button { edit = entry } label: {
@@ -165,11 +176,11 @@ struct WaterScreen: View {
                     .buttonStyle(.plain)
                     .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("water.entry")
-                    // A drink is easy to log again, so a swipe deletes it with no question.
+                    // A swipe deletes at once; Undo above puts the same drink back.
                     .swipeActions(allowsFullSwipe: true) {
                         // System red: the app-wide ink tint would make it cream on cream in dark mode.
                         Button(f("Delete"), role: .destructive) {
-                            Task { await model.change({ $0.metrics.removeAll { $0.id == entry.id } }) }
+                            Task { if await model.change({ $0.metrics.removeAll { $0.id == entry.id } }) { deleted = entry } }
                         }.tint(nil)
                     }
                 }

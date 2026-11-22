@@ -104,6 +104,15 @@ public final class FastModel {
         guard allowNewRecord(existing: archive.metrics.contains(where: { $0.id == entry.id })) else { return false }
         return await change { $0.metrics.removeAll { $0.id == entry.id }; $0.metrics.append(entry) }
     }
+    /// Puts back a drink or measurement deleted moments ago, with its own ID and time. A restore,
+    /// not a new record, so it works after the trial too.
+    func restoreMetric(_ entry: MetricEntry) async -> Bool {
+        guard !archive.metrics.contains(where: { $0.id == entry.id }) else { return false }
+        return await change { archive in
+            guard !archive.metrics.contains(where: { $0.id == entry.id }) else { return }
+            archive.metrics.append(entry)
+        }
+    }
     func importBackup(_ data: Data) async -> Bool {
         guard !inFlight, isReady else { return false }
         let reveal = beginWrite()

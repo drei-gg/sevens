@@ -4,6 +4,7 @@ import SevenKit
 
 struct TodayScreen: View {
     @Environment(\.dynamicTypeSize) private var textSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(FastModel.self) private var model
     @State private var showStart = false
     @State private var editFast: FastRecord?
@@ -138,7 +139,7 @@ struct TodayScreen: View {
             }
         }
         .contentShape(Circle())
-        .onTapGesture { if toggles { withAnimation(.easeInOut) { remaining.toggle() } } }
+        .onTapGesture { if toggles { withAnimation(reduceMotion ? nil : .easeInOut) { remaining.toggle() } } }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(toggles ? .isButton : [])
         .accessibilityHint(toggles ? (remaining ? f("Shows elapsed time") : f("Shows time remaining")) : "")

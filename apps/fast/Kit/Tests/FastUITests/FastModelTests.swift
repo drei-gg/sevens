@@ -67,4 +67,9 @@ import FastCore
     #expect(model.archive.metrics == [edited])
     #expect(await model.change { $0.metrics.removeAll { $0.id == entry.id } })
     #expect(model.archive.metrics.isEmpty)
+    // Undo puts the same drink back after expiry: a restore, not a new record.
+    #expect(await model.restoreMetric(edited))
+    #expect(model.archive.metrics == [edited])
+    #expect(!(await model.restoreMetric(edited)))
+    #expect(model.archive.metrics.count == 1)
 }

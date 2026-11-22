@@ -453,6 +453,16 @@
         }
       }
     },
+    "Built with Apple’s frameworks, the shared SevenKit package and Fast’s Rust core. No tracking SDKs. Full dependency inventory: https://github.com/drei-gg/sevens/blob/main/THIRD-PARTY.md": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built with Apple’s frameworks, the shared SevenKit package and Fast’s Rust core. No tracking SDKs. Full dependency inventory: https://github.com/drei-gg/sevens/blob/main/THIRD-PARTY.md"
+          }
+        }
+      }
+    },
     "Calendar": {
       "localizations": {
         "en": {
@@ -1119,6 +1129,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fasts:"
+          }
+        }
+      }
+    },
+    "Fast’s Rust core uses open-source crates under the MIT, Apache-2.0, Unlicense, MPL-2.0 and Unicode licences.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast’s Rust core uses open-source crates under the MIT, Apache-2.0, Unlicense, MPL-2.0 and Unicode licences."
           }
         }
       }
@@ -2919,6 +2939,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "US fl oz"
+          }
+        }
+      }
+    },
+    "Undo delete": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo delete"
           }
         }
       }

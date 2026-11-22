@@ -7,7 +7,7 @@ import android.util.AtomicFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import gg.seven.fast.core.*
-import gg.seven.kit.AccessStore
+import gg.seven.kit.SevenStore
 import gg.seven.kit.schedule.ReminderHost
 import java.io.File
 import kotlinx.coroutines.*
@@ -24,8 +24,23 @@ class FastApplication : Application(), ReminderHost {
         reminderScheduler.maintain()
     }
 
-    val access by lazy { AccessStore(this, BuildConfig.PERSONAL_UNLOCK) }
-    val purchaseSource by lazy { purchases(this) }
+    /** Lives as long as the process: the Wear bridge reads access without an activity. */
+    private val appScope = MainScope()
+
+    /**
+     * The trial, the unlock and the launch sheets (SevenKit). Its trial is the same `seven-trial`
+     * preference the earlier AccessStore wrote, so an existing trial or unlock carries over.
+     */
+    val store by lazy {
+        SevenStore(this, BuildConfig.PERSONAL_UNLOCK, purchases(this), appScope).also {
+            // Before SevenKit's gate, Fast showed its own welcome dialog once; don't show the
+            // first-launch page again to someone who already saw that.
+            if (!it.beforeYouBuyShown && getSharedPreferences("welcome", MODE_PRIVATE).getBoolean("seen", false))
+                it.beforeYouBuyShown = true
+        }
+    }
+    val access get() = store.access
+    val purchaseSource get() = store.purchases
 }
 
 class ArchiveRepository(
@@ -83,14 +98,35 @@ class ArchiveRepository(
         withContext(Dispatchers.IO) { lock.withLock { file.openRead().use { it.readBytes() } } }
 }
 
+/**
+ * Whether [after] holds a record [before] didn't, other than the [restoring] ones (records put
+ * back by Undo with their original ID). Without the trial or unlock, such a change is refused.
+ */
+internal fun addsNewRecords(
+    before: FastArchive,
+    after: FastArchive,
+    restoring: Set<java.util.UUID> = emptySet(),
+): Boolean {
+    fun <T> added(old: List<T>, new: List<T>, id: (T) -> java.util.UUID): Boolean {
+        val known = old.mapTo(HashSet(), id)
+        return new.any { id(it) !in known && id(it) !in restoring }
+    }
+    return added(before.fasts, after.fasts) { it.id } ||
+        added(before.journal, after.journal) { it.id } ||
+        added(before.metrics, after.metrics) { it.id } ||
+        added(before.plans, after.plans) { it.id } ||
+        added(before.restDays, after.restDays) { it.id } ||
+        added(before.presets, after.presets) { it.id }
+}
+
 class FastModel(application: Application) : AndroidViewModel(application) {
     private val app = application as FastApplication
     val repository = app.repository
     val archive = repository.state.asStateFlow()
     val loadFailure = repository.failure.asStateFlow()
-    val purchaseSource = app.purchaseSource
-    val purchase = purchaseSource.state
-    val access = app.access
+    val store = app.store
+    val purchase = store.purchase
+    val access = store.access
     val message = MutableStateFlow<String?>(null)
 
     /** A short note with Undo, for changes that are easy to take back (a deleted drink). */
@@ -121,7 +157,7 @@ class FastModel(application: Application) : AndroidViewModel(application) {
 
     fun refresh() {
         now.value = nowMillis()
-        purchaseSource.refresh()
+        store.refresh()
         archive.value?.let(::updateSurfaces)
     }
 
@@ -160,25 +196,21 @@ class FastModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun mutate(change: (FastArchive) -> FastArchive, onSaved: () -> Unit = {}) = act {
+    /**
+     * Saves [change]. Without the trial or unlock, a change may correct, delete or end existing
+     * records but not add new ones; [restoring] names records being put back by Undo (the same
+     * ID and time as before), which are a restore rather than new records.
+     */
+    fun mutate(
+        change: (FastArchive) -> FastArchive,
+        onSaved: () -> Unit = {},
+        restoring: Set<java.util.UUID> = emptySet(),
+    ) = act {
         val saved =
             repository.update { current ->
                 val next = change(current)
-                if (!canCreate) {
-                    fun <T> additions(before: List<T>, after: List<T>, id: (T) -> java.util.UUID): Boolean {
-                        val known = before.mapTo(HashSet(), id)
-                        return after.any { id(it) !in known }
-                    }
-                    require(
-                        !additions(current.fasts, next.fasts) { it.id } &&
-                            !additions(current.journal, next.journal) { it.id } &&
-                            !additions(current.metrics, next.metrics) { it.id } &&
-                            !additions(current.plans, next.plans) { it.id } &&
-                            !additions(current.restDays, next.restDays) { it.id } &&
-                            !additions(current.presets, next.presets) { it.id }
-                    ) {
-                        "Start the free trial or unlock to add records. Your existing records remain editable and exportable."
-                    }
+                require(canCreate || !addsNewRecords(current, next, restoring)) {
+                    "Start the free trial or unlock to add records. Your existing records remain editable and exportable."
                 }
                 next
             }
@@ -186,13 +218,15 @@ class FastModel(application: Application) : AndroidViewModel(application) {
         onSaved()
     }
 
-    fun startTrial() {
-        runCatching {
-                access.startTrial()
-                now.value = nowMillis()
-            }
-            .onFailure { message.value = it.explanation }
-    }
+    /** Puts back a drink or measurement deleted moments ago, as the same record. */
+    fun restoreMetric(entry: MetricEntry) =
+        mutate(
+            { current ->
+                if (current.metrics.any { it.id == entry.id }) current
+                else current.copy(metrics = current.metrics + entry)
+            },
+            restoring = setOf(entry.id),
+        )
 
     fun export(uri: Uri, csv: Boolean = false) = act {
         withContext(Dispatchers.IO) {

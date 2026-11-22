@@ -18,9 +18,14 @@ class FastUiTest {
         ui.waitUntil(10_000) {
             (ui.activity.application as FastApplication).repository.state.value != null
         }
-        if (ui.onAllNodesWithText("Look around").fetchSemanticsNodes().isNotEmpty())
-            ui.onNodeWithText("Look around").performClick()
         val app = ui.activity.application as FastApplication
+        // SevenKit's launch sheets: Before you buy on a first launch, or the trial-ended sheet.
+        if (ui.onAllNodesWithTag("seven-look-around").fetchSemanticsNodes().isNotEmpty())
+            ui.onNodeWithTag("seven-look-around").performClick()
+        if (ui.onAllNodesWithText("Not now").fetchSemanticsNodes().isNotEmpty())
+            ui.onNodeWithText("Not now").performClick()
+        app.store.beforeYouBuyShown = true
+        app.store.trialEndedShown = true
         app.getSharedPreferences("seven-trial", 0).edit().clear().commit()
         app.access.startTrial()
         runBlocking { app.repository.update { FastArchive.empty() } }
@@ -202,8 +207,8 @@ class FastUiTest {
         ui.onNodeWithText("Save").assertIsDisplayed().performClick()
         ui.waitUntil(10_000) { app.repository.state.value!!.active == null }
         ui.onNodeWithText("Start fast").performScrollTo().performClick()
-        ui.onNodeWithText("Yours, paid once").assertIsDisplayed()
-        ui.onNodeWithText("Done").performClick()
+        ui.onNodeWithText("What the unlock adds").assertIsDisplayed()
+        ui.onNodeWithText("Not now").performClick()
         ui.onNodeWithTag("nav-History").performClick()
         ui.onNodeWithText("List", useUnmergedTree = true).performClick()
         ui.onNodeWithText("1 hr", substring = true).performScrollTo().performClick()

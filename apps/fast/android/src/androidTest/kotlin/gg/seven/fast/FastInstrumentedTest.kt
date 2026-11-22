@@ -86,4 +86,17 @@ class FastInstrumentedTest {
         assertTrue(AccessStore(context, true).canCreate(PurchaseState(), now))
         prefs.edit().clear().commit()
     }
+
+    @Test
+    fun undoRestoreIsNotANewRecord() {
+        val drink = metricEntry(nowMillis() - 60_000, MetricKind.WATER, 250.0)
+        val before = FastArchive.empty().copy(metrics = listOf(drink))
+        val deleted = before.copy(metrics = emptyList())
+        assertFalse(addsNewRecords(before, deleted))
+        // Putting the same drink back is a restore when Undo names it; otherwise it's an addition.
+        assertTrue(addsNewRecords(deleted, before))
+        assertFalse(addsNewRecords(deleted, before, restoring = setOf(drink.id)))
+        val other = metricEntry(nowMillis(), MetricKind.WATER, 250.0)
+        assertTrue(addsNewRecords(deleted, deleted.copy(metrics = listOf(other)), setOf(drink.id)))
+    }
 }

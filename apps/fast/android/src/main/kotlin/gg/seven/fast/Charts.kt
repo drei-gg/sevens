@@ -36,6 +36,14 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+
+/** "11/22" or "22/11": month and day in the reader's order, for axis labels. */
+private val shortDay: DateTimeFormatter
+    get() =
+        DateTimeFormatter.ofPattern(
+            android.text.format.DateFormat.getBestDateTimePattern(java.util.Locale.getDefault(), "Md")
+        )
 
 /**
  * Vico owns chart drawing, axes, scroll and zoom. The same data is available as an accessible
@@ -54,7 +62,7 @@ internal fun DailyChart(days: List<Pair<LocalDate, Double?>>, unit: String, colo
     }
     val formatter = remember {
         CartesianValueFormatter { _, value, _ ->
-            LocalDate.ofEpochDay(value.toLong()).let { "${it.monthValue}/${it.dayOfMonth}" }
+            LocalDate.ofEpochDay(value.toLong()).format(shortDay)
         }
     }
     ProvideVicoTheme(rememberM3VicoTheme(columnCartesianLayerColors = listOf(color))) {
@@ -73,12 +81,12 @@ internal fun DailyChart(days: List<Pair<LocalDate, Double?>>, unit: String, colo
             modifier =
                 Modifier.fillMaxWidth().height(220.dp).clearAndSetSemantics {
                     contentDescription =
-                        "Daily $unit chart, ${days.first().first} to ${days.last().first}. Use Show daily values for every value."
+                        "Daily $unit chart, ${dateLabel(days.first().first, FormatStyle.LONG)} to ${dateLabel(days.last().first, FormatStyle.LONG)}. Use Show daily values for every value."
                 },
         )
     }
     Text(
-        "${days.first().first} — ${days.last().first} · $unit. Scroll or pinch to inspect.",
+        "${dateLabel(days.first().first)} – ${dateLabel(days.last().first)} · $unit. Scroll or pinch to inspect.",
         style = MaterialTheme.typography.bodySmall,
     )
     TextButton(onClick = { table = !table }) {
@@ -87,7 +95,7 @@ internal fun DailyChart(days: List<Pair<LocalDate, Double?>>, unit: String, colo
     if (table)
         days.reversed().forEach { (day, value) ->
             Text(
-                "$day · ${value?.let { "${it.number()} $unit" } ?: "No entries"}",
+                "${dateLabel(day)} · ${value?.let { "${it.number()} $unit" } ?: "No entries"}",
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -100,7 +108,7 @@ internal fun MeasurementChart(entries: List<MetricEntry>, settings: TrackerSetti
         CartesianValueFormatter { _, value, _ ->
             Instant.ofEpochMilli((value * 86_400_000).toLong())
                 .atZone(ZoneId.systemDefault())
-                .format(DateTimeFormatter.ofPattern("M/d"))
+                .format(shortDay)
         }
     }
     val points =

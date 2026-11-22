@@ -7,29 +7,22 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.fast.core.*
 import gg.seven.kit.*
 
 @Composable
-internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit) {
+internal fun SettingsScreen(m: FastModel, a: FastArchive?) {
     val context = LocalContext.current
-    var notices by rememberSaveable { mutableStateOf(false) }
+    var confirmDeleteAll by rememberSaveable { mutableStateOf(false) }
     val failure by m.loadFailure.collectAsStateWithLifecycle()
-    val now by m.now.collectAsStateWithLifecycle()
-    val purchase by m.purchase.collectAsStateWithLifecycle()
     val exportJson =
         rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument("application/json")
@@ -70,9 +63,6 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit)
                     "After saving the original, recover from a valid backup in a separate installation or contact support. This app will not overwrite the unreadable file."
                 )
             }
-        Section(title = "Paid once. Yours to keep.") {
-            item("Fast", m.access.label(purchase, now.toLong()), onClick = onUnlock)
-        }
         if (a != null) {
             Section(
                 title = "Your data",
@@ -83,6 +73,9 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit)
                 action("Export CSV tables", Icons.Outlined.TableChart) { exportCsv.launch("fast-records.csv") }
                 action("Import & merge backup", Icons.Outlined.FileOpen) {
                     importJson.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
+                }
+                action("Delete all records", Icons.Outlined.DeleteForever, destructive = true) {
+                    confirmDeleteAll = true
                 }
             }
             HomeWidgetSetup(android.content.ComponentName(context, FastWidget::class.java), "Fasting timer",
@@ -174,53 +167,50 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit)
                 )
             }
         }
-        Panel("About ${stringResource(R.string.app_name)}") {
-            Text(
-                "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.FLAVOR}"
-            )
-            Text(
-                "A private fasting tracker with a history worth keeping. Native Kotlin and Compose. No ads or subscription."
-            )
-            Text("Open-source notices", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Sevens · GPL-3.0\nKotlin & kotlinx.serialization · Apache-2.0\nKizitonwose Calendar · MIT\nVico charts · Apache-2.0\nAndroidX & Jetpack Compose · Apache-2.0\nGoogle Play Billing (store edition only) · Android SDK terms",
-                style = MaterialTheme.typography.bodySmall,
-            )
-            TextButton(onClick = { notices = true }) { Text("Read open-source licenses") }
-            if (BuildConfig.FLAVOR == "store")
-                Text(
-                    "Google Play handles purchases and may contact Google for billing-related diagnostics. Your tracking and journal records are never passed to billing.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            Text(
-                "Code license and full dependency notices are included in the source repository. The official name and icon are separately licensed trademarks.",
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-    }
-    if (notices)
-        AlertDialog(
-            onDismissRequest = { notices = false },
-            title = { Text("Open-source licenses") },
-            text = {
-                val text = remember {
-                    context.assets.list("notices").orEmpty().sorted().joinToString("\n\n") { name ->
-                        name +
-                            "\n" +
-                            context.assets.open("notices/$name").bufferedReader().use {
-                                it.readText()
-                            }
-                    }
-                }
-                androidx.compose.foundation.text.selection.SelectionContainer {
+        Section(title = "Network contact") {
+            content {
+                Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                     Text(
-                        text,
-                        Modifier.then(Modifier.heightIn(max = 500.dp))
-                            .verticalScroll(rememberScrollState()),
-                        style = MaterialTheme.typography.bodySmall,
+                        if (BuildConfig.FLAVOR == "store")
+                            "Google Play handles purchases and restores through Play Billing, and may contact Google for billing diagnostics. Your tracking and journal records are never passed to billing."
+                        else "This edition has no purchase code and contacts no store."
                     )
+                    Text(
+                        "Tracking, journal entries, reminders and measurements stay on this device. Health Connect, notifications and the home-screen widget work on the phone."
+                    )
+                    if (BuildConfig.FLAVOR != "generic")
+                        Text(
+                            "A paired Wear OS watch receives a small timer snapshot and sends the actions you choose through Google Play services, device to device. Journal, weight and reflections never leave the phone."
+                        )
+                    Text("Exports go only to the destination you choose.")
+                }
+            }
+        }
+        SevenAbout(coreVersion = remember { coreVersion() })
+    }
+    if (confirmDeleteAll)
+        AlertDialog(
+            onDismissRequest = { confirmDeleteAll = false },
+            title = { Text("Delete every fast, journal entry, measurement, plan and rest day?") },
+            text = {
+                Text(
+                    "This also ends any running timer and removes custom presets. Your preferences stay. Export a backup first if you want to keep a copy. This can’t be undone."
+                )
+            },
+            dismissButton = { TextButton(onClick = { confirmDeleteAll = false }) { Text("Cancel") } },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmDeleteAll = false
+                        m.mutate(
+                            { FastArchive.empty().copy(settings = it.settings) },
+                            onSaved = { m.message.value = "All records deleted. Preferences were kept." },
+                        )
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text("Delete all records")
                 }
             },
-            confirmButton = { TextButton(onClick = { notices = false }) { Text("Done") } },
         )
 }
