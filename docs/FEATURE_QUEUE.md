@@ -92,9 +92,9 @@ States: **implemented** = local source exists, with evidence recorded separately
 |---|---|---|
 | Accessible photo/video inventory, collections and streamed full-resource exact hashes/bytes | implemented | Permissions, cloud originals, large libraries: device-acceptance |
 | Provisional nearby-still similarity | implemented | Threshold/category tuning and real-library perceptual quality: device-acceptance |
-| Recompressed-equivalent detection; burst/blur/exposure/content categories; keeper reasons | ready | Incremental coverage and false positives must remain explicit |
+| Recompressed-equivalent detection; burst/blur/exposure/content categories | ready | Incremental coverage and false positives must remain explicit. Keeper reasons and connected similar-shot groups are implemented (SPEC, 2026-11-22) |
 | Video similar/overlapping clips and recording collections | ready | No identity claims based solely on thumbnails/duration |
-| Album/type/dimension/size filters; richer video filters | ready | Day/month/year media date filters are implemented below; reconcile the remaining filters before extending, and never treat unknown size as zero |
+| Album/type filters | ready | Size, dimension, video length and Large filters are implemented on both phones (SPEC, 2026-11-22); unknown values stay unknown, never zero |
 | Full-frame zoom/native playback and durable keep/later/removal decisions | implemented | Real-library preservation and revocation: device-acceptance |
 | Select visible, clear/deselect and invert visible selection | implemented | Native source on both phones; hidden selection semantics remain explicit |
 | Swipe sessions, side-by-side review, protected groups/albums and richer keeper rules | ready | Existing batch selection does not complete these baseline review actions |
@@ -106,7 +106,7 @@ States: **implemented** = local source exists, with evidence recorded separately
 | Broader video/HDR/HEVC/auxiliary profiles, durable video batches and Live-to-still | ready | Profile-specific audio/color/metadata/timing proof and restartable mutation receipts; current bounded profile is not final scope |
 | Additional image formats/conversion/alpha/auxiliary/RAW profiles | ready | Profile-specific preservation; current bounded profile is not final scope |
 | Source replacement after compression | decision-blocked | Restartable mutation journal, saved-output/metadata/feature proof; deletion never implicit |
-| Album creation/filing and favorites | implemented | Provider/account/limited-access acceptance |
+| Album creation/filing and favorites | implemented | iOS PhotoKit albums; Android folder albums (move on 11+, verified copy on 10+). Provider/account/limited-access acceptance |
 | Day/month/year and On This Day sessions | implemented | Round seven: native phone filters with shared civil-date rules, explicit reference, preserved selection/decisions and unknown dates; persistent review sessions remain separate |
 | Search/sort filing and unfiled collections | ready | Availability differs by provider; do not invent absent dates/albums |
 | Review collections/tags | candidate | Feasibility/value review, retained in baseline |

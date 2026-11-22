@@ -384,3 +384,31 @@ pub fn image_resize_plan(
         resized: out_width != width || out_height != height,
     })
 }
+
+/// Temporary space a still candidate needs before encoding: the encoded output and its saved
+/// read-back, each bounded by 24-bit pixels at the output size, plus encoder headroom. The
+/// retained original is already on disk when this is checked.
+#[uniffi::export]
+pub fn still_copy_required_free_bytes(output_width: u32, output_height: u32) -> u64 {
+    let pixels = output_width as u64 * output_height as u64;
+    pixels
+        .saturating_mul(3)
+        .saturating_mul(2)
+        .saturating_add(32 * 1024 * 1024)
+}
+
+/// Refuses to encode when the free space is below [`still_copy_required_free_bytes`]. Unknown
+/// free space is passed as zero by the platform, so it refuses rather than guessing.
+#[uniffi::export]
+pub fn check_still_copy_space(
+    output_width: u32,
+    output_height: u32,
+    available_bytes: u64,
+) -> Result<(), crate::CleanerError> {
+    if available_bytes < still_copy_required_free_bytes(output_width, output_height) {
+        return Err(crate::blocked(
+            "There is not enough temporary storage for the candidate and its verification copy. The original stays.",
+        ));
+    }
+    Ok(())
+}

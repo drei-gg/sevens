@@ -42,6 +42,10 @@ public enum ImageCompression {
             reference = resized
         } else { reference = original }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        // Room for the candidate and its saved read-back before encoding, as video checks; unknown
+        // free space reads as zero and refuses.
+        let free = (try? directory.resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity) ?? 0
+        try checkStillCopySpace(outputWidth: plan.width, outputHeight: plan.height, availableBytes: UInt64(max(0, free)))
         let outputURL = directory.appendingPathComponent(UUID().uuidString).appendingPathExtension("jpg")
         var committed = false
         defer { if !committed { try? FileManager.default.removeItem(at: outputURL) } }

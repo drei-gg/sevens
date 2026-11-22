@@ -1,5 +1,5 @@
 //! Filename metadata filters. Extension matching does not inspect or claim a file's content type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, uniffi::Enum)]
 pub enum FileSizeFilter {
     Any,
     AtLeast1Mb,

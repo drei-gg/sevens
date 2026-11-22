@@ -86,5 +86,6 @@ internal fun typeIdentifier(mime: String?): String =
 internal fun collectionLabel(tag: String): String =
     when (tag) {
         "Live Photos" -> "Motion photos"
+        "Large" -> "Large items"
         else -> tag
     }

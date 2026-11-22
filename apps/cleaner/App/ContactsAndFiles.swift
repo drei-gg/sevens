@@ -20,7 +20,8 @@ struct FilesScreen: View {
         ScrollView {
             VStack(spacing: Tokens.Space.l) {
                 CleanerHero(label: c("Your chosen folders"),value: model.folderScan.map { scan in let summary = StorageSummary(scan.items); return summary.knownBytes == 0 && summary.unknownCount > 0 ? c("Not measured") : byteText(summary.knownBytes) } ?? c("Find the big stuff."),detail: c("Large files and exact copies, in the places you choose."),symbol: "folder.fill",hue: Tokens.dataWarm,valueRole: model.folderScan.map { scan in StorageSummary(scan.items).knownBytes == 0 && StorageSummary(scan.items).unknownCount > 0 ? .title : .display } ?? .title)
-                Button { importing = true } label: { Text("Choose a folder").frame(maxWidth: .infinity) }.cleanerPrimary().disabled(model.busy)
+                // The gate first, so a locked install never opens a picker it can't use.
+                Button { if model.paidOrExplain() { importing = true } } label: { Text("Choose a folder").frame(maxWidth: .infinity) }.cleanerPrimary().disabled(model.busy)
                 if let scan = model.folderScan {
                     CleanerTiles {
                         CleanerStat(title: c("Files found"),value: scan.items.count.formatted(),symbol: "doc",hue: Tokens.dataWarm)
@@ -69,6 +70,7 @@ struct ContactsScreen: View {
     @State private var query = ""
     @State private var incomplete = false
     @State private var comparing = false
+    @State private var confirmDelete = false
     private var records: [ContactRecord] { model.contactSnapshot?.records ?? [] }
     var body: some View {
         List {
@@ -94,6 +96,15 @@ struct ContactsScreen: View {
                     ForEach(Locale.Region.isoRegions.map(\.identifier).sorted { (Locale.current.localizedString(forRegionCode: $0) ?? $0) < (Locale.current.localizedString(forRegionCode: $1) ?? $1) },id: \.self) { code in Text(Locale.current.localizedString(forRegionCode: code) ?? code).tag(code) }
                 }.pickerStyle(.navigationLink)
             } footer: { Text("Choose a country to compare local numbers. Without one, international numbers and email addresses are compared.").textRole(.caption) }
+            if let archive = model.savedContactArchive {
+                Section {
+                    Text(archive.records.map { cCount($0.count,key: "archived") } ?? c("This saved archive cannot be read. You can delete it.")).textRole(.body)
+                    Text(archive.saved,style: .date).textRole(.caption).numeric()
+                    if let url = model.exportURL { ShareLink("Share saved contact archive",item: url).accessibilityIdentifier("contacts-share-saved") }
+                    Button("Delete saved archive…",role: .destructive) { confirmDelete = true }.disabled(model.busy)
+                } header: { Text("Saved contact archive").textRole(.caption) }
+                  footer: { Text("Cleaner keeps your latest export on this iPhone, protected while it’s locked and excluded from backups, so you can share it again later, even after the trial. It holds the accessible fields of each contact.").textRole(.caption) }
+            }
             if let snapshot = model.contactSnapshot {
                 Section {
                     if snapshot.limited { CleanerNotice(text: c("Only the contacts you allowed are included."),symbol: "person.crop.circle.badge.checkmark") }
@@ -109,7 +120,6 @@ struct ContactsScreen: View {
                     }
                 } header: { Text(incomplete ? c("Missing details") : c("Your contacts")).textRole(.caption) }
                 Section {
-                    if let url = model.exportURL { ShareLink("Share partial contact archive",item: url) }
                     CleanerNotice(text: c("Archives contain accessible fields. Notes and account relationships are not included. Original contacts are retained."),symbol: "doc.badge.clock")
                 }
             } else {
@@ -117,6 +127,9 @@ struct ContactsScreen: View {
             }
         }.cleanerCanvas().navigationTitle("Contacts").searchable(text: $query)
             .navigationDestination(isPresented: $comparing) { ContactGroupsScreen() }
+            .confirmationDialog(c("Delete the saved contact archive?"),isPresented: $confirmDelete,titleVisibility: .visible) {
+                Button("Delete saved archive",role: .destructive) { model.deleteSavedContacts() }
+            } message: { Text("This removes Cleaner’s kept copy from this iPhone. Your contacts and any copies you shared are not changed.") }
     }
     @ViewBuilder private var contactActions: some View {
         Button { model.scanContacts(region: region.isEmpty ? nil : region) } label: { CleanerChip(title: c("Scan contacts"),symbol: "arrow.clockwise") }.cleanerChip().disabled(model.busy)
@@ -144,19 +157,21 @@ struct ContactGroupsScreen: View {
     }
 }
 struct ContactComparison: View {
+    @Environment(CleanerModel.self) private var model
     let a: ContactRecord
     let b: ContactRecord
     let reasons: [String]
     @Environment(\.dynamicTypeSize) private var typeSize
     var body: some View {
-        let plan = ContactMergePlan([a,b],backupVerified: true,revisionUnchanged: true)
+        // Backed up only when the kept, read-back archive holds these exact record versions.
+        let plan = ContactMergePlan([a,b],backupVerified: model.savedContactArchive?.covers(a,b) == true,revisionUnchanged: true)
         ScrollView {
             VStack(alignment: .leading,spacing: Tokens.Space.l) {
                 Label("Compare the details",systemImage: "person.2").textRole(.title)
                 Text(reasons.joined(separator: "; ")).textRole(.secondary)
                 SevenAdaptiveColumns(accessibilityText: typeSize.isAccessibilitySize) { ContactFieldList(record: a); ContactFieldList(record: b) }
                 SectionRule(c("Preservation check"))
-                ForEach(plan.blockers,id: \.self) { CleanerNotice(text: $0,symbol: "exclamationmark.triangle",caution: true) }
+                ForEach(plan.blockers,id: \.self) { CleanerNotice(text: c($0),symbol: "exclamationmark.triangle",caution: true) }
                 if !plan.conflicts.isEmpty { Text(c("Conflicting fields") + ": " + plan.conflicts.map(fieldTitle).joined(separator: ", ")).textRole(.body) }
                 CleanerNotice(text: c("Merging and restoration are still under validation. No source contact is removed by this build."),symbol: "person.crop.circle.badge.checkmark")
             }.padding(Tokens.Space.m).frame(maxWidth: 672)

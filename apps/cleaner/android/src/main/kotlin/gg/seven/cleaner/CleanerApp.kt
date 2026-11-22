@@ -60,6 +60,9 @@ val LocalActions = staticCompositionLocalOf<CleanerActions> { error("Inside Clea
 class LibraryFilters(category: String = "All", order: String = "Newest", query: String = "") {
     var dateMode by mutableStateOf(MediaDateFilter.ANY)
     var date by mutableStateOf(java.time.LocalDate.now())
+    var size by mutableStateOf(gg.seven.cleaner.core.FileSizeFilter.ANY)
+    var resolution by mutableStateOf(gg.seven.cleaner.core.MediaResolutionFilter.ANY)
+    var duration by mutableStateOf(gg.seven.cleaner.core.MediaDurationFilter.ANY)
     var category by mutableStateOf(category)
     var order by mutableStateOf(order)
     val search = androidx.compose.foundation.text.input.TextFieldState(query)
@@ -74,7 +77,16 @@ private fun rememberFilters(key: String) =
         saver =
             listSaver(
                 save = {
-                    listOf(it.category, it.order, it.query, it.dateMode.name, it.date.toString())
+                    listOf(
+                        it.category,
+                        it.order,
+                        it.query,
+                        it.dateMode.name,
+                        it.date.toString(),
+                        it.size.name,
+                        it.resolution.name,
+                        it.duration.name,
+                    )
                 },
                 restore = { values ->
                     LibraryFilters(values[0], values[1], values[2]).apply {
@@ -84,6 +96,27 @@ private fun rememberFilters(key: String) =
                         date =
                             runCatching { java.time.LocalDate.parse(values.getOrNull(4)) }
                                 .getOrDefault(java.time.LocalDate.now())
+                        size =
+                            runCatching {
+                                    gg.seven.cleaner.core.FileSizeFilter.valueOf(
+                                        values.getOrNull(5).orEmpty()
+                                    )
+                                }
+                                .getOrDefault(gg.seven.cleaner.core.FileSizeFilter.ANY)
+                        resolution =
+                            runCatching {
+                                    gg.seven.cleaner.core.MediaResolutionFilter.valueOf(
+                                        values.getOrNull(6).orEmpty()
+                                    )
+                                }
+                                .getOrDefault(gg.seven.cleaner.core.MediaResolutionFilter.ANY)
+                        duration =
+                            runCatching {
+                                    gg.seven.cleaner.core.MediaDurationFilter.valueOf(
+                                        values.getOrNull(7).orEmpty()
+                                    )
+                                }
+                                .getOrDefault(gg.seven.cleaner.core.MediaDurationFilter.ANY)
                     }
                 },
             ),

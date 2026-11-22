@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import gg.seven.cleaner.core.CleanupItem
 import gg.seven.cleaner.core.ContactMatch
+import gg.seven.cleaner.core.ContactRecord
 import gg.seven.cleaner.core.ImageSizeProfile
 import gg.seven.cleaner.core.MatchGroup
 import gg.seven.cleaner.core.MatchKind
@@ -15,12 +16,16 @@ import gg.seven.cleaner.core.ReviewState
 import gg.seven.cleaner.core.compressionReviewPlan
 import gg.seven.cleaner.core.compressionSourceKey
 import gg.seven.cleaner.core.contactCandidates
+import gg.seven.cleaner.core.contactPackageDecode
 import gg.seven.cleaner.core.matchingProposedRemoval
 import gg.seven.cleaner.core.newReviewState
+import gg.seven.cleaner.core.removalHeldMessage
+import gg.seven.cleaner.core.removalReadyIds
 import gg.seven.cleaner.core.scanHasMeasurement
 import gg.seven.flavor.sevenPurchases
 import gg.seven.kit.SevenStore
 import java.io.File
+import java.time.Instant
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -29,6 +34,25 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+/**
+ * The latest contact archive the person exported, kept in the app's no-backup storage so it can be
+ * shared again after the trial or a relaunch. [records] is null when the file cannot be read.
+ * It was read back and checked when written, so it is the real backup state for merge review.
+ */
+data class SavedContactArchive(val records: List<ContactRecord>?, val saved: Instant) {
+    /** Whether this archive holds exactly these record versions (a verified backup of them). */
+    fun covers(vararg wanted: ContactRecord): Boolean =
+        records != null &&
+            wanted.all { want ->
+                records.any {
+                    it.id == want.id &&
+                        it.container == want.container &&
+                        it.name == want.name &&
+                        it.fields == want.fields
+                }
+            }
+}
 
 /** A change Android lets an app make only after the person confirms it in a system dialog. */
 class SystemRequest(val intent: PendingIntent, val onResult: (Boolean) -> Unit)
@@ -76,11 +100,15 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
     val videoReview = MutableStateFlow<VideoReview?>(null)
     private val sessionCopyKeys = java.util.concurrent.CopyOnWriteArraySet<String>()
     val exportFile = MutableStateFlow<File?>(null)
+    val savedContactArchive = MutableStateFlow<SavedContactArchive?>(null)
     val systemRequest = MutableStateFlow<SystemRequest?>(null)
 
     private var job: Job? = null
     private var started = false
     private val cache = app.cacheDir
+    /** Local only: excluded from backups and device transfer, deleted from Contacts settings. */
+    private val savedArchiveFile =
+        File(app.noBackupFilesDir, "Cleaner/contact-archive.cleanercontacts")
 
     fun start() {
         if (started) return
@@ -89,6 +117,7 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
             try {
                 state.value = repository.read()
                 ready.value = true
+                savedContactArchive.value = readSavedArchive()
                 savedMeasurements.value = measurements.count()
             } catch (failure: Exception) {
                 showError(failure.cleanerMessage)
@@ -221,23 +250,111 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
      */
     fun deleteReviewed(ids: Set<String>) =
         run("Applying reviewed deletion…", cancellable = false) {
-            val intent = photos.trashRequest(ids, state.value)
+            // The core names each item that changed, became a favorite or is gone; only the
+            // ready ones are offered to the system, and the rest are marked for review again.
+            val check = photos.removalCheck(ids, state.value)
+            replaceItems(ids, check.current)
+            val ready = removalReadyIds(check.outcomes).toSet()
+            val held = removalHeldMessage(check.outcomes)
+            if (ready.isEmpty()) throw blocked(held ?: "Nothing selected.")
+            val intent = photos.trashRequest(ready, state.value)
             systemRequest.value =
                 SystemRequest(intent) { confirmed ->
                     if (confirmed)
                         run("Applying reviewed deletion…", cancellable = false) {
-                            val gone = ids - photos.remaining(ids)
-                            if (gone.isEmpty()) return@run
-                            state.value =
-                                repository.record(
-                                    "Requested deletion for ${gone.size} reviewed items. They wait in the trash for 30 days and keep using storage until then."
-                                )
-                            media.update { list -> list.filterNot { it.id in gone } }
-                            groups.value = emptyList()
-                            selected.update { it - gone }
+                            val gone = ready - photos.remaining(ready)
+                            if (gone.isNotEmpty()) {
+                                state.value =
+                                    repository.record(
+                                        "Requested deletion for ${gone.size} reviewed items. They wait in the trash for 30 days and keep using storage until then."
+                                    )
+                                media.update { list -> list.filterNot { it.id in gone } }
+                                groups.value = emptyList()
+                                selected.update { it - gone }
+                            }
+                            held?.let(::showError)
                         }
                 }
         }
+
+    /**
+     * Replaces [ids] in the media list with the library's current items: an unchanged revision
+     * keeps its measurement, a changed one takes the fresh item, and a missing one leaves the list.
+     */
+    private fun replaceItems(ids: Set<String>, current: List<CleanupItem>) {
+        val fresh = current.associateBy { it.id }
+        media.update { list ->
+            list.mapNotNull { item ->
+                if (item.id !in ids) item
+                else
+                    fresh[item.id]?.let { now ->
+                        if (now.revision == item.revision) item.copy(favorite = now.favorite)
+                        else now
+                    }
+            }
+        }
+    }
+
+    private suspend fun refreshItems(ids: Set<String>) {
+        if (ids.isNotEmpty()) replaceItems(ids, photos.currentItems(ids))
+    }
+
+    /** Pending removal opens against the library as it is now, so changed items show as such. */
+    fun refreshPending() {
+        if (!ready.value || busy.value) return
+        val ids =
+            media.value
+                .filter { state.value.decisions[it.id] == ReviewDecision.REMOVE }
+                .map { it.id }
+        viewModelScope.launch { runCatching { refreshItems(ids.toSet()) } }
+    }
+
+    /**
+     * Adds the selected photos and videos to a folder album: moved there after the system's write
+     * confirmation (Android 11+), or copied there with the originals left in place (Android 10+).
+     */
+    fun addToAlbum(ids: Set<String>, title: String, move: Boolean) =
+        run(
+            if (move) "Checking the selected items…" else "Copying into the album…",
+            cancellable = false,
+        ) {
+            val items = media.value.filter { it.id in ids }
+            if (items.size != ids.size || items.isEmpty())
+                throw blocked("A selected item is no longer available. Read the library again.")
+            if (!move) {
+                finishAlbum(photos.copyToAlbum(items, title), ids, title, moved = false)
+                return@run
+            }
+            val intent = photos.moveRequest(items, title)
+            systemRequest.value =
+                SystemRequest(intent) { confirmed ->
+                    if (confirmed)
+                        run("Moving into the album…", cancellable = false) {
+                            finishAlbum(photos.moveToAlbum(items, title), ids, title, moved = true)
+                        }
+                }
+        }
+
+    private suspend fun finishAlbum(
+        result: AlbumResult,
+        ids: Set<String>,
+        title: String,
+        moved: Boolean,
+    ) {
+        // A moved file has a new revision; decisions made before the move need review again.
+        refreshItems(ids)
+        val name = title.trim()
+        state.value =
+            repository.record(
+                if (moved) "Moved ${result.done.size} of ${ids.size} items into the album “$name”."
+                else
+                    "Copied ${result.done.size} of ${ids.size} items into the album “$name”. Originals stay where they were."
+            )
+        if (result.failed.isNotEmpty())
+            showError(
+                "${result.failed.size} of ${ids.size} items could not be ${if (moved) "moved" else "copied"}. They stay where they were."
+            )
+    }
 
     fun setFavorite(item: CleanupItem) =
         run("Updating favorite…", cancellable = false) {
@@ -246,10 +363,10 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
                 SystemRequest(intent) { confirmed ->
                     if (confirmed)
                         viewModelScope.launch {
-                            val now = photos.isFavorite(item.id)
-                            media.update { list ->
-                                list.map { if (it.id == item.id) it.copy(favorite = now) else it }
-                            }
+                            // A favorite change gives the item a new provider revision; take it,
+                            // so later copies and decisions bind to what the library now has.
+                            runCatching { refreshItems(setOf(item.id)) }
+                                .onFailure { showError(it.cleanerMessage) }
                         }
                 }
         }
@@ -496,13 +613,64 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
     fun exportContacts() =
         run("Writing and checking the contact archive…", paid = false) {
             val snapshot = contactSnapshot.value ?: return@run
-            val file = File(cache, "exports/Contacts-${UUID.randomUUID()}.cleanercontacts")
-            contacts.export(snapshot, file)
-            exportFile.value = file
+            // The kept copy is written and read back first; the shareable file is a checked copy.
+            contacts.export(snapshot, savedArchiveFile)
+            exportFile.value = shareableArchive()
+            savedContactArchive.value = readSavedArchive()
             state.value =
                 repository.record(
-                    "Exported ${snapshot.records.size} accessible contact records. Notes and account relationships are not included; originals retained."
+                    "Exported ${snapshot.records.size} accessible contact records and kept the latest archive on this phone. Notes and account relationships are not included; originals retained."
                 )
+        }
+
+    /** Prepares the kept archive for sharing; available after the trial and after a relaunch. */
+    fun shareSavedContacts(onReady: (File) -> Unit) =
+        run("Checking the saved contact archive…", paid = false, cancellable = false) {
+            if (!savedArchiveFile.exists()) throw blocked("No contact archive is saved on this phone.")
+            val file = shareableArchive()
+            exportFile.value = file
+            onReady(file)
+        }
+
+    fun deleteSavedContacts() =
+        run("Deleting the saved contact archive…", paid = false, cancellable = false) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                if (savedArchiveFile.exists() && !savedArchiveFile.delete())
+                    throw blocked("The saved contact archive could not be deleted.")
+                File(cache, "exports").deleteRecursively()
+            }
+            exportFile.value = null
+            savedContactArchive.value = null
+            state.value =
+                repository.record(
+                    "Deleted the saved contact archive from this phone. Contacts are unchanged."
+                )
+        }
+
+    /** A checked, decodable copy of the kept archive in the shared cache folder. */
+    private suspend fun shareableArchive(): File =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val bytes = savedArchiveFile.readBytes()
+            contactPackageDecode(bytes.direct())
+            val file = File(cache, "exports/Contacts-${UUID.randomUUID()}.cleanercontacts")
+            file.parentFile?.mkdirs()
+            file.writeBytes(bytes)
+            if (!file.readBytes().contentEquals(bytes)) {
+                file.delete()
+                throw blocked("The archive copy could not be checked. Nothing was shared.")
+            }
+            file
+        }
+
+    private suspend fun readSavedArchive(): SavedContactArchive? =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            if (!savedArchiveFile.exists()) return@withContext null
+            val records =
+                runCatching {
+                        contactPackageDecode(savedArchiveFile.readBytes().direct()).records
+                    }
+                    .getOrNull()
+            SavedContactArchive(records, Instant.ofEpochMilli(savedArchiveFile.lastModified()))
         }
 
     fun scanFolder(tree: Uri) =

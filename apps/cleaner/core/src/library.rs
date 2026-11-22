@@ -235,3 +235,136 @@ pub fn storage_summary(items: &[CleanupItem]) -> StorageSummary {
         unknown_count: items.iter().filter(|i| i.bytes.is_none()).count() as i32,
     }
 }
+
+/// The keeper [`matching_keeper`] suggests for a group and the rule that chose it, in words.
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct KeeperSuggestion {
+    pub id: String,
+    pub reason: String,
+}
+
+/// `matching_keeper` with its reason: the first rule in keeper order that set this item apart.
+/// A suggestion only; similar groups are never preselected and nothing is removed by it.
+#[uniffi::export]
+pub fn keeper_suggestion(
+    items: &[CleanupItem],
+    decisions: &HashMap<String, ReviewDecision>,
+) -> Option<KeeperSuggestion> {
+    let id = matching_keeper(items, decisions)?;
+    let keeper = items.iter().find(|item| item.id == id)?;
+    let others: Vec<&CleanupItem> = items
+        .iter()
+        .filter(|item| item.id != id && decisions.get(&item.id) != Some(&ReviewDecision::Remove))
+        .collect();
+    let kept = |item: &CleanupItem| decisions.get(&item.id) == Some(&ReviewDecision::Keep);
+    let area = |item: &CleanupItem| item.width as i64 * item.height as i64;
+    let reason = if kept(keeper) {
+        "Suggested keeper: you chose to keep it."
+    } else if keeper.favorite {
+        "Suggested keeper: it’s a favorite."
+    } else if others.is_empty() {
+        "Suggested keeper: the others are queued for removal."
+    } else if others.iter().all(|other| area(other) < area(keeper)) {
+        "Suggested keeper: the most pixels."
+    } else if keeper.date.is_some()
+        && others
+            .iter()
+            .filter(|other| area(other) == area(keeper))
+            .all(|other| other.date.is_none_or(|date| Some(date) > keeper.date))
+    {
+        "Suggested keeper: the earliest capture date."
+    } else {
+        "Suggested keeper: the same size and date as another, chosen by name."
+    };
+    Some(KeeperSuggestion {
+        id,
+        reason: reason.to_string(),
+    })
+}
+
+/// A photo of at least 10 MB or a video of at least 100 MB, by a known size. Unknown is never large.
+#[uniffi::export]
+pub fn media_is_large(item: &CleanupItem) -> bool {
+    let threshold = match item.kind {
+        MediaKind::Video => crate::FileSizeFilter::AtLeast100Mb,
+        _ => crate::FileSizeFilter::AtLeast10Mb,
+    };
+    crate::file_size_matches(item.bytes, threshold)
+}
+
+/// Dimensions by the shorter side, so portrait and landscape compare alike. Zero is unknown.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, uniffi::Enum)]
+pub enum MediaResolutionFilter {
+    Any,
+    /// Shorter side at least 2160 px (4K).
+    AtLeast2160,
+    AtLeast1080,
+    AtLeast720,
+    /// Known, with a shorter side under 720 px.
+    Below720,
+    Unknown,
+}
+
+#[uniffi::export]
+pub fn media_resolution_matches(width: i32, height: i32, filter: MediaResolutionFilter) -> bool {
+    let known = width > 0 && height > 0;
+    let short = width.min(height);
+    match filter {
+        MediaResolutionFilter::Any => true,
+        MediaResolutionFilter::Unknown => !known,
+        MediaResolutionFilter::AtLeast2160 => known && short >= 2160,
+        MediaResolutionFilter::AtLeast1080 => known && short >= 1080,
+        MediaResolutionFilter::AtLeast720 => known && short >= 720,
+        MediaResolutionFilter::Below720 => known && short < 720,
+    }
+}
+
+/// A video's length. Zero, negative or non-finite durations are unknown, never short.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, uniffi::Enum)]
+pub enum MediaDurationFilter {
+    Any,
+    Under1Minute,
+    AtLeast1Minute,
+    AtLeast5Minutes,
+    AtLeast30Minutes,
+    Unknown,
+}
+
+#[uniffi::export]
+pub fn media_duration_matches(seconds: f64, filter: MediaDurationFilter) -> bool {
+    let known = seconds.is_finite() && seconds > 0.0;
+    match filter {
+        MediaDurationFilter::Any => true,
+        MediaDurationFilter::Unknown => !known,
+        MediaDurationFilter::Under1Minute => known && seconds < 60.0,
+        MediaDurationFilter::AtLeast1Minute => known && seconds >= 60.0,
+        MediaDurationFilter::AtLeast5Minutes => known && seconds >= 300.0,
+        MediaDurationFilter::AtLeast30Minutes => known && seconds >= 1800.0,
+    }
+}
+
+/// The media filters a library applies besides date, search and collection. Duration applies to
+/// videos only; a photo matches any duration filter.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, uniffi::Record)]
+pub struct MediaFilters {
+    pub size: crate::FileSizeFilter,
+    pub resolution: MediaResolutionFilter,
+    pub duration: MediaDurationFilter,
+}
+
+#[uniffi::export]
+pub fn media_filters_any() -> MediaFilters {
+    MediaFilters {
+        size: crate::FileSizeFilter::Any,
+        resolution: MediaResolutionFilter::Any,
+        duration: MediaDurationFilter::Any,
+    }
+}
+
+#[uniffi::export]
+pub fn media_filters_match(item: &CleanupItem, filters: MediaFilters) -> bool {
+    crate::file_size_matches(item.bytes, filters.size)
+        && media_resolution_matches(item.width, item.height, filters.resolution)
+        && (item.kind != MediaKind::Video
+            || media_duration_matches(item.duration, filters.duration))
+}

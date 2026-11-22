@@ -15,6 +15,7 @@ import gg.seven.cleaner.core.TileError
 import gg.seven.cleaner.core.auxiliaryDataRefusal
 import gg.seven.cleaner.core.checkCompressionPixels
 import gg.seven.cleaner.core.checkCompressionSource
+import gg.seven.cleaner.core.checkStillCopySpace
 import gg.seven.cleaner.core.imageResizePlan
 import gg.seven.cleaner.core.newCompressionAssessment
 import gg.seven.cleaner.core.psnrScores
@@ -159,8 +160,17 @@ object ImageCompression {
                 hasAlpha = original.hasAlpha(),
             )
             val plan = imageResizePlan(original.width.toUInt(), original.height.toUInt(), size)
-            if (plan.resized) reference = original.scale(plan.width.toInt(), plan.height.toInt())
             directory.mkdirs()
+            // Room for the candidate and its saved read-back before encoding (video does the same).
+            checkStillCopySpace(
+                plan.width,
+                plan.height,
+                runCatching { android.os.StatFs(directory.path).availableBytes }
+                    .getOrDefault(0L)
+                    .coerceAtLeast(0)
+                    .toULong(),
+            )
+            if (plan.resized) reference = original.scale(plan.width.toInt(), plan.height.toInt())
             val encoded =
                 output.outputStream().use {
                     reference.compress(

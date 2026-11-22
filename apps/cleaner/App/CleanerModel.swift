@@ -8,6 +8,8 @@ import CleanerPlatform
     let store: Store
     let repository: ReviewStore
     let measurements: MeasurementCache
+    /// App container only, complete file protection, excluded from backups; deleted from Contacts.
+    let savedArchiveURL: URL
     let photos = PhotosService()
     let contacts = ContactsService()
     let files = FilesService()
@@ -35,6 +37,9 @@ import CleanerPlatform
     var videoReview: VideoReview?
     private var sessionCopyKeys: Set<String> = []
     var exportURL: URL?
+    /// The latest contact archive the person exported, kept so it stays shareable after the trial
+    /// or a relaunch. `records` is nil when the file cannot be read.
+    var savedContactArchive: SavedContactArchive?
     private var job: Task<Void, Never>?
     private var started = false
     #if DEBUG
@@ -61,11 +66,13 @@ import CleanerPlatform
         if ProcessInfo.processInfo.arguments.contains("-cleaner.ui") && ProcessInfo.processInfo.arguments.contains("-cleaner.reset") { try? FileManager.default.removeItem(at: root) }
         #endif
         repository = ReviewStore(url: root.appendingPathComponent("review.json"))
+        savedArchiveURL = root.appendingPathComponent("contact-archive.cleanercontacts")
         measurements = MeasurementCache(url: root.appendingPathComponent("ScanCache/measurements.sqlite"))
     }
     func start() async {
         guard !started else { return }; started = true
         do { state = try await repository.read(); ready = true } catch { self.error = error.cleanerMessage }
+        readSavedArchive()
         do { let cache = measurements; savedMeasurements = try await Task.detached { try cache.count() }.value }
         catch { self.error = error.cleanerMessage }
         await store.start()
@@ -118,28 +125,34 @@ import CleanerPlatform
         }
         #endif
     }
-    func run(_ title: String, paid: Bool = true, cancellable: Bool = true, operation: @escaping @MainActor () async throws -> Void) {
+    func run(_ rawTitle: String, paid: Bool = true, cancellable: Bool = true, operation: @escaping @MainActor () async throws -> Void) {
         guard ready, !busy else { return }
-        guard !paid || store.paidFeaturesAvailable else { error = "Start the free trial or unlock to run new scans. Your saved review decisions and exports remain available."; return }
+        guard !paid || paidOrExplain() else { return }
+        let title = rawTitle
         busy = true; canCancel = cancellable; progress = title
         job = Task {
             defer { busy = false; canCancel = false; progress = ""; comparisonFraction = nil; job = nil }
             do { try await operation() }
-            catch is CancellationError { progress = "Cancelled" }
+            catch is CancellationError { progress = c("Cancelled") }
             catch { self.error = error.cleanerMessage }
             do { let cache = measurements; savedMeasurements = try await Task.detached { try cache.count() }.value }
             catch { self.error = error.cleanerMessage }
         }
     }
-    func cancel() { guard canCancel else { return }; job?.cancel(); progress = "Stopping after the current resource…" }
-    func scanPhotos() { run("Reading accessible media…") {
+    /// The trial gate before any paid action, including a system picker it would open.
+    func paidOrExplain() -> Bool {
+        guard store.paidFeaturesAvailable else { error = c("Start the free trial or unlock to run new scans. Your saved review decisions and exports remain available."); return false }
+        return true
+    }
+    func cancel() { guard canCancel else { return }; job?.cancel(); progress = c("Stopping after the current resource…") }
+    func scanPhotos() { run(c("Reading accessible media…")) {
         let inventory = try await self.photos.inventory()
         let cache = self.measurements
         self.media = try await Task.detached { try cache.restore(inventory.items) }.value
         self.savedMeasurements = self.media.filter { scanHasMeasurement(item: $0) }.count
         self.limitedPhotos = inventory.limited; self.groups = []; self.selected = []
     } }
-    func analyze() { run("Reading original resource bytes…") {
+    func analyze() { run(c("Reading original resource bytes…")) {
         let inventory = try await self.photos.inventory()
         let cache = self.measurements
         let current = try await Task.detached { try cache.restore(inventory.items) }.value
@@ -149,21 +162,21 @@ import CleanerPlatform
         let result = try await self.photos.analyze(current, allowCloud: self.allowCloud,
             checkpoint: { item in try cache.checkpoint(item) }) { done, total in
             await MainActor.run {
-                self.progress = "Checked \(done) of \(total) · \(resumed) already measured"
+                self.progress = String(format: c("Checked %lld of %lld · %lld already measured"), done, total, resumed)
                 self.comparisonFraction = total == 0 ? 1 : Double(done) / Double(total)
             }
         }
         self.media = result.items; self.groups = result.groups
         self.state = try await self.repository.record("Compared \(result.items.count) media items; \(result.unavailable) unavailable or changed. Byte counts describe library resources, not local space freed.")
     } }
-    func clearScanProgress() { run("Clearing saved measurements…", paid: false, cancellable: false) {
+    func clearScanProgress() { run(c("Clearing saved measurements…"), paid: false, cancellable: false) {
         let cache = self.measurements
         try await Task.detached { try cache.clear() }.value
         self.savedMeasurements = 0
         self.media = self.media.map { item in var result = item; result.fingerprint = nil; result.bytes = nil; return result }
         self.groups = []; self.selected = []
     } }
-    func findSimilar() { run("Comparing nearby photos with Vision…") {
+    func findSimilar() { run(c("Comparing nearby photos with Vision…")) {
         let result = try await self.photos.similar(self.media, allowCloud: self.allowCloud)
         self.groups = self.groups.filter { $0.kind != .similar } + result
     } }
@@ -175,10 +188,48 @@ import CleanerPlatform
         } catch { self.error = error.cleanerMessage }
     }
     func smartSelect() { selected = Matching.proposedRemoval(groups: groups, items: media, decisions: state.decisions) }
-    func deleteReviewed(_ ids: Set<String>) { run("Applying reviewed deletion…", cancellable: false) {
-        try await self.photos.delete(ids: ids, expected: self.media, state: self.state)
-        self.state = try await self.repository.record("Requested Photos deletion for \(ids.count) reviewed items. iCloud deletion syncs; Recently Deleted can retain their storage.")
-        self.media.removeAll { ids.contains($0.id) }; self.groups = []; self.selected.subtract(ids)
+    func deleteReviewed(_ ids: Set<String>) { run(c("Applying reviewed deletion…"), cancellable: false) {
+        // The core names each item that changed, became a favorite or is gone; only ready items
+        // are deleted, and the rest are marked in Pending removal for review again.
+        let check = try await self.photos.removalCheck(ids: ids, state: self.state)
+        self.replaceItems(ids, with: check.current)
+        let ready = Set(removalReadyIds(outcomes: check.outcomes))
+        let held = removalHeldMessage(outcomes: check.outcomes)
+        guard !ready.isEmpty else { throw CleanerError.blocked(held ?? "Nothing selected.") }
+        try await self.photos.delete(ids: ready, expected: self.media, state: self.state)
+        self.state = try await self.repository.record("Requested Photos deletion for \(ready.count) reviewed items. iCloud deletion syncs; Recently Deleted can retain their storage.")
+        self.media.removeAll { ready.contains($0.id) }; self.groups = []; self.selected.subtract(ready)
+        if let held { self.error = held }
+    } }
+    /// Replaces `ids` with the library's current items: an unchanged revision keeps its
+    /// measurement, a changed one takes the fresh item, and a missing one leaves the list.
+    private func replaceItems(_ ids: Set<String>, with current: [CleanupItem]) {
+        let fresh = Dictionary(current.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        media = media.compactMap { item in
+            guard ids.contains(item.id) else { return item }
+            guard let now = fresh[item.id] else { return nil }
+            if now.revision == item.revision { var kept = item; kept.favorite = now.favorite; return kept }
+            return now
+        }
+    }
+    func refreshItems(_ ids: Set<String>) async throws {
+        guard !ids.isEmpty else { return }
+        let current = try await photos.currentItems(ids: ids)
+        replaceItems(ids, with: current)
+    }
+    /// Pending removal opens against the library as it is now, so changed items show as such.
+    func refreshPending() async {
+        guard ready, !busy else { return }
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-cleaner.seed") || CleanerFixtures.active { return }
+        #endif
+        try? await refreshItems(Set(media.filter { state.decisions[$0.id] == .remove }.map(\.id)))
+    }
+    /// A favorite change gives the asset a new modification date, so the item takes its fresh
+    /// revision; later copies and decisions then bind to what Photos now has.
+    func setFavorite(_ id: String, value: Bool) { run(c("Updating favorite…"), cancellable: false) {
+        try await self.photos.setFavorite(id: id, value: value)
+        try await self.refreshItems([id])
     } }
     private func prepareCandidate(_ item: CleanupItem) async throws {
         var persisted = try await repository.read()
@@ -193,11 +244,11 @@ import CleanerPlatform
             candidate = output; candidateSource = item.id; candidateItem = item; createdCopyID = nil
         } catch { try? FileManager.default.removeItem(at: directory); throw error }
     }
-    func compress(_ item: CleanupItem) { run("Preparing an original and checking a compressed candidate…") {
+    func compress(_ item: CleanupItem) { run(c("Preparing an original and checking a compressed candidate…")) {
         guard self.compressionBatch == nil, self.candidate == nil else { throw CleanerError.blocked("Finish the current review first.") }
         try await self.prepareCandidate(item)
     } }
-    func startCompressionBatch(_ ids: Set<String>) { run("Checking the selected photos…") {
+    func startCompressionBatch(_ ids: Set<String>) { run(c("Checking the selected photos…")) {
         guard self.candidate == nil, self.compressionBatch == nil else { throw CleanerError.blocked("Finish the current review first.") }
         var persisted = try await self.repository.read()
         persisted.processedSources = Array(Set(persisted.processedSources).union(self.sessionCopyKeys))
@@ -206,7 +257,7 @@ import CleanerPlatform
         let items = try compressionReviewPlan(ids: order, items: self.media, state: persisted)
         self.error = nil; self.compressionBatch = CompressionBatch(items: items)
     } }
-    func prepareBatchPhoto() { run("Preparing the next photo…") {
+    func prepareBatchPhoto() { run(c("Preparing the next photo…")) {
         guard self.candidate == nil else { throw CleanerError.blocked("Finish the current preview first.") }
         guard let item = self.compressionBatch?.current else { return }
         self.error = nil; try await self.prepareCandidate(item)
@@ -222,7 +273,7 @@ import CleanerPlatform
         queue.index += 1; clearCandidate(); error = nil; compressionBatch = queue
     }
     func stopCompressionBatch() { guard !busy else { return }; clearCandidate(); compressionBatch = nil; error = nil }
-    func updateCandidateQuality(_ quality: Double, size: ImageSizeProfile? = nil) { run("Updating and checking the preview…") {
+    func updateCandidateQuality(_ quality: Double, size: ImageSizeProfile? = nil) { run(c("Updating and checking the preview…")) {
         guard self.createdCopyID == nil else { throw CleanerError.blocked("A copy already exists. Finish verifying it before changing this preview.") }
         guard let previous = self.candidate else { return }
         self.error = nil
@@ -238,7 +289,7 @@ import CleanerPlatform
         self.candidate = next
         try? FileManager.default.removeItem(at: previous.outputURL)
     } }
-    func saveCandidate() { run("Verifying and recording a copy; keeping the original…", cancellable: false) {
+    func saveCandidate() { run(c("Verifying and recording a copy; keeping the original…"), cancellable: false) {
         guard let candidate = self.candidate, let item = self.candidateItem else { throw CleanerError.blocked("The source snapshot is unavailable. Prepare a new preview.") }
         self.error = nil
         let savedID: String
@@ -261,12 +312,12 @@ import CleanerPlatform
         }
         self.clearCandidate()
     } }
-    func scanContacts(region: String?) { run("Reading contact records and verifying archives…") {
+    func scanContacts(region: String?) { run(c("Reading contact records and verifying archives…")) {
         let snapshot = try await self.contacts.scan(region: region)
         self.contactSnapshot = snapshot; self.contactMatches = ContactMatching.candidates(snapshot.records)
     } }
 
-    func openVideo(_ item: CleanupItem) { run("Reading and checking the original video…") {
+    func openVideo(_ item: CleanupItem) { run(c("Reading and checking the original video…")) {
         guard self.videoReview == nil, self.candidate == nil, self.compressionBatch == nil else { throw CleanerError.blocked("Finish the current review first.") }
         var persisted = try await self.repository.read()
         persisted.processedSources = Array(Set(persisted.processedSources).union(self.sessionCopyKeys))
@@ -280,7 +331,7 @@ import CleanerPlatform
             self.error = nil
         } catch { try? FileManager.default.removeItem(at: directory); throw error }
     } }
-    func prepareVideo() { run("Preparing and checking the selected video range…") {
+    func prepareVideo() { run(c("Preparing and checking the selected video range…")) {
         guard let review = self.videoReview, review.createdID == nil, let plan = review.plan else { throw CleanerError.blocked("Enter a valid start and end inside the video.") }
         self.error = nil
         let next = try await VideoCompression.makeCandidate(sourceURL: review.source, directory: review.source.deletingLastPathComponent(), start: plan.startMs, end: plan.endMs)
@@ -292,7 +343,7 @@ import CleanerPlatform
         if let review = videoReview { try? FileManager.default.removeItem(at: review.source.deletingLastPathComponent()) }
         videoReview = nil; error = nil
     }
-    func saveVideo() { run("Verifying and recording the video copy…", cancellable: false) {
+    func saveVideo() { run(c("Verifying and recording the video copy…"), cancellable: false) {
         guard let review = self.videoReview, let preview = review.candidate, review.plan == preview.plan, preview.issues.isEmpty else { throw CleanerError.blocked("Prepare and inspect the current range before saving.") }
         self.error = nil
         let saved: String
@@ -313,15 +364,43 @@ import CleanerPlatform
         catch { throw CleanerError.blocked("The video copy exists, but its review record could not be saved. Retry verifies and records that same copy. " + error.cleanerMessage) }
         review.savedID = saved
     } }
-    func exportContacts() { run("Writing and checking the contact archive…", paid: false) {
+    func exportContacts() { run(c("Writing and checking the contact archive…"), paid: false) {
         guard let snapshot = self.contactSnapshot else { return }
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Contacts-" + UUID().uuidString).appendingPathExtension("cleanercontacts")
-        try await self.contacts.export(snapshot, to: url); self.exportURL = url
-        self.state = try await self.repository.record("Exported \(snapshot.records.count) accessible contact records. Notes and account relationships are not included; originals retained.")
+        let url = self.savedArchiveURL
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        // Written with complete file protection and read back by the service; kept on this phone only.
+        try await self.contacts.export(snapshot, to: url)
+        var values = URLResourceValues(); values.isExcludedFromBackup = true
+        var local = url; try local.setResourceValues(values)
+        self.readSavedArchive()
+        self.state = try await self.repository.record("Exported \(snapshot.records.count) accessible contact records and kept the latest archive on this phone. Notes and account relationships are not included; originals retained.")
     } }
-    func scanFolder(_ url: URL) { run("Reading the selected folder…") {
+    func deleteSavedContacts() { run(c("Deleting the saved contact archive…"), paid: false, cancellable: false) {
+        if FileManager.default.fileExists(atPath: self.savedArchiveURL.path) { try FileManager.default.removeItem(at: self.savedArchiveURL) }
+        self.exportURL = nil; self.savedContactArchive = nil
+        self.state = try await self.repository.record("Deleted the saved contact archive from this phone. Contacts are unchanged.")
+    } }
+    /// Reads the kept archive's records; an unreadable file stays (and can be deleted), never reset.
+    private func readSavedArchive() {
+        let url = savedArchiveURL
+        guard FileManager.default.fileExists(atPath: url.path) else { savedContactArchive = nil; exportURL = nil; return }
+        let date = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date()
+        let records = (try? Data(contentsOf: url)).flatMap { try? contactPackageDecode(data: $0).records }
+        savedContactArchive = SavedContactArchive(records: records, saved: date)
+        exportURL = records == nil ? nil : url
+    }
+    func scanFolder(_ url: URL) { run(c("Reading the selected folder…")) {
         self.folderScan = try await self.files.scan(url, hash: true)
     } }
+}
+struct SavedContactArchive {
+    var records: [ContactRecord]?
+    var saved: Date
+    /// Whether this read-back archive holds exactly these record versions: the real backup state.
+    func covers(_ wanted: ContactRecord...) -> Bool {
+        guard let records else { return false }
+        return wanted.allSatisfy { want in records.contains { $0.id == want.id && $0.container == want.container && $0.name == want.name && $0.fields == want.fields } }
+    }
 }
 enum CleanerGate {
     static let unlock = UnlockContent(appName: "Cleaner", features: ["Review photos, videos and selected folders", "Compare duplicate contact candidates", "Make and inspect compressed copies"])
@@ -329,5 +408,5 @@ enum CleanerGate {
         .init("Photos finds duplicates. Contacts can merge duplicates, and Settings shows storage use. If those cover your needs, keep your money."),
         .init("Cleaner brings media review, selected folders and contact comparison together. Try it for 7 days, then {price}, once. Nothing renews.", withoutPrice: "Cleaner brings media review, selected folders and contact comparison together. Try it for 7 days, then a one-time purchase. Nothing renews."),
         .init("Processing stays on this device. Cloud media is fetched only when you allow it. Compressed copies keep their originals.")], justScanLabel: "Look around first")
-    static let expired = TrialEndedContent(stillFree: ["Read saved decisions and history", "Export an existing contact snapshot"], unlockKeeps: ["Run new scans and cleanup actions"])
+    static let expired = TrialEndedContent(stillFree: ["Read saved decisions and history", "Share your saved contact archive"], unlockKeeps: ["Run new scans and cleanup actions"])
 }

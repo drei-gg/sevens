@@ -46,8 +46,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.cleaner.core.CleanupItem
 import gg.seven.cleaner.core.MatchKind
 import gg.seven.cleaner.core.MediaDateFilter
+import gg.seven.cleaner.core.MediaFilters
 import gg.seven.cleaner.core.MediaKind
+import gg.seven.cleaner.core.RemovalStatus
 import gg.seven.cleaner.core.ReviewDecision
+import gg.seven.cleaner.core.keeperSuggestion
+import gg.seven.cleaner.core.mediaFiltersMatch
+import gg.seven.cleaner.core.mediaIsLarge
+import gg.seven.cleaner.core.removalOutcomes
 import gg.seven.cleaner.core.storageSummary
 import gg.seven.kit.ConnectedChoice
 import gg.seven.kit.EmptyState
@@ -185,9 +191,9 @@ fun Dashboard(model: CleanerModel) {
 // MARK: Photos and Videos
 
 private val photoCollections =
-    listOf("All", "Screenshots", "Live Photos", "Bursts", "Keep", "Later")
+    listOf("All", "Large", "Screenshots", "Live Photos", "Bursts", "Keep", "Later")
 private val videoCollections =
-    listOf("All", "Screen recordings", "High frame rate", "Keep", "Later")
+    listOf("All", "Large", "Screen recordings", "High frame rate", "Keep", "Later")
 
 private fun visible(
     media: List<CleanupItem>,
@@ -201,9 +207,14 @@ private fun visible(
         .filter { it.kind == kind }
         .filter { item ->
             matchesDate(item.date, filters.dateMode, filters.date) &&
+                mediaFiltersMatch(
+                    item,
+                    MediaFilters(filters.size, filters.resolution, filters.duration),
+                ) &&
                 (query.isEmpty() || item.name.contains(query, ignoreCase = true)) &&
                 (category == "All" ||
                     category in item.tags ||
+                    (category == "Large" && mediaIsLarge(item)) ||
                     (category == "Keep" && decisions[item.id] == ReviewDecision.KEEP) ||
                     (category == "Later" && decisions[item.id] == ReviewDecision.LATER))
         }
@@ -223,6 +234,13 @@ fun LibraryMenus(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
     val selected = allSelected.intersect(media.filter { it.kind == kind }.map { it.id }.toSet())
     var dateEditor by rememberSaveable { mutableStateOf(false) }
     if (dateEditor) DateFilterEditor(filters) { dateEditor = false }
+    var measureEditor by rememberSaveable { mutableStateOf(false) }
+    if (measureEditor) MediaMeasureEditor(filters, kind) { measureEditor = false }
+    var album by rememberSaveable { mutableStateOf(false) }
+    if (album) AlbumDialog(selected.size, onDismiss = { album = false }) { title, move ->
+        album = false
+        model.addToAlbum(selected, title, move)
+    }
     var sort by remember { mutableStateOf(false) }
     var batch by remember { mutableStateOf(false) }
     Box {
@@ -244,6 +262,16 @@ fun LibraryMenus(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                     dateEditor = true
                 },
                 modifier = Modifier.testTag("cleaner-date-open"),
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(if (kind == MediaKind.VIDEO) "Size, resolution and length…" else "Size and dimensions…")
+                },
+                onClick = {
+                    sort = false
+                    measureEditor = true
+                },
+                modifier = Modifier.testTag("cleaner-measure-open"),
             )
             MenuLabel("Sort")
             listOf("Newest", "Largest").forEach { option ->
@@ -307,6 +335,10 @@ fun LibraryMenus(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
             }()
             item("Queue removal", selected.isNotEmpty()) {
                 model.decide(selected, ReviewDecision.REMOVE)
+            }()
+            HorizontalDivider()
+            item("Add selected to album…", selected.isNotEmpty() && Build.VERSION.SDK_INT >= 29) {
+                album = true
             }()
         }
     }
@@ -475,6 +507,16 @@ fun MediaLibrary(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                                             contentDescription = "Clear collection filter"
                                         },
                                 )
+                            measureChips(filters, kind).forEach { (label, clear) ->
+                                FilterChip(
+                                    selected = true,
+                                    onClick = clear,
+                                    label = { Text(label) },
+                                    trailingIcon = { Icon(Icons.Outlined.Close, null) },
+                                    modifier =
+                                        Modifier.semantics { contentDescription = "Clear filter: $label" },
+                                )
+                            }
                             if (filters.order != "Newest")
                                 FilterChip(
                                     selected = true,
@@ -599,7 +641,12 @@ private fun decisionLabel(decision: ReviewDecision) =
 
 /** A media card: thumbnail, name, size, its decision or favorite, and its selection box. */
 @Composable
-fun MediaTile(model: CleanerModel, item: CleanupItem, modifier: Modifier = Modifier) {
+fun MediaTile(
+    model: CleanerModel,
+    item: CleanupItem,
+    modifier: Modifier = Modifier,
+    keeper: String? = null,
+) {
     val actions = LocalActions.current
     val state by model.state.collectAsStateWithLifecycle()
     val selected by model.selected.collectAsStateWithLifecycle()
@@ -638,6 +685,19 @@ fun MediaTile(model: CleanerModel, item: CleanupItem, modifier: Modifier = Modif
                     style = MaterialTheme.typography.bodySmall.numeric(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                keeper?.let { reason ->
+                    Row(
+                        Modifier.testTag("keeper-${item.name}"),
+                        horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                    ) {
+                        Icon(Icons.Outlined.Verified, null, Modifier.size(16.dp), tint = Hues.cool)
+                        Text(
+                            reason,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val decision = state.decisions[item.id]
@@ -677,10 +737,15 @@ fun MediaTile(model: CleanerModel, item: CleanupItem, modifier: Modifier = Modif
 
 /** A list row for a media item, with its thumbnail. */
 @Composable
-fun MediaRow(item: CleanupItem, trailing: @Composable () -> Unit = {}) {
-    ListItem(
-        content = { Text(item.name, maxLines = 1, overflow = TextOverflow.MiddleEllipsis) },
-        supportingContent = {
+fun MediaRow(
+    item: CleanupItem,
+    note: String? = null,
+    caution: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    trailing: @Composable () -> Unit = {},
+) {
+    val supporting: @Composable () -> Unit = {
+        Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(Space.xs),
                 verticalAlignment = Alignment.CenterVertically,
@@ -693,13 +758,37 @@ fun MediaRow(item: CleanupItem, trailing: @Composable () -> Unit = {}) {
                         Modifier.size(16.dp),
                     )
             }
-        },
-        leadingContent = { Thumbnail(item, Modifier.size(56.dp), pixels = 160) },
-        trailingContent = trailing,
-        colors =
-            ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        modifier = Modifier.clip(MaterialTheme.shapes.medium),
-    )
+            note?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color =
+                        if (caution) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+    val colors =
+        ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    if (onClick != null)
+        ListItem(
+            content = { Text(item.name, maxLines = 1, overflow = TextOverflow.MiddleEllipsis) },
+            supportingContent = supporting,
+            leadingContent = { Thumbnail(item, Modifier.size(56.dp), pixels = 160) },
+            trailingContent = trailing,
+            colors = colors,
+            onClick = onClick,
+        )
+    else
+        ListItem(
+            content = { Text(item.name, maxLines = 1, overflow = TextOverflow.MiddleEllipsis) },
+            supportingContent = supporting,
+            leadingContent = { Thumbnail(item, Modifier.size(56.dp), pixels = 160) },
+            trailingContent = trailing,
+            colors = colors,
+            modifier = Modifier.clip(MaterialTheme.shapes.medium),
+        )
 }
 
 // MARK: Groups, pending, activity
@@ -710,6 +799,7 @@ fun GroupsScreen(model: CleanerModel) {
     val groups by model.groups.collectAsStateWithLifecycle()
     val media by model.media.collectAsStateWithLifecycle()
     val selected by model.selected.collectAsStateWithLifecycle()
+    val state by model.state.collectAsStateWithLifecycle()
     LazyColumn(
         Modifier.fillMaxSize().testTag("groups"),
         contentPadding = PaddingValues(bottom = Space.l),
@@ -745,10 +835,20 @@ fun GroupsScreen(model: CleanerModel) {
                     )
                     val members =
                         group.members.mapNotNull { id -> media.firstOrNull { it.id == id } }
+                    // The core's keeper suggestion and its reason; a label, never a selection.
+                    val keeper =
+                        remember(members, state) { keeperSuggestion(members, state.decisions) }
                     CleanerTiles(
                         *members
                             .map { member ->
-                                @Composable { m: Modifier -> MediaTile(model, member, m) }
+                                @Composable { m: Modifier ->
+                                    MediaTile(
+                                        model,
+                                        member,
+                                        m,
+                                        keeper = keeper?.takeIf { it.id == member.id }?.reason,
+                                    )
+                                }
                             }
                             .toTypedArray()
                     )
@@ -790,7 +890,17 @@ fun PendingScreen(model: CleanerModel) {
     val state by model.state.collectAsStateWithLifecycle()
     val busy by model.busy.collectAsStateWithLifecycle()
 
+    val actions = LocalActions.current
     val items = media.filter { state.decisions[it.id] == ReviewDecision.REMOVE }
+    // Per-item outcomes from the core: a changed or favorite item is marked here and never
+    // deleted; the rest stay deletable.
+    val outcomes =
+        remember(media, state) {
+            removalOutcomes(items.map { it.id }, media, state).associate { it.id to it.status }
+        }
+    val ready = items.filter { outcomes[it.id] == RemovalStatus.READY }
+    val held = items.size - ready.size
+    LaunchedEffect(Unit) { model.refreshPending() }
     var approved by remember { mutableStateOf<Set<String>?>(null) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Space.l)) {
         item {
@@ -805,12 +915,34 @@ fun PendingScreen(model: CleanerModel) {
             }
         }
         items(items, key = { it.id }) { item ->
+            val status = outcomes[item.id]
             Readable(Modifier.padding(bottom = Space.s)) {
-                MediaRow(item) {
-                    TextButton(
-                        onClick = { model.decide(setOf(item.id), ReviewDecision.UNDECIDED) }
-                    ) {
-                        Text("Undo")
+                MediaRow(
+                    item,
+                    note =
+                        when (status) {
+                            RemovalStatus.CHANGED ->
+                                "Changed since you queued it. Review it, then confirm again."
+                            RemovalStatus.FAVORITE -> "A favorite now, so it won’t be deleted."
+                            else -> null
+                        },
+                    caution = status != RemovalStatus.READY,
+                    onClick = { actions.open("detail:${item.id}") },
+                ) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        if (status == RemovalStatus.CHANGED)
+                            TextButton(
+                                onClick = { model.decide(setOf(item.id), ReviewDecision.REMOVE) },
+                                enabled = !busy,
+                                modifier = Modifier.testTag("pending-confirm-${item.name}"),
+                            ) {
+                                Text("Confirm")
+                            }
+                        TextButton(
+                            onClick = { model.decide(setOf(item.id), ReviewDecision.UNDECIDED) }
+                        ) {
+                            Text(if (status == RemovalStatus.READY) "Undo" else "Remove from queue")
+                        }
                     }
                 }
             }
@@ -820,9 +952,10 @@ fun PendingScreen(model: CleanerModel) {
                 CleanerNotice(
                     "Deleted items go to the trash, where Android keeps them for 30 days and they keep using storage. A cloud backup may keep its own copy. Favorites are protected."
                 )
+                if (held > 0) CleanerNotice(count(R.plurals.held, held), caution = true)
                 OutlinedButton(
-                    onClick = { approved = items.map { it.id }.toSet() },
-                    enabled = items.isNotEmpty() && !busy,
+                    onClick = { approved = ready.map { it.id }.toSet() },
+                    enabled = ready.isNotEmpty() && !busy,
                     colors =
                         ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.error
@@ -933,7 +1066,7 @@ fun MediaDetail(model: CleanerModel, id: String) {
                 else
                     EmptyState(
                         "Preview unavailable",
-                        "The original can't be read right now.",
+                        "The original can’t be read right now.",
                         icon = Icons.Outlined.Image,
                     )
             }

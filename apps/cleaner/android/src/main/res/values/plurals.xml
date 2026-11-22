@@ -20,4 +20,12 @@
         <item quantity="one">%d file could not be read or changed during the scan.</item>
         <item quantity="other">%d files could not be read or changed during the scan.</item>
     </plurals>
+    <plurals name="archived">
+        <item quantity="one">%d contact record</item>
+        <item quantity="other">%d contact records</item>
+    </plurals>
+    <plurals name="held">
+        <item quantity="one">%d item needs review again and won’t be deleted.</item>
+        <item quantity="other">%d items need review again and won’t be deleted.</item>
+    </plurals>
 </resources>

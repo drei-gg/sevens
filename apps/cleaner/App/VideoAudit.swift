@@ -24,7 +24,7 @@ import CleanerPlatform
         }
         try? FileManager.default.removeItem(at: folder)
         if cleanup { return }
-        guard FileManager.default.fileExists(atPath: sourceURL.path) else { throw CleanerError.blocked("Stage the video-profile.mp4 test fixture in this app's Documents directory first.") }
+        guard FileManager.default.fileExists(atPath: sourceURL.path) else { throw CleanerError.blocked("Stage the video-profile.mp4 test fixture in this app’s Documents directory first.") }
         let created = VideoFixtureIdentifier()
         let input = sourceURL
         try await PHPhotoLibrary.shared().performChanges { @Sendable in

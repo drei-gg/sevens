@@ -41,6 +41,8 @@ fun ContactsScreen(model: CleanerModel) {
     val matches by model.contactMatches.collectAsStateWithLifecycle()
     val busy by model.busy.collectAsStateWithLifecycle()
     val exportFile by model.exportFile.collectAsStateWithLifecycle()
+    val savedArchive by model.savedContactArchive.collectAsStateWithLifecycle()
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     var region by rememberSaveable { mutableStateOf("") }
     var incomplete by rememberSaveable { mutableStateOf(false) }
@@ -114,6 +116,14 @@ fun ContactsScreen(model: CleanerModel) {
                         Text("Share partial contact archive")
                     }
                 }
+                savedArchive?.let { archive ->
+                    SavedArchiveCard(
+                        archive,
+                        enabled = !busy,
+                        share = { model.shareSavedContacts { share(context, it) } },
+                        delete = { confirmDelete = true },
+                    )
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                     CountryField(region, countries) { region = it }
                     Text(
@@ -185,6 +195,84 @@ fun ContactsScreen(model: CleanerModel) {
                     )
                 }
             }
+    }
+    if (confirmDelete)
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete the saved contact archive?") },
+            text = {
+                Text(
+                    "This removes Cleaner’s kept copy from this phone. Your contacts and any copies you shared are not changed."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmDelete = false
+                        model.deleteSavedContacts()
+                    },
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+        )
+}
+
+/** The kept archive: what it holds, when it was made, Share and Delete. Local, never backed up. */
+@Composable
+private fun SavedArchiveCard(
+    archive: SavedContactArchive,
+    enabled: Boolean,
+    share: () -> Unit,
+    delete: () -> Unit,
+) {
+    Card(
+        Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.s)) {
+            Text("Saved contact archive", style = MaterialTheme.typography.titleMedium)
+            Text(
+                archive.records?.let { count(R.plurals.archived, it.size) }
+                    ?: "This saved archive cannot be read. You can delete it.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                gg.seven.kit.SevenFormat.date(
+                    archive.saved.atZone(java.time.ZoneId.systemDefault())
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "Cleaner keeps your latest export on this phone, outside backups, so you can share it again later, even after the trial. It holds the accessible fields of each contact.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                OutlinedButton(onClick = share, enabled = enabled && archive.records != null) {
+                    Icon(Icons.Outlined.Share, null)
+                    Spacer(Modifier.width(Space.s))
+                    Text("Share")
+                }
+                TextButton(
+                    onClick = delete,
+                    enabled = enabled,
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                ) {
+                    Text("Delete")
+                }
+            }
+        }
     }
 }
 
@@ -276,9 +364,12 @@ fun ContactComparisonScreen(model: CleanerModel, matchId: String) {
         )
         return
     }
+    val saved by model.savedContactArchive.collectAsStateWithLifecycle()
+    // Backed up only when the kept, read-back archive holds these exact record versions.
+    val backedUp = saved?.covers(a, b) == true
     val plan =
-        remember(a, b) {
-            newContactMergePlan(listOf(a, b), backupVerified = true, revisionUnchanged = true)
+        remember(a, b, backedUp) {
+            newContactMergePlan(listOf(a, b), backupVerified = backedUp, revisionUnchanged = true)
         }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Readable(Modifier.padding(vertical = Space.l)) {

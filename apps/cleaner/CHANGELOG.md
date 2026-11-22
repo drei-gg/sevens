@@ -1,5 +1,13 @@
 # Cleaner changes
 
+## 22 November 2026 — review safety and parity, not released
+
+- Deletion now names each queued item that changed, became a favorite or is gone, and deletes only the ready ones. Pending removal marks the others and offers review, confirm again or remove from the queue. Favorite changes refresh the item’s revision on both phones; iOS no longer toggles a stale favorite twice.
+- The latest contact export is kept on the phone (file protection, no backups), stays shareable after the trial or a relaunch and can be deleted. Merge review uses that archive as the real backup state.
+- Photos selections stay in their library on iPhone. Compare groups show the suggested keeper and why. Similar shots form one group per burst instead of overlapping pairs.
+- Added size, dimension and video length filters and a Large collection on both phones; unknown values stay unknown. Still compression checks free space first.
+- Android: folder albums (move on Android 11+, verified copy on 10+), EXIF-upright previews and typographic apostrophes. iPhone: VoiceOver labels for zoomable images, the trial check before the folder picker, and progress, errors and history routed through the string catalog.
+
 ## 18 November 2026 — feature continuation, not released
 
 - Added bounded selected-photo review queues on Android and iOS, with explicit per-photo preparation/save/skip, native progress, visible retry and per-item outcomes.

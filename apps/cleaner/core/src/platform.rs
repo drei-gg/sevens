@@ -115,6 +115,36 @@ pub fn validate_album_request(
     Ok(())
 }
 
+/// An Android album is a folder: the title as a single folder name under Pictures, or a refusal.
+/// Trimmed; no path separators, control characters, leading dot or `.`/`..`; at most 100 characters.
+#[uniffi::export]
+pub fn album_folder_name(title: String) -> Result<String, CleanerError> {
+    let name = trimmed(&title).to_string();
+    let bad = name.is_empty()
+        || name == "."
+        || name == ".."
+        || name.starts_with('.')
+        || name.chars().count() > 100
+        || name.chars().any(|c| {
+            c == '/'
+                || c == '\\'
+                || c.is_control()
+                || matches!(c, '<' | '>' | ':' | '"' | '|' | '?' | '*')
+        });
+    if bad {
+        return Err(blocked(
+            "Choose an album name without slashes or special characters, up to 100 characters.",
+        ));
+    }
+    Ok(name)
+}
+
+/// Where an Android folder album lives: `Pictures/<name>/`, for photos and videos alike.
+#[uniffi::export]
+pub fn album_relative_path(title: String) -> Result<String, CleanerError> {
+    Ok(format!("Pictures/{}/", album_folder_name(title)?))
+}
+
 // MARK: Similarity (PhotosService.similar)
 
 /// Vision feature-print distances below this are suggested as similar.

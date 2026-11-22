@@ -19,11 +19,11 @@ struct CompressionBatchScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.m) {
                 CompressionBatchProgress(queue: queue)
-                if let error = model.error { CleanerNotice(text: error, symbol: "exclamationmark.triangle", caution: true) }
+                if let error = model.error { CleanerNotice(text: c(error), symbol: "exclamationmark.triangle", caution: true) }
                 if model.busy { ProgressView(model.progress) }
                 Text(queue.complete ? "Your originals and review decisions are unchanged. Saved copies remain in Photos." : "Inspect each photo, then save a copy or skip. Only one preview is prepared at a time. Originals stay in Photos.").textRole(.body)
                 if !queue.complete { Text("Stopping keeps saved copies and clears the current preview. This queue does not resume after the app closes.").textRole(.secondary) }
-                if !queue.unverified.isEmpty { CleanerNotice(text: "Unverified copies may exist in Photos. Check them before starting another queue; they were not counted as saved.", symbol: "exclamationmark.triangle", caution: true) }
+                if !queue.unverified.isEmpty { CleanerNotice(text: c("Unverified copies may exist in Photos. Check them before starting another queue; they were not counted as saved."), symbol: "exclamationmark.triangle", caution: true) }
                 if queue.index > 0 {
                     Divider(); Text("Results").textRole(.section)
                     ForEach(Array(queue.items.prefix(queue.index))) { item in

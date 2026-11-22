@@ -1,6 +1,18 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ image": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ image"
+          }
+        }
+      }
+    },
     "0.5×": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -25,6 +37,18 @@
         }
       }
     },
+    "1600 px max": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1600 px max"
+          }
+        }
+      }
+    },
     "1×": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -33,6 +57,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "1×"
+          }
+        }
+      }
+    },
+    "2400 px max": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2400 px max"
           }
         }
       }
@@ -49,6 +85,30 @@
         }
       }
     },
+    "4K or larger (2160 px short side)": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4K or larger (2160 px short side)"
+          }
+        }
+      }
+    },
+    "800 px max": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "800 px max"
+          }
+        }
+      }
+    },
     "A closer look": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -57,6 +117,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "A closer look"
+          }
+        }
+      }
+    },
+    "A copy exists. Retry checks and records that same copy. Closing keeps it, but leaves it unverified.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A copy exists. Retry checks and records that same copy. Closing keeps it, but leaves it unverified."
+          }
+        }
+      }
+    },
+    "A copy exists. Retry verifies that same copy. Closing leaves it unverified.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A copy exists. Retry verifies that same copy. Closing leaves it unverified."
+          }
+        }
+      }
+    },
+    "A favorite now, so it won’t be deleted.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A favorite now, so it won’t be deleted."
           }
         }
       }
@@ -179,6 +275,78 @@
         }
       }
     },
+    "Any dimensions": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Any dimensions"
+          }
+        }
+      }
+    },
+    "Any extension": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Any extension"
+          }
+        }
+      }
+    },
+    "Any length": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Any length"
+          }
+        }
+      }
+    },
+    "Any size": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Any size"
+          }
+        }
+      }
+    },
+    "Apply": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply"
+          }
+        }
+      }
+    },
+    "Applying reviewed deletion…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applying reviewed deletion…"
+          }
+        }
+      }
+    },
     "Archives contain accessible fields. Notes and account relationships are not included. Original contacts are retained.": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -187,6 +355,114 @@
           "stringUnit": {
             "state": "translated",
             "value": "Archives contain accessible fields. Notes and account relationships are not included. Original contacts are retained."
+          }
+        }
+      }
+    },
+    "At least 1 GB": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least 1 GB"
+          }
+        }
+      }
+    },
+    "At least 1 MB": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least 1 MB"
+          }
+        }
+      }
+    },
+    "At least 1 minute": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least 1 minute"
+          }
+        }
+      }
+    },
+    "At least 10 MB": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least 10 MB"
+          }
+        }
+      }
+    },
+    "At least 100 MB": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least 100 MB"
+          }
+        }
+      }
+    },
+    "At least 1080 px short side": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least 1080 px short side"
+          }
+        }
+      }
+    },
+    "At least 30 minutes": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least 30 minutes"
+          }
+        }
+      }
+    },
+    "At least 5 minutes": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least 5 minutes"
+          }
+        }
+      }
+    },
+    "At least 720 px short side": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least 720 px short side"
           }
         }
       }
@@ -261,6 +537,30 @@
         }
       }
     },
+    "Cancel preparation": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel preparation"
+          }
+        }
+      }
+    },
+    "Cancelled": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelled"
+          }
+        }
+      }
+    },
     "Candidate": {
       "extractionState": "manual",
       "localizations": {
@@ -280,6 +580,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Candidate reduction. The original stays."
+          }
+        }
+      }
+    },
+    "Capture metadata is checked. Photos date, location, favorites and supported albums are copied. Drafts and unfinished verification last for this session only.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture metadata is checked. Photos date, location, favorites and supported albums are copied. Drafts and unfinished verification last for this session only."
+          }
+        }
+      }
+    },
+    "Changed since you queued it. Review it, then confirm again.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changed since you queued it. Review it, then confirm again."
+          }
+        }
+      }
+    },
+    "Checked %lld of %lld · %lld already measured": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked %lld of %lld · %lld already measured"
+          }
+        }
+      }
+    },
+    "Checking the selected photos…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking the selected photos…"
           }
         }
       }
@@ -308,6 +656,18 @@
         }
       }
     },
+    "Choose a valid range inside the original.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a valid range inside the original."
+          }
+        }
+      }
+    },
     "Choose which photos Cleaner can access when you scan. Originals stay in Photos.": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -328,6 +688,150 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cleaner"
+          }
+        }
+      }
+    },
+    "Cleaner keeps your latest export on this iPhone, protected while it’s locked and excluded from backups, so you can share it again later, even after the trial. It holds the accessible fields of each contact.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cleaner keeps your latest export on this iPhone, protected while it’s locked and excluded from backups, so you can share it again later, even after the trial. It holds the accessible fields of each contact."
+          }
+        }
+      }
+    },
+    "Clear a filter, change the search, or choose another folder.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear a filter, change the search, or choose another folder."
+          }
+        }
+      }
+    },
+    "Clear all filters": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear all filters"
+          }
+        }
+      }
+    },
+    "Clear date filter": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear date filter"
+          }
+        }
+      }
+    },
+    "Clear date filter:": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear date filter:"
+          }
+        }
+      }
+    },
+    "Clear filter:": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear filter:"
+          }
+        }
+      }
+    },
+    "Clear filters": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear filters"
+          }
+        }
+      }
+    },
+    "Clear scan progress": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear scan progress"
+          }
+        }
+      }
+    },
+    "Clear selection in this library": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear selection in this library"
+          }
+        }
+      }
+    },
+    "Clearing progress keeps your media, review decisions and activity history.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clearing progress keeps your media, review decisions and activity history."
+          }
+        }
+      }
+    },
+    "Clearing saved measurements…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clearing saved measurements…"
+          }
+        }
+      }
+    },
+    "Close": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
           }
         }
       }
@@ -428,6 +932,42 @@
         }
       }
     },
+    "Comparing nearby photos with Vision…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparing nearby photos with Vision…"
+          }
+        }
+      }
+    },
+    "Comparison progress": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparison progress"
+          }
+        }
+      }
+    },
+    "Completed comparisons stay on this device. Scan library checks access and changes before continuing. Closing Cleaner pauses work; it does not scan in the background.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completed comparisons stay on this device. Scan library checks access and changes before continuing. Closing Cleaner pauses work; it does not scan in the background."
+          }
+        }
+      }
+    },
     "Completed scans and actions appear here.": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -460,6 +1000,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Compression saves a separate copy. The current still-image profile excludes HDR, RAW, Live Photos, transparency and unverified formats."
+          }
+        }
+      }
+    },
+    "Confirm removal again": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm removal again"
           }
         }
       }
@@ -583,6 +1135,30 @@
         }
       }
     },
+    "Creating album…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creating album…"
+          }
+        }
+      }
+    },
+    "Date filter": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date filter"
+          }
+        }
+      }
+    },
     "Decide later": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -619,6 +1195,42 @@
         }
       }
     },
+    "Delete saved archive": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete saved archive"
+          }
+        }
+      }
+    },
+    "Delete saved archive…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete saved archive…"
+          }
+        }
+      }
+    },
+    "Delete the saved contact archive?": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the saved contact archive?"
+          }
+        }
+      }
+    },
     "Deleting from Photos also deletes through iCloud Photos. Recently Deleted may keep using storage. Favorites are protected.": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -627,6 +1239,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deleting from Photos also deletes through iCloud Photos. Recently Deleted may keep using storage. Favorites are protected."
+          }
+        }
+      }
+    },
+    "Deleting the saved contact archive…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting the saved contact archive…"
           }
         }
       }
@@ -655,6 +1279,30 @@
         }
       }
     },
+    "Detail scores compare the encoded copy with a resized reference. They do not measure the detail discarded by resizing.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detail scores compare the encoded copy with a resized reference. They do not measure the detail discarded by resizing."
+          }
+        }
+      }
+    },
+    "Dimensions unknown": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dimensions unknown"
+          }
+        }
+      }
+    },
     "Discard": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -663,6 +1311,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Discard"
+          }
+        }
+      }
+    },
+    "Discard this preview?": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard this preview?"
+          }
+        }
+      }
+    },
+    "Done": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
           }
         }
       }
@@ -702,6 +1374,18 @@
         }
       }
     },
+    "End, seconds": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End, seconds"
+          }
+        }
+      }
+    },
     "Exact copies": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -726,6 +1410,18 @@
         }
       }
     },
+    "Exact duplicates only": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exact duplicates only"
+          }
+        }
+      }
+    },
     "Export fields": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -734,6 +1430,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Export fields"
+          }
+        }
+      }
+    },
+    "Extensions come from filenames, not content inspection. Unknown sizes are kept separate; 1 MB is 1,000,000 bytes.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extensions come from filenames, not content inspection. Unknown sizes are kept separate; 1 MB is 1,000,000 bytes."
           }
         }
       }
@@ -774,6 +1482,30 @@
         }
       }
     },
+    "File filters": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File filters"
+          }
+        }
+      }
+    },
+    "Filename extension": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filename extension"
+          }
+        }
+      }
+    },
     "Files": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -794,6 +1526,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Files found"
+          }
+        }
+      }
+    },
+    "Filter files": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter files"
           }
         }
       }
@@ -879,6 +1623,18 @@
         }
       }
     },
+    "Image size": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Image size"
+          }
+        }
+      }
+    },
     "Inspect compression": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -946,6 +1702,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Keep"
+          }
+        }
+      }
+    },
+    "Keep editing": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep editing"
           }
         }
       }
@@ -1045,6 +1813,30 @@
         }
       }
     },
+    "Length": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Length"
+          }
+        }
+      }
+    },
+    "Length unknown": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Length unknown"
+          }
+        }
+      }
+    },
     "Libphonenumber metadata license": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -1080,6 +1872,18 @@
         }
       }
     },
+    "Lower settings may make smaller files. Update the preview and inspect the result before saving.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lower settings may make smaller files. Update the preview and inspect the result before saving."
+          }
+        }
+      }
+    },
     "Make room for more": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -1088,6 +1892,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Make room for more"
+          }
+        }
+      }
+    },
+    "Match": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Match"
           }
         }
       }
@@ -1148,6 +1964,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Measured media, ready for a closer look."
+          }
+        }
+      }
+    },
+    "Measured size": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured size"
           }
         }
       }
@@ -1266,6 +2094,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "No matches yet"
+          }
+        }
+      }
+    },
+    "No matching files": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching files"
           }
         }
       }
@@ -1460,6 +2300,18 @@
         }
       }
     },
+    "Original size": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original size"
+          }
+        }
+      }
+    },
     "Overview": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -1555,6 +2407,30 @@
         }
       }
     },
+    "Photo review": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo review"
+          }
+        }
+      }
+    },
+    "Photo: %@": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo: %@"
+          }
+        }
+      }
+    },
     "Photos": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -1599,6 +2475,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Possible matches"
+          }
+        }
+      }
+    },
+    "Preparing an original and checking a compressed candidate…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing an original and checking a compressed candidate…"
+          }
+        }
+      }
+    },
+    "Preparing and checking the selected video range…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing and checking the selected video range…"
+          }
+        }
+      }
+    },
+    "Preparing the next photo…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing the next photo…"
           }
         }
       }
@@ -1650,6 +2562,18 @@
         }
       }
     },
+    "Quality": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quality"
+          }
+        }
+      }
+    },
     "Queue removal": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -1674,6 +2598,66 @@
         }
       }
     },
+    "Reading accessible media…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading accessible media…"
+          }
+        }
+      }
+    },
+    "Reading and checking the original video…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading and checking the original video…"
+          }
+        }
+      }
+    },
+    "Reading contact records and verifying archives…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading contact records and verifying archives…"
+          }
+        }
+      }
+    },
+    "Reading original resource bytes…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading original resource bytes…"
+          }
+        }
+      }
+    },
+    "Reading the selected folder…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading the selected folder…"
+          }
+        }
+      }
+    },
     "Record type": {
       "extractionState": "manual",
       "localizations": {
@@ -1681,6 +2665,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Record type"
+          }
+        }
+      }
+    },
+    "Recorded date…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded date…"
           }
         }
       }
@@ -1715,6 +2711,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Remove"
+          }
+        }
+      }
+    },
+    "Resizing removes fine detail and never enlarges the image. Compare the updated preview before saving.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resizing removes fine detail and never enlarges the image. Compare the updated preview before saving."
+          }
+        }
+      }
+    },
+    "Results": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Results"
           }
         }
       }
@@ -1767,6 +2787,18 @@
         }
       }
     },
+    "Review selected photos": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review selected photos"
+          }
+        }
+      }
+    },
     "Review the clips taking up room.": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -1803,6 +2835,18 @@
         }
       }
     },
+    "SDR H.264 · up to 720p · original frame rate and AAC audio. No automatic removal.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SDR H.264 · up to 720p · original frame rate and AAC audio. No automatic removal."
+          }
+        }
+      }
+    },
     "Save copy and keep original": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -1811,6 +2855,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save copy and keep original"
+          }
+        }
+      }
+    },
+    "Saved contact archive": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved contact archive"
+          }
+        }
+      }
+    },
+    "Saved measurements: %lld. Continue after a fresh library check.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved measurements: %lld. Continue after a fresh library check."
+          }
+        }
+      }
+    },
+    "Saved scan progress": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved scan progress"
           }
         }
       }
@@ -2041,6 +3121,42 @@
         }
       }
     },
+    "Size": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Size"
+          }
+        }
+      }
+    },
+    "Size unknown": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Size unknown"
+          }
+        }
+      }
+    },
+    "Skip this photo": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip this photo"
+          }
+        }
+      }
+    },
     "Social profile": {
       "extractionState": "manual",
       "localizations": {
@@ -2088,6 +3204,18 @@
         }
       }
     },
+    "Start the free trial or unlock to run new scans. Your saved review decisions and exports remain available.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start the free trial or unlock to run new scans. Your saved review decisions and exports remain available."
+          }
+        }
+      }
+    },
     "Start with the largest": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -2096,6 +3224,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Start with the largest"
+          }
+        }
+      }
+    },
+    "Start, seconds": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start, seconds"
+          }
+        }
+      }
+    },
+    "Stopping after the current resource…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopping after the current resource…"
+          }
+        }
+      }
+    },
+    "Stopping keeps saved copies and clears the current preview. This queue does not resume after the app closes.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopping keeps saved copies and clears the current preview. This queue does not resume after the app closes."
           }
         }
       }
@@ -2136,6 +3300,78 @@
         }
       }
     },
+    "This copy is not smaller. Saving it uses additional storage.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This copy is not smaller. Saving it uses additional storage."
+          }
+        }
+      }
+    },
+    "This removes Cleaner’s kept copy from this iPhone. Your contacts and any copies you shared are not changed.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This removes Cleaner’s kept copy from this iPhone. Your contacts and any copies you shared are not changed."
+          }
+        }
+      }
+    },
+    "This saved archive cannot be read. You can delete it.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This saved archive cannot be read. You can delete it."
+          }
+        }
+      }
+    },
+    "Trim or compress": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trim or compress"
+          }
+        }
+      }
+    },
+    "Under 1 minute": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Under 1 minute"
+          }
+        }
+      }
+    },
+    "Under 720 px short side": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Under 720 px short side"
+          }
+        }
+      }
+    },
     "Undo": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -2156,6 +3392,90 @@
           "stringUnit": {
             "state": "translated",
             "value": "Unnamed contact"
+          }
+        }
+      }
+    },
+    "Unverified copies may exist in Photos. Check them before starting another queue; they were not counted as saved.": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unverified copies may exist in Photos. Check them before starting another queue; they were not counted as saved."
+          }
+        }
+      }
+    },
+    "Update preview": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update preview"
+          }
+        }
+      }
+    },
+    "Updating and checking the preview…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updating and checking the preview…"
+          }
+        }
+      }
+    },
+    "Updating favorite…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updating favorite…"
+          }
+        }
+      }
+    },
+    "Verifying and recording a copy; keeping the original…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifying and recording a copy; keeping the original…"
+          }
+        }
+      }
+    },
+    "Verifying and recording the video copy…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifying and recording the video copy…"
+          }
+        }
+      }
+    },
+    "Video not saved": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video not saved"
           }
         }
       }
@@ -2203,6 +3523,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Worth a closer look"
+          }
+        }
+      }
+    },
+    "Writing and checking the contact archive…": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writing and checking the contact archive…"
           }
         }
       }
@@ -2267,6 +3599,30 @@
         }
       }
     },
+    "cleaner.count.archived": {
+      "comment": "Review count. %lld is the number of items.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld contact record"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld contact records"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "cleaner.count.delete": {
       "comment": "Review count. %lld is the number of items.",
       "extractionState": "manual",
@@ -2284,6 +3640,30 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "Delete %lld reviewed items from Photos?"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "cleaner.count.held": {
+      "comment": "Review count. %lld is the number of items.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld item needs review again and won’t be deleted."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld items need review again and won’t be deleted."
                 }
               }
             }

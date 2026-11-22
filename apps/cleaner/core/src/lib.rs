@@ -18,6 +18,7 @@ mod platform;
 mod preservation;
 mod review;
 mod scan;
+mod similar;
 mod text;
 mod video;
 
@@ -29,6 +30,7 @@ pub use platform::*;
 pub use preservation::*;
 pub use review::*;
 pub use scan::*;
+pub use similar::*;
 pub use video::*;
 
 pub use uuid::Uuid;

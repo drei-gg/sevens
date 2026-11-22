@@ -144,3 +144,100 @@ pub fn validate_removal(
     }
     Ok(())
 }
+
+/// Why one item queued for removal can or cannot be removed now.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, uniffi::Enum)]
+pub enum RemovalStatus {
+    /// Marked for removal at its current revision and not a favorite.
+    Ready,
+    /// No longer in the accessible library, or listed twice by the provider.
+    Missing,
+    /// No removal decision is recorded for it.
+    NotMarked,
+    /// The item changed after it was queued; the decision is for an older revision.
+    Changed,
+    /// A favorite. Favorites are never removed in a batch.
+    Favorite,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct RemovalOutcome {
+    pub id: String,
+    pub status: RemovalStatus,
+}
+
+/// Each selected item's outcome, in the order given (duplicates once). The same rules as
+/// [`validate_removal`], item by item, so one changed item no longer hides which one it is.
+/// Only `Ready` items may be removed; the others stay until the person reviews them again.
+#[uniffi::export]
+pub fn removal_outcomes(
+    ids: Vec<String>,
+    items: &[CleanupItem],
+    state: &ReviewState,
+) -> Vec<RemovalOutcome> {
+    let mut counts: HashMap<&str, usize> = HashMap::new();
+    for item in items {
+        *counts.entry(item.id.as_str()).or_default() += 1;
+    }
+    let by_id: HashMap<&str, &CleanupItem> =
+        items.iter().map(|item| (item.id.as_str(), item)).collect();
+    let mut seen = HashSet::new();
+    ids.into_iter()
+        .filter(|id| seen.insert(id.clone()))
+        .map(|id| {
+            let status = match by_id.get(id.as_str()) {
+                None => RemovalStatus::Missing,
+                Some(_) if counts.get(id.as_str()).copied().unwrap_or(0) > 1 => {
+                    RemovalStatus::Missing
+                }
+                Some(item) if item.favorite => RemovalStatus::Favorite,
+                Some(item) => {
+                    if state.decisions.get(&id) != Some(&ReviewDecision::Remove) {
+                        RemovalStatus::NotMarked
+                    } else if state.revisions.get(&id) != Some(&item.revision) {
+                        RemovalStatus::Changed
+                    } else {
+                        RemovalStatus::Ready
+                    }
+                }
+            };
+            RemovalOutcome { id, status }
+        })
+        .collect()
+}
+
+/// The ids among `outcomes` that may be removed.
+#[uniffi::export]
+pub fn removal_ready_ids(outcomes: &[RemovalOutcome]) -> Vec<String> {
+    outcomes
+        .iter()
+        .filter(|o| o.status == RemovalStatus::Ready)
+        .map(|o| o.id.clone())
+        .collect()
+}
+
+/// What to tell the person when some queued items were held back. `None` when every item is ready.
+#[uniffi::export]
+pub fn removal_held_message(outcomes: &[RemovalOutcome]) -> Option<String> {
+    let held = outcomes
+        .iter()
+        .filter(|o| o.status != RemovalStatus::Ready)
+        .count();
+    if held == 0 {
+        return None;
+    }
+    let ready = outcomes.len() - held;
+    let subject = if held == 1 {
+        "1 item changed, became a favorite or is no longer available".to_string()
+    } else {
+        format!("{held} items changed, became favorites or are no longer available")
+    };
+    Some(if ready == 0 {
+        format!("{subject}. Nothing was deleted. Review them again in Pending removal.")
+    } else {
+        format!(
+            "{subject}, so {} kept. Review them again in Pending removal.",
+            if held == 1 { "it was" } else { "they were" }
+        )
+    })
+}

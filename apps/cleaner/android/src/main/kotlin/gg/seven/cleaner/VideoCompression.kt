@@ -134,7 +134,7 @@ object VideoCompression {
                                 }
                                 .getOrElse {
                                     throw blocked(
-                                        "The video's capture timestamp could not be preserved."
+                                        "The video’s capture timestamp could not be preserved."
                                     )
                                 }
                         }
@@ -144,7 +144,7 @@ object VideoCompression {
                 locationText?.let {
                     val m =
                         Regex("^([+-][0-9.]+)([+-][0-9.]+)(?:[+-][0-9.]+)?/?$").matchEntire(it)
-                            ?: throw blocked("The video's location could not be preserved.")
+                            ?: throw blocked("The video’s location could not be preserved.")
                     m.groupValues[1].toFloat() to m.groupValues[2].toFloat()
                 }
             return VideoInspection(facts, date, location)

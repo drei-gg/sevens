@@ -45,7 +45,7 @@ internal val CleanerContent =
                 stillFree =
                     listOf(
                         "Read saved decisions and history",
-                        "Export an existing contact snapshot",
+                        "Share your saved contact archive",
                     ),
                 unlockKeeps =
                     listOf(

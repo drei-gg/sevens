@@ -6,7 +6,6 @@
 package gg.seven.cleaner
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -276,13 +275,5 @@ private fun Comparison(title: String, file: File, bytes: Long, modifier: Modifie
 }
 
 /** Large enough to inspect detail when zoomed, without holding two 16 MP bitmaps for display. */
-private fun decodeForScreen(file: File): Bitmap? {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(file.path, bounds)
-    var sample = 1
-    while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 3072) sample *= 2
-    return BitmapFactory.decodeFile(
-        file.path,
-        BitmapFactory.Options().apply { inSampleSize = sample },
-    )
-}
+/** Upright by EXIF orientation; the candidate keeps the original's orientation tag. */
+private fun decodeForScreen(file: File): Bitmap? = UprightImages.decode(file, 3072)

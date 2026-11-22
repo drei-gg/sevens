@@ -88,4 +88,27 @@ class PlatformTest {
         assertEquals(1u, ImageCompression.frameCount(png(), "public.jpeg"))
         assertEquals(0u, ImageCompression.frameCount(png(), ""))
     }
+
+    @Test
+    fun exifOrientationsMapToRotationThenMirror() {
+        assertEquals(ExifTransform(0, false), exifTransform(1))
+        assertEquals(ExifTransform(0, true), exifTransform(2))
+        assertEquals(ExifTransform(180, false), exifTransform(3))
+        assertEquals(ExifTransform(180, true), exifTransform(4))
+        assertEquals(ExifTransform(90, true), exifTransform(5))
+        assertEquals(ExifTransform(90, false), exifTransform(6))
+        assertEquals(ExifTransform(270, true), exifTransform(7))
+        assertEquals(ExifTransform(270, false), exifTransform(8))
+        // Undefined (0) and out-of-range values are shown as stored.
+        assertEquals(ExifTransform(0, false), exifTransform(0))
+        assertEquals(ExifTransform(0, false), exifTransform(9))
+    }
+
+    @Test
+    fun previewSamplingKeepsTheLongerSideAtLeastTheTarget() {
+        assertEquals(1, sampleFor(3000, 4000, 3072))
+        assertEquals(2, sampleFor(4000, 6144, 3072))
+        assertEquals(4, sampleFor(12288, 9000, 3072))
+        assertEquals(1, sampleFor(0, 0, 3072))
+    }
 }

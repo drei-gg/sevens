@@ -6,12 +6,12 @@ extension FileSizeFilter {
     static let choices: [Self] = [.any, .atLeast1Mb, .atLeast10Mb, .atLeast100Mb, .atLeast1Gb, .unknown]
     var title: String {
         switch self {
-        case .any: "Any size"
-        case .atLeast1Mb: "At least 1 MB"
-        case .atLeast10Mb: "At least 10 MB"
-        case .atLeast100Mb: "At least 100 MB"
-        case .atLeast1Gb: "At least 1 GB"
-        case .unknown: "Size unknown"
+        case .any: c("Any size")
+        case .atLeast1Mb: c("At least 1 MB")
+        case .atLeast10Mb: c("At least 10 MB")
+        case .atLeast100Mb: c("At least 100 MB")
+        case .atLeast1Gb: c("At least 1 GB")
+        case .unknown: c("Size unknown")
         }
     }
 }

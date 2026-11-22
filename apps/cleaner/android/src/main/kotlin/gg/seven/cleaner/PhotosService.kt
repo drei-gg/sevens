@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -20,8 +19,12 @@ import androidx.core.net.toUri
 import gg.seven.cleaner.core.CleanupItem
 import gg.seven.cleaner.core.MatchGroup
 import gg.seven.cleaner.core.MediaKind
+import gg.seven.cleaner.core.RemovalOutcome
 import gg.seven.cleaner.core.ReviewState
+import gg.seven.cleaner.core.SimilarClusters
+import gg.seven.cleaner.core.SimilarityMeasure
 import gg.seven.cleaner.core.SimilarityWindow
+import gg.seven.cleaner.core.albumRelativePath
 import gg.seven.cleaner.core.checkCopyOffer
 import gg.seven.cleaner.core.matchingExact
 import gg.seven.cleaner.core.perceptualDistance
@@ -30,10 +33,11 @@ import gg.seven.cleaner.core.photoFingerprint
 import gg.seven.cleaner.core.photoResourcePart
 import gg.seven.cleaner.core.photoRevision
 import gg.seven.cleaner.core.photoTags
+import gg.seven.cleaner.core.removalOutcomes
 import gg.seven.cleaner.core.scanHasMeasurement
 import gg.seven.cleaner.core.scanProviderRevision
-import gg.seven.cleaner.core.similarHashGroup
 import gg.seven.cleaner.core.similarityOrder
+import gg.seven.cleaner.core.validateAlbumRequest
 import gg.seven.cleaner.core.validateRemoval
 import java.io.File
 import java.nio.ByteBuffer
@@ -45,6 +49,12 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 data class PhotoInventory(val items: List<CleanupItem>, val limited: Boolean)
+
+/** Each queued item's removal outcome against the library as it is now, and those current items. */
+data class RemovalCheck(val outcomes: List<RemovalOutcome>, val current: List<CleanupItem>)
+
+/** Which items an album operation finished, by id, and which stayed as they were. */
+data class AlbumResult(val done: List<String>, val failed: List<String>)
 
 data class PhotoAnalysis(
     val items: List<CleanupItem>,
@@ -246,29 +256,35 @@ class PhotosService(private val context: Context) {
 
     /**
      * Nearby stills compared by a perceptual hash (the core's), through the core's capture-time
-     * window. Suggestions for review only; the threshold is provisional, as Vision's is on iOS.
+     * window, joined into connected groups by the core. Suggestions for review only; the threshold
+     * is provisional, as Vision's is on iOS.
      */
     suspend fun similar(input: List<CleanupItem>): List<MatchGroup> =
         withContext(Dispatchers.IO) {
             val window = SimilarityWindow()
+            val clusters = SimilarClusters(SimilarityMeasure.IMAGE_HASH)
             val prints = mutableMapOf<String, ULong>()
-            val groups = mutableListOf<MatchGroup>()
-            for (item in similarityOrder(input)) {
-                coroutineContext.ensureActive()
-                val date = item.date ?: continue
-                val recent = window.prune(date)
-                prints.keys.retainAll(recent.toSet())
-                val print = thumbnailBitmap(item.id, 64)?.let(::hashOf) ?: continue
-                for (id in recent) {
-                    val earlier = prints[id] ?: continue
-                    similarHashGroup(id, item.id, perceptualDistance(earlier, print))
-                        ?.let(groups::add)
+            try {
+                for (item in similarityOrder(input)) {
+                    coroutineContext.ensureActive()
+                    val date = item.date ?: continue
+                    val recent = window.prune(date)
+                    prints.keys.retainAll(recent.toSet())
+                    val print = thumbnailBitmap(item.id, 64)?.let(::hashOf) ?: continue
+                    clusters.visit(item.id)
+                    for (id in recent) {
+                        val earlier = prints[id] ?: continue
+                        clusters.link(id, item.id, perceptualDistance(earlier, print).toFloat())
+                    }
+                    window.admit(item.id, date)
+                    prints[item.id] = print
                 }
-                window.admit(item.id, date)
-                prints[item.id] = print
+                // A burst becomes one group (closest pairs first, size-capped), not N−1 pairs.
+                clusters.groups()
+            } finally {
+                window.close()
+                clusters.close()
             }
-            window.close()
-            groups
         }
 
     private fun hashOf(bitmap: Bitmap): ULong? {
@@ -314,19 +330,9 @@ class PhotosService(private val context: Context) {
     fun previewBitmap(uri: Uri, maxSide: Int = 3072): Bitmap? =
         runCatching { decodeSampled(uri, maxSide) }.getOrNull()
 
-    private fun decodeSampled(uri: Uri, maxSide: Int): Bitmap? {
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-        var sample = 1
-        while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxSide) sample *= 2
-        return resolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(
-                it,
-                null,
-                BitmapFactory.Options().apply { inSampleSize = sample },
-            )
-        }
-    }
+    /** Upright by the file's EXIF orientation, as Photos shows it. */
+    private fun decodeSampled(uri: Uri, maxSide: Int): Bitmap? =
+        UprightImages.decode(resolver, uri, maxSide)
 
     /**
      * Copies a still's original bytes into [directory] for compression. Motion photos carry a video
@@ -433,6 +439,153 @@ class PhotosService(private val context: Context) {
             validateRemoval(ids.sorted(), current, state)
             MediaStore.createTrashRequest(resolver, ids.map { it.toUri() }, true)
         }
+
+    /**
+     * Each queued item's outcome from the core against the library as it is now: which are ready,
+     * and which changed, became favorites or are gone. Only ready items go on to [trashRequest].
+     */
+    suspend fun removalCheck(ids: Set<String>, state: ReviewState): RemovalCheck =
+        withContext(Dispatchers.IO) {
+            val current = ids.mapNotNull(::current)
+            RemovalCheck(removalOutcomes(ids.sorted(), current, state), current)
+        }
+
+    /** The items as the library has them now; gone or inaccessible ones are left out. */
+    suspend fun currentItems(ids: Collection<String>): List<CleanupItem> =
+        withContext(Dispatchers.IO) {
+            if (access() == Access.None)
+                throw blocked("Photos access was not granted. You can change it in Settings.")
+            ids.mapNotNull(::current)
+        }
+
+    /**
+     * The system's confirmation to move [items] into a folder album (Android 11+). Each item must
+     * still be at the revision the person selected; the album name must be a single safe folder.
+     */
+    suspend fun moveRequest(items: List<CleanupItem>, title: String): PendingIntent =
+        withContext(Dispatchers.IO) {
+            if (Build.VERSION.SDK_INT < 30)
+                throw blocked(
+                    "Moving into an album needs Android 11 or later. Copy into the album instead."
+                )
+            albumRelativePath(title)
+            validateAlbumRequest(items.size.toUInt(), unchanged(items).toUInt(), title)
+            MediaStore.createWriteRequest(resolver, items.map { it.id.toUri() })
+        }
+
+    /**
+     * Moves each item into `Pictures/<album>/` after the system confirmed the write. The file keeps
+     * its bytes, date and favorite; only its folder changes. An item that changed since it was
+     * selected, or that the provider refuses, stays where it was.
+     */
+    suspend fun moveToAlbum(items: List<CleanupItem>, title: String): AlbumResult =
+        withContext(Dispatchers.IO) {
+            if (Build.VERSION.SDK_INT < 30)
+                throw blocked(
+                    "Moving into an album needs Android 11 or later. Copy into the album instead."
+                )
+            val path = albumRelativePath(title)
+            val done = mutableListOf<String>()
+            val failed = mutableListOf<String>()
+            for (item in items) {
+                val moved =
+                    current(item.id)?.revision == item.revision &&
+                        runCatching {
+                                resolver.update(
+                                    item.id.toUri(),
+                                    ContentValues().apply {
+                                        put(MediaStore.MediaColumns.RELATIVE_PATH, path)
+                                    },
+                                    null,
+                                    null,
+                                ) == 1
+                            }
+                            .getOrDefault(false)
+                if (moved) done += item.id else failed += item.id
+            }
+            AlbumResult(done, failed)
+        }
+
+    /**
+     * Copies each item into `Pictures/<album>/` (Android 10+), keeping the original where it is.
+     * Each copy is read back and compared byte for byte before it is published; a failed copy is
+     * removed and its original is untouched.
+     */
+    suspend fun copyToAlbum(items: List<CleanupItem>, title: String): AlbumResult =
+        withContext(Dispatchers.IO) {
+            if (Build.VERSION.SDK_INT < 29)
+                throw blocked("Albums need Android 10 or later. Nothing was changed.")
+            val path = albumRelativePath(title)
+            validateAlbumRequest(items.size.toUInt(), unchanged(items).toUInt(), title)
+            val known = items.mapNotNull { it.bytes }
+            if (
+                known.size == items.size &&
+                    VideoCompression.availableBytes(context, context.filesDir) <
+                        known.sum() + 32L * 1024 * 1024
+            )
+                throw blocked("There is not enough storage for these copies. Nothing was changed.")
+            val done = mutableListOf<String>()
+            val failed = mutableListOf<String>()
+            for (item in items) {
+                coroutineContext.ensureActive()
+                if (copyInto(item, path)) done += item.id else failed += item.id
+            }
+            AlbumResult(done, failed)
+        }
+
+    private fun unchanged(items: List<CleanupItem>) =
+        items.count { current(it.id)?.revision == it.revision }
+
+    private suspend fun copyInto(item: CleanupItem, path: String): Boolean {
+        if (Build.VERSION.SDK_INT < 29) return false
+        val now = current(item.id)
+        if (now == null || now.revision != item.revision) return false
+        val video = item.kind == MediaKind.VIDEO
+        val values =
+            ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, item.name)
+                mime(item.id)?.let { put(MediaStore.MediaColumns.MIME_TYPE, it) }
+                put(MediaStore.MediaColumns.RELATIVE_PATH, path)
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+        val uri = runCatching { resolver.insert(if (video) videos else images, values) }.getOrNull()
+            ?: return false
+        try {
+            val written =
+                resolver.openInputStream(item.id.toUri())?.use { input ->
+                    resolver.openOutputStream(uri)?.use { input.copyTo(it) }
+                }
+            if (written == null) throw blocked("Could not write the copy.")
+            val source = resolver.openInputStream(item.id.toUri())?.let { sha256(it).first }
+            val copy = resolver.openInputStream(uri)?.let { sha256(it).first }
+            if (source == null || source != copy) throw blocked("Copied bytes differ.")
+            resolver.update(
+                uri,
+                ContentValues().apply {
+                    put(MediaStore.MediaColumns.IS_PENDING, 0)
+                    if (Build.VERSION.SDK_INT >= 30 && now.favorite)
+                        put(MediaStore.MediaColumns.IS_FAVORITE, 1)
+                },
+                null,
+                null,
+            )
+            item.date?.let { date ->
+                resolver.update(
+                    uri,
+                    ContentValues().apply { put(DATE_TAKEN, date.toEpochMilli()) },
+                    null,
+                    null,
+                )
+            }
+            return true
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            runCatching { resolver.delete(uri, null, null) }
+            throw cancelled
+        } catch (_: Exception) {
+            runCatching { resolver.delete(uri, null, null) }
+            return false
+        }
+    }
 
     /** The ids of [ids] still in the library (trashed items are not). */
     suspend fun remaining(ids: Set<String>): Set<String> =

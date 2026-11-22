@@ -127,6 +127,22 @@ public actor PhotosService {
         } onCancel: { sink.cancel() }
         try Task.checkCancellation()
     }
+    /// The items as Photos has them now; deleted or no longer accessible ones are left out. Throws
+    /// when access is gone, so a revoked library never reads as every item having been deleted.
+    public func currentItems(ids: Set<String>) throws -> [CleanupItem] {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else { throw CleanerError.blocked("Photos access was not granted. You can change it in Settings.") }
+        guard !ids.isEmpty else { return [] }
+        let fetch = PHAsset.fetchAssets(withLocalIdentifiers: Array(ids), options: nil)
+        var current: [CleanupItem] = []; fetch.enumerateObjects { asset, _, _ in current.append(Self.item(asset)) }
+        return current
+    }
+    /// Each queued item's outcome from the core against the library as it is now. Only ready items
+    /// go on to `delete`; changed and favorite items stay queued for review again.
+    public func removalCheck(ids: Set<String>, state: ReviewState) throws -> (outcomes: [RemovalOutcome], current: [CleanupItem]) {
+        let current = try currentItems(ids: ids)
+        return (removalOutcomes(ids: ids.sorted(), items: current, state: state), current)
+    }
     public func delete(ids: Set<String>, expected: [CleanupItem], state: ReviewState) async throws {
         let fetch = PHAsset.fetchAssets(withLocalIdentifiers: Array(ids), options: nil)
         var current: [CleanupItem] = []; fetch.enumerateObjects { asset, _, _ in current.append(Self.item(asset)) }
@@ -190,11 +206,12 @@ public actor PhotosService {
             request.addAssets(fetch)
         }
     }
-    /// Vision supplies feature prints and their distances; the core keeps the capture-time window and
-    /// words the suggestions. Nearby pairs are review suggestions only; threshold and search window
-    /// are provisional, never used for automatic selection.
+    /// Vision supplies feature prints and their distances; the core keeps the capture-time window,
+    /// joins nearby pairs into connected groups (a burst is one group, not overlapping pairs) and
+    /// words the suggestions. Review suggestions only; threshold and search window are provisional,
+    /// never used for automatic selection.
     public func similar(_ input: [CleanupItem], allowCloud: Bool) async throws -> [MatchGroup] {
-        let window = SimilarityWindow(); var prints: [String: VNFeaturePrintObservation] = [:]; var groups: [MatchGroup] = []
+        let window = SimilarityWindow(); let clusters = SimilarClusters(measure: .vision); var prints: [String: VNFeaturePrintObservation] = [:]
         for item in similarityOrder(items: input) {
             try Task.checkCancellation()
             guard let date = item.date, let asset = PHAsset.fetchAssets(withLocalIdentifiers: [item.id], options: nil).firstObject else { continue }
@@ -208,15 +225,16 @@ public actor PhotosService {
                 do { try VNImageRequestHandler(cgImage: cg).perform([request]); print = request.results?.first as? VNFeaturePrintObservation } catch { }
             }
             guard let print else { continue }
+            clusters.visit(id: item.id)
             for id in recent {
                 guard let feature = prints[id] else { continue }
                 var distance: Float = 0
                 try feature.computeDistance(&distance, to: print)
-                if let group = similarGroup(earlierId: id, laterId: item.id, distance: distance) { groups.append(group) }
+                _ = clusters.link(earlier: id, later: item.id, distance: distance)
             }
             window.admit(id: item.id, date: date); prints[item.id] = print
         }
-        return groups
+        return clusters.groups()
     }
 }
 /// PhotoKit's change closure writes once; access is synchronized rather than hiding a captured mutable variable.
