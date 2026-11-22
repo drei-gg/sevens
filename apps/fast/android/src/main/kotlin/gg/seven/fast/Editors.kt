@@ -17,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,6 +70,7 @@ internal fun EditorDialog(
     dismiss: () -> Unit,
 ) {
     val busy by m.working.collectAsStateWithLifecycle()
+    val res = LocalResources.current
     val f = a.fasts.find { it.id == id }
     val j = a.journal.find { it.id == id }
     val metric = a.metrics.find { it.id == id }
@@ -134,42 +137,48 @@ internal fun EditorDialog(
     var discard by rememberSaveable { mutableStateOf(false) }
     var localError by rememberSaveable { mutableStateOf<String?>(null) }
     val title =
-        when (type) {
-            "start" -> "Start a fast"
-            "past" -> "Add past fast"
-            "end" -> "End fast"
-            "fast" -> "Edit fast"
-            "journal" -> if (j == null) "Check in" else "Journal entry"
-            "water" -> "Water entry"
-            "metric" -> "Measurement"
-            "plan" -> "Plan a fast"
-            "rest" -> "Rest day"
-            "preset" -> "Custom preset"
-            else -> "Water settings"
-        }
+        stringResource(
+            when (type) {
+                "start" -> R.string.editor_start
+                "past" -> R.string.add_past_fast
+                "end" -> R.string.end_fast
+                "fast" -> R.string.edit_fast
+                "journal" -> if (j == null) R.string.check_in else R.string.editor_journal
+                "water" -> R.string.editor_water
+                "metric" -> R.string.editor_metric
+                "plan" -> R.string.plan_a_fast
+                "rest" -> R.string.rest_day
+                "preset" -> R.string.editor_preset
+                else -> R.string.water_settings
+            }
+        )
     if (type == "waterSettings") {
         WaterSettingsDialog(m, a, dismiss)
         return
     }
     fun save() {
         try {
-            fun integer(s: String, label: String) =
-                s.toIntOrNull() ?: error("Enter a whole number for $label")
+            fun integer(s: String) = s.toIntOrNull() ?: error(res.getString(R.string.error_rating))
             val parsedTags = tags.split(',').map { it.trim() }.filter { it.isNotEmpty() }
             val newGoal =
                 if (type in listOf("start", "past", "end", "fast", "plan", "preset")) {
                     if (openEnded) null
-                    else ((goal.decimal() ?: error("Enter goal hours")) * 60).roundToInt()
+                    else ((goal.decimal() ?: error(res.getString(R.string.error_goal_hours))) * 60).roundToInt()
                 } else null
             val eat =
                 if (type in listOf("start", "past", "end", "fast", "plan", "preset"))
-                    ((eating.decimal() ?: error("Enter eating window hours")) * 60).roundToInt()
+                    ((eating.decimal() ?: error(res.getString(R.string.error_eating_hours))) * 60)
+                        .roundToInt()
                 else 480
             val newMetric =
                 if (type in listOf("metric", "water"))
-                    Units.canonical(value.decimal() ?: error("Enter an amount"), kind, a.settings)
+                    Units.canonical(
+                        value.decimal() ?: error(res.getString(R.string.error_amount)),
+                        kind,
+                        a.settings,
+                    )
                 else 0.0
-            fun rating(s: String) = if (s.isBlank()) null else integer(s, "rating")
+            fun rating(s: String) = if (s.isBlank()) null else integer(s)
             val newMood = rating(mood)
             val newEnergy = rating(energy)
             val newHunger = rating(hunger)
@@ -257,7 +266,7 @@ internal fun EditorDialog(
                 dismiss,
             )
         } catch (e: Exception) {
-            localError = e.explanation
+            localError = res.explain(e)
         }
     }
     val draft =
@@ -291,10 +300,10 @@ internal fun EditorDialog(
         busy = busy,
     ) {
         if (type in listOf("start", "past", "plan")) {
-            FormHeading("Rhythm")
+            FormHeading(stringResource(R.string.editor_rhythm))
             val presets = FastPreset.defaults + a.presets
             ChoiceChips(
-                presets.map { it to it.name },
+                presets.map { it to res.presetName(it) },
                 presets.firstOrNull {
                     it.goalMinutes == goalMinutes && it.eatingMinutes == eatingMinutes
                 },
@@ -304,101 +313,138 @@ internal fun EditorDialog(
                 eating = plain(p.eatingMinutes / 60.0)
             }
         }
-        if (type == "preset") TextInput("Preset name", text) { text = it }
+        if (type == "preset") TextInput(stringResource(R.string.editor_preset_name), text) { text = it }
         if (type != "preset") {
             DateTimeField(
-                when {
-                    type == "plan" -> "Planned start"
-                    fastLike -> "Started"
-                    type == "rest" -> "Day"
-                    else -> "When"
-                },
+                stringResource(
+                    when {
+                        type == "plan" -> R.string.editor_planned_start
+                        fastLike -> R.string.started
+                        type == "rest" -> R.string.day
+                        else -> R.string.editor_when
+                    }
+                ),
                 start,
                 withTime = type != "rest",
             ) {
                 start = it
             }
             if (hasEnd) {
-                DateTimeField("Finished", end) { end = it }
+                DateTimeField(stringResource(R.string.finished), end) { end = it }
                 Text(
-                    "Duration: ${duration(end - start)}",
+                    stringResource(R.string.editor_duration, duration(end - start)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
         if (fastLike) {
-            SwitchLine("Set a goal", !openEnded) { openEnded = !it }
+            SwitchLine(stringResource(R.string.editor_set_goal), !openEnded) { openEnded = !it }
+            val hr = stringResource(R.string.unit_hours_short)
             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                 if (!openEnded)
-                    NumberField("Goal", goal, Modifier.weight(1f), suffix = "hr") { goal = it }
-                NumberField("Eating window", eating, Modifier.weight(1f), suffix = "hr") {
+                    NumberField(stringResource(R.string.goal), goal, Modifier.weight(1f), suffix = hr) {
+                        goal = it
+                    }
+                NumberField(
+                    stringResource(R.string.eating_window),
+                    eating,
+                    Modifier.weight(1f),
+                    suffix = hr,
+                ) {
                     eating = it
                 }
             }
             Text(
-                "Recording limits are not recommendations.",
+                stringResource(R.string.editor_limits_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         if (fastLike && type != "preset")
             TextInput(
-                "Intention",
+                stringResource(R.string.intention),
                 intention,
                 minLines = 2,
-                supporting = "What would you like to make room for?",
+                supporting = stringResource(R.string.editor_intention_prompt),
             ) {
                 intention = it
             }
         if (hasEnd)
             TextInput(
-                "Reflection",
+                stringResource(R.string.reflection),
                 reflection,
                 minLines = 2,
-                supporting = "What did you notice? What would you change?",
+                supporting = stringResource(R.string.editor_reflection_prompt),
             ) {
                 reflection = it
             }
-        if (type == "rest") TextInput("Note (optional)", text) { text = it }
+        if (type == "rest") TextInput(stringResource(R.string.editor_note), text) { text = it }
         if (type == "journal") {
             DropdownField(
-                "Linked fast",
+                stringResource(R.string.editor_linked_fast),
                 linkedFast.orEmpty(),
-                listOf("" to "An ordinary day") +
+                listOf("" to stringResource(R.string.editor_ordinary_day)) +
                     a.fasts
                         .sortedByDescending { it.start }
-                        .map { it.id.toString() to stamp(it.start) },
+                        .map { it.id.toString() to res.stamp(it.start) },
             ) {
                 linkedFast = it.ifEmpty { null }
             }
             TextInput(
-                "Observation",
+                stringResource(R.string.editor_observation),
                 text,
                 minLines = 5,
-                supporting = "What’s happening in your body, your day, or your thoughts?",
+                supporting = stringResource(R.string.editor_observation_prompt),
             ) {
                 text = it
             }
-            FormHeading("Optional check-in")
-            RatingField("Mood", "Low", "Good", mood) { mood = it }
-            RatingField("Energy", "Low", "High", energy) { energy = it }
-            RatingField("Hunger", "None", "Strong", hunger) { hunger = it }
+            FormHeading(stringResource(R.string.editor_optional_check_in))
+            RatingField(
+                stringResource(R.string.mood),
+                stringResource(R.string.rating_low),
+                stringResource(R.string.rating_good),
+                mood,
+            ) {
+                mood = it
+            }
+            RatingField(
+                stringResource(R.string.energy),
+                stringResource(R.string.rating_low),
+                stringResource(R.string.rating_high),
+                energy,
+            ) {
+                energy = it
+            }
+            RatingField(
+                stringResource(R.string.hunger),
+                stringResource(R.string.rating_none),
+                stringResource(R.string.rating_strong),
+                hunger,
+            ) {
+                hunger = it
+            }
             Text(
-                "These are your observations, not a score to improve.",
+                stringResource(R.string.editor_ratings_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         if (type in listOf("start", "past", "end", "fast", "journal"))
-            TextInput("Tags", tags, supporting = "Separate with commas") { tags = it }
+            TextInput(
+                stringResource(R.string.tags),
+                tags,
+                supporting = stringResource(R.string.editor_tags_prompt),
+            ) {
+                tags = it
+            }
         if (type in listOf("metric", "water")) {
             if (metric == null && type != "water") {
                 val kinds =
                     MetricKind.entries.filter { a.settings.showWeight || it != MetricKind.WEIGHT }
                 if (kinds.size > 1)
                     ConnectedChoice(
-                        kinds.map { it to it.key.replaceFirstChar { c -> c.uppercase() } },
+                        kinds.map { it to res.kindName(it) },
                         kind,
                     ) {
                         kindText = it.key
@@ -406,12 +452,11 @@ internal fun EditorDialog(
                     }
             }
             NumberField(
-                "Amount",
+                stringResource(R.string.editor_amount),
                 value,
-                suffix = Units.label(kind, a.settings),
+                suffix = unit(kind, a.settings),
                 supporting =
-                    if (kind == MetricKind.WATER)
-                        "Log your own observations. There is no target you have to meet."
+                    if (kind == MetricKind.WATER) stringResource(R.string.editor_water_note)
                     else null,
             ) {
                 value = it
@@ -420,7 +465,9 @@ internal fun EditorDialog(
                 val amounts =
                     if (a.settings.useFluidOunces) listOf(8, 12, 16) else listOf(150, 250, 500)
                 ChoiceChips(
-                    amounts.map { it to "$it ${Units.label(kind, a.settings)}" },
+                    amounts.map {
+                        it to res.getString(R.string.amount, it.toDouble().number(0), res.unit(kind, a.settings))
+                    },
                     amounts.firstOrNull { value.decimal() == it.toDouble() },
                 ) {
                     value = it.toString()
@@ -432,7 +479,7 @@ internal fun EditorDialog(
         operationError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (type == "past" || type == "start")
             Text(
-                "An early finish is still a record. This timer does not measure ketosis, autophagy or fat burning.",
+                stringResource(R.string.editor_early_finish_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -446,24 +493,28 @@ internal fun EditorDialog(
                     ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (f?.end == null && f != null) "Discard fast" else "Delete")
+                Text(
+                    stringResource(if (f?.end == null && f != null) R.string.editor_discard_fast else R.string.delete)
+                )
             }
     }
     if (discard)
         AlertDialog(
             onDismissRequest = { discard = false },
-            title = { Text("Discard this draft?") },
-            text = { Text("Your saved records will stay as they are.") },
-            confirmButton = { TextButton(onClick = dismiss) { Text("Discard draft") } },
-            dismissButton = { TextButton(onClick = { discard = false }) { Text("Keep editing") } },
+            title = { Text(stringResource(R.string.discard_title)) },
+            text = { Text(stringResource(R.string.discard_message)) },
+            confirmButton = {
+                TextButton(onClick = dismiss) { Text(stringResource(R.string.discard_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { discard = false }) { Text(stringResource(R.string.keep_editing)) }
+            },
         )
     if (delete)
         AlertDialog(
             onDismissRequest = { delete = false },
-            title = { Text("Delete this record?") },
-            text = {
-                Text("This cannot be undone. Journal entries linked to a deleted fast are kept.")
-            },
+            title = { Text(stringResource(R.string.delete_record_title)) },
+            text = { Text(stringResource(R.string.delete_record_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -500,10 +551,12 @@ internal fun EditorDialog(
                         )
                     }
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.delete))
                 }
             },
-            dismissButton = { TextButton(onClick = { delete = false }) { Text("Keep") } },
+            dismissButton = {
+                TextButton(onClick = { delete = false }) { Text(stringResource(R.string.keep)) }
+            },
         )
 }
 
@@ -514,7 +567,8 @@ internal fun ToggleRow(label: String, enabled: Boolean, onChange: (Boolean) -> U
 @Composable
 private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Unit) {
     val s = a.settings.water
-    val unit = Units.label(MetricKind.WATER, a.settings)
+    val res = LocalResources.current
+    val unit = unit(MetricKind.WATER, a.settings)
     fun display(value: Double) = plain(Units.display(value, MetricKind.WATER, a.settings))
     var useGoal by rememberSaveable { mutableStateOf(s.goalMilliliters != null) }
     var goal by rememberSaveable { mutableStateOf(s.goalMilliliters?.let(::display).orEmpty()) }
@@ -527,16 +581,14 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     val permission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-            if (!it)
-                m.message.value =
-                    "Notifications are off. Tracking still works; enable notifications in Android Settings when you want reminders."
+            if (!it) m.message.value = res.getString(R.string.notifications_off_reminders)
         }
     val busy by m.working.collectAsStateWithLifecycle()
     fun save() {
         try {
             fun amount(raw: String) =
                 Units.canonical(
-                    raw.decimal() ?: error("Enter an amount"),
+                    raw.decimal() ?: error(res.getString(R.string.error_amount)),
                     MetricKind.WATER,
                     a.settings,
                 )
@@ -563,14 +615,14 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
                 },
             )
         } catch (e: Exception) {
-            error = e.explanation
+            error = res.explain(e)
         }
     }
     val draft =
         listOf(useGoal, goal, glass, reminders, paused, start, end, interval).joinToString("|")
     val original = rememberSaveable { draft }
     FullScreenForm(
-        "Water settings",
+        stringResource(R.string.water_settings),
         dismiss,
         ::save,
         busy = busy,
@@ -580,32 +632,38 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
                 (glass.decimal() ?: 0.0) > 0 &&
                 (!reminders || start.toInt() < end.toInt()),
     ) {
-        FormHeading("Your daily goal")
-        SwitchLine("Use a personal goal", useGoal) { useGoal = it }
-        if (useGoal) NumberField("Daily amount", goal, suffix = unit) { goal = it }
+        FormHeading(stringResource(R.string.water_goal_heading))
+        SwitchLine(stringResource(R.string.water_use_goal), useGoal) { useGoal = it }
+        if (useGoal)
+            NumberField(stringResource(R.string.water_daily_amount), goal, suffix = unit) { goal = it }
         Text(
-            "An optional target you choose, not a recommended intake. No streaks or pressure to catch up.",
+            stringResource(R.string.water_goal_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        FormHeading("Quick-add glass")
-        NumberField("Glass", glass, suffix = unit, supporting = "Change units in Settings.") {
+        FormHeading(stringResource(R.string.water_glass_heading))
+        NumberField(
+            stringResource(R.string.water_glass),
+            glass,
+            suffix = unit,
+            supporting = stringResource(R.string.water_glass_note),
+        ) {
             glass = it
         }
         fun hour(n: Int) =
-            if (n == 24) "Midnight"
+            if (n == 24) res.getString(R.string.midnight)
             else
                 SevenFormat.time(
                     java.time.LocalDate.now().atTime(n, 0).atZone(ZoneId.systemDefault()),
                     use24Hour,
                 )
-        FormHeading("Water reminders")
-        SwitchLine("Remind me to drink water", reminders) { reminders = it }
+        FormHeading(stringResource(R.string.water_reminders_heading))
+        SwitchLine(stringResource(R.string.water_remind), reminders) { reminders = it }
         if (reminders) {
-            SwitchLine("Paused until you resume", paused) { paused = it }
+            SwitchLine(stringResource(R.string.water_paused), paused) { paused = it }
             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                 DropdownField(
-                    "From",
+                    stringResource(R.string.water_from),
                     start,
                     (0..23).map { it.toString() to hour(it) },
                     Modifier.weight(1f),
@@ -613,7 +671,7 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
                     start = it
                 }
                 DropdownField(
-                    "Until",
+                    stringResource(R.string.water_until),
                     end,
                     (1..24).map { it.toString() to hour(it) },
                     Modifier.weight(1f),
@@ -622,20 +680,20 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
                 }
             }
             DropdownField(
-                "Every",
+                stringResource(R.string.water_every),
                 interval,
-                (1..4).map { it.toString() to if (it == 1) "1 hour" else "$it hours" },
+                (1..4).map { it.toString() to res.getQuantityString(R.plurals.water_interval, it, it) },
             ) {
                 interval = it
             }
         }
         Text(
-            "Daily at your chosen hours, up to but not including the end. Android may delay delivery. Logging water does not silence your schedule.",
+            stringResource(R.string.water_reminders_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (reminders && start.toInt() >= end.toInt())
-            Text("End time must be after start time.", color = MaterialTheme.colorScheme.error)
+            Text(stringResource(R.string.water_end_after_start), color = MaterialTheme.colorScheme.error)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         val operationError by m.message.collectAsStateWithLifecycle()
         operationError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -651,7 +709,12 @@ private fun RatingField(
     value: String,
     change: (String) -> Unit,
 ) {
-    OptionalChoice(title, (1..5).map { it to "$it" }, value.toIntOrNull(), "1 $low · 5 $high") {
+    OptionalChoice(
+        title,
+        (1..5).map { it to it.toDouble().number(0) },
+        value.toIntOrNull(),
+        stringResource(R.string.rating_scale, low, high),
+    ) {
         change(it?.toString().orEmpty())
     }
 }

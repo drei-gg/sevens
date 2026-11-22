@@ -23,48 +23,32 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.fast.core.*
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import gg.seven.kit.LocalSevenGate
-import gg.seven.kit.SevenFormat
 import gg.seven.kit.Space
 import gg.seven.kit.EmptyState
-import java.time.*
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-
-internal fun Double.number(digits: Int = 1): String =
-    java.text.NumberFormat.getNumberInstance(Locale.getDefault())
-        .apply {
-            maximumFractionDigits = digits
-            minimumFractionDigits = 0
-        }
-        .format(this)
-
-/** Set from the device setting at the root, so every stamp honours 12/24-hour time. */
-internal var use24Hour = false
-
-internal fun stamp(value: Double): String {
-    val at = value.instant().atZone(ZoneId.systemDefault())
-    return "${SevenFormat.date(at)} at ${SevenFormat.time(at, use24Hour)}"
-}
-
-internal fun stamp(value: java.time.Instant): String = stamp(value.millis())
-
-internal fun clock(value: Double): String =
-    SevenFormat.time(value.instant().atZone(ZoneId.systemDefault()), use24Hour)
-
-/** "16 hr", "16 hr 30 min", "45 min": the iOS duration wording. */
-internal fun duration(value: Double): String {
-    val mins = (value / 60_000).toLong().coerceAtLeast(0)
-    val h = mins / 60
-    val m = mins % 60
-    return when {
-        h == 0L -> "$m min"
-        m == 0L -> "$h hr"
-        else -> "$h hr $m min"
-    }
-}
 
 internal typealias OpenEditor = (String, java.util.UUID?) -> Unit
+
+/** A tab or page key (state and test tags stay in English) as its title in the locale. */
+@Composable
+@ReadOnlyComposable
+private fun title(key: String): String =
+    stringResource(
+        when (key) {
+            "Today" -> R.string.tab_today
+            "History" -> R.string.tab_history
+            "Journal" -> R.string.tab_journal
+            "Trends" -> R.string.tab_trends
+            "Settings" -> R.string.page_settings
+            "Water" -> R.string.page_water
+            "Water trends" -> R.string.page_water_trends
+            "All water entries" -> R.string.page_water_entries
+            "Fast details" -> R.string.page_fast_details
+            else -> R.string.page_plans
+        }
+    )
 
 @Composable
 fun FastApp(m: FastModel) {
@@ -87,11 +71,12 @@ fun FastApp(m: FastModel) {
     use24Hour = android.text.format.DateFormat.is24HourFormat(context)
     val snackbar = remember { SnackbarHostState() }
     val undoable by m.undoable.collectAsStateWithLifecycle()
+    val undoLabel = stringResource(R.string.undo)
     LaunchedEffect(undoable) {
         undoable?.let {
             // Cleared only after it's shown: clearing first would restart this effect and
             // cancel the snackbar.
-            val result = snackbar.showSnackbar(it.text, actionLabel = "Undo", duration = SnackbarDuration.Short)
+            val result = snackbar.showSnackbar(it.text, actionLabel = undoLabel, duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) it.undo()
             if (m.undoable.value === it) m.undoable.value = null
         }
@@ -138,16 +123,16 @@ fun FastApp(m: FastModel) {
                         )
                 ) {
                     Spacer(Modifier.height(28.dp))
-                    tabs.forEach { (label, icon) ->
+                    tabs.forEach { (key, icon) ->
                         NavigationRailItem(
-                            modifier = Modifier.testTag("nav-$label"),
-                            selected = tab == label,
+                            modifier = Modifier.testTag("nav-$key"),
+                            selected = tab == key,
                             onClick = {
-                                tab = label
+                                tab = key
                                 page = null
                             },
                             icon = { Icon(icon, null) },
-                            label = { Text(label) },
+                            label = { Text(title(key)) },
                         )
                     }
                 }
@@ -156,21 +141,21 @@ fun FastApp(m: FastModel) {
                 modifier = Modifier.weight(1f),
                 topBar = {
                     TopAppBar(
-                        title = { Text(page ?: tab, maxLines = 1) },
+                        title = { Text(title(page ?: tab), maxLines = 1) },
                         navigationIcon = {
                             if (page != null)
                                 IconButton(onClick = { back() }) {
-                                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back")
+                                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back))
                                 }
                         },
                         actions = {
                             if (page == "Water")
                                 IconButton(onClick = { open("waterSettings", null) }) {
-                                    Icon(Icons.Outlined.Settings, "Goal, glass & reminders")
+                                    Icon(Icons.Outlined.Settings, stringResource(R.string.water_settings_action))
                                 }
                             if (page == null)
                                 IconButton(onClick = { page = "Settings" }) {
-                                    Icon(Icons.Outlined.Settings, "Settings")
+                                    Icon(Icons.Outlined.Settings, stringResource(R.string.page_settings))
                                 }
                         },
                         colors =
@@ -183,16 +168,16 @@ fun FastApp(m: FastModel) {
                 bottomBar = {
                     if (!wide)
                         ShortNavigationBar {
-                            tabs.forEach { (label, icon) ->
+                            tabs.forEach { (key, icon) ->
                                 ShortNavigationBarItem(
-                                    modifier = Modifier.testTag("nav-$label"),
-                                    selected = tab == label,
+                                    modifier = Modifier.testTag("nav-$key"),
+                                    selected = tab == key,
                                     onClick = {
-                                        tab = label
+                                        tab = key
                                         page = null
                                     },
                                     icon = { Icon(icon, null) },
-                                    label = { Text(label) },
+                                    label = { Text(title(key)) },
                                 )
                             }
                         }
@@ -266,17 +251,17 @@ fun FastApp(m: FastModel) {
                 .getOrDefault(0)
         AlertDialog(
             onDismissRequest = { m.importPreview.value = null },
-            title = { Text("Merge backup?") },
-            text = {
-                Text(
-                    "Add $count records. Existing settings and reminder choices stay as they are. Conflicts reject the whole import; no records are overwritten."
-                )
-            },
+            title = { Text(stringResource(R.string.merge_title)) },
+            text = { Text(pluralStringResource(R.plurals.merge_message, count, count)) },
             confirmButton = {
-                TextButton(onClick = m::confirmImport, enabled = !busy) { Text("Merge") }
+                TextButton(onClick = m::confirmImport, enabled = !busy) {
+                    Text(stringResource(R.string.merge))
+                }
             },
             dismissButton = {
-                TextButton(onClick = { m.importPreview.value = null }) { Text("Cancel") }
+                TextButton(onClick = { m.importPreview.value = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
             },
         )
     }

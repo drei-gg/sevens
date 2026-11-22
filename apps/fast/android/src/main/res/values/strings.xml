@@ -1,1 +1,466 @@
-<resources><string name="widget_description">Your current fasting timer. Open the app to start, finish or edit a fast.</string></resources>
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Fast's English strings: the source for translations, which arrive as community pull requests
+    (values-<locale>/strings.xml). Keep placeholders positional (%1$s, %2$d) and write typographic
+    ’ and … directly. Record data (preset names, tags, notes) never comes from here.
+-->
+<resources>
+    <string name="widget_description">Your current fasting timer. Open the app to start, finish or edit a fast.</string>
+
+    <!-- Shared words -->
+    <string name="add">Add</string>
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="delete">Delete</string>
+    <string name="done">Done</string>
+    <string name="edit">Edit</string>
+    <string name="keep">Keep</string>
+    <string name="undo">Undo</string>
+    <string name="day">Day</string>
+    <string name="started">Started</string>
+    <string name="finished">Finished</string>
+    <string name="goal">Goal</string>
+    <string name="goal_reached">Goal reached</string>
+    <string name="open_ended">Open ended</string>
+    <string name="eating_window">Eating window</string>
+    <string name="intention">Intention</string>
+    <string name="reflection">Reflection</string>
+    <string name="tags">Tags</string>
+    <string name="mood">Mood</string>
+    <string name="energy">Energy</string>
+    <string name="hunger">Hunger</string>
+    <string name="rest_day">Rest day</string>
+    <string name="check_in">Check in</string>
+    <string name="log_measurement">Log measurement</string>
+    <string name="start_fast">Start fast</string>
+    <string name="end_fast">End fast</string>
+    <string name="edit_fast">Edit fast</string>
+    <string name="add_past_fast">Add past fast</string>
+    <string name="plan_a_fast">Plan a fast</string>
+    <string name="previous_day">Previous day</string>
+    <string name="next_day">Next day</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
+    <string name="no_entries">No entries</string>
+    <string name="midnight">Midnight</string>
+    <string name="keep_editing">Keep editing</string>
+
+    <!-- Formats. "%1$s at %2$s": a date, then a time. -->
+    <string name="stamp">%1$s at %2$s</string>
+    <!-- Two related values side by side, such as a date and an amount. -->
+    <string name="pair">%1$s · %2$s</string>
+    <string name="date_range">%1$s – %2$s</string>
+    <!-- An amount and its unit: "250 mL". -->
+    <string name="amount">%1$s %2$s</string>
+    <!-- A count out of a total: "3 / 7". -->
+    <string name="ratio">%1$d / %2$d</string>
+    <!-- Joins the parts of a TalkBack description of a calendar day. -->
+    <string name="description_separator">", "</string>
+    <plurals name="duration_hours">
+        <item quantity="one">%d hr</item>
+        <item quantity="other">%d hr</item>
+    </plurals>
+    <plurals name="duration_minutes">
+        <item quantity="one">%d min</item>
+        <item quantity="other">%d min</item>
+    </plurals>
+    <!-- "16 hr 30 min": the hours, then the minutes, from the two plurals above. -->
+    <string name="duration_hours_minutes">%1$s %2$s</string>
+    <!-- Recorded hours as a number: "5.5 h". -->
+    <string name="hours_short_value">%1$s h</string>
+
+    <!-- Units -->
+    <string name="unit_kg">kg</string>
+    <string name="unit_lb">lb</string>
+    <string name="unit_ml">mL</string>
+    <string name="unit_fl_oz">US fl oz</string>
+    <string name="unit_cm">cm</string>
+    <string name="unit_sleep_hours">h</string>
+    <!-- The goal and eating-window field suffix. -->
+    <string name="unit_hours_short">hr</string>
+    <!-- The unit of the daily recorded-hours chart and the heatmap legend. -->
+    <string name="unit_hours">hours</string>
+
+    <!-- Measurement kinds -->
+    <string name="metric_weight">Weight</string>
+    <string name="metric_water">Water</string>
+    <string name="metric_waist">Waist</string>
+    <string name="metric_sleep">Sleep</string>
+
+    <!-- Tabs and pages -->
+    <string name="tab_today">Today</string>
+    <string name="tab_history">History</string>
+    <string name="tab_journal">Journal</string>
+    <string name="tab_trends">Trends</string>
+    <string name="page_settings">Settings</string>
+    <string name="page_water">Water</string>
+    <string name="page_water_trends">Water trends</string>
+    <string name="page_water_entries">All water entries</string>
+    <string name="page_fast_details">Fast details</string>
+    <string name="page_plans">Plans</string>
+    <string name="water_settings_action">Goal, glass &amp; reminders</string>
+
+    <!-- Backup merge -->
+    <string name="merge_title">Merge backup?</string>
+    <plurals name="merge_message">
+        <item quantity="one">Add %d record. Existing settings and reminder choices stay as they are. Conflicts reject the whole import; no records are overwritten.</item>
+        <item quantity="other">Add %d records. Existing settings and reminder choices stay as they are. Conflicts reject the whole import; no records are overwritten.</item>
+    </plurals>
+    <string name="merge">Merge</string>
+
+    <!-- Model messages -->
+    <string name="load_failure">Tracking file could not be opened. %1$s The original file is preserved. Export it before recovery.</string>
+    <string name="surfaces_failed">Your records are saved. Android could not update reminders or the timer surface; reopen the app to retry.</string>
+    <string name="export_saved">Export saved</string>
+    <string name="backup_merged">Backup merged</string>
+    <string name="error_locked">Start the free trial or unlock to add records. Your existing records remain editable and exportable.</string>
+    <string name="error_read_only_until_recovery">The archive is read-only until recovery</string>
+    <string name="error_still_opening">Still opening your records</string>
+    <string name="error_archive_too_large">Archive exceeds 25 MB</string>
+    <string name="error_backup_too_large">Backup exceeds 25 MB</string>
+    <string name="error_backup_unreadable">Could not read backup</string>
+    <string name="error_export_destination">Could not open destination</string>
+    <string name="error_records_unreadable">Fast’s records could not be read.</string>
+
+    <!-- Core errors -->
+    <string name="error_invalid_time">End must be after start.</string>
+    <string name="error_future_record">Records can’t be in the future.</string>
+    <string name="error_invalid_goal">Goal must be 1 minute to 365 days, and the eating window 1 minute to 7 days.</string>
+    <string name="error_overlap">This overlaps another fast.</string>
+    <string name="error_multiple_active">Only one fast can be running.</string>
+    <string name="error_duplicate_id">This record is already here.</string>
+    <string name="error_invalid_entry">Check the dates, amounts and text.</string>
+    <string name="error_dangling_journal">This entry links to a fast that no longer exists.</string>
+    <string name="error_unsupported_schema">This backup is from a newer version of Fast.</string>
+    <string name="error_unreadable">This file isn’t a Fast backup.</string>
+    <string name="error_conflict">This backup has a different version of a record you already have.</string>
+    <string name="error_too_large">This backup is too large.</string>
+    <string name="error_read_only">Records are read-only.</string>
+    <string name="error_generic">Something went wrong.</string>
+
+    <!-- Brand moments (SevenKit's Before you buy, unlock and trial-ended sheets) -->
+    <string name="gate_title">Your phone already has a timer.</string>
+    <string name="gate_built_in">The Clock app can time a fast, a notes app can hold a journal, and Health Connect can keep your weight. If that’s all you need, keep your money.</string>
+    <!-- %1$s is the store price, filled in when the store reports it. -->
+    <string name="gate_offer">This brings your timers, calendar, patterns, private journal and water tracker with optional reminders together. Try everything for 7 days, no card. Then %1$s, once. Nothing renews.</string>
+    <string name="gate_offer_without_price">This brings your timers, calendar, patterns, private journal and water tracker with optional reminders together. Try everything for 7 days, no card. Then a one-time purchase. Nothing renews.</string>
+    <string name="gate_records_stay">Your saved records always stay readable, editable and exportable, even after the trial. A fast already running can always be ended and saved.</string>
+    <string name="gate_records_not_prescriptions">Timers are records, not prescriptions. A shorter fast is a valid record. Nothing starts or ends by itself.</string>
+    <string name="gate_look_around">Look around first</string>
+    <string name="gate_app_name">Fast Tracker</string>
+    <string-array name="gate_unlock_features">
+        <item>Fasting and eating timers, with flexible plans</item>
+        <item>A complete calendar, heatmap and trends</item>
+        <item>A private journal and optional measurements</item>
+        <item>Water tracking, personal goals and gentle reminders</item>
+        <item>Local reminders and portable backups</item>
+    </string-array>
+    <string-array name="gate_still_free">
+        <item>Reading, correcting, deleting and exporting your records</item>
+        <item>Ending and saving a fast already in progress</item>
+    </string-array>
+    <string-array name="gate_unlock_keeps">
+        <item>Starting new fasts, plans, journal entries and measurements</item>
+    </string-array>
+    <string name="gate_not_started">Free trial not started. Your saved records stay accessible.</string>
+
+    <!-- Today -->
+    <string name="today_plans">Plans &amp; saved timers</string>
+    <string name="today_intention">Your intention</string>
+    <string name="today_check_in_detail">Notice your day</string>
+    <string name="timer_remaining">Remaining</string>
+    <string name="timer_fasting">Fasting</string>
+    <string name="timer_eating_window">Eating window</string>
+    <string name="timer_last_fast">Last fast</string>
+    <string name="timer_own_pace">At your own pace.</string>
+    <!-- Under the running timer, and in the timer notification: "Goal · 16 hr" or "Goal · Nov 22, 2026 at 8:00 PM". -->
+    <string name="timer_goal">Goal · %1$s</string>
+    <string name="timer_window_ends">Ends %1$s</string>
+    <string name="timer_finished">Finished %1$s</string>
+    <string name="timer_structure">A little structure. Room for real life.</string>
+    <string name="timer_show_elapsed">Show elapsed time</string>
+    <string name="timer_show_remaining">Show remaining time</string>
+    <string name="timer_keeps_running">The timer keeps running until you end it.</string>
+    <string name="timer_window_note">A reminder, not a deadline. Start your next fast when it suits you.</string>
+    <!-- A time card: weekday, then time, "Tue · 7:05 PM". -->
+    <string name="time_card_moment">%1$s · %2$s</string>
+
+    <!-- Water -->
+    <string name="water_today">Water today</string>
+    <string name="water_history">History</string>
+    <string name="water_set_goal">Set a daily goal</string>
+    <string name="water_other_amount">Other amount</string>
+    <string name="water_undo_glass">Undo last glass</string>
+    <string name="water_resume_reminders">Resume water reminders</string>
+    <string name="water_pause_reminders">Pause water reminders</string>
+    <plurals name="drinks">
+        <item quantity="one">%d drink</item>
+        <item quantity="other">%d drinks</item>
+    </plurals>
+    <!-- Under the day’s total: "of 2,000 mL". -->
+    <string name="water_of_goal">of %1$s</string>
+    <string name="water_total">Total logged</string>
+    <string name="water_days_with_entries">Days with entries</string>
+    <string name="water_average">Average on logged days</string>
+    <string name="water_daily">Daily water</string>
+    <string name="water_summary_note">These are recorded amounts. A day without entries does not mean you drank no water.</string>
+    <string name="water_no_drinks">No drinks logged</string>
+    <string name="water_no_drinks_detail">Add a drink whenever you need.</string>
+    <string name="water_drinks">Drinks</string>
+    <string name="water_none_today">No water logged for this day.</string>
+    <string name="water_drink_deleted">Drink deleted</string>
+    <string name="water_delete_drink">Delete drink</string>
+    <string name="water_last_seven">Last seven days</string>
+    <string name="notifications_off_reminders">Notifications are off. Tracking still works; enable notifications in Android Settings when you want reminders.</string>
+
+    <!-- Water settings -->
+    <string name="water_settings">Water settings</string>
+    <string name="water_goal_heading">Your daily goal</string>
+    <string name="water_use_goal">Use a personal goal</string>
+    <string name="water_daily_amount">Daily amount</string>
+    <string name="water_goal_note">An optional target you choose, not a recommended intake. No streaks or pressure to catch up.</string>
+    <string name="water_glass_heading">Quick-add glass</string>
+    <string name="water_glass">Glass</string>
+    <string name="water_glass_note">Change units in Settings.</string>
+    <string name="water_reminders_heading">Water reminders</string>
+    <string name="water_remind">Remind me to drink water</string>
+    <string name="water_paused">Paused until you resume</string>
+    <string name="water_from">From</string>
+    <string name="water_until">Until</string>
+    <string name="water_every">Every</string>
+    <plurals name="water_interval">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <string name="water_reminders_note">Daily at your chosen hours, up to but not including the end. Android may delay delivery. Logging water does not silence your schedule.</string>
+    <string name="water_end_after_start">End time must be after start time.</string>
+
+    <!-- Plans -->
+    <string name="plans_intro">Plans are reminders, not records. Nothing starts automatically.</string>
+    <string name="plans_planned">Planned fasts</string>
+    <string name="plans_empty">Room for a plan</string>
+    <string name="plans_empty_detail">Pick a date and time. Change your mind whenever you need.</string>
+    <string name="plans_start_now">Start now from this plan</string>
+    <!-- Names the feature on the unlock sheet. -->
+    <string name="plans_starting_feature">Starting a fast</string>
+    <string name="plans_presets">Your presets</string>
+    <string name="plans_save_preset">Save a custom preset</string>
+    <string name="plans_start_title">Start this plan now?</string>
+    <string name="plans_start_message">The actual start will be now. You can correct it later.</string>
+    <string name="plans_start_confirm">Start now</string>
+
+    <!-- Editors -->
+    <string name="editor_start">Start a fast</string>
+    <string name="editor_journal">Journal entry</string>
+    <string name="editor_water">Water entry</string>
+    <string name="editor_metric">Measurement</string>
+    <string name="editor_preset">Custom preset</string>
+    <string name="editor_rhythm">Rhythm</string>
+    <string name="editor_preset_name">Preset name</string>
+    <string name="editor_planned_start">Planned start</string>
+    <string name="editor_when">When</string>
+    <string name="editor_duration">Duration: %1$s</string>
+    <string name="editor_set_goal">Set a goal</string>
+    <string name="editor_limits_note">Recording limits are not recommendations.</string>
+    <string name="editor_intention_prompt">What would you like to make room for?</string>
+    <string name="editor_reflection_prompt">What did you notice? What would you change?</string>
+    <string name="editor_note">Note (optional)</string>
+    <string name="editor_linked_fast">Linked fast</string>
+    <string name="editor_ordinary_day">An ordinary day</string>
+    <string name="editor_observation">Observation</string>
+    <string name="editor_observation_prompt">What’s happening in your body, your day, or your thoughts?</string>
+    <string name="editor_optional_check_in">Optional check-in</string>
+    <string name="rating_low">Low</string>
+    <string name="rating_good">Good</string>
+    <string name="rating_high">High</string>
+    <string name="rating_none">None</string>
+    <string name="rating_strong">Strong</string>
+    <!-- Under a 1–5 rating: "1 Low · 5 Good". -->
+    <string name="rating_scale">1 %1$s · 5 %2$s</string>
+    <string name="editor_ratings_note">These are your observations, not a score to improve.</string>
+    <string name="editor_tags_prompt">Separate with commas</string>
+    <string name="editor_amount">Amount</string>
+    <string name="editor_water_note">Log your own observations. There is no target you have to meet.</string>
+    <string name="editor_early_finish_note">An early finish is still a record. This timer does not measure ketosis, autophagy or fat burning.</string>
+    <string name="editor_discard_fast">Discard fast</string>
+    <string name="error_rating">Enter a whole number for rating</string>
+    <string name="error_goal_hours">Enter goal hours</string>
+    <string name="error_eating_hours">Enter eating window hours</string>
+    <string name="error_amount">Enter an amount</string>
+    <string name="discard_title">Discard this draft?</string>
+    <string name="discard_message">Your saved records will stay as they are.</string>
+    <string name="discard_confirm">Discard draft</string>
+    <string name="delete_record_title">Delete this record?</string>
+    <string name="delete_record_message">This cannot be undone. Journal entries linked to a deleted fast are kept.</string>
+
+    <!-- History -->
+    <string name="history_search">Search intentions, reflections &amp; tags</string>
+    <string name="history_calendar">Calendar</string>
+    <string name="history_heatmap">Heatmap</string>
+    <string name="history_list">List</string>
+    <string name="timezone_note">Days follow your current timezone: %1$s.</string>
+    <string name="heatmap_title">13 weeks of recorded time</string>
+    <string name="heatmap_detail">Darker means more recorded hours. It is not a score. Scroll sideways for all 13 weeks.</string>
+    <string name="heatmap_outside">Outside selected period</string>
+    <string name="heatmap_earlier">Earlier 13 weeks</string>
+    <string name="heatmap_later">Later 13 weeks</string>
+    <string name="heatmap_legend_description">Shades: none, under 6, 6 to 12, 12 to 18, and 18 or more recorded hours</string>
+    <!-- The last heatmap legend step: "18+". -->
+    <string name="heatmap_or_more">%1$s+</string>
+    <string name="heatmap_marks">A dot marks a journal entry; a leaf marks a rest day.</string>
+    <!-- In a calendar day’s TalkBack description: "5.5 hours recorded". -->
+    <string name="day_recorded">%1$s recorded</string>
+    <string name="day_mark_journal">journal</string>
+    <string name="day_mark_plan">plan</string>
+    <string name="day_mark_rest">rest day</string>
+    <string name="history_journal_check_in">Journal check-in</string>
+    <string name="history_plan">Plan · %1$s</string>
+    <string name="history_rest_note">Rest day · %1$s</string>
+    <string name="history_nothing_recorded">Nothing recorded for this day.</string>
+    <string name="history_filter_all">All fasts</string>
+    <string name="history_filter_shorter">Shorter than planned</string>
+    <string name="history_no_match">No matching fasts</string>
+    <string name="history_no_match_detail">Try another word from an intention, reflection or tag.</string>
+    <string name="history_empty">A history worth keeping</string>
+    <string name="history_empty_detail">Your records will be here. Add a forgotten fast whenever you need.</string>
+    <!-- The end of a running fast in the list: "Nov 22, 2026 at 8:00 AM – now". -->
+    <string name="history_now">now</string>
+    <string name="history_shorter_record">Shorter than planned · still a valid record</string>
+    <string name="history_in_progress">In progress</string>
+    <string name="history_goal_met">Chosen time reached</string>
+    <string name="history_mark_rest">Mark a rest day</string>
+    <string name="calendar_jump">Jump to day</string>
+    <string name="calendar_legend">24-hour rings: midnight at top, noon at bottom. Linked across days; dashed for plans. Dot: journal · circle: plan · dash: rest day</string>
+
+    <!-- Fast details -->
+    <string name="detail_deleted">Fast deleted</string>
+    <string name="detail_deleted_detail">Your other records and observations are still here.</string>
+    <string name="detail_time_zone">Recorded time zone</string>
+    <string name="detail_observations">Observations</string>
+    <string name="detail_quiet_check_in">A quiet check-in</string>
+    <string name="detail_add_check_in">Add a check-in</string>
+
+    <!-- Journal -->
+    <string name="journal_search">Search observations &amp; tags</string>
+    <string name="journal_intro">A record of how it felt. Set an intention, notice what happens, keep what you learn.</string>
+    <string name="journal_no_match">No matching entries</string>
+    <string name="journal_no_match_detail">Try another word from an observation or tag.</string>
+    <string name="journal_empty">Nothing required</string>
+    <string name="journal_empty_detail">A thought, an observation, or a reflection. Mood, energy and hunger are always optional.</string>
+    <!-- A recorded rating: "Mood 4/5". -->
+    <string name="rating_value">%1$s %2$d/5</string>
+    <string name="journal_check_in">Check-in</string>
+    <string name="journal_add">Add journal entry</string>
+
+    <!-- Trends -->
+    <string name="period_week">Week</string>
+    <string name="period_month">Month</string>
+    <string name="period_quarter">Quarter</string>
+    <string name="period_year">Year</string>
+    <string name="period_ending">Ending</string>
+    <string name="trends_recorded_hours">Recorded hours</string>
+    <string name="trends_completed">Completed fasts</string>
+    <string name="trends_average">Average duration</string>
+    <string name="trends_none_yet">None yet</string>
+    <string name="trends_goals_reached">Goals reached</string>
+    <string name="trends_note">Hours include portions of fasts in this period. Completed fasts and averages use sessions that ended in it.</string>
+    <string name="trends_daily_hours">Daily recorded hours</string>
+    <string name="trends_measurements">Measurements</string>
+    <string name="trends_nothing_logged">Nothing logged in this period.</string>
+    <!-- "First → latest: 72.4 → 71.8 kg". -->
+    <string name="trends_first_latest">First → latest: %1$s → %2$s %3$s</string>
+    <string name="trends_check_ins">Your check-ins</string>
+    <plurals name="observations">
+        <item quantity="one">%d observation</item>
+        <item quantity="other">%d observations</item>
+    </plurals>
+    <!-- An average rating: "Mood · 3.5 / 5 · n=4" (n is the number of entries). -->
+    <string name="rating_average">%1$s · %2$s / 5 · n=%3$d</string>
+    <string name="trends_check_ins_note">These describe your entries. They do not show that fasting caused a change.</string>
+
+    <!-- Charts. TalkBack: "Daily hours chart, November 1, 2026 to November 30, 2026. …" -->
+    <string name="chart_daily_description">Daily %1$s chart, %2$s to %3$s. Use Show daily values for every value.</string>
+    <string name="chart_daily_caption">%1$s – %2$s · %3$s. Scroll or pinch to inspect.</string>
+    <string name="chart_show_values">Show daily values</string>
+    <string name="chart_hide_values">Hide daily values</string>
+    <string name="chart_daily_value">%1$s · %2$s</string>
+    <string name="chart_measurement_description">Measurement chart. Values are listed below with their dates.</string>
+
+    <!-- Settings -->
+    <string name="notification_permission_denied">Notification permission was not granted. Your tracking still works.</string>
+    <string name="recovery_title">Records need attention</string>
+    <string name="recovery_export">Export original file</string>
+    <string name="recovery_detail">After saving the original, recover from a valid backup in a separate installation or contact support. This app will not overwrite the unreadable file.</string>
+    <string name="settings_data">Your data</string>
+    <string name="settings_data_footer">Stored on this device. Android may include it in device backups. No account, developer analytics or app server. Backups contain private journal and measurement records; choose where to save them.</string>
+    <string name="settings_export_json">Export JSON backup</string>
+    <string name="settings_export_csv">Export CSV tables</string>
+    <string name="settings_import">Import &amp; merge backup</string>
+    <string name="delete_all_records">Delete all records</string>
+    <string name="settings_widget_detail">A live timer and your planned finish. Tap to open the app; journal text and measurements stay private.</string>
+    <string name="settings_make_it_yours">Make it yours</string>
+    <string name="settings_pounds">Weight in pounds</string>
+    <string name="settings_fluid_ounces">Water in US fluid ounces</string>
+    <string name="settings_show_weight">Show weight</string>
+    <string name="settings_show_eating_window">Show eating window</string>
+    <string name="settings_reminders">Reminders you choose</string>
+    <string name="settings_reminders_footer">Optional local notifications. Android battery settings may delay delivery. Reminders never start or finish a fast.</string>
+    <string name="settings_timer_notification">Show current timer notification</string>
+    <string name="settings_goal_reminder">Chosen fasting time reached</string>
+    <string name="settings_eating_reminder">Eating window elapsed</string>
+    <string name="settings_plan_reminders">Dated plans</string>
+    <string name="settings_weekly_reminder">Weekly start reminder</string>
+    <string name="settings_time">Time</string>
+    <string name="settings_notifications_allowed">Android notifications are allowed.</string>
+    <string name="settings_notifications_off">Android notifications are off.</string>
+    <string name="settings_notification_settings">Android notification settings</string>
+    <string name="settings_about_fasting">About fasting</string>
+    <string name="settings_about_fasting_text">This is a record, not a treatment plan. Longer is not presented as better. Timer stages do not detect ketosis, fat burning or autophagy.\n\nFasting is not appropriate for everyone, particularly minors, pregnancy or breastfeeding, a history of eating disorders, and some conditions or medicines. Ask a clinician where appropriate.</string>
+    <string name="settings_network">Network contact</string>
+    <string name="settings_network_store">Google Play handles purchases and restores through Play Billing, and may contact Google for billing diagnostics. Your tracking and journal records are never passed to billing.</string>
+    <string name="settings_network_none">This edition has no purchase code and contacts no store.</string>
+    <string name="settings_network_local">Tracking, journal entries, reminders and measurements stay on this device. Health Connect, notifications and the home-screen widget work on the phone.</string>
+    <string name="settings_network_wear">A paired Wear OS watch receives a small timer snapshot and sends the actions you choose through Google Play services, device to device. Journal, weight and reflections never leave the phone.</string>
+    <string name="settings_network_exports">Exports go only to the destination you choose.</string>
+    <string name="delete_all_title">Delete every fast, journal entry, measurement, plan and rest day?</string>
+    <string name="delete_all_message">This also ends any running timer and removes custom presets. Your preferences stay. Export a backup first if you want to keep a copy. This can’t be undone.</string>
+    <string name="delete_all_done">All records deleted. Preferences were kept.</string>
+
+    <!-- Health Connect -->
+    <string name="health_title">Health Connect · weight only</string>
+    <string name="health_manual_import">Manual import of available records from the last 30 days. Existing samples are skipped, so importing again does not duplicate them.</string>
+    <string name="health_explanation">Fast reads weight only when you request an import. It never writes Health Connect data, reads in the background or sends health records to a server. Imported weights become local records included in your backups. Revoke access in Health Connect whenever you want; delete imported records in Fast to remove the local copies.</string>
+    <string name="health_unavailable">Health Connect is not available on this device. You can still log measurements manually.</string>
+    <string name="health_locked">Start the trial or unlock to import new measurements.</string>
+    <string name="health_reading">Reading weights…</string>
+    <string name="health_import">Import weight from Health Connect</string>
+    <!-- %1$s is the system’s error message. -->
+    <string name="health_read_failed">Could not read weight records: %1$s</string>
+    <string name="health_open_failed">Could not open Health Connect: %1$s</string>
+    <string name="health_permission_denied">Weight permission was not granted. Manual logging still works.</string>
+    <string name="health_too_many">Too many records in one import</string>
+    <plurals name="health_import_title">
+        <item quantity="one">Import %d weight?</item>
+        <item quantity="other">Import %d weights?</item>
+    </plurals>
+    <string name="health_import_message">Existing samples and local edits are kept. The import is saved as one transaction.</string>
+    <string name="health_import_confirm">Import</string>
+    <string name="health_rationale_title">Your health records</string>
+
+    <!-- Notifications -->
+    <string name="channel_timer">Current fasting timer</string>
+    <string name="channel_reminders">Your chosen reminders</string>
+    <string name="timer_title">Fasting timer</string>
+    <string name="timer_open_ended">Open ended · finish when you choose</string>
+    <string name="reminder_goal">Your chosen fasting time has elapsed. Finish whenever you choose.</string>
+    <string name="reminder_eating">Your chosen eating window has elapsed.</string>
+    <string name="reminder_water">Your optional water reminder.</string>
+    <string name="reminder_plan">Your planned fasting time is here. Nothing starts automatically.</string>
+
+    <!-- Home-screen widget -->
+    <string name="widget_review_records">Open to review records</string>
+    <!-- "Planned finish · 8:00 PM". -->
+    <string name="widget_planned_finish">Planned finish · %1$s</string>
+    <string name="widget_open_to_start">Open to start a fast</string>
+</resources>

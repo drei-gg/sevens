@@ -32,12 +32,12 @@ object FastReminders {
     /** Before 2026-11-22: `reminders/next`, epoch milliseconds, and no delivery ledger. */
     private const val LEGACY_PREFERENCES = "reminders"
 
-    fun config() =
+    fun config(context: Context) =
         ReminderConfig(
             // The wake Fast first shipped: ReminderReceiver, no action, request code 1.
             wake = WakeId(ReminderReceiver::class.java, requestCode = 1),
             preferences = PREFERENCES,
-            channel = ReminderChannel("chosen-reminders", "Your chosen reminders"),
+            channel = ReminderChannel("chosen-reminders", context.getString(R.string.channel_reminders)),
             tagPrefix = "fast.",
             precision = Precision.Inexact,
             recovery =
@@ -53,7 +53,7 @@ object FastReminders {
 
     fun create(context: Context): ReminderScheduler {
         val app = context.applicationContext as FastApplication
-        val scheduler = ReminderScheduler(app, config()) { Plan(app, load(app)) }
+        val scheduler = ReminderScheduler(app, config(app)) { Plan(app, load(app)) }
         migrate(app, scheduler)
         return scheduler
     }
@@ -70,7 +70,7 @@ object FastReminders {
 
     private suspend fun load(app: FastApplication): FastArchive {
         app.repository.load()
-        return app.repository.state.value ?: error("Fast's records could not be read.")
+        return app.repository.state.value ?: error(app.getString(R.string.error_records_unreadable))
     }
 
     /** Refreshes the timer surfaces and reminders from the saved archive. */
@@ -95,13 +95,14 @@ object FastReminders {
 
         override fun build(reminder: DueReminder, builder: NotificationCompat.Builder) {
             val text =
-                when (reminder.payload as ReminderKind) {
-                    ReminderKind.GOAL ->
-                        "Your chosen fasting time has elapsed. Finish whenever you choose."
-                    ReminderKind.EATING -> "Your chosen eating window has elapsed."
-                    ReminderKind.WATER -> "Your optional water reminder."
-                    else -> "Your planned fasting time is here. Nothing starts automatically."
-                }
+                context.getString(
+                    when (reminder.payload as ReminderKind) {
+                        ReminderKind.GOAL -> R.string.reminder_goal
+                        ReminderKind.EATING -> R.string.reminder_eating
+                        ReminderKind.WATER -> R.string.reminder_water
+                        else -> R.string.reminder_plan
+                    }
+                )
             val open =
                 PendingIntent.getActivity(
                     context,

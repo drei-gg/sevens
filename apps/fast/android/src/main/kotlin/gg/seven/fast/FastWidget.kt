@@ -86,7 +86,7 @@ class FastGlanceWidget : GlanceAppWidget() {
             Spacer(GlanceModifier.height(4.dp))
             if (failed) {
                 Text(
-                    "Open to review records",
+                    context.getString(R.string.widget_review_records),
                     style =
                         TextStyle(
                             color = GlanceTheme.colors.onSurface,
@@ -111,15 +111,19 @@ class FastGlanceWidget : GlanceAppWidget() {
                 AndroidRemoteViews(clock, modifier = GlanceModifier.fillMaxWidth().height(48.dp))
                 Text(
                     active.goalDate?.let {
-                        if (it.toLong() <= now) "Goal reached"
+                        if (it.toLong() <= now) context.getString(R.string.goal_reached)
                         else
-                            "Planned finish · ${android.text.format.DateFormat.getTimeFormat(context).format(java.util.Date(it.toLong()))}"
-                    } ?: "Open ended",
+                            context.getString(
+                                R.string.widget_planned_finish,
+                                android.text.format.DateFormat.getTimeFormat(context)
+                                    .format(java.util.Date(it.toLong())),
+                            )
+                    } ?: context.getString(R.string.open_ended),
                     style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
                 )
             } else {
                 Text(
-                    "No fast running",
+                    context.getString(R.string.widget_placeholder),
                     style =
                         TextStyle(
                             color = GlanceTheme.colors.onSurface,
@@ -128,7 +132,7 @@ class FastGlanceWidget : GlanceAppWidget() {
                         ),
                 )
                 Text(
-                    "Open to start a fast",
+                    context.getString(R.string.widget_open_to_start),
                     style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
                 )
             }

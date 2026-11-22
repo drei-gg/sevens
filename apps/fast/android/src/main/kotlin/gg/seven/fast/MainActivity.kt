@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val model: FastModel = viewModel()
-            SevenTheme { SevenRoot(model.store, FastContent) { FastApp(model) } }
+            SevenTheme { SevenRoot(model.store, fastContent(resources)) { FastApp(model) } }
         }
     }
 

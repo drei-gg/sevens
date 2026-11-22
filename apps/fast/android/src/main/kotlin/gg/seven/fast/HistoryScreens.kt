@@ -24,6 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -58,6 +61,23 @@ internal fun localPattern(skeleton: String): DateTimeFormatter {
     }
 }
 
+/** A calendar day for TalkBack: its date, recorded hours and what else is on it. */
+private fun android.content.res.Resources.dayDescription(
+    date: LocalDate,
+    hours: Double,
+    journal: Boolean,
+    planned: Boolean,
+    rest: Boolean,
+): String =
+    listOfNotNull(
+            dateLabel(date, FormatStyle.FULL),
+            getString(R.string.day_recorded, hoursText(hours)),
+            getString(R.string.day_mark_journal).takeIf { journal },
+            getString(R.string.day_mark_plan).takeIf { planned },
+            getString(R.string.day_mark_rest).takeIf { rest },
+        )
+        .joinToString(getString(R.string.description_separator))
+
 /** Heatmap shade: four steps by recorded hours, as on iOS, so the legend can name them. */
 private fun shade(hours: Double): Float =
     when {
@@ -75,6 +95,7 @@ internal fun HistoryScreen(
     open: OpenEditor,
     openAt: (String, Double) -> Unit,
 ) {
+    val res = LocalResources.current
     var mode by rememberSaveable { mutableStateOf("Calendar") }
     val search = rememberTextFieldState()
     val query = search.text.toString()
@@ -110,15 +131,22 @@ internal fun HistoryScreen(
                 PaddingValues(start = Space.m, end = Space.m, top = Space.s, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
-            item { SearchInput("Search intentions, reflections & tags", state = search) }
+            item { SearchInput(stringResource(R.string.history_search), state = search) }
             item {
-                ConnectedChoice(listOf("Calendar", "Heatmap", "List").map { it to it }, mode) {
+                ConnectedChoice(
+                    listOf(
+                        "Calendar" to stringResource(R.string.history_calendar),
+                        "Heatmap" to stringResource(R.string.history_heatmap),
+                        "List" to stringResource(R.string.history_list),
+                    ),
+                    mode,
+                ) {
                     mode = it
                 }
             }
             item {
                 Text(
-                    "Days follow your current timezone: ${zone.id}.",
+                    stringResource(R.string.timezone_note, zone.id),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -128,12 +156,13 @@ internal fun HistoryScreen(
             if (mode == "Heatmap" && query.isBlank())
                 item {
                     val end = LocalDate.parse(heatEnd)
-                    Panel("13 weeks of recorded time") {
-                        Text(
-                            "Darker means more recorded hours. It is not a score. Scroll sideways for all 13 weeks."
-                        )
+                    Panel(stringResource(R.string.heatmap_title)) {
+                        Text(stringResource(R.string.heatmap_detail))
                         val first = end.minusDays(90)
-                        Text("${dateLabel(first)} – ${dateLabel(end)}", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            stringResource(R.string.date_range, dateLabel(first), dateLabel(end)),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                         val heat =
                             rememberHeatMapCalendarState(
                                 startMonth = YearMonth.from(first),
@@ -198,11 +227,8 @@ internal fun HistoryScreen(
                                         .clearAndSetSemantics {
                                             contentDescription =
                                                 if (included)
-                                                    "${dateLabel(date, FormatStyle.FULL)}, ${hours.number()} recorded hours" +
-                                                        (if (journal) ", journal" else "") +
-                                                        (if (planned) ", plan" else "") +
-                                                        (if (rest) ", rest day" else "")
-                                                else "Outside selected period"
+                                                    res.dayDescription(date, hours, journal, planned, rest)
+                                                else res.getString(R.string.heatmap_outside)
                                             selected = date == LocalDate.parse(dayText)
                                         },
                                     contentAlignment = Alignment.Center,
@@ -227,36 +253,45 @@ internal fun HistoryScreen(
                         HeatLegend()
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TextButton(onClick = { heatEnd = end.minusWeeks(13).toString() }) {
-                                Text("Earlier 13 weeks")
+                                Text(stringResource(R.string.heatmap_earlier))
                             }
                             TextButton(onClick = { heatEnd = end.plusWeeks(13).toString() }) {
-                                Text("Later 13 weeks")
+                                Text(stringResource(R.string.heatmap_later))
                             }
                         }
                     }
                 }
             if (mode != "List" && query.isBlank())
                 item {
-                    Heading("${dateLabel(day, FormatStyle.FULL)} · ${History.hours(a, day, zone, now).number()} hours")
+                    Heading(
+                        stringResource(
+                            R.string.pair,
+                            dateLabel(day, FormatStyle.FULL),
+                            hoursText(History.hours(a, day, zone, now)),
+                        )
+                    )
                     a.journal
                         .filter { History.onDay(it.date, day, zone) }
                         .forEach { entry ->
                             TextButton(onClick = { open("journal", entry.id) }) {
-                                Text(entry.text.ifBlank { "Journal check-in" })
+                                Text(entry.text.ifBlank { stringResource(R.string.history_journal_check_in) })
                             }
                         }
                     a.plans
                         .filter { History.onDay(it.start, day, zone) }
                         .forEach { plan ->
                             TextButton(onClick = { open("plan", plan.id) }) {
-                                Text("Plan · ${stamp(plan.start)}")
+                                Text(stringResource(R.string.history_plan, stamp(plan.start)))
                             }
                         }
                     a.restDays
                         .filter { History.onDay(it.date, day, zone) }
                         .forEach { rest ->
                             TextButton(onClick = { open("rest", rest.id) }) {
-                                Text(listOf("Rest day", rest.note).filter { it.isNotBlank() }.joinToString(" · "))
+                                Text(
+                                    if (rest.note.isBlank()) stringResource(R.string.rest_day)
+                                    else stringResource(R.string.history_rest_note, rest.note)
+                                )
                             }
                         }
                     val measured =
@@ -273,8 +308,11 @@ internal fun HistoryScreen(
                             }
                         ) {
                             Text(
-                                "${metric.kind.key.replaceFirstChar { it.uppercase() }} · " +
-                                    "${Units.display(metric.value, metric.kind, a.settings).number()} ${Units.label(metric.kind, a.settings)}"
+                                stringResource(
+                                    R.string.pair,
+                                    res.kindName(metric.kind),
+                                    amount(metric.value, metric.kind, a.settings),
+                                )
                             )
                         }
                     }
@@ -290,7 +328,7 @@ internal fun HistoryScreen(
                             a.restDays.none { History.onDay(it.date, day, zone) }
                     )
                         Text(
-                            "Nothing recorded for this day.",
+                            stringResource(R.string.history_nothing_recorded),
                             Modifier.padding(horizontal = Space.m),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -298,10 +336,10 @@ internal fun HistoryScreen(
             item {
                 ChoiceChips(
                     listOf(
-                        "All" to "All fasts",
-                        "Goal reached" to "Goal reached",
-                        "Shorter" to "Shorter than planned",
-                        "Open ended" to "Open ended",
+                        "All" to stringResource(R.string.history_filter_all),
+                        "Goal reached" to stringResource(R.string.goal_reached),
+                        "Shorter" to stringResource(R.string.history_filter_shorter),
+                        "Open ended" to stringResource(R.string.open_ended),
                     ),
                     filter,
                 ) {
@@ -311,10 +349,13 @@ internal fun HistoryScreen(
             if (records.isEmpty())
                 item {
                     Empty(
-                        if (query.isNotBlank()) "No matching fasts" else "A history worth keeping",
-                        if (query.isNotBlank())
-                            "Try another word from an intention, reflection or tag."
-                        else "Your records will be here. Add a forgotten fast whenever you need.",
+                        stringResource(
+                            if (query.isNotBlank()) R.string.history_no_match else R.string.history_empty
+                        ),
+                        stringResource(
+                            if (query.isNotBlank()) R.string.history_no_match_detail
+                            else R.string.history_empty_detail
+                        ),
                     )
                 }
             if (records.isNotEmpty())
@@ -322,16 +363,22 @@ internal fun HistoryScreen(
                     Section {
                         records.forEach { fast ->
                             item(
-                                duration(fast.duration(now)),
+                                res.duration(fast.duration(now)),
                                 supporting =
                                     listOfNotNull(
-                                            "${stamp(fast.start)} – ${fast.end?.let(::stamp) ?: "now"}",
+                                            res.getString(
+                                                R.string.date_range,
+                                                res.stamp(fast.start),
+                                                fast.end?.let { res.stamp(it) }
+                                                    ?: res.getString(R.string.history_now),
+                                            ),
                                             fast.intention.takeIf { it.isNotBlank() },
                                             when (fast.metGoal) {
-                                                false ->
-                                                    "Shorter than planned · still a valid record"
+                                                false -> res.getString(R.string.history_shorter_record)
                                                 null ->
-                                                    if (fast.end == null) "In progress" else null
+                                                    if (fast.end == null)
+                                                        res.getString(R.string.history_in_progress)
+                                                    else null
                                                 true -> null
                                             },
                                         )
@@ -339,7 +386,12 @@ internal fun HistoryScreen(
                                 onClick = { open("detail", fast.id) },
                                 trailing =
                                     if (fast.metGoal == true) {
-                                        { Icon(Icons.Outlined.CheckCircle, "Chosen time reached") }
+                                        {
+                                            Icon(
+                                                Icons.Outlined.CheckCircle,
+                                                stringResource(R.string.history_goal_met),
+                                            )
+                                        }
                                     } else null,
                             )
                         }
@@ -355,7 +407,7 @@ internal fun HistoryScreen(
                     // animateIcon gives the icon the container's content colour as it morphs.
                     Icon(
                         if (checkedProgress > 0.5f) Icons.Outlined.Close else Icons.Outlined.Add,
-                        if (adding) "Close" else "Add",
+                        stringResource(if (adding) R.string.close else R.string.add),
                         with(ToggleFloatingActionButtonDefaults) {
                             Modifier.animateIcon({ checkedProgress })
                         },
@@ -369,7 +421,7 @@ internal fun HistoryScreen(
                     // A past fast on the selected day: ending at noon (or now, for today).
                     openAt("past", pastEnd(day, zone))
                 },
-                text = { Text("Add past fast") },
+                text = { Text(stringResource(R.string.add_past_fast)) },
                 icon = { Icon(Icons.Outlined.History, null) },
             )
             FloatingActionButtonMenuItem(
@@ -377,7 +429,7 @@ internal fun HistoryScreen(
                     adding = false
                     openAt("rest", pastEnd(day, zone))
                 },
-                text = { Text("Mark a rest day") },
+                text = { Text(stringResource(R.string.history_mark_rest)) },
                 icon = { Icon(Icons.Outlined.Bedtime, null) },
             )
         }
@@ -386,6 +438,7 @@ internal fun HistoryScreen(
 
 @Composable
 internal fun JournalScreen(a: FastArchive, open: OpenEditor) {
+    val res = LocalResources.current
     val search = rememberTextFieldState()
     val query = search.text.toString()
     val entries =
@@ -399,10 +452,10 @@ internal fun JournalScreen(a: FastArchive, open: OpenEditor) {
                 PaddingValues(start = Space.m, end = Space.m, top = Space.s, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
-            item { SearchInput("Search observations & tags", state = search) }
+            item { SearchInput(stringResource(R.string.journal_search), state = search) }
             item {
                 Text(
-                    "A record of how it felt. Set an intention, notice what happens, keep what you learn.",
+                    stringResource(R.string.journal_intro),
                     Modifier.padding(horizontal = Space.m),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -411,10 +464,13 @@ internal fun JournalScreen(a: FastArchive, open: OpenEditor) {
             if (entries.isEmpty())
                 item {
                     Empty(
-                        if (query.isNotBlank()) "No matching entries" else "Nothing required",
-                        if (query.isNotBlank()) "Try another word from an observation or tag."
-                        else
-                            "A thought, an observation, or a reflection. Mood, energy and hunger are always optional.",
+                        stringResource(
+                            if (query.isNotBlank()) R.string.journal_no_match else R.string.journal_empty
+                        ),
+                        stringResource(
+                            if (query.isNotBlank()) R.string.journal_no_match_detail
+                            else R.string.journal_empty_detail
+                        ),
                     )
                 }
             if (entries.isNotEmpty())
@@ -423,15 +479,21 @@ internal fun JournalScreen(a: FastArchive, open: OpenEditor) {
                         entries.forEach { entry ->
                             val ratings =
                                 listOfNotNull(
-                                    entry.mood?.let { "Mood $it/5" },
-                                    entry.energy?.let { "Energy $it/5" },
-                                    entry.hunger?.let { "Hunger $it/5" },
+                                    entry.mood?.let {
+                                        res.getString(R.string.rating_value, res.getString(R.string.mood), it)
+                                    },
+                                    entry.energy?.let {
+                                        res.getString(R.string.rating_value, res.getString(R.string.energy), it)
+                                    },
+                                    entry.hunger?.let {
+                                        res.getString(R.string.rating_value, res.getString(R.string.hunger), it)
+                                    },
                                 )
                             item(
-                                entry.text.ifBlank { "Check-in" },
+                                entry.text.ifBlank { res.getString(R.string.journal_check_in) },
                                 supporting =
                                     listOfNotNull(
-                                            stamp(entry.date),
+                                            res.stamp(entry.date),
                                             entry.tags
                                                 .takeIf { it.isNotEmpty() }
                                                 ?.joinToString(" · "),
@@ -447,7 +509,7 @@ internal fun JournalScreen(a: FastArchive, open: OpenEditor) {
         ExtendedFloatingActionButton(
             onClick = { open("journal", null) },
             icon = { Icon(Icons.Outlined.EditNote, null) },
-            text = { Text("Add journal entry") },
+            text = { Text(stringResource(R.string.journal_add)) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(Space.m),
         )
     }
@@ -464,33 +526,44 @@ internal fun TrendsScreen(a: FastArchive, now: Double, open: OpenEditor) {
         PeriodPicker(days, { days = it }, end, { endText = it.toString() })
         StatTiles(
             listOf(
-                Triple("Recorded hours", "${summary.hours.number()} h", null),
-                Triple("Completed fasts", summary.sessions.toString(), null),
                 Triple(
-                    "Average duration",
-                    summary.averageHours?.let { duration(it * 3_600_000) } ?: "None yet",
+                    stringResource(R.string.trends_recorded_hours),
+                    stringResource(R.string.hours_short_value, summary.hours.number()),
+                    null,
+                ),
+                Triple(
+                    stringResource(R.string.trends_completed),
+                    summary.sessions.toDouble().number(0),
+                    null,
+                ),
+                Triple(
+                    stringResource(R.string.trends_average),
+                    summary.averageHours?.let { duration(it * 3_600_000) }
+                        ?: stringResource(R.string.trends_none_yet),
                     null,
                 ),
             ) +
                 if (summary.goalsRecorded > 0)
                     listOf(
                         Triple(
-                            "Goals reached",
-                            "${summary.goalsMet} / ${summary.goalsRecorded}",
+                            stringResource(R.string.trends_goals_reached),
+                            stringResource(R.string.ratio, summary.goalsMet, summary.goalsRecorded),
                             null,
                         )
                     )
                 else emptyList()
         )
         Text(
-            "Hours include portions of fasts in this period. Completed fasts and averages use sessions that ended in it.",
+            stringResource(R.string.trends_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         DailyBars(a, end, days, now)
         WaterSummary(a, end, days)
-        Heading("Measurements")
-        OutlinedButton(onClick = { open("metric", null) }) { Text("Log measurement") }
+        Heading(stringResource(R.string.trends_measurements))
+        OutlinedButton(onClick = { open("metric", null) }) {
+            Text(stringResource(R.string.log_measurement))
+        }
         val start = end.minusDays(days.toLong() - 1)
         val metrics =
             a.metrics
@@ -504,22 +577,31 @@ internal fun TrendsScreen(a: FastArchive, now: Double, open: OpenEditor) {
             .filter { a.settings.showWeight || it != MetricKind.WEIGHT }
             .forEach { kind ->
                 val samples = metrics.filter { it.kind == kind }.sortedBy { it.date }
-                Panel(kind.key.replaceFirstChar { it.uppercase() }) {
+                Panel(LocalResources.current.kindName(kind)) {
                     if (samples.isEmpty())
                         Text(
-                            "Nothing logged in this period.",
+                            stringResource(R.string.trends_nothing_logged),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     else {
                         MeasurementChart(samples, a.settings)
                         Text(
-                            "First → latest: ${Units.display(samples.first().value,kind,a.settings).number()} → ${Units.display(samples.last().value,kind,a.settings).number()} ${Units.label(kind,a.settings)}",
+                            stringResource(
+                                R.string.trends_first_latest,
+                                Units.display(samples.first().value, kind, a.settings).number(),
+                                Units.display(samples.last().value, kind, a.settings).number(),
+                                unit(kind, a.settings),
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                         )
                         samples.asReversed().forEach { metric ->
                             TextButton(onClick = { open("metric", metric.id) }) {
                                 Text(
-                                    "${stamp(metric.date)} · ${Units.display(metric.value,kind,a.settings).number()} ${Units.label(kind,a.settings)}"
+                                    stringResource(
+                                        R.string.pair,
+                                        stamp(metric.date),
+                                        amount(metric.value, kind, a.settings),
+                                    )
                                 )
                             }
                         }
@@ -527,19 +609,26 @@ internal fun TrendsScreen(a: FastArchive, now: Double, open: OpenEditor) {
                 }
             }
         val observations = a.journal.filter { it.date.atZone(zone).toLocalDate() in start..end }
-        Panel("Your check-ins") {
-            Text("${observations.size} observations")
+        Panel(stringResource(R.string.trends_check_ins)) {
+            Text(pluralStringResource(R.plurals.observations, observations.size, observations.size))
             listOf(
-                    "Mood" to observations.mapNotNull { it.mood },
-                    "Energy" to observations.mapNotNull { it.energy },
-                    "Hunger" to observations.mapNotNull { it.hunger },
+                    R.string.mood to observations.mapNotNull { it.mood },
+                    R.string.energy to observations.mapNotNull { it.energy },
+                    R.string.hunger to observations.mapNotNull { it.hunger },
                 )
                 .forEach { (name, values) ->
                     if (values.isNotEmpty())
-                        Text("$name · ${values.average().number()} / 5 · n=${values.size}")
+                        Text(
+                            stringResource(
+                                R.string.rating_average,
+                                stringResource(name),
+                                values.average().number(),
+                                values.size,
+                            )
+                        )
                 }
             Text(
-                "These describe your entries. They do not show that fasting caused a change.",
+                stringResource(R.string.trends_check_ins_note),
                 style = MaterialTheme.typography.bodySmall,
             )
         }
@@ -555,17 +644,22 @@ internal fun PeriodPicker(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
         ConnectedChoice(
-            listOf(7 to "Week", 30 to "Month", 90 to "Quarter", 365 to "Year"),
+            listOf(
+                7 to stringResource(R.string.period_week),
+                30 to stringResource(R.string.period_month),
+                90 to stringResource(R.string.period_quarter),
+                365 to stringResource(R.string.period_year),
+            ),
             days,
             onSelect = onDays,
         )
-        DateField("Ending", end, onChange = onEnd)
+        DateField(stringResource(R.string.period_ending), end, onChange = onEnd)
     }
 }
 
 @Composable
 private fun DailyBars(a: FastArchive, end: LocalDate, count: Int, now: Double) {
-    Panel("Daily recorded hours") {
+    Panel(stringResource(R.string.trends_daily_hours)) {
         val values =
             remember(a.fasts, end, count, now.toLong() / 60_000) {
                 (count - 1 downTo 0).map { offset ->
@@ -573,7 +667,7 @@ private fun DailyBars(a: FastArchive, end: LocalDate, count: Int, now: Double) {
                     day to History.hours(a, day, ZoneId.systemDefault(), now)
                 }
             }
-        DailyChart(values, "hours", SevenColors.time)
+        DailyChart(values, stringResource(R.string.unit_hours), SevenColors.time)
     }
 }
 
@@ -596,7 +690,7 @@ internal fun StatTiles(values: List<Triple<String, String, String?>>) {
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
-                                title.uppercase(),
+                                title.uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -624,31 +718,41 @@ internal fun WaterSummary(a: FastArchive, end: LocalDate, count: Int) {
     val days = History.waterDays(a.metrics, end, count, zone)
     val logged = days.filter { it.entryCount > 0 }
     val total = days.sumOf { it.milliliters }
-    fun amount(value: Double) =
-        "${Units.display(value, MetricKind.WATER, a.settings).number(0)} ${Units.label(MetricKind.WATER, a.settings)}"
+    val res = LocalResources.current
+    fun amount(value: Double) = res.amount(value, MetricKind.WATER, a.settings, 0)
     StatTiles(
         listOf(
-            Triple("Total logged", amount(total), null),
-            Triple("Days with entries", "${logged.size} / $count", null),
+            Triple(stringResource(R.string.water_total), amount(total), null),
+            Triple(
+                stringResource(R.string.water_days_with_entries),
+                stringResource(R.string.ratio, logged.size, count),
+                null,
+            ),
         ) +
             if (logged.isNotEmpty())
-                listOf(Triple("Average on logged days", amount(total / logged.size), null))
+                listOf(
+                    Triple(
+                        stringResource(R.string.water_average),
+                        amount(total / logged.size),
+                        null,
+                    )
+                )
             else emptyList()
     )
     if (logged.isNotEmpty())
-        Panel("Daily water") {
+        Panel(stringResource(R.string.water_daily)) {
             DailyChart(
                 days.map {
                     it.date.atZone(zone).toLocalDate() to
                         if (it.entryCount == 0) null
                         else Units.display(it.milliliters, MetricKind.WATER, a.settings)
                 },
-                Units.label(MetricKind.WATER, a.settings),
+                unit(MetricKind.WATER, a.settings),
                 SevenColors.water,
             )
         }
     Text(
-        "These are recorded amounts. A day without entries does not mean you drank no water.",
+        stringResource(R.string.water_summary_note),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -668,14 +772,13 @@ internal fun WaterTrendsScreen(a: FastArchive, now: Double) {
             { endText = it.coerceAtMost(LocalDate.now()).toString() },
         )
         WaterSummary(a, end, count)
-        Heading("Daily water")
+        Heading(stringResource(R.string.water_daily))
         History.waterDays(a.metrics, end, count, ZoneId.systemDefault()).reversed().forEach { day ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(dateLabel(day.date.atZone(zone).toLocalDate()))
                 Text(
-                    if (day.entryCount == 0) "No entries"
-                    else
-                        "${Units.display(day.milliliters, MetricKind.WATER, a.settings).number(0)} ${Units.label(MetricKind.WATER, a.settings)}"
+                    if (day.entryCount == 0) stringResource(R.string.no_entries)
+                    else amount(day.milliliters, MetricKind.WATER, a.settings, 0)
                 )
             }
         }
@@ -691,7 +794,13 @@ internal fun WaterEntriesScreen(a: FastArchive, open: OpenEditor) {
             PaddingValues(start = Space.m, end = Space.m, top = Space.s, bottom = Space.xl),
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
-        if (entries.isEmpty()) item { Empty("No drinks logged", "Add a drink whenever you need.") }
+        if (entries.isEmpty())
+            item {
+                Empty(
+                    stringResource(R.string.water_no_drinks),
+                    stringResource(R.string.water_no_drinks_detail),
+                )
+            }
         itemsIndexed(entries, key = { _, e -> e.id }) { index, entry ->
             WaterEntryRow(entry, a, ListItemDefaults.segmentedShapes(index, entries.size)) {
                 open("water", entry.id)
@@ -712,11 +821,9 @@ private fun WaterEntryRow(
         shapes = shapes,
         supportingContent = { Text(stamp(entry.date)) },
         leadingContent = { Icon(Icons.Filled.WaterDrop, null, tint = SevenColors.water) },
-        trailingContent = { Icon(Icons.Outlined.Edit, "Edit") },
+        trailingContent = { Icon(Icons.Outlined.Edit, stringResource(R.string.edit)) },
     ) {
-        Text(
-            "${Units.display(entry.value, entry.kind, a.settings).number(0)} ${Units.label(entry.kind, a.settings)}"
-        )
+        Text(amount(entry.value, entry.kind, a.settings, 0))
     }
 }
 
@@ -729,6 +836,7 @@ internal fun WaterScreen(
     onPage: (String) -> Unit,
     addAt: (Double) -> Unit,
 ) {
+    val res = LocalResources.current
     var dayText by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
     var undoId by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
     val day = LocalDate.parse(dayText)
@@ -749,11 +857,11 @@ internal fun WaterScreen(
     Page {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { dayText = day.minusDays(1).toString() }) {
-                Icon(Icons.Outlined.ChevronLeft, "Previous day")
+                Icon(Icons.Outlined.ChevronLeft, stringResource(R.string.previous_day))
             }
             Box(Modifier.weight(1f)) {
                 NativeDateTime(
-                    "Day",
+                    stringResource(R.string.day),
                     day.atStartOfDay(zone).toInstant().toEpochMilli().toDouble(),
                     false,
                 ) {
@@ -761,7 +869,7 @@ internal fun WaterScreen(
                 }
             }
             IconButton(onClick = { dayText = day.plusDays(1).toString() }, enabled = day < today) {
-                Icon(Icons.Outlined.ChevronRight, "Next day")
+                Icon(Icons.Outlined.ChevronRight, stringResource(R.string.next_day))
             }
         }
         WaterAmount(a, day, large = true)
@@ -772,7 +880,7 @@ internal fun WaterScreen(
             ) {
                 Icon(Icons.Outlined.TrackChanges, null)
                 Spacer(Modifier.width(8.dp))
-                Text("Set a daily goal")
+                Text(stringResource(R.string.water_set_goal))
             }
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -798,14 +906,12 @@ internal fun WaterScreen(
             ) {
                 Icon(Icons.Outlined.Add, null)
                 Spacer(Modifier.width(6.dp))
-                Text(
-                    "${Units.display(a.settings.water.quickAddMilliliters,MetricKind.WATER,a.settings).number(0)} ${Units.label(MetricKind.WATER,a.settings)}"
-                )
+                Text(amount(a.settings.water.quickAddMilliliters, MetricKind.WATER, a.settings, 0))
             }
             FilledTonalButton(onClick = { addAt(entryDate()) }) {
                 Icon(Icons.Outlined.Edit, null)
                 Spacer(Modifier.width(6.dp))
-                Text("Other amount")
+                Text(stringResource(R.string.water_other_amount))
             }
         }
         if (undoId != null && a.metrics.any { it.id == undoId })
@@ -818,12 +924,12 @@ internal fun WaterScreen(
                     )
                 }
             ) {
-                Text("Undo last glass")
+                Text(stringResource(R.string.water_undo_glass))
             }
-        Heading("Drinks")
+        Heading(stringResource(R.string.water_drinks))
         if (entries.isEmpty())
             Text(
-                "No water logged for this day.",
+                stringResource(R.string.water_none_today),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
@@ -843,7 +949,9 @@ internal fun WaterScreen(
                                 },
                                 onSaved = {
                                     m.undoable.value =
-                                        FastModel.Undoable("Drink deleted") { m.restoreMetric(entry) }
+                                        FastModel.Undoable(res.getString(R.string.water_drink_deleted)) {
+                                            m.restoreMetric(entry)
+                                        }
                                 },
                             )
                     }
@@ -860,7 +968,7 @@ internal fun WaterScreen(
                             ) {
                                 Icon(
                                     Icons.Outlined.Delete,
-                                    "Delete drink",
+                                    stringResource(R.string.water_delete_drink),
                                     tint = MaterialTheme.colorScheme.onErrorContainer,
                                 )
                             }
@@ -871,7 +979,7 @@ internal fun WaterScreen(
                 }
             }
         }
-        Panel("Last seven days") {
+        Panel(stringResource(R.string.water_last_seven)) {
             val week = History.waterDays(a.metrics, today, 7, zone)
             DailyChart(
                 week.map {
@@ -879,7 +987,7 @@ internal fun WaterScreen(
                         if (it.entryCount == 0) null
                         else Units.display(it.milliliters, MetricKind.WATER, a.settings)
                 },
-                Units.label(MetricKind.WATER, a.settings),
+                unit(MetricKind.WATER, a.settings),
                 SevenColors.water,
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -898,18 +1006,18 @@ internal fun WaterScreen(
                 }
             }
             Text(
-                "Days follow your current timezone: ${zone.id}.",
+                stringResource(R.string.timezone_note, zone.id),
                 style = MaterialTheme.typography.bodySmall,
             )
         }
         Section {
             item(
-                "Water trends",
+                res.getString(R.string.page_water_trends),
                 icon = Icons.Outlined.Insights,
                 onClick = { onPage("Water trends") },
             )
             item(
-                "All water entries",
+                res.getString(R.string.page_water_entries),
                 icon = Icons.Outlined.List,
                 onClick = { onPage("All water entries") },
             )
@@ -932,6 +1040,7 @@ private fun HistoryCalendar(
             firstDayOfWeek = firstDayOfWeekFromLocale(),
         )
     val scope = rememberCoroutineScope()
+    val res = LocalResources.current
     Panel {
         val shown = state.firstVisibleMonth.yearMonth
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -944,7 +1053,10 @@ private fun HistoryCalendar(
                     }
                 }
             ) {
-                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, "Previous month")
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
+                    stringResource(R.string.previous_month),
+                )
             }
             Text(
                 shown.format(
@@ -961,12 +1073,15 @@ private fun HistoryCalendar(
                     }
                 }
             ) {
-                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, "Next month")
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    stringResource(R.string.next_month),
+                )
             }
         }
         if (LocalDensity.current.fontScale >= 1.5f || YearMonth.from(selectedDay) != shown)
             NativeDateTime(
-                "Jump to day",
+                stringResource(R.string.calendar_jump),
                 selectedDay
                     .atStartOfDay(ZoneId.systemDefault())
                     .toInstant()
@@ -1030,10 +1145,7 @@ private fun HistoryCalendar(
                                     History.onDay(it.date, day.date, ZoneId.systemDefault())
                                 }
                             val description =
-                                "${dateLabel(day.date, FormatStyle.FULL)}, ${hours.number()} recorded hours" +
-                                    (if (journal) ", journal" else "") +
-                                    (if (planned) ", plan" else "") +
-                                    (if (rest) ", rest day" else "")
+                                res.dayDescription(day.date, hours, journal, planned, rest)
                             Column(
                                 Modifier.fillMaxWidth()
                                     .height(80.dp)
@@ -1056,7 +1168,8 @@ private fun HistoryCalendar(
                                     modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
                                 )
                                 Text(
-                                    if (hours > 0) "${hours.number()}h" else "",
+                                    if (hours > 0) hoursText(hours, android.icu.text.MeasureFormat.FormatWidth.NARROW)
+                                    else "",
                                     style = MaterialTheme.typography.labelSmall,
                                 )
                                 Text(
@@ -1070,7 +1183,7 @@ private fun HistoryCalendar(
                 }
             }
         Text(
-            "24-hour rings: midnight at top, noon at bottom. Linked across days; dashed for plans. Dot: journal · circle: plan · dash: rest day",
+            stringResource(R.string.calendar_legend),
             style = MaterialTheme.typography.bodySmall,
         )
     }
@@ -1081,7 +1194,10 @@ internal fun FastDetailScreen(a: FastArchive, id: java.util.UUID?, now: Double, 
     val fast = a.fasts.find { it.id == id }
     Page {
         if (fast == null)
-            Empty("Fast deleted", "Your other records and observations are still here.")
+            Empty(
+                stringResource(R.string.detail_deleted),
+                stringResource(R.string.detail_deleted_detail),
+            )
         else {
             Text(
                 duration(fast.duration(now)),
@@ -1094,17 +1210,18 @@ internal fun FastDetailScreen(a: FastArchive, id: java.util.UUID?, now: Double, 
             FilledTonalButton(onClick = { open("fast", fast.id) }) {
                 Icon(Icons.Outlined.Edit, null)
                 Spacer(Modifier.width(Space.s))
-                Text("Edit fast")
+                Text(stringResource(R.string.edit_fast))
             }
+            val res = LocalResources.current
             Section {
-                item("Started", stamp(fast.start))
-                fast.end?.let { item("Finished", stamp(it)) }
-                item("Goal", fast.goalMinutes?.let { duration(it * 60_000.0) } ?: "Open ended")
-                item("Recorded time zone", fast.timeZoneId)
-                if (fast.tags.isNotEmpty()) item("Tags", fast.tags.joinToString(" · "))
+                item(res.getString(R.string.started), res.stamp(fast.start))
+                fast.end?.let { item(res.getString(R.string.finished), res.stamp(it)) }
+                item(res.getString(R.string.goal), res.goal(fast.goalMinutes))
+                item(res.getString(R.string.detail_time_zone), fast.timeZoneId)
+                if (fast.tags.isNotEmpty()) item(res.getString(R.string.tags), fast.tags.joinToString(" · "))
             }
             if (fast.intention.isNotBlank())
-                Section(title = "Intention") {
+                Section(title = stringResource(R.string.intention)) {
                     content {
                         androidx.compose.foundation.text.selection.SelectionContainer {
                             Text(fast.intention)
@@ -1112,25 +1229,27 @@ internal fun FastDetailScreen(a: FastArchive, id: java.util.UUID?, now: Double, 
                     }
                 }
             if (fast.reflection.isNotBlank())
-                Section(title = "Reflection") {
+                Section(title = stringResource(R.string.reflection)) {
                     content {
                         androidx.compose.foundation.text.selection.SelectionContainer {
                             Text(fast.reflection)
                         }
                     }
                 }
-            Section(title = "Observations") {
+            Section(title = stringResource(R.string.detail_observations)) {
                 a.journal
                     .filter { it.fastId == id }
                     .sortedBy { it.date }
                     .forEach { entry ->
                         item(
-                            entry.text.ifBlank { "A quiet check-in" },
-                            supporting = stamp(entry.date),
+                            entry.text.ifBlank { res.getString(R.string.detail_quiet_check_in) },
+                            supporting = res.stamp(entry.date),
                             onClick = { open("journal", entry.id) },
                         )
                     }
-                action("Add a check-in", Icons.Outlined.EditNote) { open("journal", null) }
+                action(res.getString(R.string.detail_add_check_in), Icons.Outlined.EditNote) {
+                    open("journal", null)
+                }
             }
         }
     }
@@ -1143,16 +1262,23 @@ private fun pastEnd(day: LocalDate, zone: ZoneId): Double =
 /** What the heatmap's shades and marks mean (iOS HeatmapView's legend). */
 @Composable
 private fun HeatLegend() {
+    val legend = stringResource(R.string.heatmap_legend_description)
     Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(Space.s),
             verticalArrangement = Arrangement.spacedBy(Space.xs),
             itemVerticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.clearAndSetSemantics {
-                contentDescription = "Shades: none, under 6, 6 to 12, 12 to 18, and 18 or more recorded hours"
+                contentDescription = legend
             },
         ) {
-            listOf(0 to "0", 6 to "6", 12 to "12", 18 to "18+").forEach { (hours, label) ->
+            listOf(
+                    0 to 0.0.number(0),
+                    6 to 6.0.number(0),
+                    12 to 12.0.number(0),
+                    18 to stringResource(R.string.heatmap_or_more, 18.0.number(0)),
+                )
+                .forEach { (hours, label) ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Space.xs),
@@ -1168,10 +1294,10 @@ private fun HeatLegend() {
                     Text(label, style = MaterialTheme.typography.bodySmall)
                 }
             }
-            Text("hours", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.unit_hours), style = MaterialTheme.typography.bodySmall)
         }
         Text(
-            "A dot marks a journal entry; a leaf marks a rest day.",
+            stringResource(R.string.heatmap_marks),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

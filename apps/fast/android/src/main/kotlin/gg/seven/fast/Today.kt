@@ -23,6 +23,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,35 +55,42 @@ internal fun TodayScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TimeCard("Started", active.start.millis()) { open("fast", active.id) }
-                active.goalDate?.let { goal -> TimeCard("Goal", goal) { open("fast", active.id) } }
+                TimeCard(stringResource(R.string.started), active.start.millis()) {
+                    open("fast", active.id)
+                }
+                active.goalDate?.let { goal ->
+                    TimeCard(stringResource(R.string.goal), goal) { open("fast", active.id) }
+                }
             }
-            PrimaryAction("End fast", null) { open("end", active.id) }
+            PrimaryAction(stringResource(R.string.end_fast), null) { open("end", active.id) }
         } else {
-            PrimaryAction("Start fast", Icons.Filled.PlayArrow) { open("start", null) }
+            PrimaryAction(stringResource(R.string.start_fast), Icons.Filled.PlayArrow) {
+                open("start", null)
+            }
             TextButton(
                 onClick = { onPage("Plans") },
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
                 Icon(Icons.Outlined.CalendarMonth, null)
                 Spacer(Modifier.width(8.dp))
-                Text("Plans & saved timers")
+                Text(stringResource(R.string.today_plans))
             }
         }
         if (active?.intention?.isNotBlank() == true)
-            Panel("Your intention") { Text(active.intention) }
+            Panel(stringResource(R.string.today_intention)) { Text(active.intention) }
     }
+    val res = LocalResources.current
     val daily: @Composable ColumnScope.() -> Unit = {
         WaterTodayCard(m, a, open, onPage, onUnlock)
         Section {
             item(
-                "Check in",
-                supporting = "Notice your day",
+                res.getString(R.string.check_in),
+                supporting = res.getString(R.string.today_check_in_detail),
                 icon = Icons.Outlined.EditNote,
                 onClick = { open("journal", null) },
             )
             item(
-                "Log measurement",
+                res.getString(R.string.log_measurement),
                 icon = Icons.Outlined.MonitorWeight,
                 onClick = { open("metric", null) },
             )
@@ -130,14 +140,17 @@ private fun TimerHero(a: FastArchive, now: Double) {
             .toFloat()
             .coerceIn(0f, 1f)
     val label =
-        when {
-            active != null ->
-                if (reached) "Goal reached"
-                else if (remaining && target != null) "Remaining" else "Fasting"
-            eating -> "Eating window"
-            last != null -> "Last fast"
-            else -> "At your own pace."
-        }
+        stringResource(
+            when {
+                active != null ->
+                    if (reached) R.string.goal_reached
+                    else if (remaining && target != null) R.string.timer_remaining
+                    else R.string.timer_fasting
+                eating -> R.string.timer_eating_window
+                last != null -> R.string.timer_last_fast
+                else -> R.string.timer_own_pace
+            }
+        )
     val value =
         when {
             active != null ->
@@ -150,10 +163,12 @@ private fun TimerHero(a: FastArchive, now: Double) {
         }
     val caption =
         when {
-            active != null -> target?.let { "Goal · ${duration(it)}" } ?: "Open ended"
-            eating -> "Ends ${stamp(windowEnd!!)}"
-            last != null -> "Finished ${stamp(last.end!!)}"
-            else -> "A little structure. Room for real life."
+            active != null ->
+                target?.let { stringResource(R.string.timer_goal, duration(it)) }
+                    ?: stringResource(R.string.open_ended)
+            eating -> stringResource(R.string.timer_window_ends, stamp(windowEnd!!))
+            last != null -> stringResource(R.string.timer_finished, stamp(last.end!!))
+            else -> stringResource(R.string.timer_structure)
         }
     val hue = if (active != null) SevenColors.time else MaterialTheme.colorScheme.onSurfaceVariant
     val track = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
@@ -167,7 +182,7 @@ private fun TimerHero(a: FastArchive, now: Double) {
             if (active == null && last == null)
                 Icon(Icons.Outlined.WbTwilight, null, Modifier.size(48.dp), tint = SevenColors.time)
             Text(
-                label.uppercase(),
+                label.uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -197,6 +212,8 @@ private fun TimerHero(a: FastArchive, now: Double) {
         }
     }
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        val toggleLabel =
+            stringResource(if (remaining) R.string.timer_show_elapsed else R.string.timer_show_remaining)
         if (LocalDensity.current.fontScale >= 1.5f) {
             words()
             LinearProgressIndicator(progress = { progress }, Modifier.fillMaxWidth(), color = hue)
@@ -205,10 +222,7 @@ private fun TimerHero(a: FastArchive, now: Double) {
                 Modifier.size(300.dp)
                     .then(
                         if (active != null && target != null && !reached)
-                            Modifier.clickable(
-                                onClickLabel =
-                                    if (remaining) "Show elapsed time" else "Show remaining time"
-                            ) {
+                            Modifier.clickable(onClickLabel = toggleLabel) {
                                 remaining = !remaining
                             }
                         else Modifier
@@ -246,17 +260,15 @@ private fun TimerHero(a: FastArchive, now: Double) {
                 words()
             }
         if (active != null && target != null && !reached)
-            TextButton(onClick = { remaining = !remaining }) {
-                Text(if (remaining) "Show elapsed time" else "Show remaining time")
-            }
+            TextButton(onClick = { remaining = !remaining }) { Text(toggleLabel) }
         if (reached)
             Text(
-                "The timer keeps running until you end it.",
+                stringResource(R.string.timer_keeps_running),
                 style = MaterialTheme.typography.bodySmall,
             )
         if (eating)
             Text(
-                "A reminder, not a deadline. Start your next fast when it suits you.",
+                stringResource(R.string.timer_window_note),
                 style = MaterialTheme.typography.bodySmall,
             )
     }
@@ -265,54 +277,62 @@ private fun TimerHero(a: FastArchive, now: Double) {
 @Composable
 internal fun PlansScreen(m: FastModel, a: FastArchive, open: OpenEditor) {
     val gate = LocalSevenGate.current
+    val res = LocalResources.current
     var startPlan by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
     Page {
         Text(
-            "Plans are reminders, not records. Nothing starts automatically.",
+            stringResource(R.string.plans_intro),
             Modifier.padding(horizontal = Space.m),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Section(title = "Planned fasts") {
+        Section(title = stringResource(R.string.plans_planned)) {
             if (a.plans.isEmpty())
                 item(
-                    "Room for a plan",
-                    supporting = "Pick a date and time. Change your mind whenever you need.",
+                    res.getString(R.string.plans_empty),
+                    supporting = res.getString(R.string.plans_empty_detail),
                 )
             a.plans
                 .sortedBy { it.start }
                 .forEach { plan ->
                     item(
-                        stamp(plan.start),
-                        plan.goalMinutes?.let { duration(it * 60_000.0) } ?: "Open ended",
+                        res.stamp(plan.start),
+                        res.goal(plan.goalMinutes),
                         supporting = plan.intention.ifBlank { null },
                         onClick = { open("plan", plan.id) },
                     )
                     if (a.active == null)
-                        action("Start now from this plan", Icons.Outlined.PlayCircle) {
-                            if (m.canCreate) startPlan = plan.id else gate.offer("Starting a fast")
+                        action(res.getString(R.string.plans_start_now), Icons.Outlined.PlayCircle) {
+                            if (m.canCreate) startPlan = plan.id
+                            else gate.offer(res.getString(R.string.plans_starting_feature))
                         }
                 }
-            action("Plan a fast", Icons.Outlined.EventAvailable) { open("plan", null) }
+            action(res.getString(R.string.plan_a_fast), Icons.Outlined.EventAvailable) {
+                open("plan", null)
+            }
         }
-        Section(title = "Your presets") {
+        Section(title = stringResource(R.string.plans_presets)) {
             a.presets.forEach { preset ->
                 item(
                     preset.name,
-                    preset.goalMinutes?.let { duration(it * 60_000.0) } ?: "Open ended",
+                    res.goal(preset.goalMinutes),
                     onClick = { open("preset", preset.id) },
                 )
             }
-            action("Save a custom preset", Icons.Outlined.Add) { open("preset", null) }
+            action(res.getString(R.string.plans_save_preset), Icons.Outlined.Add) {
+                open("preset", null)
+            }
         }
     }
     val plan = a.plans.find { it.id == startPlan }
     if (plan != null)
         AlertDialog(
             onDismissRequest = { startPlan = null },
-            title = { Text("Start this plan now?") },
-            text = { Text("The actual start will be now. You can correct it later.") },
-            dismissButton = { TextButton(onClick = { startPlan = null }) { Text("Cancel") } },
+            title = { Text(stringResource(R.string.plans_start_title)) },
+            text = { Text(stringResource(R.string.plans_start_message)) },
+            dismissButton = {
+                TextButton(onClick = { startPlan = null }) { Text(stringResource(R.string.cancel)) }
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -333,7 +353,7 @@ internal fun PlansScreen(m: FastModel, a: FastArchive, open: OpenEditor) {
                         })
                     }
                 ) {
-                    Text("Start now")
+                    Text(stringResource(R.string.plans_start_confirm))
                 }
             },
         )
@@ -379,15 +399,19 @@ private fun TimeCard(label: String, date: Double, action: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
-                label.uppercase(),
+                label.uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "${moment.format(DateTimeFormatter.ofPattern("EEE"))} · ${SevenFormat.time(moment, h24)}",
+                stringResource(
+                    R.string.time_card_moment,
+                    moment.format(DateTimeFormatter.ofPattern("EEE")),
+                    SevenFormat.time(moment, h24),
+                ),
                 style = MaterialTheme.typography.titleMedium,
             )
-            Text("Edit", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.edit), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -400,7 +424,10 @@ internal fun WaterAmount(a: FastArchive, day: LocalDate, large: Boolean = false)
             it.kind == MetricKind.WATER && History.onDay(it.date, day, ZoneId.systemDefault())
         }
     val goal = a.settings.water.goalMilliliters
-    val unit = Units.label(MetricKind.WATER, a.settings)
+    val amount = amount(total, MetricKind.WATER, a.settings, 0)
+    val detail =
+        if (goal == null) pluralStringResource(R.plurals.drinks, count, count)
+        else stringResource(R.string.water_of_goal, amount(goal, MetricKind.WATER, a.settings, 0))
     if (large) {
         Column(
             Modifier.fillMaxWidth(),
@@ -409,18 +436,14 @@ internal fun WaterAmount(a: FastArchive, day: LocalDate, large: Boolean = false)
         ) {
             WaterLevel(goal?.let { total / it }, Modifier.size(168.dp))
             Text(
-                "${Units.display(total,MetricKind.WATER,a.settings).number(0)} $unit",
+                amount,
                 style =
                     MaterialTheme.typography.displayMedium.copy(
                         fontWeight = FontWeight.SemiBold,
                         fontFeatureSettings = "tnum",
                     ),
             )
-            Text(
-                if (goal == null) "$count ${if(count==1) "drink" else "drinks"}"
-                else "of ${Units.display(goal,MetricKind.WATER,a.settings).number(0)} $unit",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     } else
         Row(
@@ -430,18 +453,14 @@ internal fun WaterAmount(a: FastArchive, day: LocalDate, large: Boolean = false)
             WaterLevel(goal?.let { total / it }, Modifier.size(64.dp))
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    "${Units.display(total,MetricKind.WATER,a.settings).number(0)} $unit",
+                    amount,
                     style =
                         MaterialTheme.typography.displaySmall.copy(
                             fontWeight = FontWeight.SemiBold,
                             fontFeatureSettings = "tnum",
                         ),
                 )
-                Text(
-                    if (goal == null) "$count ${if(count==1) "drink" else "drinks"}"
-                    else "of ${Units.display(goal,MetricKind.WATER,a.settings).number(0)} $unit",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 }
@@ -457,15 +476,14 @@ private fun WaterTodayCard(
     var undoId by rememberSaveable { mutableStateOf<java.util.UUID?>(null) }
     val busy by m.working.collectAsState()
     val context = LocalContext.current
+    val res = LocalResources.current
     // Resuming asks again when Android notifications aren't allowed (as iOS does); a denial
     // leaves tracking as it is.
     val permission =
         androidx.activity.compose.rememberLauncherForActivityResult(
             androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
         ) {
-            if (!it)
-                m.message.value =
-                    "Notifications are off. Tracking still works; enable notifications in Android Settings when you want reminders."
+            if (!it) m.message.value = res.getString(R.string.notifications_off_reminders)
         }
     Panel {
         Row(
@@ -474,8 +492,12 @@ private fun WaterTodayCard(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(Icons.Filled.WaterDrop, null, tint = SevenColors.water)
-            Text("Water today", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-            Text("History", style = MaterialTheme.typography.bodySmall)
+            Text(
+                stringResource(R.string.water_today),
+                Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(stringResource(R.string.water_history), style = MaterialTheme.typography.bodySmall)
             Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, Modifier.size(20.dp))
         }
         WaterAmount(a, LocalDate.now())
@@ -483,7 +505,7 @@ private fun WaterTodayCard(
             TextButton(onClick = { open("waterSettings", null) }) {
                 Icon(Icons.Outlined.TrackChanges, null)
                 Spacer(Modifier.width(8.dp))
-                Text("Set a daily goal")
+                Text(stringResource(R.string.water_set_goal))
             }
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -509,14 +531,12 @@ private fun WaterTodayCard(
             ) {
                 Icon(Icons.Outlined.Add, null)
                 Spacer(Modifier.width(6.dp))
-                Text(
-                    "${Units.display(a.settings.water.quickAddMilliliters,MetricKind.WATER,a.settings).number(0)} ${Units.label(MetricKind.WATER,a.settings)}"
-                )
+                Text(amount(a.settings.water.quickAddMilliliters, MetricKind.WATER, a.settings, 0))
             }
             FilledTonalButton(onClick = { open("water", null) }) {
                 Icon(Icons.Outlined.Edit, null)
                 Spacer(Modifier.width(6.dp))
-                Text("Other amount")
+                Text(stringResource(R.string.water_other_amount))
             }
         }
         if (undoId != null && a.metrics.any { it.id == undoId })
@@ -530,7 +550,7 @@ private fun WaterTodayCard(
                     )
                 },
             ) {
-                Text("Undo last glass")
+                Text(stringResource(R.string.water_undo_glass))
             }
         if (a.settings.water.remindersEnabled)
             TextButton(
@@ -560,8 +580,10 @@ private fun WaterTodayCard(
                 },
             ) {
                 Text(
-                    if (a.settings.water.remindersPaused) "Resume water reminders"
-                    else "Pause water reminders"
+                    stringResource(
+                        if (a.settings.water.remindersPaused) R.string.water_resume_reminders
+                        else R.string.water_pause_reminders
+                    )
                 )
             }
     }

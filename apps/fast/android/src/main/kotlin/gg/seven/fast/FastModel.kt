@@ -47,6 +47,7 @@ class ArchiveRepository(
     context: Context,
     private val file: AtomicFile = AtomicFile(File(context.filesDir, "fast.json")),
 ) {
+    private val resources = context.applicationContext.resources
     private val lock = Mutex()
     val state = MutableStateFlow<FastArchive?>(null)
     val failure = MutableStateFlow<String?>(null)
@@ -67,8 +68,7 @@ class ArchiveRepository(
                                 )
                             }
                 } catch (e: Exception) {
-                    failure.value =
-                        "Tracking file could not be opened. ${e.explanation} The original file is preserved. Export it before recovery."
+                    failure.value = resources.getString(R.string.load_failure, resources.explain(e))
                 }
             }
         }
@@ -76,11 +76,11 @@ class ArchiveRepository(
     suspend fun update(change: (FastArchive) -> FastArchive): FastArchive =
         withContext(Dispatchers.IO) {
             lock.withLock {
-                check(failure.value == null) { "The archive is read-only until recovery" }
-                val current = checkNotNull(state.value) { "Still opening your records" }
+                check(failure.value == null) { resources.getString(R.string.error_read_only_until_recovery) }
+                val current = checkNotNull(state.value) { resources.getString(R.string.error_still_opening) }
                 val next = change(current).copy(companionRevision = newId()).validated(nowMillis())
                 val bytes = ArchiveCodec.encode(next).toByteArray()
-                require(bytes.size <= ArchiveCodec.maxBytes) { "Archive exceeds 25 MB" }
+                require(bytes.size <= ArchiveCodec.maxBytes) { resources.getString(R.string.error_archive_too_large) }
                 val stream = file.startWrite()
                 try {
                     stream.write(bytes)
@@ -121,6 +121,7 @@ internal fun addsNewRecords(
 
 class FastModel(application: Application) : AndroidViewModel(application) {
     private val app = application as FastApplication
+    private val resources get() = app.resources
     val repository = app.repository
     val archive = repository.state.asStateFlow()
     val loadFailure = repository.failure.asStateFlow()
@@ -166,8 +167,7 @@ class FastModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             runCatching { FastReminders.reconcile(app) }
                 .onFailure {
-                    message.value =
-                        "Your records are saved. Android could not update reminders or the timer surface; reopen the app to retry."
+                    message.value = resources.getString(R.string.surfaces_failed)
                 }
         }
     }
@@ -187,7 +187,7 @@ class FastModel(application: Application) : AndroidViewModel(application) {
             try {
                 block()
             } catch (e: Exception) {
-                message.value = e.explanation
+                message.value = resources.explain(e)
             } finally {
                 reveal.cancel()
                 working.value = false
@@ -210,7 +210,7 @@ class FastModel(application: Application) : AndroidViewModel(application) {
             repository.update { current ->
                 val next = change(current)
                 require(canCreate || !addsNewRecords(current, next, restoring)) {
-                    "Start the free trial or unlock to add records. Your existing records remain editable and exportable."
+                    resources.getString(R.string.error_locked)
                 }
                 next
             }
@@ -237,9 +237,9 @@ class FastModel(application: Application) : AndroidViewModel(application) {
                     (if (csv) ArchiveCodec.csv(a) else ArchiveCodec.encode(a)).toByteArray()
                 }
             app.contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
-                ?: error("Could not open destination")
+                ?: error(resources.getString(R.string.error_export_destination))
         }
-        message.value = "Export saved"
+        message.value = resources.getString(R.string.export_saved)
     }
 
     fun previewImport(uri: Uri) = act {
@@ -254,13 +254,15 @@ class FastModel(application: Application) : AndroidViewModel(application) {
                             if (read < 0) break
                             output.write(buffer, 0, read)
                             require(output.size() <= ArchiveCodec.maxBytes) {
-                                "Backup exceeds 25 MB"
+                                resources.getString(R.string.error_backup_too_large)
                             }
                         }
                         val bytes = output.toByteArray()
-                        require(bytes.size <= ArchiveCodec.maxBytes) { "Backup exceeds 25 MB" }
+                        require(bytes.size <= ArchiveCodec.maxBytes) {
+                            resources.getString(R.string.error_backup_too_large)
+                        }
                         bytes.toString(Charsets.UTF_8)
-                    } ?: error("Could not read backup")
+                    } ?: error(resources.getString(R.string.error_backup_unreadable))
                 ArchiveCodec.decode(text, nowMillis())
             }
         ArchiveCodec.merge(incoming, checkNotNull(archive.value), nowMillis())
@@ -272,6 +274,6 @@ class FastModel(application: Application) : AndroidViewModel(application) {
         val saved = repository.update { ArchiveCodec.merge(incoming, it, nowMillis()) }
         importPreview.value = null
         updateSurfaces(saved)
-        message.value = "Backup merged"
+        message.value = resources.getString(R.string.backup_merged)
     }
 }

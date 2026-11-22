@@ -9,6 +9,10 @@ import kotlinx.coroutines.runBlocking
 import org.junit.*
 import org.junit.runner.RunWith
 
+/**
+ * Runs on every flavor. The generic build is unlocked (no trial), so the trial gate is exercised by
+ * the personal flavor's FastTrialTest (src/androidTestPersonal).
+ */
 @RunWith(AndroidJUnit4::class)
 class FastUiTest {
     @get:Rule val ui = createAndroidComposeRule<MainActivity>()
@@ -192,40 +196,6 @@ class FastUiTest {
         )
         ui.activityRule.scenario.recreate()
         ui.onNodeWithText("Native Android check-in").assertIsDisplayed()
-    }
-
-    @Test
-    fun expiredTrialAllowsEndingAndEditingButRejectsNewRecords() {
-        val app = ui.activity.application as FastApplication
-        val f = fastRecord(start = nowMillis() - 3_600_000)
-        runBlocking { app.repository.update { FastArchive.empty().copy(fasts = listOf(f)) } }
-        app.getSharedPreferences("seven-trial", 0)
-            .edit()
-            .putLong("start", System.currentTimeMillis() - 8 * 86_400_000L)
-            .commit()
-        ui.onNodeWithText("End fast").performScrollTo().performClick()
-        ui.onNodeWithText("Save").assertIsDisplayed().performClick()
-        ui.waitUntil(10_000) { app.repository.state.value!!.active == null }
-        ui.onNodeWithText("Start fast").performScrollTo().performClick()
-        ui.onNodeWithText("What the unlock adds").assertIsDisplayed()
-        ui.onNodeWithText("Not now").performClick()
-        ui.onNodeWithTag("nav-History").performClick()
-        ui.onNodeWithText("List", useUnmergedTree = true).performClick()
-        ui.onNodeWithText("1 hr", substring = true).performScrollTo().performClick()
-        ui.onNodeWithText("Edit fast").performClick()
-        ui.onNode(hasSetTextAction() and hasText("Reflection"))
-            .performScrollTo()
-            .performTextInput("Edited after expiry")
-        ui.onNodeWithText("Save").assertIsDisplayed().performClick()
-        try {
-            ui.waitUntil(10_000) {
-                app.repository.state.value!!.fasts.single().reflection == "Edited after expiry"
-            }
-        } catch (e: Exception) {
-            ui.onRoot(useUnmergedTree = true).printToLog("FastUiFailure")
-            println("Saved reflection: " + app.repository.state.value!!.fasts.single().reflection)
-            throw e
-        }
     }
 
     @Test

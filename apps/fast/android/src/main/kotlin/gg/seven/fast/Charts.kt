@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
@@ -65,6 +66,13 @@ internal fun DailyChart(days: List<Pair<LocalDate, Double?>>, unit: String, colo
             LocalDate.ofEpochDay(value.toLong()).format(shortDay)
         }
     }
+    val description =
+        stringResource(
+            R.string.chart_daily_description,
+            unit,
+            dateLabel(days.first().first, FormatStyle.LONG),
+            dateLabel(days.last().first, FormatStyle.LONG),
+        )
     ProvideVicoTheme(rememberM3VicoTheme(columnCartesianLayerColors = listOf(color))) {
         CartesianChartHost(
             chart =
@@ -80,22 +88,31 @@ internal fun DailyChart(days: List<Pair<LocalDate, Double?>>, unit: String, colo
             animateIn = false,
             modifier =
                 Modifier.fillMaxWidth().height(220.dp).clearAndSetSemantics {
-                    contentDescription =
-                        "Daily $unit chart, ${dateLabel(days.first().first, FormatStyle.LONG)} to ${dateLabel(days.last().first, FormatStyle.LONG)}. Use Show daily values for every value."
+                    contentDescription = description
                 },
         )
     }
     Text(
-        "${dateLabel(days.first().first)} – ${dateLabel(days.last().first)} · $unit. Scroll or pinch to inspect.",
+        stringResource(
+            R.string.chart_daily_caption,
+            dateLabel(days.first().first),
+            dateLabel(days.last().first),
+            unit,
+        ),
         style = MaterialTheme.typography.bodySmall,
     )
     TextButton(onClick = { table = !table }) {
-        Text(if (table) "Hide daily values" else "Show daily values")
+        Text(stringResource(if (table) R.string.chart_hide_values else R.string.chart_show_values))
     }
     if (table)
         days.reversed().forEach { (day, value) ->
             Text(
-                "${dateLabel(day)} · ${value?.let { "${it.number()} $unit" } ?: "No entries"}",
+                stringResource(
+                    R.string.chart_daily_value,
+                    dateLabel(day),
+                    value?.let { stringResource(R.string.amount, it.number(), unit) }
+                        ?: stringResource(R.string.no_entries),
+                ),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -126,6 +143,7 @@ internal fun MeasurementChart(entries: List<MetricEntry>, settings: TrackerSetti
     val high = points.maxOf { it.second }
     val padding = maxOf((high - low) * .1, .5)
     val color = MaterialTheme.colorScheme.primary
+    val description = stringResource(R.string.chart_measurement_description)
     val point =
         remember(color) {
             LineCartesianLayer.Point(ShapeComponent(fill(color), CorneredShape.Pill), 6f)
@@ -157,8 +175,7 @@ internal fun MeasurementChart(entries: List<MetricEntry>, settings: TrackerSetti
             animateIn = false,
             modifier =
                 Modifier.fillMaxWidth().height(160.dp).clearAndSetSemantics {
-                    contentDescription =
-                        "Measurement chart. Values are listed below with their dates."
+                    contentDescription = description
                 },
         )
     }

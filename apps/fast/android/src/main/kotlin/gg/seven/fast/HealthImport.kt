@@ -1,7 +1,6 @@
 package gg.seven.fast
 
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -13,6 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
@@ -28,19 +30,15 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.*
 
-internal const val healthExplanation =
-    "Fast reads weight only when you request an import. It never writes Health Connect data, reads in the background or sends health records to a server. Imported weights become local records included in your backups. Revoke access in Health Connect whenever you want; delete imported records in Fast to remove the local copies."
-
 @Composable
 internal fun HealthImportPanel(m: FastModel) {
     val context = LocalContext.current
+    val res = LocalResources.current
     val scope = rememberCoroutineScope()
     var working by remember { mutableStateOf(false) }
     var preview by remember { mutableStateOf<List<MetricEntry>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    val supported =
-        Build.VERSION.SDK_INT >= 28 &&
-            HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+    val supported = HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
     val permissions = remember { setOf(HealthPermission.getReadPermission(WeightRecord::class)) }
     fun read() {
         if (working) return
@@ -50,7 +48,7 @@ internal fun HealthImportPanel(m: FastModel) {
             try {
                 preview = readWeights(context)
             } catch (e: Exception) {
-                error = "Could not read weight records: ${e.message}"
+                error = res.getString(R.string.health_read_failed, e.message.orEmpty())
             } finally {
                 working = false
             }
@@ -61,23 +59,22 @@ internal fun HealthImportPanel(m: FastModel) {
             PermissionController.createRequestPermissionResultContract()
         ) { granted ->
             if (granted.containsAll(permissions)) read()
-            else error = "Weight permission was not granted. Manual logging still works."
+            else error = res.getString(R.string.health_permission_denied)
         }
     Section(
-        title = "Health Connect · weight only",
+        title = stringResource(R.string.health_title),
         footer =
             listOfNotNull(
-                    "Manual import of available records from the last 30 days. Existing samples are skipped, so importing again does not duplicate them.",
-                    healthExplanation,
-                    "Health Connect is not available on this device. You can still log measurements manually."
-                        .takeIf { !supported },
-                    "Start the trial or unlock to import new measurements.".takeIf { !m.canCreate },
+                    stringResource(R.string.health_manual_import),
+                    stringResource(R.string.health_explanation),
+                    stringResource(R.string.health_unavailable).takeIf { !supported },
+                    stringResource(R.string.health_locked).takeIf { !m.canCreate },
                     error,
                 )
                 .joinToString("\n\n"),
     ) {
         action(
-            if (working) "Reading weights…" else "Import weight from Health Connect",
+            res.getString(if (working) R.string.health_reading else R.string.health_import),
             Icons.Outlined.MonitorWeight,
             enabled = supported && !working && m.canCreate,
         ) {
@@ -90,7 +87,7 @@ internal fun HealthImportPanel(m: FastModel) {
                     if (granted.containsAll(permissions)) read()
                     else request.launch(permissions)
                 } catch (e: Exception) {
-                    error = "Could not open Health Connect: ${e.message}"
+                    error = res.getString(R.string.health_open_failed, e.message.orEmpty())
                 }
             }
         }
@@ -101,12 +98,8 @@ internal fun HealthImportPanel(m: FastModel) {
         val count = incoming.count { it.externalId !in known }
         AlertDialog(
             onDismissRequest = { preview = null },
-            title = { Text("Import $count weights?") },
-            text = {
-                Text(
-                    "Existing samples and local edits are kept. The import is saved as one transaction."
-                )
-            },
+            title = { Text(pluralStringResource(R.plurals.health_import_title, count, count)) },
+            text = { Text(stringResource(R.string.health_import_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -123,17 +116,18 @@ internal fun HealthImportPanel(m: FastModel) {
                         )
                     }
                 ) {
-                    Text("Import")
+                    Text(stringResource(R.string.health_import_confirm))
                 }
             },
-            dismissButton = { TextButton(onClick = { preview = null }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { preview = null }) { Text(stringResource(R.string.cancel)) }
+            },
         )
     }
 }
 
 private suspend fun readWeights(context: Context): List<MetricEntry> =
     withContext(Dispatchers.IO) {
-        check(Build.VERSION.SDK_INT >= 28) { "Health Connect requires Android 9 or newer" }
         val client = HealthConnectClient.getOrCreate(context)
         val now = Instant.now()
         val result = mutableListOf<MetricEntry>()
@@ -157,7 +151,7 @@ private suspend fun readWeights(context: Context): List<MetricEntry> =
                         externalId = "healthconnect:${it.metadata.id}",
                     )
                 }
-            require(result.size <= 100_000) { "Too many records in one import" }
+            require(result.size <= 100_000) { context.getString(R.string.health_too_many) }
             page = response.pageToken
         } while (page != null)
         result.distinctBy { it.externalId }
@@ -173,9 +167,12 @@ class HealthRationaleActivity : ComponentActivity() {
                         Modifier.padding(24.dp).statusBarsPadding(),
                         verticalArrangement = Arrangement.spacedBy(20.dp),
                     ) {
-                        Text("Your health records", style = MaterialTheme.typography.headlineLarge)
-                        Text(healthExplanation)
-                        Button(onClick = { finish() }) { Text("Done") }
+                        Text(
+                            stringResource(R.string.health_rationale_title),
+                            style = MaterialTheme.typography.headlineLarge,
+                        )
+                        Text(stringResource(R.string.health_explanation))
+                        Button(onClick = { finish() }) { Text(stringResource(R.string.done)) }
                     }
                 }
             }

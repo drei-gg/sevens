@@ -13,6 +13,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.fast.core.*
@@ -21,6 +23,7 @@ import gg.seven.kit.*
 @Composable
 internal fun SettingsScreen(m: FastModel, a: FastArchive?) {
     val context = LocalContext.current
+    val res = LocalResources.current
     var confirmDeleteAll by rememberSaveable { mutableStateOf(false) }
     val failure by m.loadFailure.collectAsStateWithLifecycle()
     val exportJson =
@@ -40,8 +43,7 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?) {
     val permission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (!granted)
-                m.message.value =
-                    "Notification permission was not granted. Your tracking still works."
+                m.message.value = res.getString(R.string.notification_permission_denied)
         }
     fun saveSettings(s: TrackerSettings, needsPermission: Boolean = false) {
         m.mutate(
@@ -54,62 +56,73 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?) {
     }
     Page {
         if (failure != null)
-            Panel("Records need attention") {
+            Panel(stringResource(R.string.recovery_title)) {
                 Text(failure!!, color = MaterialTheme.colorScheme.error)
                 Button(onClick = { exportJson.launch("fast-recovery.json") }) {
-                    Text("Export original file")
+                    Text(stringResource(R.string.recovery_export))
                 }
-                Text(
-                    "After saving the original, recover from a valid backup in a separate installation or contact support. This app will not overwrite the unreadable file."
-                )
+                Text(stringResource(R.string.recovery_detail))
             }
         if (a != null) {
             Section(
-                title = "Your data",
-                footer =
-                    "Stored on this device. Android may include it in device backups. No account, developer analytics or app server. Backups contain private journal and measurement records; choose where to save them.",
+                title = stringResource(R.string.settings_data),
+                footer = stringResource(R.string.settings_data_footer),
             ) {
-                action("Export JSON backup", Icons.Outlined.Save) { exportJson.launch("fast-backup.json") }
-                action("Export CSV tables", Icons.Outlined.TableChart) { exportCsv.launch("fast-records.csv") }
-                action("Import & merge backup", Icons.Outlined.FileOpen) {
+                action(res.getString(R.string.settings_export_json), Icons.Outlined.Save) {
+                    exportJson.launch("fast-backup.json")
+                }
+                action(res.getString(R.string.settings_export_csv), Icons.Outlined.TableChart) {
+                    exportCsv.launch("fast-records.csv")
+                }
+                action(res.getString(R.string.settings_import), Icons.Outlined.FileOpen) {
                     importJson.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
                 }
-                action("Delete all records", Icons.Outlined.DeleteForever, destructive = true) {
+                action(
+                    res.getString(R.string.delete_all_records),
+                    Icons.Outlined.DeleteForever,
+                    destructive = true,
+                ) {
                     confirmDeleteAll = true
                 }
             }
-            HomeWidgetSetup(android.content.ComponentName(context, FastWidget::class.java), "Fasting timer",
-                "A live timer and your planned finish. Tap to open the app; journal text and measurements stay private.")
+            HomeWidgetSetup(
+                android.content.ComponentName(context, FastWidget::class.java),
+                stringResource(R.string.widget_name),
+                stringResource(R.string.settings_widget_detail),
+            )
             HealthImportPanel(m)
-            Section(title = "Make it yours") {
-                switch("Weight in pounds", a.settings.usePounds) { saveSettings(a.settings.copy(usePounds = it)) }
-                switch("Water in US fluid ounces", a.settings.useFluidOunces) {
+            Section(title = stringResource(R.string.settings_make_it_yours)) {
+                switch(res.getString(R.string.settings_pounds), a.settings.usePounds) {
+                    saveSettings(a.settings.copy(usePounds = it))
+                }
+                switch(res.getString(R.string.settings_fluid_ounces), a.settings.useFluidOunces) {
                     saveSettings(a.settings.copy(useFluidOunces = it))
                 }
-                switch("Show weight", a.settings.showWeight) { saveSettings(a.settings.copy(showWeight = it)) }
-                switch("Show eating window", a.settings.showEatingWindow) {
+                switch(res.getString(R.string.settings_show_weight), a.settings.showWeight) {
+                    saveSettings(a.settings.copy(showWeight = it))
+                }
+                switch(res.getString(R.string.settings_show_eating_window), a.settings.showEatingWindow) {
                     saveSettings(a.settings.copy(showEatingWindow = it))
                 }
             }
             Section(
-                title = "Reminders you choose",
-                footer =
-                    "Optional local notifications. Android battery settings may delay delivery. Reminders never start or finish a fast.",
+                title = stringResource(R.string.settings_reminders),
+                footer = stringResource(R.string.settings_reminders_footer),
             ) {
-                switch("Show current timer notification", a.settings.liveActivity) {
+                switch(res.getString(R.string.settings_timer_notification), a.settings.liveActivity) {
                     saveSettings(a.settings.copy(liveActivity = it), it)
                 }
-                switch("Chosen fasting time reached", a.settings.goalReminder) {
+                switch(res.getString(R.string.settings_goal_reminder), a.settings.goalReminder) {
                     saveSettings(a.settings.copy(goalReminder = it), it)
                 }
-                switch("Eating window elapsed", a.settings.eatingReminder) {
+                switch(res.getString(R.string.settings_eating_reminder), a.settings.eatingReminder) {
                     saveSettings(a.settings.copy(eatingReminder = it), it)
                 }
-                switch("Dated plans", a.settings.scheduleReminders) {
+                switch(res.getString(R.string.settings_plan_reminders), a.settings.scheduleReminders) {
                     saveSettings(a.settings.copy(scheduleReminders = it), it)
                 }
             }
-            Section(title = "Weekly start reminder") {
+            Section(title = stringResource(R.string.settings_weekly_reminder)) {
                 content {
                     Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                         androidx.compose.foundation.layout.FlowRow(
@@ -136,7 +149,7 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?) {
                                 )
                             }
                         }
-                        TimeField("Time", a.settings.reminderHour, a.settings.reminderMinute) { hour, minute ->
+                        TimeField(stringResource(R.string.settings_time), a.settings.reminderHour, a.settings.reminderMinute) { hour, minute ->
                             saveSettings(a.settings.copy(reminderHour = hour, reminderMinute = minute))
                         }
                     }
@@ -144,12 +157,14 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?) {
             }
             Section(
                 footer =
-                    if (NotificationManagerCompat.from(context).areNotificationsEnabled())
-                        "Android notifications are allowed."
-                    else "Android notifications are off."
+                    stringResource(
+                        if (NotificationManagerCompat.from(context).areNotificationsEnabled())
+                            R.string.settings_notifications_allowed
+                        else R.string.settings_notifications_off
+                    )
             ) {
                 item(
-                    "Android notification settings",
+                    res.getString(R.string.settings_notification_settings),
                     icon = Icons.Outlined.Notifications,
                     onClick = {
                         context.startActivity(
@@ -160,29 +175,21 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?) {
                 )
             }
         }
-        Section(title = "About fasting") {
-            content {
-                Text(
-                    "This is a record, not a treatment plan. Longer is not presented as better. Timer stages do not detect ketosis, fat burning or autophagy.\n\nFasting is not appropriate for everyone, particularly minors, pregnancy or breastfeeding, a history of eating disorders, and some conditions or medicines. Ask a clinician where appropriate."
-                )
-            }
+        Section(title = stringResource(R.string.settings_about_fasting)) {
+            content { Text(stringResource(R.string.settings_about_fasting_text)) }
         }
-        Section(title = "Network contact") {
+        Section(title = stringResource(R.string.settings_network)) {
             content {
                 Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                     Text(
-                        if (BuildConfig.FLAVOR == "store")
-                            "Google Play handles purchases and restores through Play Billing, and may contact Google for billing diagnostics. Your tracking and journal records are never passed to billing."
-                        else "This edition has no purchase code and contacts no store."
-                    )
-                    Text(
-                        "Tracking, journal entries, reminders and measurements stay on this device. Health Connect, notifications and the home-screen widget work on the phone."
-                    )
-                    if (BuildConfig.FLAVOR != "generic")
-                        Text(
-                            "A paired Wear OS watch receives a small timer snapshot and sends the actions you choose through Google Play services, device to device. Journal, weight and reflections never leave the phone."
+                        stringResource(
+                            if (BuildConfig.FLAVOR == "store") R.string.settings_network_store
+                            else R.string.settings_network_none
                         )
-                    Text("Exports go only to the destination you choose.")
+                    )
+                    Text(stringResource(R.string.settings_network_local))
+                    if (BuildConfig.FLAVOR != "generic") Text(stringResource(R.string.settings_network_wear))
+                    Text(stringResource(R.string.settings_network_exports))
                 }
             }
         }
@@ -191,25 +198,23 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?) {
     if (confirmDeleteAll)
         AlertDialog(
             onDismissRequest = { confirmDeleteAll = false },
-            title = { Text("Delete every fast, journal entry, measurement, plan and rest day?") },
-            text = {
-                Text(
-                    "This also ends any running timer and removes custom presets. Your preferences stay. Export a backup first if you want to keep a copy. This can’t be undone."
-                )
+            title = { Text(stringResource(R.string.delete_all_title)) },
+            text = { Text(stringResource(R.string.delete_all_message)) },
+            dismissButton = {
+                TextButton(onClick = { confirmDeleteAll = false }) { Text(stringResource(R.string.cancel)) }
             },
-            dismissButton = { TextButton(onClick = { confirmDeleteAll = false }) { Text("Cancel") } },
             confirmButton = {
                 TextButton(
                     onClick = {
                         confirmDeleteAll = false
                         m.mutate(
                             { FastArchive.empty().copy(settings = it.settings) },
-                            onSaved = { m.message.value = "All records deleted. Preferences were kept." },
+                            onSaved = { m.message.value = res.getString(R.string.delete_all_done) },
                         )
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) {
-                    Text("Delete all records")
+                    Text(stringResource(R.string.delete_all_records))
                 }
             },
         )

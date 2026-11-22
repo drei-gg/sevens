@@ -41,7 +41,7 @@ object TimerSurfaces {
         notifications.createNotificationChannel(
             NotificationChannel(
                 "timer",
-                "Current fasting timer",
+                context.getString(R.string.channel_timer),
                 NotificationManager.IMPORTANCE_LOW,
             )
         )
@@ -49,10 +49,11 @@ object TimerSurfaces {
             notificationId,
             NotificationCompat.Builder(context, "timer")
                 .setSmallIcon(R.drawable.generic_icon)
-                .setContentTitle("Fasting timer")
+                .setContentTitle(context.getString(R.string.timer_title))
                 .setContentText(
-                    active.goalDate?.let { "Goal · ${stamp(it)}" }
-                        ?: "Open ended · finish when you choose"
+                    active.goalDate?.let {
+                        context.getString(R.string.timer_goal, context.resources.stamp(it))
+                    } ?: context.getString(R.string.timer_open_ended)
                 )
                 .setWhen(active.start.toEpochMilli())
                 .setUsesChronometer(true)
