@@ -66,8 +66,8 @@ class WatchUiTest {
         rule.waitUntil(5000) { model.state.value.pending != null && !model.busy.value }
         rule
             .onNodeWithTag("watch-list")
-            .performScrollToNode(hasText("Pending — not saved on phone yet."))
-        rule.onNodeWithText("Pending — not saved on phone yet.").assertIsDisplayed()
+            .performScrollToNode(hasText("Pending. Not saved on phone yet."))
+        rule.onNodeWithText("Pending. Not saved on phone yet.").assertIsDisplayed()
         capture("bloom-wear-pending")
         rule.onNodeWithTag("watch-list").performScrollToNode(hasText("Clear pending action"))
         rule.onNodeWithText("Clear pending action").performClick()

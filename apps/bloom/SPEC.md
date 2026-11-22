@@ -4,7 +4,7 @@ A local-first period, wellbeing and birth-control journal. iOS 17+ with a watchO
 
 ## Included
 
-- Daily summaries and separate timestamped flow, symptom, temperature, test and period-product observations, with recorded time zones and multiple entries per day. Explicit period starts, spotting, symptom severity (unlogged and absent are distinct), custom symptoms, notes, tags, basal temperature, cervical mucus, ovulation and pregnancy tests.
+- Daily summaries and separate timestamped flow, symptom, temperature, test and period-product observations, with recorded time zones and multiple entries per day. Explicit period starts, spotting, symptom severity (unlogged and absent are distinct), custom symptoms, notes, tags, basal temperature (stored in Celsius, shown and entered in °C or °F by regional preference), cervical mucus, ovulation and pregnancy tests.
 - Separate sex/contact events, protection, libido, pain, orgasm and private notes.
 - Paper/ink Today context with a seven-day observation strip, configurable pinned quick logs, optional contact shortcuts, pack progress and refill context. Monthly observation calendar, search and corrections; cycle-length and temperature charts; symptom frequency with explicit denominators and pre-period counts.
 - Conservative period estimates, stopped for pregnancy, postpartum, lactation and enabled hormonal plans. Completed cycles overlapping pregnancy, explicit exclusions or dated hormonal plans remain visible but are omitted from estimate samples. Postpartum/lactation mode transitions create dated exclusions; users can correct intervals with missing records. Optional conception window requires at least three stable completed cycles. No prediction is contraception, confirmation of ovulation or diagnosis.
@@ -43,7 +43,7 @@ Before release: real-device notification/time-zone, Health, app-lock, paired-Wat
 
 ## Android
 
-The native app uses the same Rust archive, calculations and Alarm-backed scheduling rules through UniFFI. Today, monthly calendar/search/agenda, configurable quick logs, timed observations, complete contact fields, pill packs, dose history/corrections, refills, pregnancy/appointment editors, estimate exclusions, cycle/symptom/temperature charts, report preview and text/PDF sharing are included. Calendar and charts reuse Kizitonwose Calendar and Vico.
+The native app uses the same Rust archive, calculations and Alarm-backed scheduling rules through UniFFI. Today, monthly calendar/search/agenda, configurable quick logs, timed observations, complete contact fields, pill packs with Today pack progress, dose history/corrections including past scheduled doses from Calendar, refills, pregnancy/appointment editors, estimate exclusions, cycle/symptom/temperature charts, report preview with text/PDF sharing or saving, usual cycle/period settings and the NHS guides are included. Calendar and charts reuse Kizitonwose Calendar and Vico.
 
 Records use AES-GCM with an Android Keystore key, authenticated versioned content, serialized operations and AtomicFile replacement in the no-backup directory. Malformed or undecryptable files remain intact. SevenKit supplies trial/unlock, generic/personal/store distribution separation and store-only Play Billing. Unlocks on Android are per account; there is no Google family unlock.
 

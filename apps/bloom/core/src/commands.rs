@@ -24,8 +24,12 @@ fn permitted(existing: bool, paid: bool) -> Result<()> {
     )
 }
 fn historical(day: &str, today: &str) -> Result<()> {
+    past(day, today, "Observations cannot be logged in the future.")
+}
+/// The same past-or-today rule with a message that names the record being saved.
+fn past(day: &str, today: &str, message: &str) -> Result<()> {
     time::date(day)?;
-    ensure(day <= today, "Observations cannot be logged in the future.")
+    ensure(day <= today, message)
 }
 macro_rules! upsert {
     ($items:expr,$value:expr) => {{
@@ -78,13 +82,13 @@ pub fn apply(a: &mut Archive, c: Command, now: i64, zone: &str, paid: bool) -> R
         }
         "exclusion" => {
             let d: Exclusion = record(&c)?;
-            historical(&d.start, &today)?;
+            past(&d.start, &today, "An exclusion cannot start in the future.")?;
             // Eligibility corrections remain available after trial expiry.
             upsert!(a.exclusions, d);
         }
         "contact" => {
             let d: Contact = record(&c)?;
-            historical(&d.day, &today)?;
+            past(&d.day, &today, "Contact cannot be logged in the future.")?;
             ensure(d.at <= now + 300, "Contact time is in the future.")?;
             permitted(a.contacts.iter().any(|x| x.id == d.id), paid)?;
             upsert!(a.contacts, d);
@@ -109,11 +113,15 @@ pub fn apply(a: &mut Archive, c: Command, now: i64, zone: &str, paid: bool) -> R
                 .find(|p| p.id == d.plan_id)
                 .ok_or(Error::invalid("This plan no longer exists."))?;
             let dose_zone = if p.fixed_zone { &p.zone } else { zone };
-            historical(&d.day, &time::today(now, dose_zone)?)?;
+            past(
+                &d.day,
+                &time::today(now, dose_zone)?,
+                "A dose can be recorded on its scheduled day or later.",
+            )?;
             if !a.doses.iter().any(|old| old.id == d.id) {
                 ensure(
                     schedule::phase(p, &d.day)?.is_some(),
-                    "This date is outside the plan's scheduled days.",
+                    "This date is outside the plan’s scheduled days.",
                 )?;
                 let z = if p.fixed_zone { &p.zone } else { zone };
                 ensure(
@@ -148,7 +156,7 @@ pub fn apply(a: &mut Archive, c: Command, now: i64, zone: &str, paid: bool) -> R
         }
         "refill" => {
             let d: Refill = record(&c)?;
-            historical(&d.day, &today)?;
+            past(&d.day, &today, "A refill cannot be logged in the future.")?;
             upsert!(a.refills, d);
         }
         "appointment" => {
@@ -158,9 +166,9 @@ pub fn apply(a: &mut Archive, c: Command, now: i64, zone: &str, paid: bool) -> R
         }
         "pregnancy" => {
             let d: Pregnancy = record(&c)?;
-            historical(&d.start, &today)?;
+            past(&d.start, &today, "A pregnancy cannot start in the future.")?;
             if let Some(end) = &d.ended {
-                historical(end, &today)?;
+                past(end, &today, "A pregnancy end date cannot be in the future.")?;
             }
             permitted(a.pregnancies.iter().any(|x| x.id == d.id), paid)?;
             if d.ended.is_none() {

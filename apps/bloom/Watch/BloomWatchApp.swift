@@ -45,7 +45,7 @@ import SwiftUI
       let command = try Command(op: "dose", record: Dose(occurrence, status: status), revision: snapshot?.revision)
       pending.append(WatchRequest(command: command))
       persist()
-      message = "Pending — not yet saved on iPhone."
+      message = "Pending. Not yet saved on iPhone."
       Task { await sync() }
     } catch { message = error.localizedDescription }
   }
@@ -118,7 +118,7 @@ import SwiftUI
             Text("Enable the Watch companion in your iPhone’s tracking and privacy settings.")
           }
           if !model.pending.isEmpty {
-            Text("\(model.pending.count) pending — not saved on iPhone yet.")
+            Text("\(model.pending.count) pending. Not saved on iPhone yet.")
             Button("Discard pending actions", role: .destructive) {
               discardPending = true
             }

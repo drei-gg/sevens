@@ -607,3 +607,77 @@ fn doses_that_follow_the_phone_are_wall_clock_times() {
     let old: schedule::Reminder = serde_json::from_str(r#"{"id":"bloom.x","at":1,"title":"t","body":"b","dose":null}"#).unwrap();
     assert!(!old.floating);
 }
+#[test]
+fn discreet_period_reminder_hides_its_reason() {
+    let mut a = Archive::default();
+    for d in ["2026-08-01", "2026-08-29", "2026-09-26", "2026-10-24"] {
+        a.days.push(day(d, "medium"));
+    }
+    a.profile.period_reminder = true;
+    a.profile.discreet = false;
+    let period = |a: &Archive| {
+        insights::dashboard(a, NOW, "UTC")
+            .unwrap()
+            .reminders
+            .into_iter()
+            .find(|r| r.id == "bloom.period")
+            .expect("period reminder")
+    };
+    let open = period(&a);
+    assert_eq!(open.title, "Period estimate");
+    assert!(open.body.contains("period"));
+    a.profile.discreet = true;
+    let hidden = period(&a);
+    assert_eq!(hidden.title, "Your reminder");
+    assert!(!hidden.body.to_lowercase().contains("period"));
+    assert!(!hidden.body.to_lowercase().contains("estimate"));
+}
+#[test]
+fn future_records_are_rejected_with_their_own_reason() {
+    let mut a = Archive::default();
+    let p = plan();
+    let tomorrow = time::add(&time::today(NOW, "UTC").unwrap(), 1).unwrap();
+    let d = Dose {
+        id: schedule::dose_id(&p.id, &tomorrow).unwrap(),
+        plan_id: p.id.clone(),
+        day: tomorrow.clone(),
+        scheduled: NOW + 86400 + 8 * 3600,
+        status: "taken".into(),
+        recorded: NOW,
+        snooze_until: None,
+        notes: String::new(),
+    };
+    a.plans.push(p);
+    let reason = |r: Result<Archive>| match r {
+        Err(Error::Invalid { reason }) => reason,
+        Ok(_) => panic!("future record accepted"),
+    };
+    let dose = reason(apply(&a, "dose", json!(d), true));
+    assert!(dose.contains("dose"), "{dose}");
+    assert!(!dose.contains("Observations"), "{dose}");
+    let mut day_log = day(&tomorrow, "light");
+    day_log.period_start = false;
+    assert!(reason(apply(&a, "day", json!(day_log), true)).contains("Observations"));
+}
+#[test]
+fn temperatures_convert_for_display_and_entry() {
+    assert_eq!(bloom_temperature_display(36.55, false), 36.55);
+    assert_eq!(bloom_temperature_display(37.0, true), 98.6);
+    assert_eq!(bloom_temperature_display(36.5, true), 97.7);
+    assert_eq!(bloom_temperature_display(36.444, true), 97.6);
+    assert_eq!(bloom_temperature_celsius(98.6, true).unwrap(), 37.0);
+    assert_eq!(bloom_temperature_celsius(97.9, true).unwrap(), 36.611);
+    assert_eq!(bloom_temperature_celsius(36.42, false).unwrap(), 36.42);
+    // Entries with up to two decimals survive the round trip through stored Celsius.
+    for hundredths in 9_000..=9_999 {
+        let f = hundredths as f64 / 100.0;
+        let c = bloom_temperature_celsius(f, true).unwrap();
+        assert_eq!(bloom_temperature_display(c, true), f, "{f} °F");
+    }
+    assert_eq!(bloom_temperature_celsius(86.0, true).unwrap(), 30.0);
+    assert_eq!(bloom_temperature_celsius(113.0, true).unwrap(), 45.0);
+    assert!(bloom_temperature_celsius(85.9, true).is_err());
+    assert!(bloom_temperature_celsius(37.0, true).is_err()); // A Celsius value typed as °F.
+    assert!(bloom_temperature_celsius(98.6, false).is_err());
+    assert!(bloom_temperature_celsius(f64::NAN, false).is_err());
+}

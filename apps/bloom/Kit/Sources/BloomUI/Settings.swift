@@ -183,7 +183,7 @@ struct BackupScreen: View {
       if let preview {
         BloomSection("Review before importing") {
           Text(
-            "\(preview.observations.count) timed observations, \(preview.exclusions.count) exclusions, \(preview.days.count) journal days, \(preview.contacts.count) contacts, \(preview.plans.count) plans, \(preview.doses.count) dose records, \(preview.pregnancies.count) pregnancies."
+            "\(preview.observations.count) timed observations, \(preview.exclusions.count) exclusions, \(preview.days.count) journal days, \(preview.contacts.count) contacts, \(preview.plans.count) plans, \(preview.doses.count) dose records, \(preview.refills.count) refills, \(preview.pregnancies.count) pregnancies, \(preview.appointments.count) appointments."
           )
           Button("Import these records") {
             busy = true

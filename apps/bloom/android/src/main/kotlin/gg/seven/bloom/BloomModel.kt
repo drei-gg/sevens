@@ -1,7 +1,10 @@
 package gg.seven.bloom
 
 import android.app.Application
+import android.content.Intent
 import android.net.Uri
+import android.provider.DocumentsContract
+import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import gg.seven.bloom.core.*
@@ -51,6 +54,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
         if (appLock.enabled.value) {
             healthPreview.value = null
             preview.value = null
+            report.value = null
             error.value = null
         }
     }
@@ -117,6 +121,10 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
 
     fun erase() = run {
         repository.erase()
+        report.value = null
+        withContext(Dispatchers.IO) {
+            java.io.File(getApplication<Application>().cacheDir, "reports").deleteRecursively()
+        }
         BloomReminders.clear(getApplication())
         reload()
     }
@@ -169,79 +177,149 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
                 "Shared $count flow entries. Later journal deletions do not delete Health Connect copies; manage those in Health Connect."
     }
 
-    fun exportReport(uri: Uri, text: String, kind: String) = run {
-        withContext(Dispatchers.IO) {
-            getApplication<Application>().contentResolver.openOutputStream(uri, "wt")!!.use { stream
-                ->
-                if (kind != "pdf") stream.write(text.toByteArray())
-                else {
-                    val paint =
-                        android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                            textSize = 11f
-                            color = android.graphics.Color.BLACK
+    /** The reviewed report lives here, never in a saved-state Bundle, and disappears on lock. */
+    val report = MutableStateFlow<String?>(null)
+
+    fun buildReport(from: String, to: String, contacts: Boolean, notes: Boolean) = run {
+        val archive = repository.read()
+        report.value =
+            withContext(Dispatchers.Default) { bloomReport(archive, from, to, contacts, notes) }
+    }
+
+    fun exportReport(uri: Uri, kind: String) = run {
+        val text = report.value
+        if (text == null) {
+            deleteDocument(uri)
+            error.value = "Preview the report again, then save it."
+            return@run
+        }
+        writeDocument(uri) { stream -> writeReport(stream, text, kind) }
+    }
+
+    /** Shares the reviewed report: text directly, a PDF through this app's file provider. */
+    fun shareReport(kind: String, launch: (Intent) -> Unit) = run {
+        val text = report.value ?: return@run
+        val send =
+            if (kind == "pdf") {
+                val file =
+                    withContext(Dispatchers.IO) {
+                        val folder = java.io.File(getApplication<Application>().cacheDir, "reports")
+                        folder.deleteRecursively()
+                        folder.mkdirs()
+                        java.io.File(folder, "cycle-report.pdf").also { file ->
+                            file.outputStream().use { writeReport(it, text, "pdf") }
                         }
-                    val layout =
-                        android.text.StaticLayout.Builder.obtain(text, 0, text.length, paint, 499)
-                            .setLineSpacing(3f, 1f)
-                            .build()
-                    val pdf = android.graphics.pdf.PdfDocument()
-                    try {
-                        var line = 0
-                        var pageNumber = 1
-                        while (line < layout.lineCount) {
-                            val first = line
-                            val top = layout.getLineTop(first)
-                            while (
-                                line < layout.lineCount && layout.getLineBottom(line) - top <= 720
-                            ) line++
-                            if (line == first) line++
-                            val page =
-                                pdf.startPage(
-                                    android.graphics.pdf.PdfDocument.PageInfo.Builder(
-                                            595,
-                                            842,
-                                            pageNumber,
-                                        )
-                                        .create()
-                                )
-                            page.canvas.save()
-                            page.canvas.clipRect(
-                                48f,
-                                48f,
-                                547f,
-                                (48 + layout.getLineTop(line) - top).toFloat(),
-                            )
-                            page.canvas.translate(48f, (48 - top).toFloat())
-                            layout.draw(page.canvas)
-                            page.canvas.restore()
-                            page.canvas.drawText("Page $pageNumber", 48f, 810f, paint)
-                            pdf.finishPage(page)
-                            pageNumber++
-                        }
-                        pdf.writeTo(stream)
-                    } finally {
-                        pdf.close()
                     }
-                }
+                val uri =
+                    FileProvider.getUriForFile(
+                        getApplication(),
+                        "${getApplication<Application>().packageName}.files",
+                        file,
+                    )
+                Intent(Intent.ACTION_SEND)
+                    .setType("application/pdf")
+                    .putExtra(Intent.EXTRA_STREAM, uri)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    .apply { clipData = android.content.ClipData.newRawUri(null, uri) }
+            } else
+                Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+        launch(Intent.createChooser(send, "Share report"))
+    }
+
+    /** Doses scheduled on a calendar day, from the Rust dashboard evaluated at that day's noon. */
+    suspend fun scheduledOn(day: String): List<JSONObject> {
+        val noon =
+            java.time.LocalDate.parse(day)
+                .atTime(12, 0)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toEpochSecond()
+        return JSONObject(repository.dashboard(noon)).rows("today_doses")
+    }
+
+    /**
+     * Writes a document the system picker has just created. A failure removes the partial file, so
+     * a rejected passphrase or full disk never leaves an empty backup behind.
+     */
+    private suspend fun writeDocument(uri: Uri, write: (java.io.OutputStream) -> Unit) {
+        try {
+            withContext(Dispatchers.IO) {
+                getApplication<Application>().contentResolver.openOutputStream(uri, "wt")!!.use(write)
+            }
+        } catch (failure: Exception) {
+            deleteDocument(uri)
+            throw failure
+        }
+    }
+
+    private suspend fun deleteDocument(uri: Uri) {
+        withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
+            try {
+                DocumentsContract.deleteDocument(getApplication<Application>().contentResolver, uri)
+            } catch (_: Exception) {
+                /* The provider may not support deletion; the write error is still reported. */
             }
         }
     }
 
     fun exportFile(uri: Uri, kind: String, password: String, contacts: Boolean, notes: Boolean) =
         run {
-            val json = repository.read()
             val bytes =
-                withContext(Dispatchers.Default) {
-                    when (kind) {
-                        "age" -> bloomSeal(json, password)
-                        "csv" -> bloomCsv(json, contacts, notes).toByteArray()
-                        else -> json.toByteArray()
+                try {
+                    val json = repository.read()
+                    withContext(Dispatchers.Default) {
+                        when (kind) {
+                            "age" -> bloomSeal(json, password)
+                            "csv" -> bloomCsv(json, contacts, notes).toByteArray()
+                            else -> json.toByteArray()
+                        }
                     }
+                } catch (failure: Exception) {
+                    deleteDocument(uri)
+                    throw failure
                 }
-            withContext(Dispatchers.IO) {
-                getApplication<Application>().contentResolver.openOutputStream(uri, "wt")!!.use {
-                    it.write(bytes)
-                }
-            }
+            writeDocument(uri) { it.write(bytes) }
         }
+}
+
+/** Plain text, or an A4 PDF paginated from the same reviewed text. */
+private fun writeReport(stream: java.io.OutputStream, text: String, kind: String) {
+    if (kind != "pdf") {
+        stream.write(text.toByteArray())
+        return
+    }
+    val paint =
+        android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 11f
+            color = android.graphics.Color.BLACK
+        }
+    val layout =
+        android.text.StaticLayout.Builder.obtain(text, 0, text.length, paint, 499)
+            .setLineSpacing(3f, 1f)
+            .build()
+    val pdf = android.graphics.pdf.PdfDocument()
+    try {
+        var line = 0
+        var pageNumber = 1
+        while (line < layout.lineCount) {
+            val first = line
+            val top = layout.getLineTop(first)
+            while (line < layout.lineCount && layout.getLineBottom(line) - top <= 720) line++
+            if (line == first) line++
+            val page =
+                pdf.startPage(
+                    android.graphics.pdf.PdfDocument.PageInfo.Builder(595, 842, pageNumber).create()
+                )
+            page.canvas.save()
+            page.canvas.clipRect(48f, 48f, 547f, (48 + layout.getLineTop(line) - top).toFloat())
+            page.canvas.translate(48f, (48 - top).toFloat())
+            layout.draw(page.canvas)
+            page.canvas.restore()
+            page.canvas.drawText("Page $pageNumber", 48f, 810f, paint)
+            pdf.finishPage(page)
+            pageNumber++
+        }
+        pdf.writeTo(stream)
+    } finally {
+        pdf.close()
+    }
 }

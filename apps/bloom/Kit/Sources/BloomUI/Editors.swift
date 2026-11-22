@@ -116,7 +116,7 @@ struct DayEditor: View {
         )
       }
       BloomSection("Optional observations") {
-        TextField("Basal temperature, °C", text: $temperature).keyboardType(.decimalPad)
+        TextField("Basal temperature, \(BloomTemperature.unit)", text: $temperature).keyboardType(.decimalPad)
         Picker("Cervical mucus", selection: $value.mucus) {
           choices(["none", "dry", "sticky", "creamy", "watery", "egg_white"])
         }
@@ -133,18 +133,15 @@ struct DayEditor: View {
           .lineLimit(4...10).accessibilityIdentifier("journalNotes")
       }
     }.onAppear {
-      temperature = value.bbt.map { String($0) } ?? ""
+      temperature = value.bbt.map(BloomTemperature.number) ?? ""
       tags = value.tags.joined(separator: ", ")
     }
   }
   func save() async -> Bool {
-    let temp = temperature.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(
-      of: ",", with: ".")
-    if !temp.isEmpty && Double(temp) == nil {
-      model.message = "Enter a valid temperature in Celsius."
+    do { value.bbt = try BloomTemperature.celsius(from: temperature) } catch {
+      model.message = explain(error)
       return false
     }
-    value.bbt = Double(temp)
     value.tags = splitTags(tags)
     return await model.save("day", value, revision: revision)
   }

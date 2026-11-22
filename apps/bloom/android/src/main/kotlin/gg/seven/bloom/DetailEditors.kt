@@ -97,10 +97,10 @@ internal fun DetailEditor(kind: String, row: JSONObject, change: (String) -> Uni
                 ) {
                     put("value", it)
                 }
-            if (type in listOf("temperature", "product"))
+            if (type == "temperature") TemperatureField("Temperature", row, "number", change)
+            if (type == "product")
                 Field(
-                    if (type == "temperature") "Temperature, °C"
-                    else "Measured amount, mL (optional)",
+                    "Measured amount, mL (optional)",
                     if (row.isNull("number")) "" else row.getString("number"),
                     number = true,
                 ) {
@@ -237,16 +237,7 @@ internal fun WellbeingFields(row: JSONObject, change: (String) -> Unit) {
         Text(if (details) "Hide optional details" else "Temperature, tests & tags")
     }
     if (details) {
-        Field(
-            "Basal temperature, °C",
-            if (row.isNull("bbt")) "" else row.getString("bbt"),
-            number = true,
-        ) {
-            change(
-                row.put("bbt", if (it.isBlank()) JSONObject.NULL else it.toDoubleOrNull() ?: it)
-                    .toString()
-            )
-        }
+        TemperatureField("Basal temperature", row, "bbt", change)
         Choice(
             "Cervical mucus",
             row.getString("mucus"),

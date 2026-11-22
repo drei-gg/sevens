@@ -87,7 +87,7 @@ class WatchModel(
                     }
                 }
             if (!queued) return
-            message.value = "Pending — not saved on phone yet."
+            message.value = "Pending. Not saved on phone yet."
             sync()
         } catch (cancel: CancellationException) {
             throw cancel

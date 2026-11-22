@@ -202,10 +202,13 @@ public final class BloomModel {
       notificationStatus = await notifications.reconcile(dashboard.reminders, doses: archive.doses)
     }
     publishWatch()
+    // Nothing reaches the shared app group unless widgets are on. Turning them off overwrites the
+    // last shared values with an empty, disabled snapshot.
+    let widgets = archive.profile.widgets_enabled
     let snapshot = SurfaceSnapshot(
-      enabled: archive.profile.widgets_enabled,
-      cycleDay: archive.profile.discreet ? nil : dashboard.cycle_day,
-      nextReminder: archive.profile.widgets_enabled
+      enabled: widgets,
+      cycleDay: widgets && !archive.profile.discreet ? dashboard.cycle_day : nil,
+      nextReminder: widgets
         ? dashboard.reminders.first.map { Date(timeIntervalSince1970: Double($0.at)) } : nil)
     snapshot.save(group: SevenConfig(bundle: .main)?.appGroup)
     if !isTesting { WidgetCenter.shared.reloadAllTimelines() }

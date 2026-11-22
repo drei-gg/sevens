@@ -181,11 +181,9 @@ class BloomRepository(context: Context, private val name: String = "records") {
             }
         }
 
-    suspend fun dashboard(): String =
+    suspend fun dashboard(now: Long = Instant.now().epochSecond): String =
         withContext(Dispatchers.IO) {
-            lock.withLock {
-                bloomDashboard(readLocked(), Instant.now().epochSecond, ZoneId.systemDefault().id)
-            }
+            lock.withLock { bloomDashboard(readLocked(), now, ZoneId.systemDefault().id) }
         }
 
     suspend fun seal(password: String): ByteArray =

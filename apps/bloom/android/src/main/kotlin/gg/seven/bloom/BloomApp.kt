@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -47,6 +49,7 @@ fun BloomApp(model: BloomModel) {
     var discarding by rememberSaveable { mutableStateOf(false) }
     var revision by rememberSaveable { mutableLongStateOf(0) }
     var remove by rememberSaveable { mutableStateOf<String?>(null) }
+    var guides by rememberSaveable { mutableStateOf(false) }
     val archive = remember(archiveText) { archiveText?.let(::JSONObject) }
     val dashboard = remember(dashboardText) { dashboardText?.let(::JSONObject) }
     fun closeEditor() {
@@ -55,6 +58,7 @@ fun BloomApp(model: BloomModel) {
         }
     }
     BackHandler(enabled = editor != null) { closeEditor() }
+    BackHandler(enabled = editor == null && guides) { guides = false }
     if (discarding)
         gg.seven.kit.DiscardChangesDialog(
             { discarding = false },
@@ -96,7 +100,8 @@ fun BloomApp(model: BloomModel) {
             TopAppBar(
                 title = {
                     Text(
-                        if (editor != null) "Edit ${editor}"
+                        if (editor != null) editorTitle(editor!!)
+                        else if (guides) "Guides and sources"
                         else listOf("Today", "Calendar", "Care", "Patterns", "Settings")[tab]
                     )
                 },
@@ -105,13 +110,20 @@ fun BloomApp(model: BloomModel) {
                         IconButton(enabled = !busy, onClick = ::closeEditor) {
                             Icon(Icons.Outlined.Close, "Close")
                         }
+                    else if (guides)
+                        IconButton(onClick = { guides = false }) {
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back")
+                        }
                 },
                 actions = {
                     if (editor != null)
                         TextButton(
                             enabled = !busy,
                             onClick = {
-                                model.save(editor!!, JSONObject(draft), revision) { editor = null }
+                                val row = JSONObject(draft)
+                                val problem = BloomTemperature.problem(editor!!, row)
+                                if (problem != null) model.error.value = problem
+                                else model.save(editor!!, row, revision) { editor = null }
                             },
                         ) {
                             Text("Save")
@@ -120,7 +132,7 @@ fun BloomApp(model: BloomModel) {
             )
         },
         bottomBar = {
-            if (editor == null)
+            if (editor == null && !guides)
                 ShortNavigationBar {
                     val icons =
                         listOf(
@@ -135,7 +147,10 @@ fun BloomApp(model: BloomModel) {
                         label ->
                         ShortNavigationBarItem(
                             selected = tab == i,
-                            onClick = { tab = i },
+                            onClick = {
+                                tab = i
+                                guides = false
+                            },
                             icon = { Icon(icons[i], null) },
                             label = { Text(label) },
                         )
@@ -169,13 +184,15 @@ fun BloomApp(model: BloomModel) {
                 )
             } else if (editor != null) {
                 RecordEditor(editor!!, draft, { draft = it })
+            } else if (guides) {
+                GuidesScreen()
             } else
                 when (tab) {
-                    0 -> BloomToday(model, archive, dashboard, ::edit)
-                    1 -> BloomCalendar(archive, dashboard, ::edit) { remove = it }
+                    0 -> BloomToday(model, archive, dashboard, ::edit) { guides = true }
+                    1 -> BloomCalendar(model, archive, dashboard, ::edit) { remove = it }
                     2 -> BloomCare(model, archive, dashboard, ::edit) { remove = it }
                     3 -> BloomPatterns(model, archive, dashboard, ::edit) { remove = it }
-                    4 -> BackupSettings(model, archive)
+                    4 -> BackupSettings(model, archive) { guides = true }
                 }
             Spacer(Modifier.height(16.dp))
         }
@@ -216,8 +233,9 @@ fun BloomApp(model: BloomModel) {
             title = { Text("Review backup") },
             text = {
                 val incoming = JSONObject(preview!!)
+                fun count(key: String) = incoming.rows(key).size
                 Text(
-                    "${incoming.rows("observations").size} timed observations, ${incoming.rows("exclusions").size} exclusions, ${incoming.rows("days").size} day records, ${incoming.rows("contacts").size} contacts, ${incoming.rows("plans").size} plans. Merge keeps existing records and rejects conflicting IDs. Imported plans are paused. Your current preferences stay in place."
+                    "${count("days")} journal days, ${count("observations")} timed observations, ${count("exclusions")} exclusions, ${count("contacts")} contacts, ${count("plans")} plans, ${count("doses")} dose records, ${count("refills")} refills, ${count("pregnancies")} pregnancies, ${count("appointments")} appointments. Merge keeps existing records and rejects conflicting IDs. Imported plans and appointment reminders start inactive. Your current preferences stay in place."
                 )
             },
             confirmButton = {
@@ -245,48 +263,75 @@ internal fun RecordCard(title: String, subtitle: String, edit: () -> Unit, delet
 
 @Composable
 internal fun DoseList(model: BloomModel, archive: JSONObject, dashboard: JSONObject) {
-    val busy by model.busy.collectAsStateWithLifecycle()
-    Text("Today's doses", style = MaterialTheme.typography.titleLarge)
+    Text("Today’s doses", style = MaterialTheme.typography.titleLarge)
     if (dashboard.rows("today_doses").isEmpty()) Text("No doses scheduled today.")
-    dashboard.rows("today_doses").forEach { dose ->
-        fun record(status: String) {
-            val entry =
-                JSONObject()
-                    .put("id", dose.getString("id"))
-                    .put("plan_id", dose.getString("plan_id"))
-                    .put("day", dose.getString("day"))
-                    .put("scheduled", dose.getLong("at"))
-                    .put("status", status)
-                    .put("recorded", Instant.now().epochSecond)
-                    .put(
-                        "snooze_until",
-                        if (status == "snoozed") Instant.now().epochSecond + 600
-                        else JSONObject.NULL,
-                    )
-                    .put("notes", "")
-            model.save("dose", entry, archive.getLong("revision")) {}
-        }
-        OutlinedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(dose.getString("title"), style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "${timeLabel(dose.getLong("at"))} · ${dose.getString("phase").replaceFirstChar(Char::uppercase)} · ${dose.getString("status").replaceFirstChar(Char::uppercase)}"
+    dashboard.rows("today_doses").forEach { DoseCard(model, archive, it) }
+}
+
+/**
+ * One scheduled dose with explicit Taken/Skipped. A later day's dose shows why it cannot be
+ * recorded yet; snoozing is offered only on the dose's own day.
+ */
+@Composable
+internal fun DoseCard(model: BloomModel, archive: JSONObject, dose: JSONObject) {
+    val busy by model.busy.collectAsStateWithLifecycle()
+    val today = LocalDate.now().toString()
+    val day = dose.getString("day")
+    fun record(status: String) {
+        val entry =
+            JSONObject()
+                .put("id", dose.getString("id"))
+                .put("plan_id", dose.getString("plan_id"))
+                .put("day", day)
+                .put("scheduled", dose.getLong("at"))
+                .put("status", status)
+                .put("recorded", Instant.now().epochSecond)
+                .put(
+                    "snooze_until",
+                    if (status == "snoozed") Instant.now().epochSecond + 600 else JSONObject.NULL,
                 )
+                .put("notes", "")
+        model.save("dose", entry, archive.getLong("revision")) {}
+    }
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(dose.getString("title"), style = MaterialTheme.typography.titleMedium)
+            Text(
+                "${timeLabel(dose.getLong("at"))} · ${dose.getString("phase").replaceFirstChar(Char::uppercase)} · ${dose.getString("status").replaceFirstChar(Char::uppercase)}"
+            )
+            if (day > today) Muted("You can record this dose on its scheduled day.")
+            else {
                 gg.seven.kit.ConnectedChoice(
                     listOf("taken" to "Taken", "skipped" to "Skipped"),
                     dose.getString("status"),
                     enabled = !busy,
                     onSelect = ::record,
                 )
-                TextButton(enabled = !busy, onClick = { record("snoozed") }) {
-                    Icon(Icons.Outlined.Snooze, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Snooze 10 min")
-                }
+                if (day == today && dose.getString("status") != "taken")
+                    TextButton(enabled = !busy, onClick = { record("snoozed") }) {
+                        Icon(Icons.Outlined.Snooze, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Snooze 10 min")
+                    }
             }
         }
     }
 }
+
+/** Editor titles name the record, as on iOS. */
+private fun editorTitle(kind: String): String =
+    when (kind) {
+        "day" -> "Daily journal"
+        "observation" -> "Timed observation"
+        "contact" -> "Sex and contact"
+        "plan" -> "Reminder plan"
+        "dose" -> "Dose record"
+        "refill" -> "Record refill"
+        "appointment" -> "Appointment"
+        "pregnancy" -> "Pregnancy record"
+        "exclusion" -> "Estimate exclusion"
+        else -> kind.replaceFirstChar(Char::uppercase)
+    }
 
 internal fun newRecord(kind: String): JSONObject {
     val row = JSONObject().put("id", UUID.randomUUID().toString()).put("notes", "")
@@ -478,15 +523,19 @@ private fun RecordEditor(kind: String, text: String, change: (String) -> Unit) {
                     )
                 change(row.toString())
             }
-            listOf("libido", "pain").forEach { key ->
-                Choice(
-                    key.replaceFirstChar(Char::uppercase),
-                    if (row.isNull(key)) "Unlogged" else row.getString(key),
-                    listOf("Unlogged", "0", "1", "2", "3"),
-                ) {
-                    put(key, if (it == "Unlogged") JSONObject.NULL else it.toInt())
+            listOf(
+                    "libido" to listOf(0 to "None", 1 to "Low", 2 to "Medium", 3 to "High"),
+                    "pain" to listOf(0 to "None", 1 to "Mild", 2 to "Moderate", 3 to "Severe"),
+                )
+                .forEach { (key, levels) ->
+                    gg.seven.kit.OptionalChoice(
+                        key.replaceFirstChar(Char::uppercase),
+                        levels,
+                        if (row.isNull(key)) null else row.getInt(key),
+                    ) {
+                        put(key, it ?: JSONObject.NULL)
+                    }
                 }
-            }
             Choice(
                 "Orgasm",
                 if (row.isNull("orgasm")) "Unlogged"
@@ -561,13 +610,16 @@ internal fun Choice(label: String, value: String, options: List<String>, change:
 }
 
 @Composable
-private fun BackupSettings(model: BloomModel, archive: JSONObject) {
+private fun BackupSettings(model: BloomModel, archive: JSONObject, openGuides: () -> Unit) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val shortKeyboard =
         androidx.compose.ui.platform.LocalWindowInfo.current.containerSize.height <
             with(density) { 480.dp.roundToPx() } && WindowInsets.ime.getBottom(density) > 0
     val passphraseHint = "Use at least 12 characters for an encrypted backup."
+    // Passphrases stay in memory only, never in the saved-state Bundle.
     var password by remember { mutableStateOf("") }
+    var confirmation by remember { mutableStateOf("") }
+    var passphraseProblem by remember { mutableStateOf<String?>(null) }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var encrypted by rememberSaveable { mutableStateOf(true) }
     var contacts by rememberSaveable { mutableStateOf(false) }
@@ -611,6 +663,27 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject) {
             archive.getLong("revision"),
         ) {}
     }
+    // The same ranges as iOS and the core's profile validation.
+    listOf(
+            Triple("typical_cycle", "Usual cycle", 15..90),
+            Triple("typical_period", "Usual period", 1..20),
+        )
+        .forEach { (key, label, range) ->
+            gg.seven.kit.DropdownField(
+                label,
+                profile.getInt(key),
+                range.map { it to if (it == 1) "1 day" else "$it days" },
+            ) { days ->
+                model.save(
+                    "profile",
+                    JSONObject(profile.toString()).put(key, days),
+                    archive.getLong("revision"),
+                ) {}
+            }
+        }
+    Muted(
+        "Estimates use your recorded cycles first; the usual cycle fills in until there is enough history."
+    )
     listOf(
             "discreet" to "Discreet reminders and widgets",
             "period_reminder" to "Estimated period reminder",
@@ -644,7 +717,10 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject) {
     if (shortKeyboard) Text(passphraseHint, style = MaterialTheme.typography.bodySmall)
     TextField(
         password,
-        { password = it },
+        {
+            password = it
+            passphraseProblem = null
+        },
         label = { Text("Backup passphrase") },
         singleLine = true,
         visualTransformation =
@@ -667,17 +743,47 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject) {
         },
         modifier = Modifier.fillMaxWidth(),
     )
+    TextField(
+        confirmation,
+        {
+            confirmation = it
+            passphraseProblem = null
+        },
+        label = { Text("Repeat backup passphrase") },
+        singleLine = true,
+        isError = passphraseProblem != null,
+        supportingText = passphraseProblem?.let { { Text(it) } },
+        visualTransformation =
+            if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                autoCorrectEnabled = false,
+                imeAction = ImeAction.Done,
+            ),
+        modifier = Modifier.fillMaxWidth(),
+    )
     Check("Include contacts in CSV", contacts) { contacts = it }
     Check("Include notes in CSV", notes) { notes = it }
     listOf("age" to "Encrypted backup", "json" to "Full JSON export", "csv" to "CSV export")
         .forEach { (kind, label) ->
             OutlinedButton(
                 onClick = {
-                    exportKind = kind
-                    pendingPassword = password
-                    pendingContacts = contacts
-                    pendingNotes = notes
-                    create.launch("bloom-${LocalDate.now()}.$kind")
+                    // Check the passphrase before the system picker creates a file.
+                    passphraseProblem =
+                        when {
+                            kind != "age" -> null
+                            password.codePointCount(0, password.length) < 12 -> passphraseHint
+                            password != confirmation -> "The passphrases do not match."
+                            else -> null
+                        }
+                    if (passphraseProblem == null) {
+                        exportKind = kind
+                        pendingPassword = password
+                        pendingContacts = contacts
+                        pendingNotes = notes
+                        create.launch("bloom-${LocalDate.now()}.$kind")
+                    }
                 }
             ) {
                 Text(label)
@@ -688,7 +794,7 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject) {
     Text(
         "Health Connect transfer is manual and permission-based. Care reminders use Android notifications and your alarm permissions."
     )
-    Text("Archive revision ${archive.getLong("revision")}")
+    TextButton(onClick = openGuides) { Text("Guides and sources") }
     OutlinedButton(onClick = { erase = true }) { Text("Erase local journal") }
     SevenAbout()
     if (erase)
@@ -712,4 +818,49 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject) {
             },
             dismissButton = { TextButton(onClick = { erase = false }) { Text("Cancel") } },
         )
+}
+
+private val guideSources =
+    listOf(
+        "NHS · Periods and the menstrual cycle" to
+            "https://www.nhs.uk/conditions/periods/fertility-in-the-menstrual-cycle/",
+        "NHS · Period problems and when to seek care" to
+            "https://www.nhs.uk/conditions/periods/period-problems/",
+        "NHS · Missed or late periods" to "https://www.nhs.uk/symptoms/missed-or-late-periods/",
+        "NHS · Pregnancy tests" to
+            "https://www.nhs.uk/pregnancy/trying-for-a-baby/doing-a-pregnancy-test/",
+        "NHS · Perimenopause symptoms" to
+            "https://www.nhs.uk/conditions/menopause-and-perimenopause/symptoms/",
+    )
+
+/** The same guidance and independent NHS sources as iOS; links open in the browser. */
+@Composable
+private fun GuidesScreen() {
+    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    SectionTitle("Know your records")
+    Text(
+        "Cycle day starts with the first day of a period. Log a new period start when needed; spotting is recorded separately. Missing days are unknown, not symptom-free days."
+    )
+    Text(
+        "Your estimates use recent logged cycles. Variable cycles, hormonal contraception and life-stage changes make calendar predictions less useful. No date in this app can establish contraceptive protection."
+    )
+    Text(
+        "Use symptom and dose reports to prepare for a conversation with a clinician. This app does not assess PCOS, endometriosis, pregnancy health or menopause."
+    )
+    SectionTitle("Read the source")
+    guideSources.forEach { (label, link) ->
+        TextButton(onClick = { uri.openUri(link) }) {
+            Text(label, Modifier.weight(1f, fill = false))
+            Spacer(Modifier.width(8.dp))
+            Icon(Icons.AutoMirrored.Outlined.OpenInNew, "Opens in your browser")
+        }
+    }
+    SectionTitle("Medication reminders")
+    Text(
+        "Use the medicine leaflet or your clinician’s instructions to configure your schedule. Follow the leaflet or ask a pharmacist about missed doses, interactions or a change of time zone. Reminders record your choices; they do not prescribe a dose."
+    )
+    SectionTitle("Private lives")
+    Text(
+        "Each person keeps a separate journal on their own device. There is no family dashboard, parent access or automatic partner sharing."
+    )
 }

@@ -130,7 +130,7 @@ fun WatchHome(model: WatchModel) {
                         }
                     }
                     if (state.pending != null) {
-                        item { Text("Pending — not saved on phone yet.") }
+                        item { Text("Pending. Not saved on phone yet.") }
                         item {
                             OutlinedButton(
                                 onClick = { discard = true },

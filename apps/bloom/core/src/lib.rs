@@ -205,3 +205,30 @@ pub fn bloom_watch_apply(archive: String, request: String, now: i64, zone: Strin
     watch::apply(&mut archive, &request, now, &zone, paid)?;
     json(&archive)
 }
+
+/// Temperatures are stored in Celsius. This is the value shown in the person's unit: two decimals,
+/// which keeps a basal reading's precision in either scale.
+#[uniffi::export]
+pub fn bloom_temperature_display(celsius: f64, fahrenheit: bool) -> f64 {
+    let value = if fahrenheit { celsius * 9.0 / 5.0 + 32.0 } else { celsius };
+    (value * 100.0).round() / 100.0
+}
+/// An entered temperature, in the person's unit, as the stored Celsius value. Fahrenheit entries keep
+/// three decimals in Celsius, so redisplaying an entry with up to two decimals returns it unchanged.
+#[uniffi::export]
+pub fn bloom_temperature_celsius(value: f64, fahrenheit: bool) -> Result<f64> {
+    let celsius = if fahrenheit {
+        ((value - 32.0) * 5.0 / 9.0 * 1000.0).round() / 1000.0
+    } else {
+        value
+    };
+    ensure(
+        value.is_finite() && (30.0..=45.0).contains(&celsius),
+        if fahrenheit {
+            "Temperature must be between 86 and 113 °F."
+        } else {
+            "Temperature must be between 30 and 45 °C."
+        },
+    )?;
+    Ok(celsius)
+}

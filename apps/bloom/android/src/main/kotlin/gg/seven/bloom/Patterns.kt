@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
@@ -28,7 +30,6 @@ import com.patrykandpatrick.vico.core.cartesian.data.*
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.component.ShapeComponent
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
-import gg.seven.bloom.core.bloomReport
 import gg.seven.kit.SevenColors
 import java.time.LocalDate
 import org.json.JSONObject
@@ -172,8 +173,16 @@ internal fun BloomPatterns(
     val temperatures = d.rows("temperatures").takeLast(90)
     if (temperatures.isNotEmpty())
         Panel {
-            Text("Recorded temperature · °C", style = MaterialTheme.typography.titleLarge)
-            RecordChart(temperatures.map { it.getString("day") to it.getDouble("value") }, true)
+            Text(
+                "Recorded temperature · ${BloomTemperature.unit}",
+                style = MaterialTheme.typography.titleLarge,
+            )
+            RecordChart(
+                temperatures.map {
+                    it.getString("day") to BloomTemperature.display(it.getDouble("value"))
+                },
+                true,
+            )
             Muted(
                 "Latest 90 measurements, in entry order. Lines connect observations; they do not confirm ovulation."
             )
@@ -184,7 +193,7 @@ internal fun BloomPatterns(
             if (values)
                 temperatures.asReversed().forEach {
                     Text(
-                        "${pretty(it.getString("day"))}${if (it.isNull("at")) " · daily summary" else " · ${timeLabel(it.getLong("at"))}"} · ${it.getDouble("value")} °C"
+                        "${pretty(it.getString("day"))}${if (it.isNull("at")) " · daily summary" else " · ${timeLabel(it.getLong("at"))}"} · ${BloomTemperature.text(it.getDouble("value"))}"
                     )
                 }
         }
@@ -202,51 +211,48 @@ internal fun BloomPatterns(
         )
     }
     SectionTitle("Reports & selected sharing")
-    ReportPanel(model, a)
+    ReportPanel(model)
 }
 
 @Composable
-private fun ReportPanel(model: BloomModel, archive: JSONObject) {
+private fun ReportPanel(model: BloomModel) {
     var from by rememberSaveable { mutableStateOf(LocalDate.now().minusMonths(3).toString()) }
     var to by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
     var contacts by rememberSaveable { mutableStateOf(false) }
     var notes by rememberSaveable { mutableStateOf(false) }
-    var preview by rememberSaveable { mutableStateOf<String?>(null) }
+    // The report text can include notes and contacts. It stays in the ViewModel, out of the
+    // saved-state Bundle; only the chosen format survives recreation.
+    val preview by model.report.collectAsStateWithLifecycle()
+    val busy by model.busy.collectAsStateWithLifecycle()
     var kind by rememberSaveable { mutableStateOf("pdf") }
-    var pending by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
     val create =
         rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument("application/octet-stream")
         ) { uri ->
-            if (uri != null) model.exportReport(uri, pending, kind)
+            if (uri != null) model.exportReport(uri, kind)
         }
+    fun changed() {
+        model.report.value = null
+    }
     Panel {
         DateField("From", from) {
             from = it
-            preview = null
+            changed()
         }
         DateField("Through", to) {
             to = it
-            preview = null
+            changed()
         }
         Check("Include sex/contact", contacts) {
             contacts = it
-            preview = null
+            changed()
         }
         Check("Include private notes", notes) {
             notes = it
-            preview = null
+            changed()
         }
-        Button(
-            onClick = {
-                model.run {
-                    preview =
-                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                            bloomReport(archive.toString(), from, to, contacts, notes)
-                        }
-                }
-            }
-        ) {
+        Button(enabled = !busy, onClick = { model.buildReport(from, to, contacts, notes) }) {
             Text("Preview report")
         }
         Muted(
@@ -259,19 +265,30 @@ private fun ReportPanel(model: BloomModel, archive: JSONObject) {
                 Text(if (show) "Hide report text" else "Read report text")
             }
             if (show) Text(preview!!, style = MaterialTheme.typography.bodySmall)
-            FlowRow {
-                listOf("pdf", "txt").forEach { format ->
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("pdf" to "PDF", "txt" to "text").forEach { (format, label) ->
+                    FilledTonalButton(
+                        enabled = !busy,
+                        onClick = { model.shareReport(format) { context.startActivity(it) } },
+                    ) {
+                        Text("Share $label")
+                    }
+                }
+                listOf("pdf" to "PDF", "txt" to "text").forEach { (format, label) ->
                     TextButton(
+                        enabled = !busy,
                         onClick = {
                             kind = format
-                            pending = preview!!
                             create.launch("cycle-report.$format")
-                        }
+                        },
                     ) {
-                        Text("Export ${format.uppercase()}")
+                        Text("Save $label")
                     }
                 }
             }
+            Muted(
+                "Only this reviewed report is shared. The person who receives it gets a copy, not access to your journal."
+            )
         }
     }
 }

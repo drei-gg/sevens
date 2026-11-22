@@ -115,7 +115,7 @@ class MainActivity : FragmentActivity() {
                 .setTitle(
                     if (change == null) "Unlock your journal" else "Change journal protection"
                 )
-                .setSubtitle("Use your device's fingerprint, face or screen lock")
+                .setSubtitle("Use your device’s fingerprint, face or screen lock")
                 .setAllowedAuthenticators(authenticators)
                 .build()
         )
@@ -132,7 +132,7 @@ internal val BloomContent =
                         "Calendar, Clock and Notes can keep dates, reminders and a journal. If that covers you, keep your money."
                     ),
                     BeforeYouBuyContent.Paragraph(
-                        "This brings your cycle, symptom and private contact records together, with portable encrypted backups. Try everything for seven days, then {price}, once.",
+                        "This brings your cycle, symptom and private contact records together, with portable encrypted backups. Try everything for seven days, then {price}, once. Nothing renews.",
                         withoutPrice =
                             "Try the journal for seven days, then unlock once. Nothing renews.",
                     ),

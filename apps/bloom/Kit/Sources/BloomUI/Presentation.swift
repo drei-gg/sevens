@@ -198,7 +198,7 @@ struct ObservationEditor: View {
           }
         }
         if value.kind == "temperature" {
-          TextField("Temperature, °C", text: $number).keyboardType(.decimalPad)
+          TextField("Temperature, \(BloomTemperature.unit)", text: $number).keyboardType(.decimalPad)
         }
         if value.kind == "product" {
           Picker("Fullness", selection: $value.value) {
@@ -213,9 +213,21 @@ struct ObservationEditor: View {
           "Each save is a separate observation. Daily summaries use the highest flow and symptom level; your timeline retains every entry."
         ).textRole(.secondary).foregroundStyle(Tokens.muted)
       }
-    }.onAppear { number = value.number.map { String($0) } ?? "" }
+    }.onAppear {
+      number =
+        value.number.map { n in
+          value.kind == "temperature" ? BloomTemperature.number(n) : String(n)
+        } ?? ""
+    }
   }
   func save() async -> Bool {
+    if value.kind == "temperature" {
+      do { value.number = try BloomTemperature.celsius(from: number) } catch {
+        model.message = explain(error)
+        return false
+      }
+      return await model.save("observation", value, revision: revision)
+    }
     let text = number.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")
     if !text.isEmpty && Double(text) == nil {
       model.message = "Enter a valid measured number."
@@ -242,7 +254,9 @@ struct ObservationRow: View {
           value.zone,
           value.value.replacingOccurrences(of: "_", with: " "),
           value.level.map { level in "Level \(level)/3" } ?? "",
-          value.number.map { number in "\(number) \(value.kind == "temperature" ? "°C" : "mL")" }
+          value.number.map { number in
+            value.kind == "temperature" ? BloomTemperature.text(number) : "\(number) mL"
+          }
             ?? "",
         ].filter { part in !part.isEmpty }.joined(separator: " · ")
       )
@@ -311,5 +325,28 @@ struct ExclusionEditor: View {
         .secondary
       ).foregroundStyle(Tokens.muted)
     }
+  }
+}
+/// Celsius is stored; the person's region decides the unit shown and entered. The core converts.
+enum BloomTemperature {
+  static var fahrenheit: Bool { UnitTemperature(forLocale: .current) == .fahrenheit }
+  static var unit: String { fahrenheit ? "°F" : "°C" }
+  static func display(_ celsius: Double) -> Double {
+    bloomTemperatureDisplay(celsius: celsius, fahrenheit: fahrenheit)
+  }
+  static func number(_ celsius: Double) -> String {
+    display(celsius).formatted(
+      .number.precision(.fractionLength(0...2)).grouping(.never))
+  }
+  static func text(_ celsius: Double) -> String { "\(number(celsius)) \(unit)" }
+  /// nil for a blank field; throws the core's range message for an unusable value.
+  static func celsius(from field: String) throws -> Double? {
+    let text = field.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(
+      of: ",", with: ".")
+    if text.isEmpty { return nil }
+    guard let value = Double(text) else {
+      throw BloomFailure.message("Enter a valid temperature in \(unit).")
+    }
+    return try bloomTemperatureCelsius(value: value, fahrenheit: fahrenheit)
   }
 }

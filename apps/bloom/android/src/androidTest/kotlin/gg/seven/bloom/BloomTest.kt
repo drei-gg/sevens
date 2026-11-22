@@ -417,11 +417,9 @@ class BloomTest {
         lateinit var model: BloomModel
         ui.runOnIdle {
             model = androidx.lifecycle.ViewModelProvider(ui.activity)[BloomModel::class.java]
-            model.exportReport(
-                android.net.Uri.fromFile(file),
-                (1..200).joinToString("\n") { "Observation $it — full report line" },
-                "pdf",
-            )
+            model.report.value =
+                (1..200).joinToString("\n") { "Observation $it: full report line" }
+            model.exportReport(android.net.Uri.fromFile(file), "pdf")
         }
         ui.waitUntil(15000) { !model.busy.value && file.exists() }
         assertNull(model.error.value)

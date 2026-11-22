@@ -112,6 +112,7 @@ internal fun BloomToday(
     a: JSONObject,
     d: JSONObject,
     edit: (String, JSONObject?) -> Unit,
+    openGuides: () -> Unit,
 ) {
     var explanation by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
@@ -144,7 +145,11 @@ internal fun BloomToday(
         )
         Muted(
             if (estimate != null)
-                "Cycle day ${cycle ?: "—"} · ${d.getInt("sample_size")} completed cycles used"
+                listOfNotNull(
+                        cycle?.let { "Cycle day $it" },
+                        "${d.getInt("sample_size")} completed cycles used",
+                    )
+                    .joinToString(" · ")
             else "Your observations, without a forecast"
         )
         val today = LocalDate.parse(d.getString("today"))
@@ -220,6 +225,19 @@ internal fun BloomToday(
             TextButton(onClick = { edit("contact", null) }) { Text("Log sex/contact") }
     }
     DoseList(model, a, d)
+    if (d.rows("plan_positions").isNotEmpty()) {
+        SectionTitle("Pack progress")
+        Panel {
+            d.rows("plan_positions").forEach { position ->
+                a.rows("plans")
+                    .firstOrNull { it.getString("id") == position.getString("id") }
+                    ?.getString("name")
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { Muted(it) }
+                PackProgress(position)
+            }
+        }
+    }
     a.rows("observations")
         .maxByOrNull { it.getLong("at") }
         ?.let { event ->
@@ -237,6 +255,34 @@ internal fun BloomToday(
             }
         }
     }
+    SectionTitle("A private space")
+    Panel {
+        Muted(
+            "Log what matters to you. Blank days stay unknown; reminders never mark a dose as taken."
+        )
+        TextButton(onClick = openGuides) { Text("Guides and sources") }
+    }
+}
+
+/** A pill pack's position from the Rust core: day, phase and active/break split. */
+@Composable
+internal fun PackProgress(position: JSONObject) {
+    val day = position.getInt("day")
+    val total = position.getInt("total")
+    val active = position.getInt("active")
+    Text(
+        "Day $day of $total · ${position.getString("phase")}",
+        style = MaterialTheme.typography.titleMedium,
+    )
+    LinearProgressIndicator(
+        progress = { day.toFloat() / total },
+        modifier =
+            Modifier.fillMaxWidth().semantics {
+                contentDescription = "Pack position, day $day of $total"
+            },
+        color = SevenColors.water,
+    )
+    Muted("$active active · ${total - active} break/placebo days")
 }
 
 @Composable
@@ -255,9 +301,10 @@ internal fun ObservationSummary(row: JSONObject) {
                 row.getString("zone"),
                 row.getString("value").replace('_', ' '),
                 if (!row.isNull("level")) "Level ${row.getInt("level")}/3" else "",
-                if (!row.isNull("number"))
-                    "${row.getDouble("number")} ${if (row.getString("kind") == "temperature") "°C" else "mL"}"
-                else "",
+                if (row.isNull("number")) ""
+                else if (row.getString("kind") == "temperature")
+                    BloomTemperature.text(row.getDouble("number"))
+                else "${row.getDouble("number")} mL",
             )
             .filter { it.isNotBlank() }
             .joinToString(" · ")
@@ -267,6 +314,7 @@ internal fun ObservationSummary(row: JSONObject) {
 
 @Composable
 internal fun BloomCalendar(
+    model: BloomModel,
     a: JSONObject,
     d: JSONObject,
     edit: (String, JSONObject?) -> Unit,
@@ -445,12 +493,26 @@ internal fun BloomCalendar(
             Text("Add timed observation")
         }
     }
-    fun matches(row: JSONObject): Boolean =
-        if (query.isNotBlank()) row.toString().contains(query, ignoreCase = true)
+    // Search the words people see and write, as iOS does; never the raw record JSON.
+    fun searchable(kind: String, row: JSONObject): String =
+        when (kind) {
+                "day" ->
+                    listOf(row.getString("notes"), row.getString("day")) +
+                        row.getJSONArray("tags").let { t -> (0 until t.length()).map(t::getString) } +
+                        row.getJSONObject("symptoms").keys().asSequence().toList()
+                "observation" ->
+                    listOf(row.getString("label"), row.getString("value"), row.getString("day"))
+                else ->
+                    listOf(row.getString("notes"), row.getString("activity"), row.getString("day"))
+            }
+            .joinToString(" ")
+            .replace('_', ' ')
+    fun matches(kind: String, row: JSONObject): Boolean =
+        if (query.isNotBlank()) searchable(kind, row).contains(query.trim(), ignoreCase = true)
         else agenda || row.getString("day") == selected
     val rows =
-        (a.rows("days").filter(::matches).map { "day" to it } +
-                a.rows("observations").filter(::matches).map { "observation" to it })
+        (a.rows("days").filter { matches("day", it) }.map { "day" to it } +
+                a.rows("observations").filter { matches("observation", it) }.map { "observation" to it })
             .sortedByDescending { it.second.getString("day") + it.second.optLong("at", 0) }
     if (rows.isEmpty()) Muted("Nothing recorded here yet. Blank days stay unknown.")
     rows.take(limit).forEach { (kind, row) ->
@@ -472,11 +534,30 @@ internal fun BloomCalendar(
         }
     }
     if (rows.size > limit) TextButton(onClick = { limit += 30 }) { Text("Show more entries") }
+    if (!agenda && query.isBlank()) {
+        // Past doses that were never recorded can still be recorded from their day.
+        val revision = a.getLong("revision")
+        val scheduled by
+            produceState(emptyList<JSONObject>(), selected, revision) {
+                value =
+                    try {
+                        model.scheduledOn(selected)
+                    } catch (cancel: kotlinx.coroutines.CancellationException) {
+                        throw cancel
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+            }
+        if (scheduled.isNotEmpty()) {
+            SectionTitle("Scheduled on this day")
+            scheduled.forEach { DoseCard(model, a, it) }
+        }
+    }
     Toggle("Show private contact entries", contacts) { contacts = it }
     if (contacts) {
         TextButton(onClick = { edit("contact", null) }) { Text("Add contact") }
         a.rows("contacts")
-            .filter(::matches)
+            .filter { matches("contact", it) }
             .sortedByDescending { it.getLong("at") }
             .take(limit)
             .forEach { row ->
@@ -567,20 +648,8 @@ internal fun BloomCare(
             Text(plan.getString("name"), style = MaterialTheme.typography.titleLarge)
             val position =
                 d.rows("plan_positions").firstOrNull { it.getString("id") == plan.getString("id") }
-            if (position != null) {
-                Text(
-                    "Day ${position.getInt("day")} of ${position.getInt("total")} · ${position.getString("phase")}",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                LinearProgressIndicator(
-                    progress = { position.getInt("day").toFloat() / position.getInt("total") },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = SevenColors.water,
-                )
-                Muted(
-                    "${position.getInt("active")} active · ${position.getInt("total") - position.getInt("active")} break/placebo days"
-                )
-            } else
+            if (position != null) PackProgress(position)
+            else
                 Muted(
                     "${plan.getString("pattern")} · ${if (plan.getBoolean("enabled")) "active" else "paused"}"
                 )

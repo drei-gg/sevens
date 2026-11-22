@@ -36,3 +36,11 @@
 - Added the Wear OS companion with native Wear Material 3 controls, round-screen scrolling, optional dynamic color, minimal opt-in snapshots and scheduled Taken/Skip actions.
 - Added phone Data Layer transport in personal/store editions. Encrypted phone commits publish only after persistence and refresh the visible journal, notifications and widget.
 - Shared snapshot redaction and permitted watch commands in Rust; hardened both watch clients against stale/future data, unmatched acknowledgements and accidental queue clearing. Android keeps one durable pending request and retries its original receipt.
+
+## 2026-11-22 — Privacy fixes and platform parity
+
+- Discreet mode now hides the estimated-period reminder's text as well as its title. iOS writes nothing to the shared widget store unless widgets are on, and turning them off clears the last shared values.
+- Doses on later days can no longer be marked Taken or Skipped on either platform; the core's future-date messages now name the record being saved.
+- Temperatures are shown and entered in °C or °F according to the regional preference and stored in Celsius; the core converts and validates both units.
+- Today shows pack progress for active pill packs on both platforms. Import previews count every record type.
+- Android: repeated backup passphrase checked before the file picker opens, partial export files removed on failure, report text kept out of saved state, report sharing as text or PDF alongside saving, usual cycle and period settings, Guides and sources, recording past scheduled doses from Calendar, search limited to visible fields, named editors and worded libido/pain levels.

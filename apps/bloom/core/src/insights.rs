@@ -218,7 +218,12 @@ pub fn full_dashboard(a: &Archive, now: i64, zone: &str) -> Result<Dashboard> {
                         } else {
                             "Period estimate".into()
                         },
-                        body: "Your period may begin soon. This is an estimate.".into(),
+                        // Discreet mode keeps the reason off the lock screen and shade.
+                        body: if a.profile.discreet {
+                            "Open the app to view it.".into()
+                        } else {
+                            "Your period may begin soon. This is an estimate.".into()
+                        },
                         dose: None,
                         // 09:00 on the phone's clock, wherever it is.
                         floating: true,

@@ -132,6 +132,20 @@ struct TodayScreen: View {
           ForEach(d.today_doses) { dose in DoseRow(dose: dose) }
           NavigationLink("Manage pill and birth-control plans") { CareScreen() }
         }
+        if !d.plan_positions.isEmpty {
+          BloomSection("Pack progress") {
+            ForEach(d.plan_positions) { position in
+              VStack(alignment: .leading, spacing: Tokens.Space.xs) {
+                if let name = model.archive.plans.first(where: { $0.id == position.id })?.name,
+                  !name.isEmpty
+                {
+                  Text(name).textRole(.secondary).foregroundStyle(Tokens.muted)
+                }
+                PackView(position: position)
+              }
+            }
+          }
+        }
         if !d.stock.isEmpty {
           BloomSection("Supply") {
             ForEach(d.stock) { stock in
@@ -164,22 +178,29 @@ struct TodayScreen: View {
 struct DoseRow: View {
   @Environment(BloomModel.self) private var model
   let dose: Occurrence
+  /// A later day's dose cannot be recorded yet; the core rejects it.
+  var upcoming: Bool { dose.day > BloomDate.day(Date()) }
   var body: some View {
     VStack(alignment: .leading, spacing: Tokens.Space.s) {
       Text(dose.title).textRole(.rowTitle)
       Text(
         "\(Date(timeIntervalSince1970: Double(dose.at)).formatted(date: .omitted, time: .shortened)) · \(dose.phase.capitalized) · \(dose.status.capitalized)"
       ).textRole(.secondary).foregroundStyle(Tokens.muted)
-      HStack {
-        Button("Taken") { Task { await model.dose(dose, status: "taken") } }
-        Button("Skipped") { Task { await model.dose(dose, status: "skipped") } }
-        if dose.status != "taken"
-          && BloomDate.day(Date(timeIntervalSince1970: Double(dose.at))) == BloomDate.day(Date())
-        {
-          Button("10 min") { Task { await model.dose(dose, status: "snoozed") } }
-            .accessibilityLabel("Snooze ten minutes")
-        }
-      }.buttonStyle(.bordered).disabled(model.busy)
+      if upcoming {
+        Text("You can record this dose on its scheduled day.").textRole(.secondary)
+          .foregroundStyle(Tokens.muted)
+      } else {
+        HStack {
+          Button("Taken") { Task { await model.dose(dose, status: "taken") } }
+          Button("Skipped") { Task { await model.dose(dose, status: "skipped") } }
+          if dose.status != "taken"
+            && BloomDate.day(Date(timeIntervalSince1970: Double(dose.at))) == BloomDate.day(Date())
+          {
+            Button("10 min") { Task { await model.dose(dose, status: "snoozed") } }
+              .accessibilityLabel("Snooze ten minutes")
+          }
+        }.buttonStyle(.bordered).disabled(model.busy)
+      }
     }.padding(.vertical, Tokens.Space.xs)
   }
 }
@@ -471,13 +492,13 @@ struct InsightsScreen: View {
             .textRole(.secondary).foregroundStyle(Tokens.muted)
         }
         if !d.temperatures.isEmpty {
-          BloomSection("Basal temperature · °C") {
+          BloomSection("Basal temperature · \(BloomTemperature.unit)") {
             Chart(d.temperatures) { day in
               PointMark(
                 x: .value(
                   "Date",
                   day.at.map { timestamp in Date(timeIntervalSince1970: Double(timestamp)) }
-                    ?? BloomDate.date(day.day)), y: .value("Celsius", day.value)
+                    ?? BloomDate.date(day.day)), y: .value("Temperature", BloomTemperature.display(day.value))
               ).foregroundStyle(Tokens.dataCool)
             }.chartYScale(domain: .automatic(includesZero: false)).bloomChartLabels().frame(
               height: 190)
