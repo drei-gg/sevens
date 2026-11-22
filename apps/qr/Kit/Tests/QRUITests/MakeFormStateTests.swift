@@ -62,6 +62,19 @@ import UIKit
         #expect(issue(s, .contact) == .badPhone(.contactPhone))
     }
 
+    @Test func contactPhoneMayBeLocalWhilePhoneAndSMSStayInternational() {
+        var s = MakeFormState()
+        s.givenName = "Ana"
+        s.contactPhone = "0917 123 4567"
+        guard case .contact(let c)? = request(s, .contact) else { Issue.record("a local contact number was refused"); return }
+        #expect(c.phones == ["0917 123 4567"])
+        s.contactPhone = "12"
+        #expect(issue(s, .contact) == .badPhone(.contactPhone))
+        #expect(MakeFormIssue.badPhone(.contactPhone).message != MakeFormIssue.badPhone(.phone).message)
+        s.phone = "0917 123 4567"
+        #expect(issue(s, .phone) == .badPhone(.phone))
+    }
+
     @Test func emailSmsPhoneShapes() {
         var s = MakeFormState()
         s.emailAddress = "nobody"
@@ -71,13 +84,21 @@ import UIKit
         #expect(request(s, .email) == .email(EmailInfo(address: "a@b.co", subject: "Hi", body: nil)))
         s.smsNumber = "12"
         #expect(issue(s, .sms) == .badPhone(.smsNumber))
+        // SPEC §8: international form only; a local number asks for the country code.
         s.smsNumber = "0917 123 4567"
+        #expect(issue(s, .sms) == .badPhone(.smsNumber))
+        s.smsNumber = "+63 917 123 4567"
         s.smsBody = "On my way"
-        #expect(request(s, .sms) == .sms(SMSInfo(number: "0917 123 4567", body: "On my way")))
+        #expect(request(s, .sms) == .sms(SMSInfo(number: "+63 917 123 4567", body: "On my way")))
         s.phone = "abc"
         #expect(issue(s, .phone) == .badPhone(.phone))
         s.phone = "(02) 8123-4567"
-        #expect(request(s, .phone) == .phone("(02) 8123-4567"))
+        #expect(issue(s, .phone) == .badPhone(.phone))
+        s.phone = "0063 (2) 8123-4567"
+        #expect(request(s, .phone) == .phone("0063 (2) 8123-4567"))
+        // The core writes it as TEL:+…, separators dropped.
+        #expect(PayloadEncoder.encode(.phone("0063 (2) 8123-4567")) == "TEL:+63281234567")
+        #expect(PayloadEncoder.encode(.sms(SMSInfo(number: "+63 917 123 4567", body: nil))) == "sms:+639171234567")
     }
 
     @Test func locationRanges() {
@@ -153,9 +174,11 @@ import UIKit
         #expect(!MakeFormValidation.isPlausibleEmail("@c.de"))
         #expect(!MakeFormValidation.isPlausibleEmail("a@@c.de"))
         #expect(MakeFormValidation.isPlausiblePhone("+1 (555) 010-9999"))
+        #expect(MakeFormValidation.isPlausiblePhone("0044 20 7946 0958"))
         #expect(!MakeFormValidation.isPlausiblePhone("55"))
         #expect(!MakeFormValidation.isPlausiblePhone("555-CALL"))
-        #expect(!MakeFormValidation.isPlausiblePhone("1234567890123456789012"))
+        #expect(!MakeFormValidation.isPlausiblePhone("(555) 010-9999"))
+        #expect(!MakeFormValidation.isPlausiblePhone("+1234567890123456789012"))
     }
 }
 

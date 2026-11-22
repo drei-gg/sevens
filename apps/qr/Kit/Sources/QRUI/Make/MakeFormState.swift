@@ -82,7 +82,7 @@ struct MakeFormState: Hashable, Sendable {
         case .contact:
             let given = nonEmpty(givenName), family = nonEmpty(familyName), org = nonEmpty(organization)
             if given == nil, family == nil, org == nil { return .invalid(.required(.contactName)) }
-            if let p = nonEmpty(contactPhone), !MakeFormValidation.isPlausiblePhone(p) { return .invalid(.badPhone(.contactPhone)) }
+            if let p = nonEmpty(contactPhone), !Self.isPlausibleContactPhone(p) { return .invalid(.badPhone(.contactPhone)) }
             if let e = nonEmpty(contactEmail), !MakeFormValidation.isPlausibleEmail(e) { return .invalid(.badEmail(.contactEmail)) }
             let full = [given, family].compactMap { $0 }.joined(separator: " ")
             return .request(.contact(ContactInfo(
@@ -136,6 +136,17 @@ struct MakeFormState: Hashable, Sendable {
         }
         return EventInfo(summary: nonEmpty(eventTitle), start: start, end: end, isAllDay: eventAllDay,
                          location: nonEmpty(eventLocation), description: nonEmpty(eventDescription), url: nonEmpty(eventURL))
+    }
+
+    /// A contact's phone is lenient: a vCard TEL may be a local number, so digits plus
+    /// `+ ( ) - . * # ,` and spaces, 3 to 20 digits. Phone and SMS codes stay strict
+    /// (`MakeFormValidation.isPlausiblePhone`: international, written as TEL:+…).
+    static func isPlausibleContactPhone(_ raw: String) -> Bool {
+        let s = MakeFormValidation.trimmed(raw)
+        guard !s.isEmpty else { return false }
+        let allowed = Set("0123456789+()-.*#, ")
+        guard s.allSatisfy({ allowed.contains($0) }) else { return false }
+        return (3...20).contains(s.filter { $0.isASCII && $0.isNumber }.count)
     }
 
     static func wallAsGMT(_ date: Date, calendar: Calendar = .current) -> Date {

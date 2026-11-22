@@ -92,6 +92,13 @@ private func tempDirectory() -> URL {
         #expect(second.knownAddresses.isEmpty)
     }
 
+    @Test func historyCSVExportIncludesKnownAddresses() async {
+        let model = await model()
+        _ = await model.knowAddress("a.example")
+        let rows = await model.exportHistoryCSV().components(separatedBy: "\r\n")
+        #expect(rows.contains { $0.contains(",knownAddress,") && $0.contains("a.example") })
+    }
+
     @Test func historyJSONExportIncludesKnownAddresses() async throws {
         let model = await model()
         _ = await model.knowAddress("a.example")

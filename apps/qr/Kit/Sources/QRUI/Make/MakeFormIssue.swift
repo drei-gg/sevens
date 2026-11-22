@@ -36,8 +36,13 @@ enum MakeFormIssue: Error, Hashable, Sendable {
             return String(localized: "make.issue.required", defaultValue: "Fill in this field to make a code.", bundle: .module)
         case .badEmail:
             return String(localized: "make.issue.email", defaultValue: "This doesn’t look like an email address. Use the form name@example.com.", bundle: .module)
-        case .badPhone:
+        case .badPhone(.contactPhone):
+            // A vCard TEL may be a local number; only phone and SMS codes need TEL:+… (SPEC §8).
             return String(localized: "make.issue.phone", defaultValue: "Use digits, and + ( ) - . or spaces. At least 3 digits.", bundle: .module)
+        case .badPhone:
+            return String(localized: "make.issue.phone.international",
+                          defaultValue: "Start with + and the country code, then the number. Spaces, dashes and brackets are fine.",
+                          bundle: .module)
         case .badLatitude:
             return String(localized: "make.issue.latitude", defaultValue: "Latitude is a number from -90 to 90.", bundle: .module)
         case .badLongitude:

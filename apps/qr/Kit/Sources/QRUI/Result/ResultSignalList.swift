@@ -5,21 +5,24 @@ import SevenKit
 /// The reasons behind a verdict, one plain sentence each. No scores. Info signals are shown
 /// quieter; they never change the verdict.
 struct ResultSignalList: View {
-    let signals: [Signal]
+    let rows: [ResultReason]
 
-    private struct Row: Hashable { let sentence: String; let isInfo: Bool }
+    /// Already-worded reasons (`ResultReasons`), shown as given.
+    init(rows: [ResultReason]) {
+        self.rows = rows
+    }
 
-    /// Identical sentences appear once.
-    private var rows: [Row] {
+    /// Signals worded by `SignalText`; identical sentences appear once.
+    init(signals: [Signal]) {
         var seen = Set<String>()
-        return signals.compactMap { signal in
+        self.rows = signals.compactMap { signal in
             let sentence = SignalText.sentence(for: signal)
-            return seen.insert(sentence).inserted ? Row(sentence: sentence, isInfo: signal.severity == .info) : nil
+            return seen.insert(sentence).inserted ? ResultReason(sentence: sentence, isInfo: signal.severity == .info) : nil
         }
     }
 
     var body: some View {
-        if !signals.isEmpty {
+        if !rows.isEmpty {
             VStack(alignment: .leading, spacing: Tokens.Space.s) {
                 ForEach(rows, id: \.self) { row in
                     HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.s) {

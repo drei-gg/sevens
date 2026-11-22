@@ -65,7 +65,7 @@ public struct MakeExtensionRoot: View {
                         .interpolation(.none)
                         .aspectRatio(contentMode: .fit)
                         .frame(maxWidth: .infinity)
-                        .accessibilityLabel(String(localized: "ext.make.code.a11y", defaultValue: "QR code", bundle: .module))
+                        .accessibilityLabel(made.accessibilityLabel)
                     actions(made)
                 }
                 .padding(Tokens.Space.m)
@@ -121,7 +121,7 @@ public struct MakeExtensionRoot: View {
             phase = .unsupported
         case .request(let request):
             do {
-                if let made = try ExtensionMadeCode(text: PayloadEncoder.encode(request)) {
+                if let made = try ExtensionMadeCode(text: PayloadEncoder.encode(request), preview: ExtensionMadeCode.preview(for: request)) {
                     phase = .ready(made)
                 } else {
                     phase = .failed(MakeError.generatorFailed.message)

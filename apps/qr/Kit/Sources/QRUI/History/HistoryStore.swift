@@ -17,7 +17,7 @@ import QRCore
 //     func clear()                                writes an empty file (read-only: no-op)
 //     func search(_ query:) -> [HistoryItem]      payload, note, type ID and type display name
 //     func exportJSON() throws -> Data            the file's own shape
-//     func exportCSV() -> String                  RFC 4180
+//     func exportCSV(known:) -> String            RFC 4180, known addresses as rows
 //     func changes() -> AsyncStream<Void>         one element per change (load, add, edit, delete, clear)
 //     func flush()                                write now if anything is pending (backgrounding, tests)
 //
@@ -128,9 +128,10 @@ public actor HistoryStore {
         return try HistoryExport.json(list, known: known)
     }
 
-    public func exportCSV() -> String {
+    /// With `known`, the addresses the person knows follow the items as `knownAddress` rows (SPEC §10).
+    public func exportCSV(known: KnownAddresses? = nil) -> String {
         loadIfNeeded()
-        return HistoryExport.csv(list)
+        return HistoryExport.csv(list, known: known)
     }
 
     /// One element per change. Each call makes an independent stream.

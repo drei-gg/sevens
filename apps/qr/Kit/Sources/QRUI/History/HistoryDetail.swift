@@ -112,7 +112,8 @@ public struct HistoryDetail: View {
             // The same verdict block as the result sheet: big symbol, the word as the hero.
             VStack(spacing: Tokens.Space.s) {
                 Image(systemName: style.symbolName + ".fill")
-                    .textRole(.display)
+                    .textRole(.hero)
+                    .imageScale(.large)
                     .foregroundStyle(style.color)
                 Text(VerdictText.title(for: shown.level)).textRole(.hero).foregroundStyle(.primary)
                     .multilineTextAlignment(.center)

@@ -207,7 +207,7 @@ public final class AppModel {
     public func clearHistory() async { await history.clear() }
 
     public func exportHistoryJSON() async throws -> Data { try await history.exportJSON(known: await knownStore.addresses()) }
-    public func exportHistoryCSV() async -> String { await history.exportCSV() }
+    public func exportHistoryCSV() async -> String { await history.exportCSV(known: await knownStore.addresses()) }
 
     /// Sets the mirror without waiting for the actor (previews).
     func seedHistoryMirror(_ items: [HistoryItem]) { historyItems = items }

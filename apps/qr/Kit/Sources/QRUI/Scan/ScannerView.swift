@@ -8,8 +8,9 @@
 //   ScannerView.availability -> ScannerAvailability   (check before showing the view)
 //
 // Contract with the caller
-//   * isActive == true runs the camera; false stops it. The first time it starts, iOS asks for
-//     camera permission.
+//   * isActive == true runs the camera; false stops it. Camera permission is asked by the scan
+//     screen (ScanCameraGate) before this view exists: show it only once `availability` is
+//     `.available`.
 //   * onCode fires once per delivered code and the scanner then stops itself and ignores further
 //     frames until the caller flips isActive false and back to true. The caller sets isActive
 //     false while the result sheet is up and true when it is dismissed. After the restart the
@@ -17,8 +18,9 @@
 //   * One code in view for 0.4 s is delivered. With several in view nothing is auto-delivered;
 //     onMultipleChange(true) tells the screen to show "Tap a code", and tapping a highlighted
 //     code delivers that one. onMultipleChange(false) when back to at most one.
-//   * Show ScannerView only when `availability == .available`; otherwise show the photo/paste
-//     fallback (and, for .denied, a line with a button to Settings).
+//   * Show ScannerView only when `availability == .available`. `.notDetermined`: ask with
+//     AVCaptureDevice.requestAccess when the scanner first opens, then read `availability` again.
+//     Otherwise show the photo/paste fallback (and, for .denied, a line with a button to Settings).
 //   * Torch: use TorchController alongside; it is independent of this view.
 //
 // The timing and dedup rules live in ScanDebouncer (unit-tested); this file only feeds it.
@@ -33,6 +35,8 @@ import VisionKit
 /// Whether the live scanner can run on this device right now.
 public enum ScannerAvailability: Sendable, Equatable {
     case available
+    /// The scanner is supported and the person hasn't been asked for the camera yet.
+    case notDetermined
     /// No scanner hardware or OS support (Simulator, old devices).
     case unsupported
     /// The person said no to the camera; they can change it in Settings.
@@ -59,11 +63,22 @@ public struct ScannerView: UIViewControllerRepresentable {
 
     @MainActor
     public static var availability: ScannerAvailability {
-        guard DataScannerViewController.isSupported else { return .unsupported }
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        availability(supported: DataScannerViewController.isSupported,
+                     authorization: AVCaptureDevice.authorizationStatus(for: .video),
+                     available: DataScannerViewController.isAvailable)
+    }
+
+    /// Pure: a device that can't scan is `.unsupported` whatever the permission (nobody is asked
+    /// for a camera that can't be used); then the permission decides; once granted,
+    /// `isAvailable` false still means this device can't scan right now.
+    nonisolated public static func availability(supported: Bool, authorization: AVAuthorizationStatus, available: Bool) -> ScannerAvailability {
+        guard supported else { return .unsupported }
+        switch authorization {
+        case .notDetermined: return .notDetermined
         case .denied: return .denied
         case .restricted: return .restricted
-        default: return DataScannerViewController.isAvailable ? .available : .unsupported
+        case .authorized: return available ? .available : .unsupported
+        @unknown default: return available ? .available : .unsupported
         }
     }
 

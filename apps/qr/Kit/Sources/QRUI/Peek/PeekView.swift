@@ -5,6 +5,8 @@ import SevenKit
 public struct PeekView: View {
     let model: PeekModel
     @Environment(\.dismiss) private var dismiss
+    /// Absent in the share extensions; there the person has no known addresses.
+    @Environment(AppModel.self) private var app: AppModel?
 
     /// The Peek sheet (SPEC §6). The button that presents it is the explicit action, so the
     /// fetch starts when it appears, only if the model is idle.
@@ -32,7 +34,7 @@ public struct PeekView: View {
                 }
         }
         .task {
-            if case .idle = model.state { model.start() }
+            if case .idle = model.state { model.start(known: app?.knownAddresses ?? KnownAddresses()) }
         }
         .onDisappear {
             if model.isRunning { model.cancel() }

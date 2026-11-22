@@ -7,6 +7,7 @@ public struct ResultSheet: View {
     @State private var generation = 0
     @State private var dismissedOffer = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppModel.self) private var model: AppModel?
 
     /// The result sheet's content for one analysis. The caller presents it (as a sheet from
@@ -48,7 +49,7 @@ public struct ResultSheet: View {
     private func offerCard(_ domain: String) -> some View {
         ResultKnownOffer(
             question: ResultKnownText.question(for: analysis, domain: domain), domain: domain,
-            onKeep: { withAnimation { dismissedOffer = true } },
+            onKeep: { withAnimation(reduceMotion ? nil : .smooth) { dismissedOffer = true } },
             onKnow: { know(domain) })
     }
 

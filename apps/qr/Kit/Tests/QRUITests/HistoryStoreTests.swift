@@ -193,6 +193,18 @@ enum HistoryTestSupport {
         #expect(csv.hasPrefix("date,kind,type,level,payload,note,signals,symbology,id\r\n"))
         #expect(csv.contains("'=SUM(1,2)"))
         #expect(csv.contains("\"say \"\"hi\"\"\""))
+        #expect(!csv.contains("knownAddress"))
+    }
+
+    @Test func exportCSVCarriesKnownAddresses() async throws {
+        let store = HistoryStore(directory: nil)
+        await store.add(S.item("plain", at: 2))
+        var known = KnownAddresses()
+        known.add("example.com", at: Date(timeIntervalSince1970: 1_700_000_000))
+        let csv = await store.exportCSV(known: known)
+        let rows = csv.components(separatedBy: "\r\n").filter { !$0.isEmpty }
+        #expect(rows.count == 3)
+        #expect(rows.last == "2023-11-14T22:13:20Z,knownAddress,,,example.com,,,,")
     }
 
     @Test func changesStreamReportsEdits() async {

@@ -22,6 +22,8 @@ public enum QRAccessibilityID {
     public static let knownList = "settings.known.list"
     public static let knownForgetAll = "settings.known.forgetAll"
     public static let resultPeek = "result.peek"
+    public static let resultPeekFound = "result.peekFound"
+    public static let resultEmbeddedShowAll = "result.embedded.showAll"
     public static let resultOpen = "result.open"
     public static let peekVerdict = "peek.verdict"
     // Make (WP 3.3)

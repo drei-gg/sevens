@@ -89,11 +89,11 @@ public struct CheckExtensionRoot: View {
         let analysis = code.analysis
         let style = VerdictText.style(for: analysis.level)
         let typeName = VerdictText.typeName(for: analysis.payload.typeID)
-        let shown = analysis.allSignals.filter { $0.severity != .info }
+        let shown = ResultReasons.rows(for: analysis).filter { !$0.isInfo }.map(\.sentence)
         return VStack(alignment: .leading, spacing: Tokens.Space.s) {
             // The app's verdict block: big symbol, the word as the hero, the type under it.
             VStack(spacing: Tokens.Space.s) {
-                Image(systemName: style.symbolName + ".fill").textRole(.display).foregroundStyle(style.color)
+                Image(systemName: style.symbolName + ".fill").textRole(.hero).imageScale(.large).foregroundStyle(style.color)
                 Text(VerdictText.title(for: analysis.level)).textRole(.hero).foregroundStyle(.primary)
                     .multilineTextAlignment(.center).minimumScaleFactor(0.6)
                 Text(typeName).textRole(.caption).multilineTextAlignment(.center)
@@ -104,7 +104,7 @@ public struct CheckExtensionRoot: View {
             .accessibilityLabel(VerdictText.accessibilitySentence(level: analysis.level, typeName: typeName, signals: analysis.allSignals))
             .accessibilityAddTraits(.isHeader)
 
-            ForEach(Array(SignalText.sentences(for: shown).enumerated()), id: \.offset) { _, sentence in
+            ForEach(Array(shown.enumerated()), id: \.offset) { _, sentence in
                 Text(sentence).textRole(.body).foregroundStyle(.primary)
             }
 

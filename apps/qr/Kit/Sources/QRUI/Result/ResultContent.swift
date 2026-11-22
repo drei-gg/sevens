@@ -28,20 +28,29 @@ struct ResultContent: View {
 
     private var actions: [ResultAction] {
         ResultActionPlan.actions(for: analysis.payload, capabilities: center.capabilities,
-                                 hasText: analysis.code.text != nil)
+                                 hasText: analysis.code.text != nil, canPeek: analysis.canPeek)
     }
 
     /// Nothing is pinned at accessibility sizes: every action stacks at the end instead.
     private var pinsActions: Bool { !typeSize.isAccessibilitySize }
 
+    /// The "I know this address" question, unless Peek found something of its own (SPEC §3).
+    private var shownOffer: AnyView? {
+        ResultActionPlan.peekBlocksKnownOffer(center.peekReport, offline: analysis.level) ? nil : afterSignals
+    }
+
     var body: some View {
-        let layout = ResultActionPlan.layout(actions, level: analysis.level)
+        let level = center.level
+        let report = center.peekReport
+        let layout = ResultActionPlan.layout(actions, level: level)
+        let offer = shownOffer
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.l) {
-                VerdictHeader(level: analysis.level, typeName: VerdictText.typeName(for: analysis.payload.typeID),
-                              signals: analysis.allSignals)
-                ResultSignalList(signals: analysis.signals)
-                if let afterSignals { afterSignals }
+                VerdictHeader(level: level, typeName: VerdictText.typeName(for: analysis.payload.typeID),
+                              signals: analysis.allSignals + (report?.signals ?? []))
+                ResultSignalList(rows: ResultReasons.rows(for: analysis, peek: report))
+                if report != nil { peekFound }
+                if let offer { offer }
                 ResultPayloadView(payload: analysis.payload, wifiPlan: wifiPlan)
                 if pinsActions {
                     ResultActionChips(actions: layout.chips, analysis: analysis, center: center)
@@ -61,7 +70,7 @@ struct ResultContent: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if pinsActions {
-                ResultPinnedActions(layout: layout, analysis: analysis, center: center, quiet: afterSignals != nil)
+                ResultPinnedActions(layout: layout, analysis: analysis, center: center, quiet: offer != nil)
             }
         }
         .sevenScreenBackground()
@@ -92,5 +101,19 @@ struct ResultContent: View {
         .sheet(isPresented: Binding(get: { center.peekModel != nil }, set: { if !$0 { center.endPeek() } })) {
             if let model = center.peekModel { PeekView(model: model) }
         }
+    }
+
+    /// After a Peek: its reasons are in the list above; this shows the whole Peek again.
+    private var peekFound: some View {
+        Button {
+            center.startPeek()
+        } label: {
+            Label(String(localized: "result.peek.found", defaultValue: "See what Peek found", bundle: .module,
+                         comment: "Button under the reasons after a Peek; shows the Peek sheet again."),
+                  systemImage: "eye")
+                .textRole(.rowTitle)
+        }
+        .buttonStyle(.borderless)
+        .accessibilityIdentifier(QRAccessibilityID.resultPeekFound)
     }
 }

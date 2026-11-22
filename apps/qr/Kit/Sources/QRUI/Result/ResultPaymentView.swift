@@ -49,28 +49,6 @@ struct ResultPaymentView: View {
         }
     }
 
-    var extras: [(label: String, value: String)] {
-        var rows: [(String, String)] = []
-        func add(_ label: String, _ value: String?) { if let value, !value.isEmpty { rows.append((label, value)) } }
-        add(String(localized: "result.payment.account", defaultValue: "Account", bundle: .module), info.payeeAccount)
-        add(String(localized: "result.payment.city", defaultValue: "City", bundle: .module), info.city)
-        add(String(localized: "result.payment.country", defaultValue: "Country", bundle: .module), info.country)
-        add(String(localized: "result.payment.reference", defaultValue: "Reference", bundle: .module), info.reference)
-        add(String(localized: "result.payment.note", defaultValue: "Note", bundle: .module), info.note)
-        add(String(localized: "result.payment.format", defaultValue: "Format", bundle: .module), formatName)
-        for key in info.extra.keys.sorted() where key != "alternateName" { add(key, info.extra[key]) }
-        return rows
-    }
-
-    var formatName: String {
-        switch info.format {
-        case .emv: return "EMVCo"
-        case .upi: return "UPI"
-        case .epc: return "SEPA (EPC)"
-        case .swiss: return "Swiss QR-bill"
-        }
-    }
-
     var body: some View {
         ResultCard(title: String(localized: "result.payment.title", defaultValue: "Who you would pay", bundle: .module)) {
             VStack(alignment: .leading, spacing: Tokens.Space.xs) {
@@ -87,13 +65,13 @@ struct ResultPaymentView: View {
             if let partyText {
                 Text(partyText).textRole(.rowTitle, emphasized: true).foregroundStyle(.primary)
             } else {
-                Text(String(localized: "result.payment.checkMatch", defaultValue: "Check that this is who you meant to pay.", bundle: .module))
+                Text(ResultPaymentText.checkMatch)
                     .textRole(.rowTitle, emphasized: true).foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             ResultField(label: String(localized: "result.payment.amount", defaultValue: "Amount", bundle: .module), value: amountText)
-            if let network = info.network, !network.isEmpty {
-                ResultField(label: String(localized: "result.payment.network", defaultValue: "Network", bundle: .module), value: network)
+            ForEach(ResultPaymentText.rows(for: info), id: \.self) { row in
+                ResultField(label: row.label, value: row.value, monospaced: row.label == ResultPaymentText.accountLabel(info.format))
             }
             if let kindText { Text(kindText).textRole(.caption) }
             if let checksumText {
@@ -105,7 +83,7 @@ struct ResultPaymentView: View {
                 }
                 .textRole(.caption)
             }
-            let rows = extras
+            let rows = ResultPaymentText.moreDetails(for: info)
             if !rows.isEmpty {
                 DisclosureGroup(String(localized: "result.payment.more", defaultValue: "More details", bundle: .module)) {
                     VStack(alignment: .leading, spacing: Tokens.Space.s) {

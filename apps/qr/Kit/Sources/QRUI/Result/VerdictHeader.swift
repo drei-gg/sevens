@@ -16,8 +16,11 @@ struct VerdictHeader: View {
     var body: some View {
         let style = VerdictText.style(for: level)
         VStack(spacing: Tokens.Space.s) {
+            // SevenKit's `display` is for a live value on a tool screen; the status symbol takes the
+            // hero role it sits above, drawn at the symbol's large scale (SPEC "Look").
             Image(systemName: style.symbolName + ".fill")
-                .textRole(.display)
+                .textRole(.hero)
+                .imageScale(.large)
                 .foregroundStyle(style.color)
                 .padding(.bottom, Tokens.Space.xs)
             Text(VerdictText.title(for: level))

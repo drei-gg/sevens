@@ -1,4 +1,5 @@
 import Foundation
+import QRCore
 
 /// Light shape checks. They catch typos; they don't try to be a standard.
 enum MakeFormValidation {
@@ -15,14 +16,12 @@ enum MakeFormValidation {
         return true
     }
 
-    /// Digits plus `+ ( ) - . * # ,` and spaces, 3 to 20 digits.
+    /// An international number (SPEC §8: written as `TEL:+…`): `+` or a leading `00`, then the
+    /// country code and number, with spaces, dashes, dots or parentheses between the digits.
+    /// A local number can't be turned into this offline, so the person is asked for the country
+    /// code instead. The core decides and does the writing (`PhoneNumber.international`).
     static func isPlausiblePhone(_ raw: String) -> Bool {
-        let s = trimmed(raw)
-        guard !s.isEmpty else { return false }
-        let allowed = Set("0123456789+()-.*#, ")
-        guard s.allSatisfy({ allowed.contains($0) }) else { return false }
-        let digits = s.filter { $0.isASCII && $0.isNumber }.count
-        return (3...20).contains(digits)
+        PhoneNumber.international(raw) != nil
     }
 
     /// Parses "12.5" or "12,5". nil when not a finite number.

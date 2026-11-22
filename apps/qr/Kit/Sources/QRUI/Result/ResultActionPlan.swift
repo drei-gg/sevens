@@ -82,11 +82,13 @@ enum ResultActionPlan {
     }
 
     /// The buttons for a payload, in display order.
-    static func actions(for payload: Payload, capabilities: ResultCapabilities, hasText: Bool = true) -> [ResultAction] {
+    /// `canPeek` is the core's rule (`Analysis.canPeek`): only http and https links with a host.
+    static func actions(for payload: Payload, capabilities: ResultCapabilities, hasText: Bool = true,
+                        canPeek: Bool = true) -> [ResultAction] {
         var list: [ResultAction] = []
         switch payload {
         case .link(let link):
-            if canOpen(link) { list += [.peek, .open] }
+            if canOpen(link) { list += canPeek ? [.peek, .open] : [.open] }
             list += [.copy, .share]
         case .appLink:
             list += [.copy, .share]
@@ -133,6 +135,25 @@ enum ResultActionPlan {
 
     /// D8 and SPEC §3: a `likelyScam` result asks first, naming the registrable domain.
     static func needsOpenConfirmation(level: Level) -> Bool { level == .likelyScam }
+
+    /// The verdict a result shows and acts on: the offline level, raised by a finished Peek for
+    /// the same result (a bad certificate, a domain under 30 days, a secret form on a page that
+    /// claims a brand it isn't). Peek never lowers it.
+    static func effectiveLevel(_ offline: Level, peek: PeekReport?) -> Level {
+        max(offline, peek?.level ?? .normal)
+    }
+
+    /// Whether Open (in-app or Safari) asks first, once Peek's outcome is counted (SPEC §7).
+    static func needsOpenConfirmation(offline: Level, peek: PeekReport?) -> Bool {
+        needsOpenConfirmation(level: effectiveLevel(offline, peek: peek))
+    }
+
+    /// SPEC §3: "I know this address" is never offered once Peek found something of its own
+    /// (a warning or strong signal) or raised the verdict.
+    static func peekBlocksKnownOffer(_ report: PeekReport?, offline: Level) -> Bool {
+        guard let report else { return false }
+        return report.level > offline || report.signals.contains { $0.severity != .info }
+    }
 
     /// Only http(s) links with a host can be opened or Peeked (SFSafariViewController refuses anything else).
     static func canOpen(_ link: LinkInfo) -> Bool {

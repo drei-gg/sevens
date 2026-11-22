@@ -12,7 +12,7 @@ enum ResultKnownText {
             .first
         if let brand {
             return String(localized: "result.known.question.brand",
-                          defaultValue: "This address uses \(brand)'s name, but it isn’t one we know.", bundle: .module)
+                          defaultValue: "This address uses \(brand)’s name, but it isn’t one we know.", bundle: .module)
         }
         let name = SignalText.arg(["d": domain], "d") ?? domain
         let ids = Set(analysis.signals.map(\.id))

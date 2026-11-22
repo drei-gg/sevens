@@ -28,6 +28,11 @@ struct PeekViewContent: View {
                     Text(String(localized: "peek.notLink", defaultValue: "This isn’t a web link, so there is nothing to Peek at.", bundle: .module))
                         .textRole(.body).foregroundStyle(.primary)
                 }
+                if let reason = PeekViewText.notFetched(capture) {
+                    Text(reason).textRole(.body).foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("peek.notFetched")
+                }
                 if let report { ResultSignalList(signals: report.signals) }
                 hops
                 if let report, let capture { details(report: report, capture: capture) }

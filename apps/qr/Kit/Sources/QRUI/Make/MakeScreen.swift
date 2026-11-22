@@ -55,7 +55,12 @@ public struct MakeScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .secondaryAction) {
-                Button("Batch codes") { showBatch = true }
+                Button {
+                    showBatch = true
+                } label: {
+                    Text(verbatim: String(localized: "make.batch.open", defaultValue: "Batch codes", bundle: .module,
+                                          comment: "Toolbar menu item on Make: opens the screen that makes many codes at once."))
+                }
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button {

@@ -35,7 +35,7 @@ enum ResultPayloadText {
             if let value, !value.isEmpty { lines.append(label + ": " + value) }
         }
         add(String(localized: "result.payment.payee", defaultValue: "Pays", bundle: .module), info.payeeName)
-        add(String(localized: "result.payment.account", defaultValue: "Account", bundle: .module), info.payeeAccount)
+        add(ResultPaymentText.accountLabel(info.format), info.payeeAccount)
         if let amount = info.amount, !amount.isEmpty {
             add(String(localized: "result.payment.amount", defaultValue: "Amount", bundle: .module),
                 [info.currency, amount].compactMap { $0 }.joined(separator: " "))
@@ -45,7 +45,9 @@ enum ResultPayloadText {
         add(String(localized: "result.payment.country", defaultValue: "Country", bundle: .module), info.country)
         add(String(localized: "result.payment.reference", defaultValue: "Reference", bundle: .module), info.reference)
         add(String(localized: "result.payment.note", defaultValue: "Note", bundle: .module), info.note)
-        for key in info.extra.keys.sorted() { add(key, info.extra[key]) }
+        for key in info.extra.keys.sorted() {
+            add(ResultPaymentText.label(forExtra: key), info.extra[key].map { ResultPaymentText.value(forExtra: key, $0) })
+        }
         return lines.joined(separator: "\n")
     }
 }

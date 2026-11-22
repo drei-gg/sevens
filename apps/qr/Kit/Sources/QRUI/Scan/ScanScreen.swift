@@ -1,3 +1,4 @@
+import AVFoundation
 import PhotosUI
 import QRCore
 import SevenKit
@@ -22,10 +23,23 @@ public struct ScanScreen: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var message: String?
     @State private var working = false
+    @State private var onScreen = false
+    @State private var requestingCamera = false
 
-    public init() {}
+    /// True while a launch sheet (Before you buy, the trial-ended sheet) is up or due: the
+    /// camera stays off and nobody is asked for it (SPEC §1.3).
+    private let holdsCamera: Bool
+
+    public init(holdsCamera: Bool = false) {
+        self.holdsCamera = holdsCamera
+    }
 
     private var sheetIsUp: Bool { result != nil || candidates != nil }
+
+    /// The scanner is open: only then does the camera run, or is its permission asked.
+    private var scannerOpen: Bool {
+        ScanCameraGate.scannerOpen(onScreen: onScreen, sheetUp: sheetIsUp, held: holdsCamera, sceneActive: scenePhase == .active)
+    }
 
     public var body: some View {
         content
@@ -53,6 +67,7 @@ public struct ScanScreen: View {
                 Task { await scanPhoto(item) }
             }
             .onChange(of: sheetIsUp) { _, up in if up { torch.turnOff() } }
+            .onChange(of: scannerOpen, initial: true) { _, _ in requestCameraIfNeeded() }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     availability = ScannerView.availability
@@ -64,7 +79,11 @@ public struct ScanScreen: View {
             .onChange(of: message) { _, text in
                 if let text { AccessibilityNotification.Announcement(text).post() }
             }
-            .onDisappear { torch.turnOff() }
+            .onAppear { onScreen = true }
+            .onDisappear {
+                onScreen = false
+                torch.turnOff()
+            }
     }
 
     // MARK: Layout
@@ -78,7 +97,10 @@ public struct ScanScreen: View {
         #endif
     }
 
-    private var showsCamera: Bool { availability == .available || Self.cameraStandIn }
+    private var showsCamera: Bool { ScanCameraGate.showsCameraLayout(availability) || Self.cameraStandIn }
+
+    /// The torch only once the camera is granted (or in the tour's stand-in).
+    private var showsTorch: Bool { (availability == .available || Self.cameraStandIn) && torch.isAvailable }
 
     /// A tool screen (polish guide §5.1): the camera fills the screen under the bar, the frame
     /// says where the code goes, and the controls sit on one glass platter within thumb reach.
@@ -116,12 +138,13 @@ public struct ScanScreen: View {
 
     @ViewBuilder
     private var camera: some View {
-        if Self.cameraStandIn && availability != .available {
+        // Until the camera is granted (or in the simulator's tour) the frame sits on black.
+        if availability != .available {
             Rectangle().fill(Color.black)
                 .accessibilityLabel(String(localized: "scan.camera.a11y", defaultValue: "Camera viewfinder for scanning codes", bundle: .module))
         } else {
             ScannerView(
-                isActive: !sheetIsUp && scenePhase == .active,
+                isActive: scannerOpen,
                 onCode: { code in Task { await present(code) } },
                 onMultipleChange: { many in
                     multipleInView = many
@@ -154,11 +177,11 @@ public struct ScanScreen: View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: Tokens.Space.m) {
                 photoButton
-                if showsCamera && torch.isAvailable { Spacer(minLength: 0); torchButton; Spacer(minLength: 0) }
+                if showsTorch { Spacer(minLength: 0); torchButton; Spacer(minLength: 0) }
                 pasteButton
             }
             VStack(spacing: Tokens.Space.ms) {
-                if showsCamera && torch.isAvailable { torchButton }
+                if showsTorch { torchButton }
                 photoButton
                 pasteButton
             }
@@ -309,6 +332,19 @@ public struct ScanScreen: View {
     }
 
     // MARK: Actions
+
+    /// SPEC §1.3: the first time the scanner opens, iOS asks for the camera; then the screen
+    /// shows the scanner, or why it can't (denied: a button to Settings; unsupported).
+    private func requestCameraIfNeeded() {
+        guard ScanCameraGate.shouldRequestAccess(availability: availability, scannerOpen: scannerOpen,
+                                                 requesting: requestingCamera) else { return }
+        requestingCamera = true
+        Task {
+            _ = await AVCaptureDevice.requestAccess(for: .video)
+            availability = ScannerView.availability
+            requestingCamera = false
+        }
+    }
 
     /// Analyzes, saves to History (when it is on and allowed), and shows the sheet.
     private func present(_ code: ScannedCode) async {

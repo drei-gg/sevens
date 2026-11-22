@@ -44,6 +44,15 @@ enum PeekViewText {
         return kinds.isEmpty ? nil : kinds.joined(separator: ", ")
     }
 
+    /// Why Peek didn't fetch the scanned link itself, or nil when it did (SPEC §6.1: plain http
+    /// links aren't fetched; their warning stands and they can still be opened).
+    static func notFetched(_ capture: PeekCapture?) -> String? {
+        guard let capture, capture.stoppedBecause == .httpTarget, capture.hops.count <= 1 else { return nil }
+        return String(localized: "peek.notFetched.http",
+                      defaultValue: "Peek doesn’t open pages that aren’t encrypted, so it didn’t fetch this one. It still looked up how old the domain is. The warning about plain http stands, and you can still open the link.",
+                      bundle: .module)
+    }
+
     /// Whether the page was read (so "asks for nothing" means something).
     static func pageWasRead(_ capture: PeekCapture) -> Bool {
         capture.stoppedBecause == .finished && capture.hops.last?.status != nil

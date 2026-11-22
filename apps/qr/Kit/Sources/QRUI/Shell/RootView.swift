@@ -8,12 +8,13 @@ import SevenKit
 public struct RootView: View {
     @Environment(AppModel.self) private var model
     @State private var showFirstLaunch = false
+    @State private var showTrialEnded = false
 
     public init() {}
 
     public var body: some View {
         NavigationStack {
-            ScanScreen()
+            ScanScreen(holdsCamera: launchSheetHoldsCamera)
                 .navigationDestination(for: RootRoute.self) { route in
                     switch route {
                     case .make:
@@ -27,13 +28,31 @@ public struct RootView: View {
         }
         .sevenLook()
         .task(id: model.store.hasStarted) {
-            if model.store.hasStarted && model.store.launchSheet == .beforeYouBuy { showFirstLaunch = true }
+            guard model.store.hasStarted else { return }
+            switch model.store.launchSheet {
+            case .beforeYouBuy: showFirstLaunch = true
+            case .trialEnded: showTrialEnded = true
+            case .none: break
+            }
         }
         .sheet(isPresented: $showFirstLaunch) {
             FirstLaunchFlow { showFirstLaunch = false }
                 .interactiveDismissDisabled()
         }
-        .trialEndedSheet(content: QRGate.trialEndedContent())
+        // SevenKit's `.trialEndedSheet` presents the same view; presented here so the scanner
+        // under it knows it is covered. TrialEndedView marks itself shown when it appears.
+        .sheet(isPresented: $showTrialEnded) {
+            NavigationStack { TrialEndedView(content: QRGate.trialEndedContent()) }
+        }
+    }
+
+    /// SPEC §1.3: no camera, and no camera prompt, while a launch sheet is up or about to be.
+    /// Before you buy is known from the first frame; the trial-ended sheet once the store has
+    /// read the entitlement.
+    private var launchSheetHoldsCamera: Bool {
+        ScanCameraGate.launchHolds(beforeYouBuyUp: showFirstLaunch, trialEndedUp: showTrialEnded,
+                                   beforeYouBuyDue: model.store.shouldPresentBeforeYouBuy,
+                                   trialEndedDue: model.store.hasStarted && model.store.launchSheet == .trialEnded)
     }
 
     static var makeFeatureName: String {

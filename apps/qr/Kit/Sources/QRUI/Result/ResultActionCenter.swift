@@ -37,7 +37,11 @@ final class ResultActionCenter {
     var safari: IdentifiedURL?
     var sheet: Sheet?
     var pendingOpen: OpenRequest?
+    /// The Peek sheet's model while the sheet is up.
     var peekModel: PeekModel?
+    /// This result's one Peek (PeekModel is one per result), kept after its sheet closes so the
+    /// verdict, the reasons and Open's confirmation keep what it found.
+    private(set) var peek: PeekModel?
     /// The action whose button reads "Copied" for a moment.
     var copied: ResultAction?
     /// One line of feedback (Wi-Fi join result).
@@ -48,13 +52,24 @@ final class ResultActionCenter {
         self.capabilities = capabilities
     }
 
+    // MARK: Verdict
+
+    /// The finished Peek's report, or nil.
+    var peekReport: PeekReport? {
+        if case .finished(let report) = peek?.state { return report }
+        return nil
+    }
+
+    /// The verdict shown and acted on: the offline level raised by a finished Peek.
+    var level: Level { ResultActionPlan.effectiveLevel(analysis.level, peek: peekReport) }
+
     // MARK: Open
 
-    /// Open or Open in Safari. A `likelyScam` result asks first.
+    /// Open or Open in Safari. A result that is `likelyScam`, offline or after Peek, asks first.
     func openTapped(external: Bool, openURL: OpenURLAction) {
         guard case .link(let link) = analysis.payload, let url = ResultActionURLs.open(link) else { return }
         let request = OpenRequest(url: url, domain: ResultLinkDisplay.headline(link), external: external)
-        if ResultActionPlan.needsOpenConfirmation(level: analysis.level) {
+        if ResultActionPlan.needsOpenConfirmation(offline: analysis.level, peek: peekReport) {
             pendingOpen = request
         } else {
             perform(request, openURL: openURL)
@@ -68,11 +83,16 @@ final class ResultActionCenter {
 
     // MARK: Peek
 
+    /// Shows the Peek sheet. A finished Peek is shown again rather than fetched again; a
+    /// cancelled one starts afresh when the sheet appears.
     func startPeek() {
-        guard case .link = analysis.payload else { return }
-        peekModel = PeekModel(original: analysis, analyzer: PeekAnalyzer(data: .shared))
+        guard analysis.canPeek else { return }
+        let model = peek ?? PeekModel(original: analysis)
+        peek = model
+        peekModel = model
     }
 
+    /// The sheet closed: an unfinished Peek stops; a finished one stays with this result.
     func endPeek() {
         if peekModel?.isRunning == true { peekModel?.cancel() }
         peekModel = nil

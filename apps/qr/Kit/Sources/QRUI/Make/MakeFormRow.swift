@@ -41,9 +41,12 @@ struct MakeInlineMessage: View {
     var body: some View {
         Label {
             Text(verbatim: text).fixedSize(horizontal: false, vertical: true)
+                .foregroundStyle(isError ? Tokens.ink : Tokens.muted)
         } icon: {
+            // A problem with the input, not a verdict: ink plus an icon, never the scam colour
+            // (SPEC "Look"; the batch screen does the same).
             Image(systemName: isError ? "exclamationmark.circle" : "info.circle")
-                .foregroundStyle(isError ? Tokens.danger : Tokens.muted)
+                .foregroundStyle(isError ? Tokens.ink : Tokens.muted)
         }
         .textRole(.caption)
         .accessibilityIdentifier(isError ? "make.error" : "make.hint")

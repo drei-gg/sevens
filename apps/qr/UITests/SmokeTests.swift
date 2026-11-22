@@ -91,6 +91,44 @@ final class SmokeTests: XCTestCase {
         attach(app, "3-history")
     }
 
+    /// SPEC §4.1: a text whose verdict comes from a link inside it says so at the top, naming the link.
+    @MainActor
+    func testInnerLinkReasonShowsUnderTheVerdict() throws {
+        let app = launchInjecting("Pay your parking fine here \(trick)")
+        let verdict = app.descendants(matching: .any)["result.verdict"].firstMatch
+        XCTAssertTrue(verdict.waitForExistence(timeout: 30), "result sheet did not appear")
+        XCTAssertTrue(verdict.label.contains("Likely scam"), "verdict label was: \(verdict.label)")
+        XCTAssertTrue(labelled(app, "Link to ").waitForExistence(timeout: 5), "no reason names the link inside")
+        attach(app, "inner-link-reason")
+    }
+
+    /// SPEC §5: a payment code's fields are human-labelled rows, with the spec's fallback line.
+    @MainActor
+    func testPaymentShowsHumanLabelledRows() throws {
+        let app = launchInjecting("upi://pay?pa=asha@okbank&pn=Asha%20Rao&am=50&cu=INR&tn=Tea")
+        let verdict = app.descendants(matching: .any)["result.verdict"].firstMatch
+        XCTAssertTrue(verdict.waitForExistence(timeout: 30), "result sheet did not appear")
+        XCTAssertTrue(labelled(app, "Check this matches where you are.").waitForExistence(timeout: 5))
+        XCTAssertTrue(labelled(app, "Payee address").exists, "no payee address row")
+        XCTAssertTrue(labelled(app, "asha@okbank").exists)
+        XCTAssertTrue(labelled(app, "Note").exists, "no note row")
+        attach(app, "payment-rows")
+    }
+
+    @MainActor
+    private func launchInjecting(_ text: String) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["-qr.skipFirstLaunch", "-qr.entitlement", "unlocked", "-qr.resetHistory",
+                               "-qr.inject", Data(text.utf8).base64EncodedString()]
+        app.launch()
+        return app
+    }
+
+    @MainActor
+    private func labelled(_ app: XCUIApplication, _ text: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+    }
+
     @MainActor
     private func attach(_ app: XCUIApplication, _ name: String) {
         let shot = XCTAttachment(screenshot: app.screenshot())
