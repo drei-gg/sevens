@@ -5,7 +5,7 @@
 #
 # One-time setup, on a private machine (never in this repository or on a shared one):
 #   openssl genpkey -algorithm ed25519 -out lists-key.pem
-#   openssl pkey -in lists-key.pem -pubout -outform DER | tail -c 32 | xxd -p -c 64   # public key, 64 hex
+#   openssl pkey -in lists-key.pem -pubout -outform DER | tail -c 32 | od -An -tx1 | tr -d " \n"   # public key, 64 hex
 # Put the whole PEM in the repository secret LISTS_SIGNING_KEY, the hex in the brand's
 # Brand.xcconfig as SEVENS_LISTS_KEY_CURRENT (and later a replacement as SEVENS_LISTS_KEY_NEXT).
 name: lists
