@@ -13,6 +13,7 @@ public extension Error {
     /// name, so Vault's own errors take the core's sentence; anything else is Foundation's.
     var vaultMessage: String {
         if let error = self as? VaultError { return vaultErrorDescription(error: error) }
+        if let error = self as? RecognitionFailure { return recognitionFailureDescription(error: error) }
         return localizedDescription
     }
 }

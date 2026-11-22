@@ -92,11 +92,11 @@ enum VaultCrypto {
         }
         try stream.close()
     }
-    static func verify(_ source: URL, key: SymmetricKey, item: VaultItem, output: FileHandle? = nil) throws {
+    static func verify(_ source: URL, key: SymmetricKey, item: VaultItem, output: FileHandle? = nil, consume: ((Data) throws -> Void)? = nil) throws {
         var hash = SHA256(); var bytes: Int64 = 0
         try decrypt(source, key: fileKey(key, id: item.id)) { data in
             bytes += Int64(data.count); guard bytes <= item.bytes else { throw VaultError.Damaged }
-            hash.update(data: data); try output?.write(contentsOf: data)
+            hash.update(data: data); try output?.write(contentsOf: data); try consume?(data)
         }
         let digest = hash.finalize().map { String(format: "%02x", $0) }.joined()
         guard bytes == item.bytes, digest == item.digest else { throw VaultError.Damaged }

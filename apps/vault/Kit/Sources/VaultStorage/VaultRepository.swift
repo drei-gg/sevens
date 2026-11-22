@@ -23,6 +23,7 @@ public actor VaultRepository {
     private var library: VaultLibrary?
     private var directory: URL?
     private var migratedRecoveryKey: String?
+    private var sessionRevision: UInt64 = 0
     public init(root: URL, temporary: URL) { self.root = root; self.temporary = temporary }
 
     public func prepare() throws {
@@ -45,7 +46,7 @@ public actor VaultRepository {
         if FileManager.default.fileExists(atPath: temporary.path) { try FileManager.default.removeItem(at: temporary) }
         try ProtectedFiles.directory(temporary)
     }
-    public func lock() { keys?.wipe(); keys = nil; library = nil; directory = nil; migratedRecoveryKey = nil; try? clearTemporary() }
+    public func lock() { sessionRevision &+= 1; keys?.wipe(); keys = nil; library = nil; directory = nil; migratedRecoveryKey = nil; try? clearTemporary() }
     public func snapshot() throws -> VaultLibrary { guard let library else { throw VaultError.Locked }; return library }
     /// The open vault's format, 1 or 2.
     public func formatVersion() throws -> Int { try session().0.version }
@@ -55,7 +56,7 @@ public actor VaultRepository {
     private func session() throws -> (VaultKeys, VaultLibrary, URL) {
         guard let keys, let library, let directory else { throw VaultError.Locked }; return (keys, library, directory)
     }
-    private func open(_ keys: VaultKeys, _ value: VaultLibrary, _ folder: URL) { self.keys = keys; library = value; directory = folder }
+    private func open(_ keys: VaultKeys, _ value: VaultLibrary, _ folder: URL) { sessionRevision &+= 1; self.keys = keys; library = value; directory = folder }
     private func folders() throws -> [URL] {
         try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey]).filter {
             UUID(uuidString: $0.lastPathComponent) != nil && (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true && (try? $0.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) != true
@@ -352,10 +353,40 @@ public actor VaultRepository {
         try? FileManager.default.removeItem(at: blob(id, keys: keys, in: folder))
     }
     public func readNote(_ id: UUID) throws -> String {
-        let (_, value, _) = try session()
-        _ = try libraryCheckNoteRead(library: value, id: id)
-        let url = try export(id); defer { try? FileManager.default.removeItem(at: url) }
-        return try String(contentsOf: url, encoding: .utf8)
+        var data = try noteData(id); defer { data.resetBytes(in: 0..<data.count) }
+        guard let text = String(data: data, encoding: .utf8) else { throw VaultError.Damaged }
+        return text
+    }
+    /// Verified note plaintext stays in memory, including for legacy vaults.
+    private func noteData(_ id: UUID) throws -> Data {
+        let (keys, value, directory) = try session()
+        let item = try libraryCheckNoteRead(library: value, id: id)
+        let source = blob(id, keys: keys, in: directory)
+        switch keys {
+        case .v2(let identity): return try dataDecrypt(identity: identity, path: source.path, bytes: item.bytes, digest: item.digest)
+        case .v1(let key):
+            var data = Data()
+            do { try VaultCrypto.verify(source, key: key, item: item, consume: { data.append($0) }); return data }
+            catch { data.resetBytes(in: 0..<data.count); throw error }
+        }
+    }
+    public func searchNotes(query: String, trash: Bool = false, favorites: Bool = false) async throws -> NoteSearchResult {
+        let current = try snapshot(); let revision = sessionRevision
+        let plan = noteSearchPlan(items: current.items, query: query, trash: trash, favorites: favorites)
+        var matches: [UUID] = []; var searched: UInt32 = 0; var unavailable: UInt32 = 0
+        for id in plan.ids {
+            await Task.yield(); try Task.checkCancellation()
+            guard sessionRevision == revision, library == current else { throw VaultError.Locked }
+            do {
+                var data = try noteData(id); defer { data.resetBytes(in: 0..<data.count) }
+                if try noteSearchMatches(data: data, query: query) { matches.append(id) }
+                searched += 1
+            } catch VaultError.Locked { throw VaultError.Locked }
+            catch { unavailable += 1 }
+        }
+        try Task.checkCancellation()
+        guard sessionRevision == revision, library == current else { throw VaultError.Locked }
+        return NoteSearchResult(ids: matches, searched: searched, unavailable: unavailable, omitted: plan.omitted, issue: plan.issue)
     }
     private func change(_ edit: (VaultLibrary) throws -> VaultLibrary) throws {
         let (keys, current, folder) = try session()

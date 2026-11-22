@@ -8,6 +8,15 @@ extra["sevenGenericName"] = "Vault"
 apply(plugin = "seven.base-app")
 
 configure<com.android.build.api.dsl.ApplicationExtension> {
+    // AssetManager.openFd requires the model uncompressed in the final APK.
+    androidResources { noCompress += "traineddata" }
+    packaging {
+        resources.excludes += listOf("META-INF/native-image/**", "META-INF/versions/**")
+        for (abi in listOf("arm64-v8a", "x86_64")) {
+            jniLibs.excludes += listOf("lib/$abi/include/**", "lib/$abi/lib/**", "lib/$abi/tesseract")
+            resources.excludes += listOf("lib/$abi/include/**", "lib/$abi/lib/**", "lib/$abi/tesseract")
+        }
+    }
     testOptions.unitTests.all { test ->
         // Kotlin unit tests call the crate through JNA, built for this machine by :vault-core:test.
         test.systemProperty(
@@ -19,6 +28,7 @@ configure<com.android.build.api.dsl.ApplicationExtension> {
 }
 
 dependencies {
+    "implementation"(project(":sevenocr"))
     "implementation"("androidx.fragment:fragment-ktx:1.9.1")
     "implementation"("androidx.biometric:biometric:1.1.0")
     "implementation"("androidx.work:work-runtime-ktx:2.12.0")

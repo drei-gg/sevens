@@ -33,7 +33,10 @@ struct VaultRoot: View {
             .trialEndedSheet(content: VaultGate.expired)
             .alert("Could not complete", isPresented: Binding(get: { model.error != nil }, set: { shown in if !shown { model.error = nil } })) { Button("OK", role: .cancel) { model.error = nil } } message: { Text(model.error ?? "") }
             .sheet(item: Binding(get: { model.presentation }, set: { model.presentation = $0 }), onDismiss: { model.cleanPresentation() }) { item in
-                if item.filesExport { SevenFileExportPicker(urls: item.urls) }
+                if let batch = item.batch { BatchRecognitionScreen(queue: batch) }
+                else if let range = item.pdfRange { PdfRangeScreen(draft: range) }
+                else if let recognized = item.recognized { RecognizedTextScreen(draft: recognized) }
+                else if item.filesExport { SevenFileExportPicker(urls: item.urls) }
                 else if item.sharing { VaultShare(urls: item.urls) }
                 else { NavigationStack { VaultPreview(urls: item.urls).toolbar { Button("Lock") { model.lock() }; Button("Done") { model.cleanPresentation() } } } }
             }
@@ -157,9 +160,17 @@ struct RestoreVaultSheet: View {
         }
     }
 }
+private struct VaultSearchRequest: Equatable {
+    var query: String; var includeText: Bool; var trash: Bool; var favorites: Bool; var library: VaultLibrary
+}
 struct VaultLibraryView: View {
     @Environment(VaultModel.self) private var model
     @State private var query = ""
+    @State private var includeNoteText = false
+    @State private var noteResult: NoteSearchResult?
+    @State private var resultRequest: VaultSearchRequest?
+    @State private var searchingRequest: VaultSearchRequest?
+    @State private var searchFailure: String?
     @State private var folder: UUID?
     @State private var favorites = false
     @State private var trash = false
@@ -174,15 +185,36 @@ struct VaultLibraryView: View {
     @State private var camera = false
     @State private var deleting = false
     @State private var editing: VaultItem?
+    @State private var pendingItemAction: (VaultItem, ItemSheetAction)?
     private var library: VaultLibrary { model.library ?? VaultLibrary(name: "Vault") }
+    private var searchRequest: VaultSearchRequest { VaultSearchRequest(query: query, includeText: includeNoteText, trash: trash, favorites: favorites, library: library) }
+    private var noteIDs: Set<UUID> { resultRequest == searchRequest ? Set(noteResult?.ids ?? []) : [] }
     private var visible: [VaultItem] {
         library.sort.sorted(library.items.filter {
-            (trash ? $0.deleted != nil : $0.deleted == nil) && (query.isEmpty ? $0.folder == folder : true) && (!favorites || $0.favorite) && $0.matches(query)
+            (trash ? $0.deleted != nil : $0.deleted == nil) && (query.isEmpty ? $0.folder == folder : true) && (!favorites || $0.favorite) && ($0.matches(query) || noteIDs.contains($0.id))
         })
+    }
+    private func searchCoverage(_ result: NoteSearchResult) -> String {
+        if let issue = result.issue { return issue }
+        var text = "Searched \(result.searched) \(result.searched == 1 ? "note" : "notes")"
+        if result.unavailable > 0 { text += " · \(result.unavailable) unreadable" }
+        if result.omitted > 0 { text += " · \(result.omitted) skipped (500 notes / 32 MB per search)" }
+        return text
     }
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    Toggle("Include note text", isOn: $includeNoteText).accessibilityIdentifier("vault.searchNotes")
+                    if includeNoteText {
+                        Text("Search stays on this device while unlocked. Photos and PDFs need saved text first.").font(.footnote).foregroundStyle(.secondary)
+                        if searchingRequest == searchRequest { ProgressView("Searching note text…") }
+                        if resultRequest == searchRequest, let result = noteResult {
+                            Text(searchCoverage(result)).font(.footnote).accessibilityIdentifier("vault.searchCoverage")
+                        }
+                        if resultRequest == searchRequest, let searchFailure { Text(searchFailure).font(.footnote).foregroundStyle(Tokens.danger) }
+                    }
+                }
                 if model.busy { Section { ProgressView(model.progress) } }
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains("-vault.ui") {
@@ -223,7 +255,9 @@ struct VaultLibraryView: View {
                     }
                 }
                 Section(trash ? "Recently Deleted" : "Your files") {
-                    if visible.isEmpty {
+                    if visible.isEmpty && !query.isEmpty {
+                        ContentUnavailableView(searchingRequest == searchRequest ? "Searching note text…" : "No matching files", systemImage: "magnifyingglass", description: Text(includeNoteText ? "Try another phrase. Check search coverage above for unreadable or skipped notes." : "Try another file name, or include note text."))
+                    } else if visible.isEmpty {
                         ContentUnavailableView(trash ? "Nothing in the trash" : "A place for private things.", systemImage: trash ? "trash" : "lock.doc", description: Text(trash ? "Deleted items stay here until you permanently remove them." : "Add photos, documents or a note. Your files stay on this device until you choose to export or back up."))
                     }
                     if library.grid && !selecting {
@@ -259,6 +293,7 @@ struct VaultLibraryView: View {
                             Button("Restore selected") { changeTrash(false) }
                             Button("Permanently delete selected", role: .destructive) { deleting = true }.disabled(selected.isEmpty)
                         } else {
+                            Button("Recognize selected text") { model.prepareRecognitionQueue(selected) }.disabled(selected.isEmpty || model.busy).accessibilityIdentifier("ocr-batch-open")
                             Menu("Move selected to…") {
                                 Button("Vault root") { move(nil) }
                                 ForEach(library.folders) { target in Button(target.name) { move(target.id) } }
@@ -267,7 +302,21 @@ struct VaultLibraryView: View {
                         }
                     }.disabled(model.busy)
                 }
-            }.navigationTitle(library.name).searchable(text: $query, prompt: "Search file names")
+            }.navigationTitle(library.name).searchable(text: $query, prompt: includeNoteText ? "Search names and note text" : "Search file names")
+                .task(id: searchRequest) {
+                    let request = searchRequest
+                    noteResult = nil; searchFailure = nil; resultRequest = nil
+                    guard request.includeText, !request.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { searchingRequest = nil; return }
+                    searchingRequest = request
+                    defer { if searchingRequest == request { searchingRequest = nil } }
+                    do {
+                        try await Task.sleep(for: .milliseconds(250))
+                        let result = try await model.repository.searchNotes(query: request.query, trash: request.trash, favorites: request.favorites)
+                        try Task.checkCancellation()
+                        noteResult = result; resultRequest = request
+                    } catch is CancellationError { }
+                    catch { searchFailure = "Note text could not be searched. Unlock again and retry."; resultRequest = request }
+                }
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) { Button { model.lock() } label: { Label("Lock", systemImage: "lock.fill") }.accessibilityIdentifier("vault.lock") }
                     ToolbarItemGroup(placement: .topBarTrailing) {
@@ -286,10 +335,28 @@ struct VaultLibraryView: View {
                 .onChange(of: photos) { _, items in guard !items.isEmpty else { return }; photos = []; Task { await model.importPhotos(items, folder: folder) } }
                 .fileImporter(isPresented: $importing, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in do { let urls = try result.get(); Task { await model.importFiles(urls, folder: folder) } } catch { model.error = error.vaultMessage } }
                 .sheet(isPresented: $note) { NoteSheet(folder: folder) }
-                .sheet(item: $editing) { item in ItemSheet(item: item) }
+                .sheet(item: $editing, onDismiss: runItemAction) { item in
+                    ItemSheet(item: item) { action in
+                        pendingItemAction = (item, action)
+                        editing = nil
+                    }
+                }
                 .sheet(isPresented: $camera) { VaultCamera { url in if let url { Task { await model.importFiles([url], folder: folder); try? FileManager.default.removeItem(at: url) } } } }
                 .alert(renamingFolder == nil ? "New folder" : "Rename folder", isPresented: $newFolder) { TextField("Folder name", text: $folderName); Button("Save") { let name = folderName, existing = renamingFolder; folderName = ""; Task { await model.update { if let existing { try await model.repository.renameFolder(existing, name: name) } else { try await model.repository.addFolder(name: name, parent: folder) } } } }; Button("Cancel", role: .cancel) {} }
                 .confirmationDialog("Permanently delete these files? Backups and exported copies are not deleted.", isPresented: $deleting) { Button("Permanently delete", role: .destructive) { let ids = selected; Task { await model.update { try await model.repository.permanentlyDelete(ids) }; selected = [] } } }
+        }
+    }
+    /// Present the next sheet only after File details has actually dismissed.
+    private func runItemAction() {
+        guard let (item, action) = pendingItemAction else { return }
+        pendingItemAction = nil
+        guard model.library != nil else { return }
+        Task {
+            switch action {
+            case .preview: await model.preview(item)
+            case .recognize: await model.recognizeText(item)
+            case .export: await model.export([item.id])
+            }
         }
     }
     private func changeTrash(_ value: Bool) { let ids = selected; Task { await model.update { for id in ids { try await model.repository.updateItem(id, trashed: value) } }; selected = [] } }
@@ -313,10 +380,13 @@ struct NoteSheet: View {
         }.navigationTitle("New note").toolbar { Button("Lock") { model.lock() }; Button("Cancel") { dismiss() } } }
     }
 }
+enum ItemSheetAction { case preview, recognize, export }
+
 struct ItemSheet: View {
     @Environment(VaultModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     let item: VaultItem
+    let onAction: (ItemSheetAction) -> Void
     @State private var name = ""
     @State private var favorite = false
     @State private var noteText = ""
@@ -329,8 +399,11 @@ struct ItemSheet: View {
             Section {
                 Text(ByteCountFormatter.string(fromByteCount: item.bytes, countStyle: .file))
                 Text(item.created.formatted(date: .abbreviated, time: .shortened))
-                Button("Preview") { dismiss(); Task { await model.preview(item) } }
-                Button("Export original") { dismiss(); Task { await model.export([item.id]) } }
+                Button("Preview") { onAction(.preview) }
+                if UTType(item.type)?.conforms(to: .image) == true || UTType(item.type)?.conforms(to: .pdf) == true {
+                    Button("Recognize text") { onAction(.recognize) }
+                }
+                Button("Export original") { onAction(.export) }
                 Text("Previews use a temporary decrypted copy on this device. Exported copies are no longer protected by Vault.").font(.footnote).foregroundStyle(.secondary)
             }
             if item.type == "public.plain-text" && item.bytes <= 5_000_000 {

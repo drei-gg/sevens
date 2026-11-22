@@ -51,3 +51,13 @@ import VaultCore
     #expect(try libraryDecode(data: libraryEncode(library: library), headerId: library.id) == library)
     #expect(librarySetPreferences(library: library, sort: library.sort, grid: library.grid) == library)
 }
+
+@Test func batchRecognitionPlanCrossesTheNativeBoundaryWithoutLosingSelection() throws {
+    let first = newVaultItem(name: "First.png", contentType: "public.png", bytes: 12, digest: String(repeating: "a", count: 64), folder: nil, order: 0)
+    let second = newVaultItem(name: "Second.pdf", contentType: "com.adobe.pdf", bytes: 24, digest: String(repeating: "b", count: 64), folder: nil, order: 1)
+    let plan = recognitionBatchPlan(items: [first, second], selected: [second.id, first.id], supported: [first.id, second.id])
+    #expect(plan.issue == nil && plan.items.map(\.id) == [first.id, second.id])
+    #expect(plan.maximumItems == 10 && plan.maximumPdfPages == 20)
+    #expect(recognitionBatchPlan(items: [first], selected: [first.id], supported: []).items.isEmpty)
+    #expect(try recognitionReviewText(text: "café") == "café")
+}

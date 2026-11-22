@@ -4,7 +4,9 @@ import gg.seven.vault.core.*
 import java.io.File
 import java.time.Instant
 import java.util.UUID
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -13,18 +15,19 @@ import kotlinx.coroutines.withContext
 class CreatedVault(val library: VaultLibrary, val recoveryKey: String)
 
 /**
- * Port of iOS `VaultRepository` onto format version 2: every cryptographic step is the core's
- * (age, apps/vault/core). This class keeps the storage around it: vault directories, staging,
- * atomic replacement, the session, and temporary plaintext. Calls are serialized like the Swift
- * actor. [lock] wipes the session's identity at once, without waiting; an operation already
- * running works on its own [VaultIdentity.fork], may finish committing encrypted data with it,
- * and never puts its result back into a locked session.
+ * Port of iOS `VaultRepository` onto format version 2: every cryptographic step is the core's (age,
+ * apps/vault/core). This class keeps the storage around it: vault directories, staging, atomic
+ * replacement, the session, and temporary plaintext. Calls are serialized like the Swift actor.
+ * [lock] wipes the session's identity at once, without waiting; an operation already running works
+ * on its own [VaultIdentity.fork], may finish committing encrypted data with it, and never puts its
+ * result back into a locked session.
  */
 class VaultRepository(val root: File, val temporary: File) {
     private val mutex = Mutex()
     @Volatile private var current: Session? = null
 
-    private suspend fun <T> serial(block: suspend () -> T): T = withContext(Dispatchers.IO) { mutex.withLock { block() } }
+    private suspend fun <T> serial(block: suspend () -> T): T =
+        withContext(Dispatchers.IO) { mutex.withLock { block() } }
 
     suspend fun prepare() = serial {
         protectedDirectory(root)
@@ -33,7 +36,10 @@ class VaultRepository(val root: File, val temporary: File) {
         root.listFiles()?.forEach { entry ->
             if (entry.name.startsWith(".stage-")) entry.deleteRecursively()
             else if (entry.isDirectory)
-                entry.listFiles()?.filter { it.name.startsWith(STAGING) || it.name.startsWith(".index-") }?.forEach { it.delete() }
+                entry
+                    .listFiles()
+                    ?.filter { it.name.startsWith(STAGING) || it.name.startsWith(".index-") }
+                    ?.forEach { it.delete() }
         }
     }
 
@@ -44,7 +50,10 @@ class VaultRepository(val root: File, val temporary: File) {
         protectedDirectory(temporary)
     }
 
-    /** Wipes the session's identity now, then (after any operation in flight) the temporary plaintext. */
+    /**
+     * Wipes the session's identity now, then (after any operation in flight) the temporary
+     * plaintext.
+     */
     suspend fun lock() {
         wipeSession()
         serial { runCatching { clearTemporaryNow() } }
@@ -57,12 +66,20 @@ class VaultRepository(val root: File, val temporary: File) {
         live.identity.destroy()
     }
 
-    suspend fun snapshot(): VaultLibrary = serial { current?.library ?: throw VaultException.Locked() }
+    suspend fun snapshot(): VaultLibrary = serial {
+        current?.library ?: throw VaultException.Locked()
+    }
 
     suspend fun isUnlocked(): Boolean = current != null
 
     /** The open vault; an operation's copy also names the [origin] it was taken from. */
-    private class Session(val identity: VaultIdentity, val header: VaultHeaderV2, val library: VaultLibrary, val directory: File, val origin: Session? = null)
+    private class Session(
+        val identity: VaultIdentity,
+        val header: VaultHeaderV2,
+        val library: VaultLibrary,
+        val directory: File,
+        val origin: Session? = null,
+    )
 
     /** One operation on the open vault, with its own copy of the identity, destroyed afterwards. */
     private inline fun <T> operation(block: (Session) -> T): T {
@@ -85,64 +102,89 @@ class VaultRepository(val root: File, val temporary: File) {
     private fun commitLibrary(s: Session, changed: VaultLibrary) =
         synchronized(this) {
             val origin = s.origin ?: return@synchronized
-            if (current === origin) current = Session(origin.identity, origin.header, changed, origin.directory)
+            if (current === origin)
+                current = Session(origin.identity, origin.header, changed, origin.directory)
         }
 
     private fun commitHeader(s: Session, changed: VaultHeaderV2) =
         synchronized(this) {
             val origin = s.origin ?: return@synchronized
-            if (current === origin) current = Session(origin.identity, changed, origin.library, origin.directory)
+            if (current === origin)
+                current = Session(origin.identity, changed, origin.library, origin.directory)
         }
 
     private fun folders(): List<File> =
         (root.listFiles() ?: emptyArray())
-            .filter { runCatching { UUID.fromString(it.name) }.isSuccess && it.name.length == 36 && it.isDirectory && !isSymlink(it) }
+            .filter {
+                runCatching { UUID.fromString(it.name) }.isSuccess &&
+                    it.name.length == 36 &&
+                    it.isDirectory &&
+                    !isSymlink(it)
+            }
             .sortedBy { it.name }
 
-    private fun readHeader(folder: File): VaultHeaderV2 = headerV2Decode(boundedRead(File(folder, HEADER), FORMAT.headerMaxBytes))
+    private fun readHeader(folder: File): VaultHeaderV2 =
+        headerV2Decode(boundedRead(File(folder, HEADER), FORMAT.headerMaxBytes))
 
-    private fun writeHeader(header: VaultHeaderV2, folder: File) = atomicWrite(File(folder, HEADER), headerV2Encode(header))
+    private fun writeHeader(header: VaultHeaderV2, folder: File) =
+        atomicWrite(File(folder, HEADER), headerV2Encode(header))
 
     private fun load(folder: File, header: VaultHeaderV2, identity: VaultIdentity): VaultLibrary =
         indexOpen(boundedRead(File(folder, INDEX), FORMAT.sealedIndexMaxBytes), identity, header.id)
 
-    /** The index is authenticated with the identity, so saving needs one (an operation's own copy). */
-    private fun save(changed: VaultLibrary, identity: VaultIdentity, folder: File) = atomicWrite(File(folder, INDEX), indexSeal(changed, identity))
+    /**
+     * The index is authenticated with the identity, so saving needs one (an operation's own copy).
+     */
+    private fun save(changed: VaultLibrary, identity: VaultIdentity, folder: File) =
+        atomicWrite(File(folder, INDEX), indexSeal(changed, identity))
 
     private fun blob(id: UUID, folder: File) = File(folder, blobNameV2(id))
 
     /** Whether `secret` as `kind` already opens the vault in `folder`. */
-    private fun opens(folder: File, secret: String, kind: VaultCredentialKind) = headerV2Opens(readHeader(folder), secret, kind)
+    private fun opens(folder: File, secret: String, kind: VaultCredentialKind) =
+        headerV2Opens(readHeader(folder), secret, kind)
 
-    private fun publish(identity: VaultIdentity, header: VaultHeaderV2, library: VaultLibrary, folder: File) {
+    private fun publish(
+        identity: VaultIdentity,
+        header: VaultHeaderV2,
+        library: VaultLibrary,
+        folder: File,
+    ) {
         wipeSession()
         current = Session(identity, header, library, folder)
     }
 
-    suspend fun create(name: String, secret: String, kind: VaultCredentialKind): CreatedVault = serial {
-        libraryValidateName(name)
-        credentialKindValidate(kind, secret)
-        // A credential must select exactly one vault. Check without changing the existing session.
-        for (folder in folders()) if (opens(folder, secret, kind)) throw VaultException.DuplicateVault()
-        val value = newVaultLibrary(name)
-        val newIdentity = vaultIdentityGenerate()
-        val recovery = generateRecoveryKey()
-        val newHeader = headerV2New(value.id, newIdentity, kind, secret, recovery)
-        val staging = File(root, ".stage-" + UUID.randomUUID())
-        try {
-            protectedDirectory(staging)
-            writeHeader(newHeader, staging)
-            save(value, newIdentity, staging)
-            val folder = File(root, value.id.upper())
-            if (!staging.renameTo(folder)) throw VaultException.Damaged()
-            publish(newIdentity, newHeader, value, folder)
-            CreatedVault(value, recovery)
-        } finally {
-            staging.deleteRecursively()
+    suspend fun create(name: String, secret: String, kind: VaultCredentialKind): CreatedVault =
+        serial {
+            libraryValidateName(name)
+            credentialKindValidate(kind, secret)
+            // A credential must select exactly one vault. Check without changing the existing
+            // session.
+            for (folder in folders()) if (opens(folder, secret, kind))
+                throw VaultException.DuplicateVault()
+            val value = newVaultLibrary(name)
+            val newIdentity = vaultIdentityGenerate()
+            val recovery = generateRecoveryKey()
+            val newHeader = headerV2New(value.id, newIdentity, kind, secret, recovery)
+            val staging = File(root, ".stage-" + UUID.randomUUID())
+            try {
+                protectedDirectory(staging)
+                writeHeader(newHeader, staging)
+                save(value, newIdentity, staging)
+                val folder = File(root, value.id.upper())
+                if (!staging.renameTo(folder)) throw VaultException.Damaged()
+                publish(newIdentity, newHeader, value, folder)
+                CreatedVault(value, recovery)
+            } finally {
+                staging.deleteRecursively()
+            }
         }
-    }
 
-    suspend fun unlock(credential: String, recovery: Boolean, kind: VaultCredentialKind): VaultLibrary = serial {
+    suspend fun unlock(
+        credential: String,
+        recovery: Boolean,
+        kind: VaultCredentialKind,
+    ): VaultLibrary = serial {
         wipeSession()
         var unreadable = false
         for (folder in folders()) {
@@ -152,7 +194,9 @@ class VaultRepository(val root: File, val temporary: File) {
                 continue
             }
             if (!recovery && found.credentialKind != kind) continue
-            val opened = runCatching { headerV2Open(found, credential, kind, recovery) }.getOrNull() ?: continue
+            val opened =
+                runCatching { headerV2Open(found, credential, kind, recovery) }.getOrNull()
+                    ?: continue
             val value =
                 try {
                     load(folder, found, opened)
@@ -168,7 +212,9 @@ class VaultRepository(val root: File, val temporary: File) {
     }
 
     /** The open vault's id and its identity's secret, solely to wrap for biometric custody. */
-    suspend fun custodyMaterial(): Pair<UUID, ByteArray> = serial { operation { s -> s.library.id to s.identity.exportForCustody() } }
+    suspend fun custodyMaterial(): Pair<UUID, ByteArray> = serial {
+        operation { s -> s.library.id to s.identity.exportForCustody() }
+    }
 
     suspend fun unlock(id: UUID, custody: ByteArray): VaultLibrary = serial {
         wipeSession()
@@ -183,7 +229,8 @@ class VaultRepository(val root: File, val temporary: File) {
     suspend fun changeCredential(secret: String, kind: VaultCredentialKind) = serial {
         credentialKindValidate(kind, secret)
         operation { s ->
-            for (other in folders()) if (other != s.directory && opens(other, secret, kind)) throw VaultException.DuplicateVault()
+            for (other in folders()) if (other != s.directory && opens(other, secret, kind))
+                throw VaultException.DuplicateVault()
             val changed = headerV2RewrapPassword(readHeader(s.directory), s.identity, kind, secret)
             writeHeader(changed, s.directory)
             commitHeader(s, changed)
@@ -201,24 +248,57 @@ class VaultRepository(val root: File, val temporary: File) {
     }
 
     /**
-     * Encrypt `source` (a file path) into the vault: the
-     * core streams and measures it, the copy is verified by decrypting it, and only then is it
-     * named and the index committed. The source is never changed or deleted.
+     * Encrypt `source` (a file path) into the vault: the core streams and measures it, the copy is
+     * verified by decrypting it, and only then is it named and the index committed. The source is
+     * never changed or deleted.
      */
-    suspend fun importFile(source: String, name: String, type: String, folder: UUID? = null): VaultItem =
-        importWith(name, type, folder) { recipient, staging -> fileEncrypt(recipient, source, staging) }
+    suspend fun importFile(
+        source: String,
+        name: String,
+        type: String,
+        folder: UUID? = null,
+    ): VaultItem =
+        importWith(name, type, folder) { recipient, staging ->
+            fileEncrypt(recipient, source, staging)
+        }
 
-    /** [importFile] from an open descriptor (a document or photo-picker item), kept open by the caller. */
-    suspend fun importDescriptor(fd: Int, name: String, type: String, folder: UUID? = null): VaultItem =
-        importWith(name, type, folder) { recipient, staging -> fileEncryptFd(recipient, fd, staging) }
+    /**
+     * [importFile] from an open descriptor (a document or photo-picker item), kept open by the
+     * caller.
+     */
+    suspend fun importDescriptor(
+        fd: Int,
+        name: String,
+        type: String,
+        folder: UUID? = null,
+    ): VaultItem =
+        importWith(name, type, folder) { recipient, staging ->
+            fileEncryptFd(recipient, fd, staging)
+        }
 
-    private suspend fun importWith(name: String, type: String, folder: UUID?, encrypt: (String, String) -> PlainDigest): VaultItem = serial {
+    private suspend fun importWith(
+        name: String,
+        type: String,
+        folder: UUID?,
+        encrypt: (String, String) -> PlainDigest,
+    ): VaultItem = serial {
         operation { s ->
             libraryCheckImport(s.library, name, folder)
             val staging = File(s.directory, STAGING + UUID.randomUUID())
             try {
                 val measured = encrypt(s.header.recipient, staging.path)
-                commitImport(s, staging, libraryImportItem(s.library, name, type, measured.bytes, measured.digest, folder))
+                commitImport(
+                    s,
+                    staging,
+                    libraryImportItem(
+                        s.library,
+                        name,
+                        type,
+                        measured.bytes,
+                        measured.digest,
+                        folder,
+                    ),
+                )
             } finally {
                 staging.delete()
             }
@@ -251,7 +331,18 @@ class VaultRepository(val root: File, val temporary: File) {
             val staging = File(s.directory, STAGING + UUID.randomUUID())
             try {
                 val measured = dataEncrypt(s.header.recipient, bytes, staging.path)
-                commitImport(s, staging, libraryImportItem(s.library, stored, NOTE_TYPE, measured.bytes, measured.digest, folder))
+                commitImport(
+                    s,
+                    staging,
+                    libraryImportItem(
+                        s.library,
+                        stored,
+                        NOTE_TYPE,
+                        measured.bytes,
+                        measured.digest,
+                        folder,
+                    ),
+                )
             } finally {
                 staging.delete()
             }
@@ -259,7 +350,9 @@ class VaultRepository(val root: File, val temporary: File) {
         Unit
     }
 
-    suspend fun editNote(id: UUID, text: String) = serial { operation { s -> editNote(s, id, text) } }
+    suspend fun editNote(id: UUID, text: String) = serial {
+        operation { s -> editNote(s, id, text) }
+    }
 
     private fun editNote(s: Session, id: UUID, text: String) {
         val old = libraryCheckNoteEdit(s.library, id, "")
@@ -289,8 +382,54 @@ class VaultRepository(val root: File, val temporary: File) {
     suspend fun readNote(id: UUID): String = serial {
         operation { s ->
             val item = libraryCheckNoteRead(s.library, id)
-            dataDecrypt(s.identity, blob(id, s.directory).path, item.bytes, item.digest).toString(Charsets.UTF_8)
+            dataDecrypt(s.identity, blob(id, s.directory).path, item.bytes, item.digest)
+                .toString(Charsets.UTF_8)
         }
+    }
+
+    /** Never materializes plaintext files or retains note bodies between queries. */
+    suspend fun searchNotes(
+        query: String,
+        trash: Boolean = false,
+        favorites: Boolean = false,
+    ): NoteSearchResult = serial {
+        val origin = current ?: throw VaultException.Locked()
+        val plan = noteSearchPlan(origin.library.items, query, trash, favorites)
+        val matches = mutableListOf<UUID>()
+        var searched = 0u
+        var unavailable = 0u
+        for (id in plan.ids) {
+            coroutineContext.ensureActive()
+            if (current !== origin) throw VaultException.Locked()
+            try {
+                val match = operation { session ->
+                    val item = libraryCheckNoteRead(session.library, id)
+                    val data =
+                        dataDecrypt(
+                            session.identity,
+                            blob(id, session.directory).path,
+                            item.bytes,
+                            item.digest,
+                        )
+                    try {
+                        noteSearchMatches(data, query)
+                    } finally {
+                        data.fill(0)
+                    }
+                }
+                if (match) matches += id
+                searched++
+            } catch (cancel: kotlinx.coroutines.CancellationException) {
+                throw cancel
+            } catch (locked: VaultException.Locked) {
+                throw locked
+            } catch (_: Exception) {
+                unavailable++
+            }
+        }
+        coroutineContext.ensureActive()
+        if (current !== origin) throw VaultException.Locked()
+        NoteSearchResult(matches, searched, unavailable, plan.omitted, plan.issue)
     }
 
     private fun edit(s: Session, change: (VaultLibrary) -> VaultLibrary) {
@@ -301,17 +440,28 @@ class VaultRepository(val root: File, val temporary: File) {
 
     private fun edit(change: (VaultLibrary) -> VaultLibrary) = operation { s -> edit(s, change) }
 
-    suspend fun updateItem(id: UUID, name: String? = null, favorite: Boolean? = null, trashed: Boolean? = null) = serial {
-        edit { libraryUpdateItem(it, id, name, favorite, trashed, Instant.now()) }
+    suspend fun updateItem(
+        id: UUID,
+        name: String? = null,
+        favorite: Boolean? = null,
+        trashed: Boolean? = null,
+    ) = serial { edit { libraryUpdateItem(it, id, name, favorite, trashed, Instant.now()) } }
+
+    suspend fun move(ids: Set<UUID>, parent: UUID?) = serial {
+        edit { libraryMove(it, ids.toList(), parent) }
     }
 
-    suspend fun move(ids: Set<UUID>, parent: UUID?) = serial { edit { libraryMove(it, ids.toList(), parent) } }
+    suspend fun addFolder(name: String, parent: UUID?) = serial {
+        edit { libraryAddFolder(it, name, parent) }
+    }
 
-    suspend fun addFolder(name: String, parent: UUID?) = serial { edit { libraryAddFolder(it, name, parent) } }
+    suspend fun renameFolder(id: UUID, name: String) = serial {
+        edit { libraryRenameFolder(it, id, name) }
+    }
 
-    suspend fun renameFolder(id: UUID, name: String) = serial { edit { libraryRenameFolder(it, id, name) } }
-
-    suspend fun preferences(sort: VaultOrder, grid: Boolean) = serial { edit { librarySetPreferences(it, sort, grid) } }
+    suspend fun preferences(sort: VaultOrder, grid: Boolean) = serial {
+        edit { librarySetPreferences(it, sort, grid) }
+    }
 
     suspend fun reorder(ids: List<UUID>) = serial { edit { libraryReorder(it, ids) } }
 
@@ -323,7 +473,9 @@ class VaultRepository(val root: File, val temporary: File) {
     }
 
     /** A verified plaintext copy in temporary storage (or under `into`), named as the item. */
-    suspend fun export(id: UUID, into: File? = null): File = serial { operation { s -> export(s, id, into) } }
+    suspend fun export(id: UUID, into: File? = null): File = serial {
+        operation { s -> export(s, id, into) }
+    }
 
     private fun export(s: Session, id: UUID, into: File?): File {
         val item = s.library.items.firstOrNull { it.id == id } ?: throw VaultException.MissingFile()
@@ -332,7 +484,13 @@ class VaultRepository(val root: File, val temporary: File) {
         val output = File(folder, item.name)
         val partial = File(folder, ".partial-" + UUID.randomUUID())
         try {
-            fileDecrypt(s.identity, blob(id, s.directory).path, partial.path, item.bytes, item.digest)
+            fileDecrypt(
+                s.identity,
+                blob(id, s.directory).path,
+                partial.path,
+                item.bytes,
+                item.digest,
+            )
             if (output.exists()) output.delete()
             if (!partial.renameTo(output)) throw VaultException.Damaged()
         } finally {
@@ -344,7 +502,12 @@ class VaultRepository(val root: File, val temporary: File) {
     /** A manual backup: every original verified, then the whole vault framed as `.vault7`. */
     suspend fun backup(): File = serial {
         operation { s ->
-            for (item in s.library.items) fileVerify(s.identity, blob(item.id, s.directory).path, item.bytes, item.digest)
+            for (item in s.library.items) fileVerify(
+                s.identity,
+                blob(item.id, s.directory).path,
+                item.bytes,
+                item.digest,
+            )
             val output = File(temporary, backupFileName(UUID.randomUUID()))
             backupV2Write(s.directory.path, s.library, output.path)
             edit(s) { libraryMarkBackupPrepared(it, Instant.now()) }
@@ -352,13 +515,20 @@ class VaultRepository(val root: File, val temporary: File) {
         }
     }
 
-    suspend fun backupRevision(): String = serial { vaultRevisionV2((current ?: throw VaultException.Locked()).directory.path) }
+    suspend fun backupRevision(): String = serial {
+        vaultRevisionV2((current ?: throw VaultException.Locked()).directory.path)
+    }
 
     /** Automatic backup's artifact: the vault id and the revision it holds. */
     suspend fun automaticBackup(output: File): Pair<UUID, String> = serial {
         operation { s ->
             val revision = vaultRevisionV2(s.directory.path)
-            for (item in s.library.items) fileVerify(s.identity, blob(item.id, s.directory).path, item.bytes, item.digest)
+            for (item in s.library.items) fileVerify(
+                s.identity,
+                blob(item.id, s.directory).path,
+                item.bytes,
+                item.digest,
+            )
             backupV2Write(s.directory.path, s.library, output.path)
             s.library.id to revision
         }
@@ -368,14 +538,27 @@ class VaultRepository(val root: File, val temporary: File) {
      * Restore: the whole backup is read into staging, opened, matched against its index and every
      * original verified before the directory is published. An existing vault is never replaced.
      */
-    suspend fun restore(input: String, credential: String, recovery: Boolean, kind: VaultCredentialKind): VaultLibrary =
-        restoreWith(credential, recovery, kind) { backupV2Read(input, it) }
+    suspend fun restore(
+        input: String,
+        credential: String,
+        recovery: Boolean,
+        kind: VaultCredentialKind,
+    ): VaultLibrary = restoreWith(credential, recovery, kind) { backupV2Read(input, it) }
 
     /** [restore] from an open descriptor (a chosen document), kept open by the caller. */
-    suspend fun restoreDescriptor(fd: Int, credential: String, recovery: Boolean, kind: VaultCredentialKind): VaultLibrary =
-        restoreWith(credential, recovery, kind) { backupV2ReadFd(fd, it) }
+    suspend fun restoreDescriptor(
+        fd: Int,
+        credential: String,
+        recovery: Boolean,
+        kind: VaultCredentialKind,
+    ): VaultLibrary = restoreWith(credential, recovery, kind) { backupV2ReadFd(fd, it) }
 
-    private suspend fun restoreWith(credential: String, recovery: Boolean, kind: VaultCredentialKind, read: (String) -> List<String>): VaultLibrary = serial {
+    private suspend fun restoreWith(
+        credential: String,
+        recovery: Boolean,
+        kind: VaultCredentialKind,
+        read: (String) -> List<String>,
+    ): VaultLibrary = serial {
         val staging = File(root, ".stage-" + UUID.randomUUID())
         try {
             protectedDirectory(staging)
@@ -386,7 +569,12 @@ class VaultRepository(val root: File, val temporary: File) {
             try {
                 val value = load(staging, found, opened)
                 backupV2NamesMatch(names, value)
-                for (item in value.items) fileVerify(opened, blob(item.id, staging).path, item.bytes, item.digest)
+                for (item in value.items) fileVerify(
+                    opened,
+                    blob(item.id, staging).path,
+                    item.bytes,
+                    item.digest,
+                )
                 val target = File(root, value.id.upper())
                 if (target.exists()) throw VaultException.DuplicateVault()
                 if (!staging.renameTo(target)) throw VaultException.Damaged()

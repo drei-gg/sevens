@@ -16,6 +16,8 @@ mod error;
 mod format;
 mod library;
 mod mutation;
+mod recognition;
+mod search;
 mod text;
 mod time;
 mod v2;
@@ -26,6 +28,8 @@ pub use error::*;
 pub use format::*;
 pub use library::*;
 pub use mutation::*;
+pub use recognition::*;
+pub use search::*;
 pub use text::standard_compare;
 pub use v2::*;
 

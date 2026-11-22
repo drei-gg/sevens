@@ -9,7 +9,9 @@ import PhotosUI
 import SevenBackup
 import BackgroundTasks
 
-struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var sharing = false; var filesExport = false }
+struct PdfRecognitionRange { let item: VaultItem; let pages: UInt32 }
+struct RecognizedImageText { let item: VaultItem; let text: String }
+struct PresentedFiles: Identifiable { var id = UUID(); let urls: [URL]; var sharing = false; var filesExport = false; var recognized: RecognizedImageText?; var pdfRange: PdfRecognitionRange?; var batch: RecognitionQueue? }
 @Observable @MainActor final class VaultModel {
     let repository: VaultRepository
     let store: Store
@@ -32,6 +34,7 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
     var importResult = ""
     private var started = false
     private var operation = 0
+    private var recognitionTask: Task<String, Error>?
     init() {
         let config = SevenConfig(bundle: .main) ?? SevenConfig(trialProductID: "org.example.sevens.vault.trial7", unlockProductID: "org.example.sevens.vault.unlock")
         var folder = "Vault"
@@ -77,6 +80,8 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
         await retryAutomaticBackups()
     }
     func lock() {
+        if let batch = presentation?.batch { batch.stopped = true; batch.text = "" }
+        recognitionTask?.cancel(); recognitionTask = nil
         automaticTask?.cancel(); automaticTask = nil; automaticStatus = nil; automaticMessage = nil
         generation += 1; operation += 1; library = nil; recoveryKey = nil; recoveryKeyReplacesOld = false; presentation = nil; error = nil; importResult = ""
         // Stay busy until the actor has discarded keys and any in-flight operation has finished.
@@ -161,6 +166,99 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
             if token == self.operation { self.presentation = PresentedFiles(urls: [url]) }
         }
     }
+    func prepareRecognitionQueue(_ ids: Set<UUID>) {
+        guard !busy, let library else { return }
+        let supported = library.items.filter { UTType($0.type)?.conforms(to: .image) == true || $0.type == UTType.pdf.identifier }.map(\.id)
+        let plan = recognitionBatchPlan(items: library.items, selected: Array(ids), supported: supported)
+        if let issue = plan.issue { error = issue; return }
+        presentation = PresentedFiles(urls: [], batch: RecognitionQueue(plan: plan))
+    }
+    func stopRecognitionQueue(_ queue: RecognitionQueue) {
+        queue.stopped = true; queue.text = ""
+        recognitionTask?.cancel()
+    }
+    func recognizeBatchItem(_ queue: RecognitionQueue) async {
+        guard !busy, presentation?.batch === queue, !queue.stopped, let item = queue.item else { return }
+        let token = operation; queue.failure = nil
+        await update("Recognizing file \(queue.index + 1) of \(queue.plan.items.count)…") {
+            do {
+                let url = try await self.repository.export(item.id)
+                defer { try? FileManager.default.removeItem(at: url) }
+                guard token == self.operation, !queue.stopped else { return }
+                let pdf = item.type == UTType.pdf.identifier
+                let limit = queue.plan.maximumPdfPages
+                let task = Task.detached(priority: .userInitiated) {
+                    let text: String
+                    if pdf {
+                        let count = try VaultTextRecognition.pageCount(url)
+                        guard count <= limit else { throw BatchRecognitionError.pageLimit(limit) }
+                        text = try VaultTextRecognition.readPDF(url, first: 1, last: count)
+                    } else { text = try VaultTextRecognition.read(url) }
+                    return try recognitionReviewText(text: text)
+                }
+                self.recognitionTask = task
+                defer { if token == self.operation { self.recognitionTask = nil } }
+                let text = try await task.value
+                guard token == self.operation, self.presentation?.batch === queue, !queue.stopped else { return }
+                queue.text = text; queue.name = (item.name as NSString).deletingPathExtension + " text"; queue.ready = true
+            } catch {
+                if token == self.operation && !queue.stopped { queue.failure = error.vaultMessage }
+            }
+        }
+    }
+    func saveBatchItem(_ queue: RecognitionQueue) async {
+        guard !busy, presentation?.batch === queue, queue.ready, !queue.stopped, store.paidFeaturesAvailable, let item = queue.item else { return }
+        let name = queue.name, text = queue.text, token = operation
+        await update {
+            try await self.repository.addNote(name: name, text: recognitionReviewText(text: text), folder: item.folder)
+            guard token == self.operation, self.presentation?.batch === queue else { return }
+            queue.next(savedNote: true)
+        }
+    }
+    func recognizeText(_ item: VaultItem) async {
+        guard !busy else { return }
+        if UTType(item.type)?.conforms(to: .pdf) == true {
+            let token = operation
+            await update("Reading PDF pages…") {
+                let url = try await self.repository.export(item.id)
+                defer { try? FileManager.default.removeItem(at: url) }
+            guard token == self.operation else { return }
+                let count = try await Task.detached(priority: .userInitiated) { try VaultTextRecognition.pageCount(url) }.value
+                guard token == self.operation else { return }
+                self.presentation = PresentedFiles(urls: [], pdfRange: PdfRecognitionRange(item: item, pages: count))
+            }
+            return
+        }
+        guard UTType(item.type)?.conforms(to: .image) == true else { return }
+        let token = operation
+        await update("Recognizing text on this device…") {
+            let url = try await self.repository.export(item.id)
+            defer { try? FileManager.default.removeItem(at: url) }
+            guard token == self.operation else { return }
+            let task = Task.detached(priority: .userInitiated) { try VaultTextRecognition.read(url) }
+            self.recognitionTask = task
+            defer { if token == self.operation { self.recognitionTask = nil } }
+            let text = try await task.value
+            guard token == self.operation else { return }
+            self.presentation = PresentedFiles(urls: [], recognized: RecognizedImageText(item: item, text: text))
+        }
+    }
+    func recognizePDF(_ draft: PdfRecognitionRange, first: UInt32, last: UInt32) async {
+        guard !busy, presentation?.pdfRange?.item.id == draft.item.id,
+              recognitionPlan(pageCount: draft.pages, firstPage: first, lastPage: last).issue == nil else { return }
+        let token = operation
+        await update("Recognizing PDF on this device…") {
+            let url = try await self.repository.export(draft.item.id)
+            defer { try? FileManager.default.removeItem(at: url) }
+            guard token == self.operation else { return }
+            let task = Task.detached(priority: .userInitiated) { try VaultTextRecognition.readPDF(url, first: first, last: last) }
+            self.recognitionTask = task
+            defer { if token == self.operation { self.recognitionTask = nil } }
+            let text = try await task.value
+            guard token == self.operation else { return }
+            self.presentation = PresentedFiles(id: self.presentation?.id ?? UUID(), urls: [], recognized: RecognizedImageText(item: draft.item, text: text))
+        }
+    }
     func export(_ ids: Set<UUID>) async {
         guard !ids.isEmpty else { return }; let token = operation
         await update("Preparing originals…") {
@@ -185,7 +283,7 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
         let scoped = url.startAccessingSecurityScopedResource(); defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         await perform("Verifying backup…") { try await self.migrated(self.repository.restore(url, credential: credential, recovery: recovery, kind: kind)) }
     }
-    func cleanPresentation() { presentation = nil; Task { try? await repository.clearTemporary() } }
+    func cleanPresentation() { if let batch = presentation?.batch { stopRecognitionQueue(batch) }; presentation = nil; Task { try? await repository.clearTemporary() } }
     func enableBiometrics() async {
         await update {
             let (id, data) = try await self.repository.biometricMaterial()
@@ -239,16 +337,53 @@ struct PresentedFiles: Identifiable { let id = UUID(); let urls: [URL]; var shar
     func fixture() async {
         guard ProcessInfo.processInfo.arguments.contains("-vault.ui") else { return }
         await update("Importing sample originals…") {
+            if ProcessInfo.processInfo.arguments.contains("-vault.pdf") {
+                let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
+                let data = pdf.pdfData { context in
+                    for text in ["OUTSIDE FIRST PAGE", "PRIVATE ARCHIVE 7429", "OUTSIDE LAST PAGE"] {
+                        context.beginPage()
+                        (text as NSString).draw(at: CGPoint(x: 40, y: 150), withAttributes: [.font: UIFont.systemFont(ofSize: 28), .foregroundColor: UIColor.black])
+                    }
+                }
+                let url = await self.repository.temporary.appendingPathComponent("Selected pages.pdf")
+                defer { try? FileManager.default.removeItem(at: url) }
+                try data.write(to: url, options: .completeFileProtection)
+                let item = try await self.repository.importFile(url, name: "Selected pages.pdf", type: UTType.pdf.identifier)
+                let original = try await self.repository.export(item.id)
+                defer { try? FileManager.default.removeItem(at: original) }
+                guard try Data(contentsOf: original) == data else { throw VaultError.Damaged }
+                return
+            }
             let renderer = UIGraphicsImageRenderer(size: CGSize(width: 640, height: 480))
             let image = renderer.image { context in
                 UIColor.systemTeal.setFill(); context.fill(CGRect(x: 0, y: 0, width: 640, height: 480))
                 UIColor.systemYellow.setFill(); context.cgContext.fillEllipse(in: CGRect(x: 440, y: 50, width: 100, height: 100))
                 UIColor.systemIndigo.setFill(); let path = UIBezierPath(); path.move(to: CGPoint(x: 0, y: 480)); path.addLine(to: CGPoint(x: 240, y: 170)); path.addLine(to: CGPoint(x: 640, y: 480)); path.fill()
+                UIColor.white.setFill(); context.fill(CGRect(x: 20, y: 350, width: 600, height: 100))
+                ("PRIVATE ARCHIVE 7429" as NSString).draw(at: CGPoint(x: 40, y: 380), withAttributes: [.font: UIFont.systemFont(ofSize: 36), .foregroundColor: UIColor.black])
             }
             let url = await self.repository.temporary.appendingPathComponent("Weekend.png")
             defer { try? FileManager.default.removeItem(at: url) }
             try image.pngData()!.write(to: url, options: .completeFileProtection)
             _ = try await self.repository.importFile(url, name: "Weekend.png", type: UTType.png.identifier)
+            if ProcessInfo.processInfo.arguments.contains("-vault.batch") {
+                let broken = await self.repository.temporary.appendingPathComponent("Broken.png")
+                defer { try? FileManager.default.removeItem(at: broken) }
+                try Data("not an image".utf8).write(to: broken, options: .completeFileProtection)
+                _ = try await self.repository.importFile(broken, name: "Broken.png", type: UTType.png.identifier)
+                let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
+                let data = pdf.pdfData { context in
+                    for text in ["BATCH FIRST PAGE 7429", "BATCH SECOND PAGE 8250"] {
+                        context.beginPage()
+                        (text as NSString).draw(at: CGPoint(x: 40, y: 150), withAttributes: [.font: UIFont.systemFont(ofSize: 28), .foregroundColor: UIColor.black])
+                    }
+                }
+                let file = await self.repository.temporary.appendingPathComponent("Batch pages.pdf")
+                defer { try? FileManager.default.removeItem(at: file) }
+                try data.write(to: file, options: .completeFileProtection)
+                _ = try await self.repository.importFile(file, name: "Batch pages.pdf", type: UTType.pdf.identifier)
+                return
+            }
             try await self.repository.addNote(name: "Travel checklist", text: "Passport\nBoarding pass\nSpare charger", folder: nil)
         }
     }

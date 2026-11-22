@@ -29,8 +29,16 @@ private fun Instant.shown(context: android.content.Context) =
 fun SettingsScreen(model: VaultModel, onBack: () -> Unit) {
     val context = LocalContext.current
     var restore by rememberSaveable { mutableStateOf(false) }
+    val snackbar = remember { SnackbarHostState() }
+    LaunchedEffect(model.notice) {
+        model.notice?.let {
+            snackbar.showSnackbar(it)
+            model.notice = null
+        }
+    }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbar, Modifier.imePadding()) },
         topBar = {
             SevenTopBar("Settings", onBack = onBack) {
                 if (model.library != null) IconButton(onClick = model::lock) { Icon(Icons.Outlined.Lock, "Lock") }
@@ -38,7 +46,7 @@ fun SettingsScreen(model: VaultModel, onBack: () -> Unit) {
         },
     ) { padding ->
         Column(
-            Modifier.padding(padding).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = Space.m, vertical = Space.s),
+            Modifier.padding(padding).consumeWindowInsets(padding).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = Space.m, vertical = Space.s),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(Modifier.widthIn(max = ContentWidth).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Space.l)) {
@@ -135,6 +143,8 @@ fun AutomaticBackupSection(model: VaultModel) {
 
 @Composable
 private fun ChangeCredentialSection(model: VaultModel) {
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     var kind by rememberSaveable { mutableStateOf(VaultCredentialKind.PASSPHRASE) }
     var password by remember { mutableStateOf("") }
     var repeated by remember { mutableStateOf("") }
@@ -151,9 +161,18 @@ private fun ChangeCredentialSection(model: VaultModel) {
             onClick = {
                 val secret = password
                 val chosen = kind
-                password = ""
-                repeated = ""
-                model.update(then = { model.showNotice("Unlock secret changed. Older backups still open with the old one.") }) { model.repository.changeCredential(secret, chosen) }
+                model.update(then = {
+                    // A failed save keeps the retryable draft. Do not erase a newer edit made
+                    // while the captured credential was being saved.
+                    val unchanged = kind == chosen && password == secret && repeated == secret
+                    if (kind == chosen && password == secret) password = ""
+                    if (kind == chosen && repeated == secret) repeated = ""
+                    if (unchanged) {
+                        focus.clearFocus()
+                        keyboard?.hide()
+                    }
+                    model.showNotice("Unlock secret changed. Older backups still open with the old one.")
+                }) { model.repository.changeCredential(secret, chosen) }
             },
             enabled = kind.valid(password) && password == repeated && !model.busy,
             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),

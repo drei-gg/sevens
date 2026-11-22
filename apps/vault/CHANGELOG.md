@@ -1,5 +1,15 @@
 # Changelog
 
+## 18 November 2026 — feature continuation, not released
+
+- Selected-file OCR review queue on both phones: up to ten images/PDFs, explicit review/save/skip, corrupt-file retry, full bounded PDFs, committed counts and lock cleanup. Originals remain unchanged; no background queue or plaintext index.
+
+- Added opt-in note-content search on both phones, including saved OCR text, with explicit coverage and unreadable/skipped counts. Reads remain authenticated and memory-only; lock clears queries/results. Android uses native search/filter/progress controls and consumes keyboard insets in the library.
+
+- PDF text recognition now uses a native page-range review on both phones, sequential on-device rendering/OCR, and the existing explicit encrypted-note save. Shared bounds limit each request to 20 pages, 2400-pixel renders and the existing note size. Lock discards reviews and stops work between pages; originals remain unchanged.
+
+- Added on-device image text recognition, an editable review and explicit saving as an encrypted note on both phones. Lock clears the review and rejects late results. Android reuses the shared bundled English OCR engine; iOS uses Vision.
+
 ## 0.1.0 — unreleased
 
 ### Vault for Android, and one encrypted format — 16 November 2026
