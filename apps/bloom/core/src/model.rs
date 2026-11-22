@@ -48,6 +48,30 @@ pub struct DayLog {
 }
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
+pub struct Observation {
+    pub id: String,
+    pub day: String,
+    pub at: i64,
+    pub zone: String,
+    pub kind: String,
+    pub label: String,
+    pub value: String,
+    pub level: Option<i32>,
+    pub number: Option<f64>,
+    pub period_start: bool,
+    pub notes: String,
+}
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Exclusion {
+    pub id: String,
+    pub start: String,
+    pub end: Option<String>,
+    pub reason: String,
+    pub source: String,
+}
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct Contact {
     pub id: String,
     pub day: String,
@@ -143,11 +167,15 @@ pub struct Archive {
     pub appointments: Vec<Appointment>,
     pub pregnancies: Vec<Pregnancy>,
     pub receipts: Vec<Receipt>,
+    #[serde(default)]
+    pub observations: Vec<Observation>,
+    #[serde(default)]
+    pub exclusions: Vec<Exclusion>,
 }
 impl Default for Archive {
     fn default() -> Self {
         Self {
-            schema: 1,
+            schema: 2,
             revision: 0,
             profile: Profile::default(),
             days: vec![],
@@ -158,6 +186,8 @@ impl Default for Archive {
             appointments: vec![],
             pregnancies: vec![],
             receipts: vec![],
+            observations: vec![],
+            exclusions: vec![],
         }
     }
 }
@@ -199,11 +229,13 @@ fn unique<'a>(ids: impl Iterator<Item = &'a str>) -> Result<()> {
 }
 pub fn validate(a: &Archive) -> Result<()> {
     ensure(
-        a.schema == 1,
+        a.schema == 2,
         "This archive needs a newer version of the app. The original file has not been changed.",
     )?;
     ensure(
-        a.days.len()
+        a.observations.len()
+            + a.exclusions.len()
+            + a.days.len()
             + a.contacts.len()
             + a.doses.len()
             + a.refills.len()
@@ -239,6 +271,78 @@ pub fn validate(a: &Archive) -> Result<()> {
     unique(a.appointments.iter().map(|x| x.id.as_str()))?;
     unique(a.pregnancies.iter().map(|x| x.id.as_str()))?;
     unique(a.receipts.iter().map(|x| x.id.as_str()))?;
+    unique(a.observations.iter().map(|x| x.id.as_str()))?;
+    unique(a.exclusions.iter().map(|x| x.id.as_str()))?;
+    for o in &a.observations {
+        day(&o.day)?;
+        ensure(
+            o.at > 0 && crate::time::today(o.at, &o.zone)? == o.day,
+            "The observation time and date must match its recorded time zone.",
+        )?;
+        one(
+            &o.kind,
+            &[
+                "symptom",
+                "flow",
+                "temperature",
+                "ovulation_test",
+                "pregnancy_test",
+                "product",
+            ],
+        )?;
+        text(&o.label, 60)?;
+        text(&o.value, 120)?;
+        text(&o.notes, 10_000)?;
+        ensure(
+            o.level.is_none_or(|v| (0..=3).contains(&v)),
+            "Choose a level from 0 to 3.",
+        )?;
+        ensure(
+            o.number
+                .is_none_or(|v| v.is_finite() && (0.0..=1000.0).contains(&v)),
+            "Check the measured value.",
+        )?;
+        if o.kind == "symptom" {
+            ensure(
+                !o.label.trim().is_empty() && o.level.is_some(),
+                "Name the observation and choose its level.",
+            )?;
+        }
+        if o.kind == "flow" {
+            one(&o.value, &["none", "spotting", "light", "medium", "heavy"])?;
+        }
+        if o.period_start {
+            ensure(
+                o.kind == "flow" && ["light", "medium", "heavy"].contains(&o.value.as_str()),
+                "A period start needs a flow observation.",
+            )?;
+        }
+        if o.kind == "temperature" {
+            ensure(
+                o.number.is_some_and(|v| (30.0..=45.0).contains(&v)),
+                "Temperature must be between 30 and 45 °C.",
+            )?;
+        }
+        if o.kind.ends_with("_test") {
+            one(&o.value, &["negative", "positive", "unclear"])?;
+        }
+        if o.kind == "product" {
+            ensure(!o.label.trim().is_empty(), "Name the product you changed.")?;
+        }
+    }
+    for e in &a.exclusions {
+        day(&e.start)?;
+        if let Some(end) = &e.end {
+            day(end)?;
+            ensure(end >= &e.start, "The interval ends before it starts.")?;
+        }
+        text(&e.reason, 200)?;
+        ensure(
+            !e.reason.trim().is_empty(),
+            "Add a reason for excluding this interval.",
+        )?;
+        one(&e.source, &["manual", "postpartum", "lactation"])?;
+    }
     let mut days = HashSet::new();
     for d in &a.days {
         day(&d.day)?;
@@ -400,7 +504,15 @@ pub fn validate(a: &Archive) -> Result<()> {
 }
 pub fn decode(json: &str) -> Result<Archive> {
     ensure(json.len() <= MAX_BYTES, "File is too large.")?;
-    let a:Archive=serde_json::from_str(json).map_err(|_|Error::Invalid{reason:"The archive is unreadable or uses unsupported fields. The original file has not been changed.".into()})?;
+    let mut a:Archive=serde_json::from_str(json).map_err(|_|Error::Invalid{reason:"The archive is unreadable or uses unsupported fields. The original file has not been changed.".into()})?;
+    if a.schema == 1 {
+        ensure(
+            a.observations.is_empty() && a.exclusions.is_empty(),
+            "Version 1 cannot contain version 2 records.",
+        )?;
+        // Retain untimed daily summaries exactly; do not invent times for historical records.
+        a.schema = 2;
+    }
     validate(&a)?;
     Ok(a)
 }

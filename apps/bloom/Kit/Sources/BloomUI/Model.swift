@@ -18,6 +18,8 @@ public final class BloomModel {
   public var message: String?
   public var showUnlock = false
   public var locked = false
+  public private(set) var authenticating = false
+  @ObservationIgnored private var authentication: LAContext?
   public var notificationStatus = "Reminders are off until you allow notifications."
   public var lockEnabled: Bool { didSet { defaults.set(lockEnabled, forKey: "bloom.lock") } }
   let repository: BloomRepository
@@ -99,27 +101,46 @@ public final class BloomModel {
       await services()
     } catch { failure = explain(error) }
   }
-  public func protect() { if lockEnabled { locked = true } }
+  public func protect(cancelAuthentication: Bool = false) {
+    if cancelAuthentication {
+      authentication?.invalidate()
+      authentication = nil
+      authenticating = false
+    }
+    if lockEnabled { locked = true }
+  }
   public func unlock() async {
-    let context = LAContext()
-    do {
-      if try await context.evaluatePolicy(
-        .deviceOwnerAuthentication, localizedReason: "Unlock your private health records.")
-      {
-        locked = false
-      }
-    } catch { message = "Your records remain locked. Try again when you are ready." }
+    await authenticate(change: nil)
   }
   func enableLock(_ value: Bool) async {
+    await authenticate(change: value)
+  }
+  private func authenticate(change: Bool?) async {
+    guard !authenticating else { return }
     let context = LAContext()
+    authentication = context
+    authenticating = true
+    defer {
+      if authentication === context {
+        authentication = nil
+        authenticating = false
+      }
+    }
     do {
       if try await context.evaluatePolicy(
-        .deviceOwnerAuthentication, localizedReason: "Change protection for your health records.")
+        .deviceOwnerAuthentication,
+        localizedReason: change == nil ? "Unlock your private health records."
+          : "Change protection for your health records.")
       {
-        lockEnabled = value
+        // Backgrounding invalidates this exact request. A late system result cannot unlock it.
+        guard authentication === context else { return }
+        if let change { lockEnabled = change }
         locked = false
       }
-    } catch { message = "Device authentication is required to change the app lock." }
+    } catch {
+      guard authentication === context else { return }
+      message = "Device authentication did not complete. Your protection setting is unchanged."
+    }
   }
   func save<T: Encodable>(_ op: String, _ value: T, revision: UInt64) async -> Bool {
     do { return await change(try Command(op: op, record: value, revision: revision)) } catch {
@@ -189,13 +210,14 @@ public final class BloomModel {
     if !isTesting { WidgetCenter.shared.reloadAllTimelines() }
   }
   func watchSnapshot() -> WatchSnapshot {
-    let enabled = ready && archive.profile.watch_enabled
-    var doses = enabled ? dashboard?.today_doses ?? [] : []
-    if archive.profile.discreet { for i in doses.indices { doses[i].title = "Your reminder" } }
-    return WatchSnapshot(
-      enabled: enabled, cycleDay: enabled && !archive.profile.discreet ? dashboard?.cycle_day : nil,
-      doses: doses, canAdd: store.paidFeaturesAvailable)
+    let disabled = WatchSnapshot(enabled: false, cycleDay: nil, doses: [], canAdd: false)
+    guard ready else { return disabled }
+    do {
+      let json = try bloomWatchSnapshot(archive: BloomCodec.string(archive), now: Int64(Date().timeIntervalSince1970), zone: TimeZone.current.identifier, paid: store.paidFeaturesAvailable)
+      return try BloomCodec.decode(WatchSnapshot.self, from: Data(json.utf8))
+    } catch { return disabled }
   }
+
   func publishWatch() {
     if let data = try? BloomCodec.encode(WatchReply(snapshot: watchSnapshot())) {
       companion.publish(data)
@@ -222,7 +244,7 @@ public final class BloomModel {
         // Repository serialization and command receipts make retries idempotent.
         busy = true
         do {
-          archive = try await repository.apply(command, paid: store.paidFeaturesAvailable)
+          archive = try await repository.applyWatch(request, paid: store.paidFeaturesAvailable)
           busy = false
           await services()
         } catch {
@@ -243,6 +265,19 @@ public final class BloomModel {
     defer { busy = false }
     do {
       archive = try await repository.merge(incoming)
+      await services()
+      return true
+    } catch {
+      message = explain(error)
+      return false
+    }
+  }
+  func importHealth(_ reviewed: Archive) async -> Bool {
+    guard !busy else { return false }
+    busy = true
+    defer { busy = false }
+    do {
+      archive = try await repository.importHealth(reviewed)
       await services()
       return true
     } catch {

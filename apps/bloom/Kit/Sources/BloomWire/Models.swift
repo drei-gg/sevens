@@ -25,6 +25,41 @@ public struct DayLog: Codable, Sendable, Equatable, Identifiable {
   public var pregnancy_test = "none"
   public init() {}
 }
+public struct TimedObservation: Codable, Sendable, Equatable, Identifiable {
+  public var id = UUID().uuidString.lowercased()
+  public var day = BloomDate.day(Date())
+  public var at = Int64(Date().timeIntervalSince1970)
+  public var zone = TimeZone.current.identifier
+  public var kind = "symptom"
+  public var label = "Cramps"
+  public var value = ""
+  public var level: Int? = 1
+  public var number: Double?
+  public var period_start = false
+  public var notes = ""
+  public init() {}
+}
+public struct Exclusion: Codable, Sendable, Equatable, Identifiable {
+  public var id = UUID().uuidString.lowercased()
+  public var start = BloomDate.day(Date())
+  public var end: String?
+  public var reason = ""
+  public var source = "manual"
+  public init() {}
+}
+public struct TemperaturePoint: Codable, Sendable, Identifiable {
+  public var id: String
+  public var day: String
+  public var at: Int64?
+  public var value: Double
+}
+public struct PlanPosition: Codable, Sendable, Identifiable {
+  public var id: String
+  public var day: Int
+  public var total: Int
+  public var active: Int
+  public var phase: String
+}
 public struct Contact: Codable, Sendable, Equatable, Identifiable {
   public var id = UUID().uuidString.lowercased()
   public var day = BloomDate.day(Date())
@@ -110,7 +145,7 @@ public struct Receipt: Codable, Sendable, Equatable {
   public var at: Int64
 }
 public struct Archive: Codable, Sendable, Equatable {
-  public var schema = 1
+  public var schema = 2
   public var revision: UInt64 = 0
   public var profile = Profile()
   public var days: [DayLog] = []
@@ -121,6 +156,8 @@ public struct Archive: Codable, Sendable, Equatable {
   public var appointments: [Appointment] = []
   public var pregnancies: [Pregnancy] = []
   public var receipts: [Receipt] = []
+  public var observations: [TimedObservation] = []
+  public var exclusions: [Exclusion] = []
   public init() {}
 }
 public struct Occurrence: Codable, Sendable, Identifiable, Equatable {
@@ -144,6 +181,7 @@ public struct Cycle: Codable, Sendable, Identifiable {
   public var start: String
   public var length: Int?
   public var bleeding_days: Int
+  public var excluded_reason: String?
 }
 public struct SymptomStat: Codable, Sendable, Identifiable {
   public var id: String { name }
@@ -180,6 +218,13 @@ public struct Dashboard: Codable, Sendable {
   public var stock: [Stock]
   public var pregnancy_week: Int?
   public var pregnancy_day: Int?
+  public var observed_days: [DayLog]
+  public var temperatures: [TemperaturePoint]
+  public var plan_positions: [PlanPosition]
+  public var sample_size: Int
+  public var estimate_days: Int?
+  public var typical_length: Int
+  public var history_note: String
 }
 public enum JSONValue: Codable, Sendable {
   case null
@@ -267,6 +312,7 @@ public enum BloomDate {
 }
 public struct WatchSnapshot: Codable, Sendable {
   public var version = 1
+  public var revision: UInt64?
   public var generated: Int64
   public var enabled: Bool
   public var cycle_day: Int?
@@ -278,6 +324,21 @@ public struct WatchSnapshot: Codable, Sendable {
     cycle_day = cycleDay
     self.doses = doses
     can_add = canAdd
+  }
+  public func fresh(now: Date = Date(), zone: TimeZone = .current) -> Bool {
+    let seconds = Int64(now.timeIntervalSince1970)
+    return version == 1 && generated >= 0 && enabled && seconds >= generated && seconds - generated < 86_400
+      && BloomDate.day(now, zone: zone) == BloomDate.day(Date(timeIntervalSince1970: Double(generated)), zone: zone)
+  }
+  public func replaces(_ previous: WatchSnapshot?, now: Date = Date()) -> Bool {
+    let seconds = Int64(now.timeIntervalSince1970)
+    guard version == 1, generated >= 0, generated <= seconds + 60 else { return false }
+    guard let previous, previous.generated <= seconds + 60 else { return true }
+    if generated != previous.generated { return generated > previous.generated }
+    if !enabled { return true }
+    if !previous.enabled { return false }
+    if let revision, let old = previous.revision { return revision >= old }
+    return true
   }
 }
 public struct WatchRequest: Codable, Sendable {

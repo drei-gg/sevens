@@ -52,9 +52,10 @@ struct MonthCalendar: View {
           }
         }
       }
-      HStack(spacing: Tokens.Space.m) {
-        Label("Flow logged", systemImage: "drop.fill")
-        Label("Other entry", systemImage: "circle.fill")
+      .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+      ViewThatFits(in: .horizontal) {
+        HStack(spacing: Tokens.Space.m) { legend }
+        VStack(alignment: .leading, spacing: Tokens.Space.s) { legend }
       }.textRole(.caption).foregroundStyle(Tokens.muted)
       if let next = model.dashboard?.next_period,
         calendar.isDate(BloomDate.date(next), equalTo: month, toGranularity: .month)
@@ -65,10 +66,18 @@ struct MonthCalendar: View {
       }
     }.padding(.vertical, Tokens.Space.s)
   }
+  @ViewBuilder private var legend: some View {
+    Label("Flow logged", systemImage: "drop.fill")
+    Label("Entry", systemImage: "circle.fill")
+    Label("Estimate", systemImage: "circle.dashed")
+  }
   @ViewBuilder private func cell(_ number: Int) -> some View {
     let date = calendar.date(byAdding: .day, value: number - 1, to: start) ?? start
     let key = BloomDate.day(date)
-    let record = model.archive.days.first { $0.day == key }
+    let record = model.dashboard?.observed_days.first { $0.day == key }
+    let estimateStart = model.dashboard?.earliest ?? model.dashboard?.next_period
+    let estimateEnd = model.dashboard?.latest ?? model.dashboard?.next_period
+    let estimated = estimateStart.map { key >= $0 && key <= (estimateEnd ?? $0) } ?? false
     let flow = record.map { ["light", "medium", "heavy", "spotting"].contains($0.flow) } ?? false
     let selected = calendar.isDate(date, inSameDayAs: selection)
     Button {
@@ -76,16 +85,17 @@ struct MonthCalendar: View {
     } label: {
       VStack(spacing: Tokens.Space.xs) {
         Text("\(number)").textRole(.body, emphasized: selected)
-        Image(systemName: flow ? "drop.fill" : "circle.fill").textRole(.caption).foregroundStyle(
-          flow ? Tokens.dataWarm : Tokens.muted
-        ).opacity(record == nil ? 0 : 1)
+        Image(systemName: flow ? "drop.fill" : estimated ? "circle.dashed" : "circle.fill")
+          .textRole(.caption).foregroundStyle(
+            flow ? Tokens.dataWarm : Tokens.muted
+          ).opacity(record == nil && !estimated ? 0 : 1)
       }.frame(maxWidth: .infinity, minHeight: 44).overlay {
         if selected {
           RoundedRectangle(cornerRadius: Tokens.Radius.button).stroke(Tokens.ink, lineWidth: 2)
         }
       }
-    }.buttonStyle(.plain).disabled(date > Date()).accessibilityLabel(
-      "\(prettyDay(key)), \(flow ? "flow logged" : record == nil ? "not logged" : "journal entry")"
+    }.buttonStyle(.plain).accessibilityLabel(
+      "\(prettyDay(key)), \(flow ? "flow logged" : estimated ? "period start estimate" : record == nil ? "not logged" : "journal entry")"
     ).accessibilityAddTraits(selected ? .isSelected : [])
   }
   private func move(_ amount: Int) {

@@ -1,0 +1,5 @@
+<resources>
+    <string name="widget_name">Your day</string>
+    <string name="widget_description">An optional, discreet reminder snapshot. Enable it in Settings; journal text never appears.</string>
+    <string name="widget_placeholder">Your private journal</string>
+</resources>

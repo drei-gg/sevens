@@ -36,6 +36,7 @@ class BloomRepository(context: Context, private val name: String = "records") {
     private val lock = Mutex()
     private val alias = "bloom.records.$name.v1"
     private var cache: String? = null
+    val changes = kotlinx.coroutines.flow.MutableStateFlow(0L)
 
     private fun key(create: Boolean): SecretKey {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -103,6 +104,7 @@ class BloomRepository(context: Context, private val name: String = "records") {
             throw error
         }
         cache = normalized
+        changes.value += 1
         return normalized
     }
 
@@ -123,9 +125,52 @@ class BloomRepository(context: Context, private val name: String = "records") {
             }
         }
 
+    /**
+     * Scheduled-dose actions remain available after trial expiry; this transport cannot add journal
+     * entries.
+     */
+    suspend fun watchRequest(request: String): String =
+        withContext(Dispatchers.IO) {
+            lock.withLock {
+                check(request.length <= 512_000) { "The watch request is too large." }
+                val parsed = JSONObject(request)
+                val command = parsed.optJSONObject("command")
+                check(command == null || command.optString("op") == "dose") {
+                    "This action is not available from Wear OS."
+                }
+                val current = readLocked()
+                val next =
+                    bloomWatchApply(
+                        current,
+                        request,
+                        Instant.now().epochSecond,
+                        ZoneId.systemDefault().id,
+                        false,
+                    )
+                if (command == null) current else writeLocked(next)
+            }
+        }
+
+    suspend fun watchSnapshot(): String =
+        withContext(Dispatchers.IO) {
+            lock.withLock {
+                bloomWatchSnapshot(
+                    readLocked(),
+                    Instant.now().epochSecond,
+                    ZoneId.systemDefault().id,
+                    false,
+                )
+            }
+        }
+
     suspend fun merge(incoming: String): String =
         withContext(Dispatchers.IO) {
             lock.withLock { writeLocked(bloomMerge(readLocked(), incoming)) }
+        }
+
+    suspend fun importHealth(reviewed: String): String =
+        withContext(Dispatchers.IO) {
+            lock.withLock { writeLocked(bloomHealthImport(readLocked(), reviewed)) }
         }
 
     suspend fun erase(): String =

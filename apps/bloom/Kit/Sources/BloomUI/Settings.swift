@@ -13,11 +13,14 @@ struct SettingsScreen: View {
   var body: some View {
     Form {
       BloomSection("Your preferences") {
+        NavigationLink("Make it yours") { TrackingLayoutScreen() }
+        NavigationLink("Estimate exclusions") { ExclusionsScreen() }
         Button("Tracking mode and privacy") { profile = model.archive.profile }
         Toggle(
           "Require device authentication",
           isOn: Binding(
             get: { model.lockEnabled }, set: { on in Task { await model.enableLock(on) } }))
+          .disabled(model.authenticating)
         Text(
           "Your journal is encrypted on this device. The app lock also hides it when you leave the app."
         ).textRole(.secondary).foregroundStyle(Tokens.muted)
@@ -132,9 +135,14 @@ struct BackupScreen: View {
   var body: some View {
     Form {
       BloomSection("Encrypted backup") {
-        SecureField("Passphrase (at least 12 characters)", text: $password, prompt: Text("Passphrase (at least 12 characters)").foregroundStyle(Tokens.muted)).textContentType(
+        SecureField(
+          "Passphrase (at least 12 characters)", text: $password,
+          prompt: Text("Passphrase (at least 12 characters)").foregroundStyle(Tokens.muted)
+        ).textContentType(
           .newPassword)
-        SecureField("Repeat passphrase for export", text: $confirmation, prompt: Text("Repeat passphrase for export").foregroundStyle(Tokens.muted))
+        SecureField(
+          "Repeat passphrase for export", text: $confirmation,
+          prompt: Text("Repeat passphrase for export").foregroundStyle(Tokens.muted))
         Button("Export encrypted backup") {
           filename = "cycle-backup.age"
           run {
@@ -175,7 +183,7 @@ struct BackupScreen: View {
       if let preview {
         BloomSection("Review before importing") {
           Text(
-            "\(preview.days.count) journal days, \(preview.contacts.count) contacts, \(preview.plans.count) plans, \(preview.doses.count) dose records, \(preview.pregnancies.count) pregnancies."
+            "\(preview.observations.count) timed observations, \(preview.exclusions.count) exclusions, \(preview.days.count) journal days, \(preview.contacts.count) contacts, \(preview.plans.count) plans, \(preview.doses.count) dose records, \(preview.pregnancies.count) pregnancies."
           )
           Button("Import these records") {
             busy = true

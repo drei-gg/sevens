@@ -16,7 +16,9 @@ public struct BloomRootView: View {
         } description: {
           Text("Authenticate to open your private journal.")
         } actions: {
-          Button("Unlock records") { Task { await model.unlock() } }.sevenProminentButton()
+          Button(model.authenticating ? "Authenticating…" : "Unlock records") {
+            Task { await model.unlock() }
+          }.sevenProminentButton().disabled(model.authenticating)
         }
       } else if model.ready {
         TabView {
@@ -68,7 +70,8 @@ public struct BloomRootView: View {
 }
 enum BloomGate {
   static let unlock = UnlockContent(
-    appName: Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "Cycle & Health",
+    appName: Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+      ?? "Cycle & Health",
     features: [
       "Period, symptom and private sex tracking",
       "Pill packs, birth-control schedules and dose history",
@@ -99,31 +102,27 @@ struct TodayScreen: View {
   @Environment(BloomModel.self) private var model
   @State private var day: DayLog?
   @State private var contact: Contact?
+  @State private var observation: TimedObservation?
+  @AppStorage("bloom.showContact") private var showContact = false
   var body: some View {
     List {
       if let d = model.dashboard {
         Section {
-          VStack(alignment: .leading, spacing: Tokens.Space.s) {
-            Text(Date().formatted(.dateTime.weekday(.wide).month(.wide).day())).textRole(.secondary)
-              .foregroundStyle(Tokens.muted)
-            Text(
-              d.pregnancy_week.map { week in "Week \(week), day \(d.pregnancy_day ?? 0)" } ?? d
-                .cycle_day.map { day in "Cycle day \(day)" } ?? "Your day, your record"
-            ).textRole(.title)
-            if let next = d.next_period {
-              Text("Next period estimate: \(prettyDay(next))").textRole(.body)
-            }
-            Text(d.prediction_note).textRole(.secondary).foregroundStyle(Tokens.muted)
-          }.padding(.vertical, Tokens.Space.s)
+          CycleHero(dashboard: d, profile: model.archive.profile)
           Button {
             day = model.archive.days.first { $0.day == d.today } ?? DayLog()
           } label: {
             Label("Log today", systemImage: "plus.circle")
           }.accessibilityIdentifier("logToday")
-          Button {
-            contact = Contact()
-          } label: {
-            Label("Log sex or contact", systemImage: "heart.text.clipboard")
+          Button("Add timed observation", systemImage: "clock.badge.plus") {
+            observation = TimedObservation()
+          }
+          if showContact {
+            Button {
+              contact = Contact()
+            } label: {
+              Label("Log sex or contact", systemImage: "heart.text.clipboard")
+            }
           }
         }
         BloomSection("Today’s reminders") {
@@ -140,6 +139,15 @@ struct TodayScreen: View {
             }
           }
         }
+        if let entry = model.archive.observations.sorted(by: { $0.at > $1.at }).first {
+          BloomSection("Recently recorded") {
+            Button {
+              observation = entry
+            } label: {
+              ObservationRow(value: entry)
+            }
+          }
+        }
         BloomSection("A private space") {
           Text(
             "Log what matters to you. Blank days stay unknown; reminders never mark a dose as taken."
@@ -150,6 +158,7 @@ struct TodayScreen: View {
     }.navigationTitle("Today").sevenScreenBackground()
       .sheet(item: $day) { DayEditor(value: $0, revision: model.archive.revision) }
       .sheet(item: $contact) { ContactEditor(value: $0, revision: model.archive.revision) }
+      .sheet(item: $observation) { ObservationEditor(value: $0, revision: model.archive.revision) }
   }
 }
 struct DoseRow: View {
@@ -181,6 +190,8 @@ struct CalendarScreen: View {
   @State private var scheduled: [Occurrence] = []
   @State private var day: DayLog?
   @State private var contact: Contact?
+  @State private var observation: TimedObservation?
+  @AppStorage("bloom.showContact") private var showContact = false
   var selectedDay: String { BloomDate.day(selected) }
   var records: [DayLog] {
     model.archive.days.filter { record in
@@ -208,7 +219,7 @@ struct CalendarScreen: View {
             var v = model.archive.days.first { $0.day == selectedDay } ?? DayLog()
             v.day = selectedDay
             day = v
-          }
+          }.disabled(selectedDay > BloomDate.day(Date()))
         }
       }
       BloomSection("Journal") {
@@ -232,15 +243,46 @@ struct CalendarScreen: View {
         }
         if records.isEmpty { Text("No journal entries here.").foregroundStyle(Tokens.muted) }
       }
-      BloomSection("Sex and contact") {
-        ForEach(contacts) { record in
+      BloomSection("Timed observations") {
+        Button("Add timed observation") {
+          var value = TimedObservation()
+          if selectedDay != BloomDate.day(Date()) {
+            value.at = Int64(selected.timeIntervalSince1970)
+            value.day = selectedDay
+          }
+          observation = value
+        }.disabled(selectedDay > BloomDate.day(Date()))
+        ForEach(
+          model.archive.observations.filter { entry in
+            query.isEmpty
+              ? entry.day == selectedDay
+              : (entry.label + " " + entry.value + " " + entry.day)
+                .localizedCaseInsensitiveContains(query)
+          }.sorted { $0.at > $1.at }
+        ) { value in
           Button {
-            contact = record
+            observation = value
           } label: {
-            BloomValue(record.activity, value: prettyDay(record.day))
-          }.swipeActions {
+            ObservationRow(value: value)
+          }
+          .swipeActions {
             Button("Delete", role: .destructive) {
-              Task { await model.delete("delete_contact", id: record.id) }
+              Task { await model.delete("delete_observation", id: value.id) }
+            }
+          }
+        }
+      }
+      if showContact || !contacts.isEmpty {
+        BloomSection("Sex and contact") {
+          ForEach(contacts) { record in
+            Button {
+              contact = record
+            } label: {
+              BloomValue(record.activity, value: prettyDay(record.day))
+            }.swipeActions {
+              Button("Delete", role: .destructive) {
+                Task { await model.delete("delete_contact", id: record.id) }
+              }
             }
           }
         }
@@ -283,6 +325,7 @@ struct CalendarScreen: View {
       .sheet(item: $day) { DayEditor(value: $0, revision: model.archive.revision) }.sheet(
         item: $contact
       ) { ContactEditor(value: $0, revision: model.archive.revision) }
+      .sheet(item: $observation) { ObservationEditor(value: $0, revision: model.archive.revision) }
   }
 }
 struct CareScreen: View {
@@ -300,6 +343,13 @@ struct CareScreen: View {
               plan = p
             } label: {
               BloomValue(p.name, value: p.enabled ? p.pattern.capitalized : "Paused")
+            }
+            if let position = model.dashboard?.plan_positions.first(where: { $0.id == p.id }) {
+              PackView(position: position)
+            }
+            if let stock = model.dashboard?.stock.first(where: { $0.plan_id == p.id }) {
+              Text("\(stock.remaining) remaining").textRole(.secondary).foregroundStyle(
+                Tokens.muted)
             }
             if p.initial_stock != nil {
               Button("Record a refill") { refill = p }
@@ -370,9 +420,11 @@ struct InsightsScreen: View {
   var body: some View {
     List {
       if let d = model.dashboard {
-        BloomSection("Cycle history") {
+        BloomSection("Your recorded rhythm") {
+          Text(d.history_note).textRole(.secondary).foregroundStyle(Tokens.muted)
+          NavigationLink("Manage estimate exclusions") { ExclusionsScreen() }
           if d.cycles.count > 1 {
-            Chart(d.cycles.filter { $0.length != nil }) { cycle in
+            Chart(d.cycles.filter { $0.length != nil && $0.excluded_reason == nil }) { cycle in
               BarMark(
                 x: .value("Start", prettyDay(cycle.start)),
                 y: .value("Days", cycle.length ?? 0)
@@ -384,6 +436,9 @@ struct InsightsScreen: View {
               prettyDay(cycle.start),
               value: cycle.length.map { length in "\(length) days · \(cycle.bleeding_days) bleeding"
               } ?? "Current · \(cycle.bleeding_days) bleeding")
+            if let reason = cycle.excluded_reason {
+              Text("Excluded: \(reason)").textRole(.caption).foregroundStyle(Tokens.muted)
+            }
           }
           if d.cycles.isEmpty {
             Text("Log period starts to see your history.").foregroundStyle(Tokens.muted)
@@ -404,6 +459,7 @@ struct InsightsScreen: View {
           ForEach(d.symptoms) { s in
             VStack(alignment: .leading, spacing: Tokens.Space.xs) {
               Text(s.name).textRole(.rowTitle)
+              ProgressView(value: Double(s.count), total: Double(max(1, s.logged_days)))
               Text(
                 "\(s.count) of \(s.logged_days) logged days · average when present \(s.average, specifier: "%.1f")/3"
               ).textRole(.secondary)
@@ -414,13 +470,17 @@ struct InsightsScreen: View {
           Text("These are patterns in your entries, not diagnoses. Unlogged days are excluded.")
             .textRole(.secondary).foregroundStyle(Tokens.muted)
         }
-        if model.archive.days.contains(where: { $0.bbt != nil }) {
+        if !d.temperatures.isEmpty {
           BloomSection("Basal temperature · °C") {
-            Chart(model.archive.days.filter { $0.bbt != nil }.sorted { $0.day < $1.day }) { day in
+            Chart(d.temperatures) { day in
               PointMark(
-                x: .value("Date", BloomDate.date(day.day)), y: .value("Celsius", day.bbt ?? 0)
+                x: .value(
+                  "Date",
+                  day.at.map { timestamp in Date(timeIntervalSince1970: Double(timestamp)) }
+                    ?? BloomDate.date(day.day)), y: .value("Celsius", day.value)
               ).foregroundStyle(Tokens.dataCool)
-            }.chartYScale(domain: .automatic(includesZero: false)).bloomChartLabels().frame(height: 190)
+            }.chartYScale(domain: .automatic(includesZero: false)).bloomChartLabels().frame(
+              height: 190)
             Text("Recorded measurements only. This chart does not confirm ovulation.").textRole(
               .secondary)
           }
@@ -449,19 +509,43 @@ struct SystemSwitchStyle: ToggleStyle {
 struct BloomSection<Content: View>: View {
   let title: String
   @ViewBuilder var content: () -> Content
-  init(_ title: String, @ViewBuilder content: @escaping () -> Content) { self.title = title; self.content = content }
-  var body: some View { Section { content() } header: { Text(title).textRole(.caption, emphasized: true).foregroundStyle(Tokens.muted) } }
+  init(_ title: String, @ViewBuilder content: @escaping () -> Content) {
+    self.title = title
+    self.content = content
+  }
+  var body: some View {
+    Section {
+      content()
+    } header: {
+      Text(title).textRole(.caption, emphasized: true).foregroundStyle(Tokens.muted)
+    }
+  }
 }
 struct BloomValue: View {
   let title: String
   let value: String
-  init(_ title: String, value: String) { self.title = title; self.value = value }
-  var body: some View { LabeledContent(title) { Text(value).textRole(.body).foregroundStyle(Tokens.muted) } }
+  init(_ title: String, value: String) {
+    self.title = title
+    self.value = value
+  }
+  var body: some View {
+    LabeledContent(title) { Text(value).textRole(.body).foregroundStyle(Tokens.muted) }
+  }
 }
 
-private extension View {
-  func bloomChartLabels() -> some View {
-    chartXAxis { AxisMarks { AxisGridLine(); AxisValueLabel().foregroundStyle(Tokens.muted) } }
-      .chartYAxis { AxisMarks { AxisGridLine(); AxisValueLabel().foregroundStyle(Tokens.muted) } }
+extension View {
+  fileprivate func bloomChartLabels() -> some View {
+    chartXAxis {
+      AxisMarks {
+        AxisGridLine()
+        AxisValueLabel().foregroundStyle(Tokens.muted)
+      }
+    }
+    .chartYAxis {
+      AxisMarks {
+        AxisGridLine()
+        AxisValueLabel().foregroundStyle(Tokens.muted)
+      }
+    }
   }
 }

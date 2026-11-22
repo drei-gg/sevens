@@ -11,6 +11,7 @@ pub struct Cycle {
     pub start: String,
     pub length: Option<i32>,
     pub bleeding_days: i32,
+    pub excluded_reason: Option<String>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SymptomStat {
@@ -48,10 +49,17 @@ pub struct Dashboard {
     pub stock: Vec<Stock>,
     pub pregnancy_week: Option<i32>,
     pub pregnancy_day: Option<i32>,
+    pub observed_days: Vec<DayLog>,
+    pub temperatures: Vec<crate::observations::TemperaturePoint>,
+    pub plan_positions: Vec<crate::observations::PlanPosition>,
+    pub sample_size: usize,
+    pub estimate_days: Option<i32>,
+    pub typical_length: i32,
+    pub history_note: String,
 }
 pub fn cycles(a: &Archive) -> Result<Vec<Cycle>> {
-    let mut days: Vec<_> = a
-        .days
+    let observed = crate::observations::days(a);
+    let mut days: Vec<_> = observed
         .iter()
         .filter(|d| ["light", "medium", "heavy"].contains(&d.flow.as_str()))
         .collect();
@@ -67,18 +75,37 @@ pub fn cycles(a: &Archive) -> Result<Vec<Cycle>> {
                 start: d.day.clone(),
                 length: None,
                 bleeding_days: 1,
+                excluded_reason: None,
             });
         } else if let Some(last) = out.last_mut() {
             last.bleeding_days += 1;
         }
         prev = Some(&d.day);
     }
+    for i in 0..out.len() {
+        let end = out
+            .get(i + 1)
+            .map(|c| time::add(&c.start, -1))
+            .transpose()?
+            .unwrap_or_else(|| out[i].start.clone());
+        out[i].excluded_reason = crate::observations::exclusion(a, &out[i].start, &end);
+    }
     Ok(out)
 }
 pub fn dashboard(a: &Archive, now: i64, zone: &str) -> Result<Dashboard> {
+    let mut d = full_dashboard(a, now, zone)?;
+    d.reminders.truncate(56);
+    d.coverage_until = d.reminders.last().map(|r| r.at);
+    Ok(d)
+}
+pub fn full_dashboard(a: &Archive, now: i64, zone: &str) -> Result<Dashboard> {
     let today = time::today(now, zone)?;
     let cycles = cycles(a)?;
-    let lengths: Vec<i32> = cycles.iter().filter_map(|c| c.length).collect();
+    let lengths: Vec<i32> = cycles
+        .iter()
+        .filter(|c| c.excluded_reason.is_none())
+        .filter_map(|c| c.length)
+        .collect();
     let recent: Vec<_> = lengths.iter().rev().take(6).copied().collect();
     let hormonal = a.plans.iter().any(|p| {
         p.hormonal && p.enabled && p.start <= today && p.end.as_ref().is_none_or(|e| e >= &today)
@@ -88,6 +115,7 @@ pub fn dashboard(a: &Archive, now: i64, zone: &str) -> Result<Dashboard> {
         || a.profile.lactating
         || hormonal;
     let last = cycles.last();
+    let anchor_exclusion = last.and_then(|c| crate::observations::exclusion(a, &c.start, &today));
     let cycle_day = last
         .map(|c| time::distance(&c.start, &today).map(|n| n + 1))
         .transpose()?;
@@ -95,7 +123,7 @@ pub fn dashboard(a: &Archive, now: i64, zone: &str) -> Result<Dashboard> {
         "Log a period to begin. Predictions are estimates, not contraception.".to_string();
     let (mut next, mut earliest, mut latest, mut fertile_start, mut fertile_end) =
         (None, None, None, None, None);
-    if suppressed {
+    if suppressed || anchor_exclusion.is_some() {
         note="Cycle predictions are paused for your current mode or contraception. Keep logging what you observe.".into();
     } else if let Some(last) = last {
         let plausible = recent.iter().all(|n| (15..=90).contains(n));
@@ -133,7 +161,8 @@ pub fn dashboard(a: &Archive, now: i64, zone: &str) -> Result<Dashboard> {
         }
     }
     let mut stats: BTreeMap<String, (i32, i32, i32, i32)> = BTreeMap::new();
-    for d in &a.days {
+    let observed_days = crate::observations::days(a);
+    for d in &observed_days {
         if time::distance(&d.day, &today)? < 0 || time::distance(&d.day, &today)? > 180 {
             continue;
         }
@@ -198,7 +227,6 @@ pub fn dashboard(a: &Archive, now: i64, zone: &str) -> Result<Dashboard> {
     }
     reminders.sort_by_key(|r| r.at);
     let reminder_total = reminders.len() as i32;
-    reminders.truncate(56);
     let coverage_until = reminders.last().map(|r| r.at);
     let stock = a
         .plans
@@ -233,7 +261,57 @@ pub fn dashboard(a: &Archive, now: i64, zone: &str) -> Result<Dashboard> {
     } else {
         None
     };
+    let mut temperatures: Vec<_> = a
+        .days
+        .iter()
+        .filter_map(|d| {
+            d.bbt.map(|value| crate::observations::TemperaturePoint {
+                id: d.id.clone(),
+                day: d.day.clone(),
+                at: None,
+                value,
+            })
+        })
+        .collect();
+    temperatures.extend(
+        a.observations
+            .iter()
+            .filter(|o| o.kind == "temperature")
+            .filter_map(|o| {
+                o.number.map(|value| crate::observations::TemperaturePoint {
+                    id: o.id.clone(),
+                    day: o.day.clone(),
+                    at: Some(o.at),
+                    value,
+                })
+            }),
+    );
+    temperatures.sort_by_key(|p| (p.day.clone(), p.at));
+    let excluded = cycles
+        .iter()
+        .filter(|c| c.length.is_some() && c.excluded_reason.is_some())
+        .count();
+    let estimate_days = next
+        .as_deref()
+        .map(|n| time::distance(&today, n))
+        .transpose()?;
+    let typical_length = if recent.is_empty() {
+        a.profile.typical_cycle
+    } else {
+        (recent.iter().sum::<i32>() as f64 / recent.len() as f64).round() as i32
+    };
     Ok(Dashboard {
+        observed_days,
+        temperatures,
+        plan_positions: crate::observations::positions(a, now, zone)?,
+        sample_size: recent.len(),
+        estimate_days,
+        typical_length,
+        history_note: format!(
+            "{} completed cycles included; {} excluded. Daily flow and symptom summaries use the highest recorded level; timed entries remain separate.",
+            lengths.len(),
+            excluded
+        ),
         today,
         cycle_day,
         cycles,

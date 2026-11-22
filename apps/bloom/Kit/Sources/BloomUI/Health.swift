@@ -10,7 +10,9 @@ import SwiftUI
   var note =
     "Nothing is shared automatically. Health permission is separate from this app’s journal."
   var preview: [DayLog] = []
-  func read(existing: [DayLog]) async {
+  func read(existing: Archive) async {
+    guard !busy else { return }
+    preview = []
     guard HKHealthStore.isHealthDataAvailable() else {
       note = "Apple Health is not available on this device."
       return
@@ -23,7 +25,7 @@ import SwiftUI
       let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
       let samples: [HKCategorySample] = try await withCheckedThrowingContinuation { continuation in
         let query = HKSampleQuery(
-          sampleType: flowType, predicate: predicate, limit: 20000,
+          sampleType: flowType, predicate: predicate, limit: 20001,
           sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
         ) { _, samples, error in
           if let error {
@@ -34,33 +36,29 @@ import SwiftUI
         }
         store.execute(query)
       }
-      var days: [String: DayLog] = [:]
-      for sample in samples {
-        let day = BloomDate.day(sample.startDate)
-        guard !existing.contains(where: { $0.day == day }),
-          sample.sourceRevision.source.bundleIdentifier != Bundle.main.bundleIdentifier
-        else { continue }
+      guard samples.count <= 20000 else {
+        throw BloomFailure.message("Too many Health entries to review in one import. Nothing was imported.")
+      }
+      let incoming: [HealthFlowSample] = samples.compactMap { sample in
+        guard sample.sourceRevision.source.bundleIdentifier != Bundle.main.bundleIdentifier else {
+          return nil
+        }
         let flow: String
         switch sample.value {
         case HKCategoryValueMenstrualFlow.light.rawValue: flow = "light"
         case HKCategoryValueMenstrualFlow.medium.rawValue: flow = "medium"
         case HKCategoryValueMenstrualFlow.heavy.rawValue: flow = "heavy"
-        default: continue
+        default: return nil
         }
-        var log = days[day] ?? DayLog()
-        if days[day] == nil {
-          log.id = sample.uuid.uuidString.lowercased()
-          log.day = day
-        }
-        let levels = ["none", "light", "medium", "heavy"]
-        if (levels.firstIndex(of: flow) ?? 0) > (levels.firstIndex(of: log.flow) ?? 0) {
-          log.flow = flow
-        }
-        log.period_start =
-          log.period_start || (sample.metadata?[HKMetadataKeyMenstrualCycleStart] as? Bool == true)
-        days[day] = log
+        let zone = (sample.metadata?[HKMetadataKeyTimeZone] as? String)
+          .flatMap(TimeZone.init(identifier:)) ?? .current
+        return HealthFlowSample(
+          day: BloomDate.day(sample.startDate, zone: zone), flow: flow,
+          periodStart: sample.metadata?[HKMetadataKeyMenstrualCycleStart] as? Bool == true)
       }
-      preview = days.values.sorted { $0.day < $1.day }
+      let json = try bloomHealthReview(
+        archive: BloomCodec.string(existing), samples: BloomCodec.string(incoming))
+      preview = try BloomCodec.decode(Archive.self, from: Data(json.utf8)).days
       note =
         preview.isEmpty
         ? "No new readable flow records. Health does not reveal whether read permission was denied. Existing journal dates were skipped."
@@ -68,6 +66,7 @@ import SwiftUI
     } catch { note = error.localizedDescription }
   }
   func write(_ archive: Archive) async {
+    guard !busy else { return }
     guard HKHealthStore.isHealthDataAvailable() else {
       note = "Apple Health is not available on this device."
       return
@@ -80,7 +79,9 @@ import SwiftUI
         note = "Flow sharing is not authorized. You can change this in Health."
         return
       }
-      let samples: [HKCategorySample] = archive.days.compactMap { day in
+      let projection = try bloomHealthExport(archive: BloomCodec.string(archive))
+      let flow = try BloomCodec.decode([HealthFlowExport].self, from: Data(projection.utf8))
+      let samples: [HKCategorySample] = flow.compactMap { day in
         let value: HKCategoryValueMenstrualFlow
         switch day.flow {
         case "light": value = .light
@@ -88,16 +89,18 @@ import SwiftUI
         case "heavy": value = .heavy
         default: return nil
         }
-        let start = Calendar.current.startOfDay(for: BloomDate.date(day.day))
-        let end =
-          Calendar.current.date(byAdding: .day, value: 1, to: start)
-          ?? start.addingTimeInterval(86400)
+        let start = day.at.map { Date(timeIntervalSince1970: Double($0)) }
+          ?? Calendar.current.startOfDay(for: BloomDate.date(day.day))
+        let end = day.at == nil
+          ? (Calendar.current.date(byAdding: .day, value: 1, to: start)
+            ?? start.addingTimeInterval(86400)) : start
         return HKCategorySample(
           type: flowType, value: value.rawValue, start: start, end: end,
           metadata: [
-            HKMetadataKeySyncIdentifier: "bloom.flow.\(day.id)",
-            HKMetadataKeySyncVersion: NSNumber(value: archive.revision + 1),
+            HKMetadataKeySyncIdentifier: day.sync_id,
+            HKMetadataKeySyncVersion: NSNumber(value: day.version),
             HKMetadataKeyMenstrualCycleStart: day.period_start,
+            HKMetadataKeyTimeZone: day.zone ?? TimeZone.current.identifier,
           ])
       }
       if samples.isEmpty {
@@ -119,11 +122,11 @@ struct HealthScreen: View {
       BloomSection("Menstrual flow") {
         Text(health.note).textRole(.body)
         Button("Read Health flow for review") {
-          Task { await health.read(existing: model.archive.days) }
+          Task { await health.read(existing: model.archive) }
         }
         Button("Share journal flow to Health") { share = true }
         Text(
-          "This connection covers light, medium and heavy flow. Spotting, symptoms, tests, temperatures, medications and contact records are not transferred."
+          "This connection covers light, medium and heavy flow from daily entries and timed observations. Spotting, symptoms, tests, temperatures, medications and contact records are not transferred."
         ).textRole(.secondary).foregroundStyle(Tokens.muted)
       }
       if !health.preview.isEmpty {
@@ -135,7 +138,7 @@ struct HealthScreen: View {
             Task {
               var incoming = Archive()
               incoming.days = health.preview
-              if await model.importArchive(incoming) {
+              if await model.importHealth(incoming) {
                 health.preview = []
                 health.note = "Reviewed flow entries imported."
               }
@@ -145,7 +148,7 @@ struct HealthScreen: View {
         }
       }
       if health.busy { ProgressView() }
-    }.navigationTitle("Apple Health").sevenScreenBackground().disabled(health.busy)
+    }.navigationTitle("Apple Health").sevenScreenBackground().disabled(health.busy || model.busy)
       .confirmationDialog(
         "Share all logged light, medium and heavy flow to Apple Health?", isPresented: $share,
         titleVisibility: .visible

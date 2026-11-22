@@ -1,10 +1,12 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package gg.seven.bloom
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -13,11 +15,16 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.kit.LocalSevenGate
 import gg.seven.kit.SevenAbout
+import gg.seven.kit.checkbox
+import gg.seven.kit.switch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -36,19 +43,53 @@ fun BloomApp(model: BloomModel) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var editor by rememberSaveable { mutableStateOf<String?>(null) }
     var draft by rememberSaveable { mutableStateOf("") }
+    var originalDraft by rememberSaveable { mutableStateOf("") }
+    var discarding by rememberSaveable { mutableStateOf(false) }
     var revision by rememberSaveable { mutableLongStateOf(0) }
     var remove by rememberSaveable { mutableStateOf<String?>(null) }
     val archive = remember(archiveText) { archiveText?.let(::JSONObject) }
     val dashboard = remember(dashboardText) { dashboardText?.let(::JSONObject) }
-    BackHandler(enabled = editor != null) { editor = null }
+    fun closeEditor() {
+        if (!busy) {
+            if (draft != originalDraft) discarding = true else editor = null
+        }
+    }
+    BackHandler(enabled = editor != null) { closeEditor() }
+    if (discarding)
+        gg.seven.kit.DiscardChangesDialog(
+            { discarding = false },
+            {
+                discarding = false
+                editor = null
+            },
+        )
     val gate = LocalSevenGate.current
+    val openCare by model.openCare.collectAsStateWithLifecycle()
+    LaunchedEffect(openCare) {
+        if (openCare) {
+            tab = 2
+            model.openCare.value = false
+        }
+    }
     fun edit(kind: String, row: JSONObject?) {
         val open = {
             draft = (row ?: newRecord(kind)).toString()
+            originalDraft = draft
             revision = archive!!.getLong("revision")
             editor = kind
         }
-        if (row == null) gate.run("Add a record", open) else open()
+        val key =
+            when (kind) {
+                "day" -> "days"
+                "pregnancy" -> "pregnancies"
+                else -> "${kind}s"
+            }
+        val exists =
+            row != null &&
+                archive?.rows(key)?.any { it.getString("id") == row.getString("id") } == true
+        if (!exists && kind !in listOf("dose", "refill", "exclusion"))
+            gate.run("Add a record", open)
+        else open()
     }
     Scaffold(
         topBar = {
@@ -56,26 +97,43 @@ fun BloomApp(model: BloomModel) {
                 title = {
                     Text(
                         if (editor != null) "Edit ${editor}"
-                        else listOf("Today", "Journal", "Care", "Insights", "Settings")[tab]
+                        else listOf("Today", "Calendar", "Care", "Patterns", "Settings")[tab]
                     )
-                }
+                },
+                navigationIcon = {
+                    if (editor != null)
+                        IconButton(enabled = !busy, onClick = ::closeEditor) {
+                            Icon(Icons.Outlined.Close, "Close")
+                        }
+                },
+                actions = {
+                    if (editor != null)
+                        TextButton(
+                            enabled = !busy,
+                            onClick = {
+                                model.save(editor!!, JSONObject(draft), revision) { editor = null }
+                            },
+                        ) {
+                            Text("Save")
+                        }
+                },
             )
         },
         bottomBar = {
             if (editor == null)
-                NavigationBar {
+                ShortNavigationBar {
                     val icons =
                         listOf(
                             Icons.Outlined.Today,
-                            Icons.Outlined.EditNote,
+                            Icons.Outlined.CalendarMonth,
                             Icons.Outlined.Medication,
                             Icons.Outlined.BarChart,
                             Icons.Outlined.Settings,
                         )
-                    listOf("Today", "Journal", "Care", "Insights", "Settings").forEachIndexed {
+                    listOf("Today", "Calendar", "Care", "Patterns", "Settings").forEachIndexed {
                         i,
                         label ->
-                        NavigationBarItem(
+                        ShortNavigationBarItem(
                             selected = tab == i,
                             onClick = { tab = i },
                             icon = { Icon(icons[i], null) },
@@ -87,8 +145,19 @@ fun BloomApp(model: BloomModel) {
     ) { padding ->
         Column(
             Modifier.padding(padding)
+                .consumeWindowInsets(padding)
+                .widthIn(max = 840.dp)
+                .imePadding()
                 .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(
+                    rememberSaveable(
+                        tab,
+                        editor,
+                        saver = androidx.compose.foundation.ScrollState.Saver,
+                    ) {
+                        androidx.compose.foundation.ScrollState(0)
+                    }
+                )
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -100,137 +169,12 @@ fun BloomApp(model: BloomModel) {
                 )
             } else if (editor != null) {
                 RecordEditor(editor!!, draft, { draft = it })
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(
-                        enabled = !busy,
-                        onClick = {
-                            model.save(editor!!, JSONObject(draft), revision) { editor = null }
-                        },
-                    ) {
-                        Text("Save")
-                    }
-                    TextButton(onClick = { editor = null }) { Text("Cancel") }
-                }
             } else
                 when (tab) {
-                    0 -> {
-                        Text(
-                            dashboard.getString("today"),
-                            style = MaterialTheme.typography.headlineMedium,
-                        )
-                        Text(dashboard.getString("prediction_note"))
-                        if (!dashboard.isNull("next_period"))
-                            Text("Estimated next period: ${dashboard.getString("next_period")}")
-                        Text(
-                            "Estimates are not contraception or a diagnosis.",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        Button(
-                            onClick = {
-                                val today =
-                                    archive.rows("days").firstOrNull {
-                                        it.getString("day") == dashboard.getString("today")
-                                    }
-                                edit("day", today)
-                            }
-                        ) {
-                            Text("Log today")
-                        }
-                        OutlinedButton(onClick = { edit("contact", null) }) {
-                            Text("Log sex/contact")
-                        }
-                        DoseList(model, archive, dashboard)
-                    }
-                    1 -> {
-                        Button(onClick = { edit("day", null) }) { Text("Add day") }
-                        Text("Period & symptoms", style = MaterialTheme.typography.titleLarge)
-                        if (archive.rows("days").isEmpty())
-                            Text("Your journal starts with one day.")
-                        archive
-                            .rows("days")
-                            .sortedByDescending { it.getString("day") }
-                            .forEach { row ->
-                                RecordCard(
-                                    "${row.getString("day")} · ${row.getString("flow")}",
-                                    row.optString("notes"),
-                                    { edit("day", row) },
-                                    { remove = "day:${row.getString("id")}" },
-                                )
-                            }
-                        Text(
-                            "Private sex/contact records",
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                        Text("These stay separate from your period journal.")
-                        OutlinedButton(onClick = { edit("contact", null) }) { Text("Add contact") }
-                        archive
-                            .rows("contacts")
-                            .sortedByDescending { it.getString("day") }
-                            .forEach { row ->
-                                RecordCard(
-                                    "${row.getString("day")} · ${row.getString("activity")}",
-                                    row.getString("protection"),
-                                    { edit("contact", row) },
-                                    { remove = "contact:${row.getString("id")}" },
-                                )
-                            }
-                    }
-                    2 -> {
-                        Text("Plans & doses", style = MaterialTheme.typography.headlineMedium)
-                        Text(
-                            "Reminder delivery is not connected in this Android base. Keep your existing alarms running."
-                        )
-                        Button(onClick = { edit("plan", null) }) { Text("Add pill plan") }
-                        archive.rows("plans").forEach { row ->
-                            RecordCard(
-                                row.getString("name"),
-                                "${row.getString("pattern")} · ${if (row.getBoolean("enabled")) "active" else "paused"}",
-                                { edit("plan", row) },
-                                { remove = "plan:${row.getString("id")}" },
-                            )
-                        }
-                        DoseList(model, archive, dashboard)
-                        Text("Dose history", style = MaterialTheme.typography.titleLarge)
-                        archive
-                            .rows("doses")
-                            .sortedByDescending { it.getLong("recorded") }
-                            .forEach { row ->
-                                Row(
-                                    Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                ) {
-                                    Text(
-                                        "${row.getString("day")} · ${row.getString("status")}",
-                                        Modifier.weight(1f),
-                                    )
-                                    TextButton(
-                                        onClick = { remove = "dose:${row.getString("id")}" }
-                                    ) {
-                                        Text("Undo")
-                                    }
-                                }
-                            }
-                    }
-                    3 -> {
-                        Text(
-                            "Patterns, not diagnoses",
-                            style = MaterialTheme.typography.headlineMedium,
-                        )
-                        Text(dashboard.getString("prediction_note"))
-                        Text("Cycles recorded: ${dashboard.rows("cycles").size}")
-                        Text(
-                            "Doses taken: ${dashboard.getInt("taken")} · skipped: ${dashboard.getInt("skipped")}"
-                        )
-                        dashboard.rows("symptoms").forEach {
-                            Text(
-                                "${it.getString("name")}: ${it.getInt("count")} days · average ${it.getDouble("average")}"
-                            )
-                        }
-                        if (dashboard.rows("symptoms").isEmpty())
-                            Text(
-                                "Log symptoms to see your patterns here. Unlogged days are not treated as symptom-free."
-                            )
-                    }
+                    0 -> BloomToday(model, archive, dashboard, ::edit)
+                    1 -> BloomCalendar(archive, dashboard, ::edit) { remove = it }
+                    2 -> BloomCare(model, archive, dashboard, ::edit) { remove = it }
+                    3 -> BloomPatterns(model, archive, dashboard, ::edit) { remove = it }
                     4 -> BackupSettings(model, archive)
                 }
             Spacer(Modifier.height(16.dp))
@@ -273,7 +217,7 @@ fun BloomApp(model: BloomModel) {
             text = {
                 val incoming = JSONObject(preview!!)
                 Text(
-                    "${incoming.rows("days").size} day records, ${incoming.rows("contacts").size} contacts, ${incoming.rows("plans").size} plans. Merge keeps existing records and rejects conflicting IDs. Imported plans are paused. Your current preferences stay in place."
+                    "${incoming.rows("observations").size} timed observations, ${incoming.rows("exclusions").size} exclusions, ${incoming.rows("days").size} day records, ${incoming.rows("contacts").size} contacts, ${incoming.rows("plans").size} plans. Merge keeps existing records and rejects conflicting IDs. Imported plans are paused. Your current preferences stay in place."
                 )
             },
             confirmButton = {
@@ -286,7 +230,7 @@ fun BloomApp(model: BloomModel) {
 }
 
 @Composable
-private fun RecordCard(title: String, subtitle: String, edit: () -> Unit, delete: () -> Unit) {
+internal fun RecordCard(title: String, subtitle: String, edit: () -> Unit, delete: () -> Unit) {
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
@@ -300,36 +244,44 @@ private fun RecordCard(title: String, subtitle: String, edit: () -> Unit, delete
 }
 
 @Composable
-private fun DoseList(model: BloomModel, archive: JSONObject, dashboard: JSONObject) {
+internal fun DoseList(model: BloomModel, archive: JSONObject, dashboard: JSONObject) {
+    val busy by model.busy.collectAsStateWithLifecycle()
     Text("Today's doses", style = MaterialTheme.typography.titleLarge)
     if (dashboard.rows("today_doses").isEmpty()) Text("No doses scheduled today.")
     dashboard.rows("today_doses").forEach { dose ->
+        fun record(status: String) {
+            val entry =
+                JSONObject()
+                    .put("id", dose.getString("id"))
+                    .put("plan_id", dose.getString("plan_id"))
+                    .put("day", dose.getString("day"))
+                    .put("scheduled", dose.getLong("at"))
+                    .put("status", status)
+                    .put("recorded", Instant.now().epochSecond)
+                    .put(
+                        "snooze_until",
+                        if (status == "snoozed") Instant.now().epochSecond + 600
+                        else JSONObject.NULL,
+                    )
+                    .put("notes", "")
+            model.save("dose", entry, archive.getLong("revision")) {}
+        }
         OutlinedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(dose.getString("title"), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "${Instant.ofEpochSecond(dose.getLong("at")).atZone(ZoneId.systemDefault()).toLocalTime()} · ${dose.getString("phase")} · ${dose.getString("status")}"
+                    "${timeLabel(dose.getLong("at"))} · ${dose.getString("phase").replaceFirstChar(Char::uppercase)} · ${dose.getString("status").replaceFirstChar(Char::uppercase)}"
                 )
-                Row {
-                    listOf("taken", "skipped").forEach { status ->
-                        TextButton(
-                            onClick = {
-                                val record =
-                                    JSONObject()
-                                        .put("id", dose.getString("id"))
-                                        .put("plan_id", dose.getString("plan_id"))
-                                        .put("day", dose.getString("day"))
-                                        .put("scheduled", dose.getLong("at"))
-                                        .put("status", status)
-                                        .put("recorded", Instant.now().epochSecond)
-                                        .put("snooze_until", JSONObject.NULL)
-                                        .put("notes", "")
-                                model.save("dose", record, archive.getLong("revision")) {}
-                            }
-                        ) {
-                            Text(status.replaceFirstChar(Char::uppercase))
-                        }
-                    }
+                gg.seven.kit.ConnectedChoice(
+                    listOf("taken" to "Taken", "skipped" to "Skipped"),
+                    dose.getString("status"),
+                    enabled = !busy,
+                    onSelect = ::record,
+                )
+                TextButton(enabled = !busy, onClick = { record("snoozed") }) {
+                    Icon(Icons.Outlined.Snooze, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Snooze 10 min")
                 }
             }
         }
@@ -350,6 +302,39 @@ internal fun newRecord(kind: String): JSONObject {
                 .put("mucus", "none")
                 .put("ovulation_test", "none")
                 .put("pregnancy_test", "none")
+        "observation" ->
+            row.put("day", today)
+                .put("at", Instant.now().epochSecond)
+                .put("zone", ZoneId.systemDefault().id)
+                .put("kind", "symptom")
+                .put("label", "Cramps")
+                .put("value", "")
+                .put("level", 1)
+                .put("number", JSONObject.NULL)
+                .put("period_start", false)
+        "exclusion" ->
+            JSONObject()
+                .put("id", UUID.randomUUID().toString())
+                .put("start", today)
+                .put("end", JSONObject.NULL)
+                .put("reason", "")
+                .put("source", "manual")
+        "refill" ->
+            JSONObject()
+                .put("id", UUID.randomUUID().toString())
+                .put("day", today)
+                .put("plan_id", "")
+                .put("quantity", 28)
+        "appointment" ->
+            row.put("title", "")
+                .put("at", Instant.now().epochSecond + 3600)
+                .put("remind_minutes", 60)
+                .put("kind", "Appointment")
+        "pregnancy" ->
+            row.put("start", today)
+                .put("due", LocalDate.now().plusDays(280).toString())
+                .put("ended", JSONObject.NULL)
+                .put("outcome", "")
         "contact" ->
             row.put("day", today)
                 .put("at", Instant.now().epochSecond)
@@ -385,8 +370,37 @@ private fun RecordEditor(kind: String, text: String, change: (String) -> Unit) {
     fun put(key: String, value: Any) {
         change(row.put(key, value).toString())
     }
-    if (kind == "plan") {
+    if (kind in listOf("observation", "exclusion", "refill", "dose", "appointment", "pregnancy")) {
+        DetailEditor(kind, row, change)
+    } else if (kind == "plan") {
         Field("Plan name", row.getString("name")) { put("name", it) }
+        Choice(
+            "Method",
+            row.getString("method"),
+            listOf(
+                "pill",
+                "ring",
+                "patch",
+                "injection",
+                "implant",
+                "iud",
+                "medication",
+                "emergency",
+            ),
+        ) {
+            put("method", it)
+        }
+        Toggle("End date", !row.isNull("end")) {
+            put("end", if (it) LocalDate.now().toString() else JSONObject.NULL)
+        }
+        if (!row.isNull("end")) DateField("Ends", row.getString("end")) { put("end", it) }
+        Field(
+            "Starting supply (optional)",
+            if (row.isNull("initial_stock")) "" else row.getString("initial_stock"),
+            number = true,
+        ) {
+            put("initial_stock", if (it.isBlank()) JSONObject.NULL else it.toIntOrNull() ?: it)
+        }
         DateField("Start date", row.getString("start")) { put("start", it) }
         Choice(
             "Schedule",
@@ -395,41 +409,31 @@ private fun RecordEditor(kind: String, text: String, change: (String) -> Unit) {
         ) {
             put("pattern", it)
         }
-        val context = LocalContext.current
         val minute = row.getInt("minute")
-        OutlinedButton(
-            onClick = {
-                android.app
-                    .TimePickerDialog(
-                        context,
-                        { _, hour, minutes -> put("minute", hour * 60 + minutes) },
-                        minute / 60,
-                        minute % 60,
-                        android.text.format.DateFormat.is24HourFormat(context),
-                    )
-                    .show()
-            }
-        ) {
-            Text("Scheduled time: ${java.time.LocalTime.of(minute / 60, minute % 60)}")
+        gg.seven.kit.TimeField("Scheduled time", minute / 60, minute % 60) { hour, minutes ->
+            put("minute", hour * 60 + minutes)
         }
         if (row.getString("pattern") == "pack") {
-            Field("Active days", row.getString("active_days")) {
+            Field("Active days", row.getString("active_days"), number = true) {
                 put("active_days", it.toIntOrNull() ?: it)
             }
-            Field("Break days", row.getString("break_days")) {
+            Toggle("Remind during break/placebo", row.getBoolean("remind_break")) {
+                put("remind_break", it)
+            }
+            Field("Break days", row.getString("break_days"), number = true) {
                 put("break_days", it.toIntOrNull() ?: it)
             }
         }
         if (row.getString("pattern") == "interval")
-            Field("Every N days", row.getString("every_days")) {
+            Field("Every N days", row.getString("every_days"), number = true) {
                 put("every_days", it.toIntOrNull() ?: it)
             }
         if (row.getString("pattern") == "weekly") {
             val selected = row.getJSONArray("weekdays")
             (1..7).forEach { day ->
                 val days = (0 until selected.length()).map { selected.getInt(it) }.toMutableSet()
-                Toggle(
-                    java.time.DayOfWeek.of(day)
+                Check(
+                    java.time.DayOfWeek.of(if (day == 1) 7 else day - 1)
                         .toString()
                         .lowercase()
                         .replaceFirstChar(Char::uppercase),
@@ -447,7 +451,7 @@ private fun RecordEditor(kind: String, text: String, change: (String) -> Unit) {
         Toggle("Hormonal contraception", row.getBoolean("hormonal")) { put("hormonal", it) }
         Toggle("Plan active", row.getBoolean("enabled")) { put("enabled", it) }
     } else {
-        DateField("Date", row.getString("day")) { put("day", it) }
+        if (kind == "day") DateField("Date", row.getString("day")) { put("day", it) }
         if (kind == "day") {
             Choice(
                 "Flow",
@@ -457,99 +461,114 @@ private fun RecordEditor(kind: String, text: String, change: (String) -> Unit) {
                 put("flow", it)
             }
             Toggle("Period starts today", row.getBoolean("period_start")) {
+                if (it && row.getString("flow") in listOf("none", "spotting"))
+                    row.put("flow", "light")
                 put("period_start", it)
             }
-            listOf("Cramps", "Headache", "Fatigue", "Mood").forEach { name ->
-                val symptoms = row.getJSONObject("symptoms")
+            WellbeingFields(row, change)
+        } else {
+            TimestampField("Contact time", row.getLong("at")) { at ->
+                row.put("at", at)
+                    .put(
+                        "day",
+                        Instant.ofEpochSecond(at)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                            .toString(),
+                    )
+                change(row.toString())
+            }
+            listOf("libido", "pain").forEach { key ->
                 Choice(
-                    name,
-                    if (symptoms.has(name)) symptoms.getInt(name).toString() else "Unlogged",
+                    key.replaceFirstChar(Char::uppercase),
+                    if (row.isNull(key)) "Unlogged" else row.getString(key),
                     listOf("Unlogged", "0", "1", "2", "3"),
-                ) { value ->
-                    if (value == "Unlogged") symptoms.remove(name)
-                    else symptoms.put(name, value.toInt())
-                    put("symptoms", symptoms)
+                ) {
+                    put(key, if (it == "Unlogged") JSONObject.NULL else it.toInt())
                 }
             }
-            Text("Symptom scale: 0 none, 1 mild, 2 moderate, 3 severe.")
-        } else {
+            Choice(
+                "Orgasm",
+                if (row.isNull("orgasm")) "Unlogged"
+                else if (row.getBoolean("orgasm")) "Yes" else "No",
+                listOf("Unlogged", "Yes", "No"),
+            ) {
+                put("orgasm", if (it == "Unlogged") JSONObject.NULL else it == "Yes")
+            }
             Field("Activity", row.getString("activity")) { put("activity", it) }
             Field("Protection", row.getString("protection")) { put("protection", it) }
         }
     }
-    OutlinedTextField(
-        value = row.getString("notes"),
-        onValueChange = { put("notes", it) },
-        label = { Text("Notes") },
-        modifier = Modifier.fillMaxWidth(),
-        minLines = 3,
-    )
+    if (row.has("notes"))
+        OutlinedTextField(
+            value = row.getString("notes"),
+            onValueChange = { put("notes", it) },
+            label = { Text("Notes") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+        )
 }
 
 @Composable
-private fun DateField(label: String, value: String, change: (String) -> Unit) {
-    val context = LocalContext.current
-    val day = LocalDate.parse(value)
-    OutlinedButton(
-        onClick = {
-            android.app
-                .DatePickerDialog(
-                    context,
-                    { _, year, month, date ->
-                        change(LocalDate.of(year, month + 1, date).toString())
-                    },
-                    day.year,
-                    day.monthValue - 1,
-                    day.dayOfMonth,
-                )
-                .show()
-        }
-    ) {
-        Text("$label: $value")
-    }
+internal fun DateField(label: String, value: String, change: (String) -> Unit) {
+    gg.seven.kit.DateField(label, LocalDate.parse(value)) { change(it.toString()) }
 }
 
 @Composable
-private fun Field(label: String, value: String, change: (String) -> Unit) {
+internal fun Field(
+    label: String,
+    value: String,
+    number: Boolean = false,
+    change: (String) -> Unit,
+) {
     OutlinedTextField(
         value,
         change,
         label = { Text(label) },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
+        keyboardOptions =
+            androidx.compose.foundation.text.KeyboardOptions(
+                keyboardType =
+                    if (number) androidx.compose.ui.text.input.KeyboardType.Decimal
+                    else androidx.compose.ui.text.input.KeyboardType.Text
+            ),
     )
 }
 
 @Composable
-private fun Toggle(label: String, value: Boolean, change: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, Modifier.weight(1f).padding(vertical = 12.dp))
-        Switch(value, change)
-    }
+internal fun Toggle(label: String, value: Boolean, change: (Boolean) -> Unit) {
+    gg.seven.kit.Section { switch(label, value, onCheckedChange = change) }
 }
 
 @Composable
-private fun Choice(label: String, value: String, options: List<String>, change: (String) -> Unit) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        OutlinedButton(onClick = { open = true }) { Text("$label: $value") }
-        DropdownMenu(open, { open = false }) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option) },
-                    onClick = {
-                        change(option)
-                        open = false
-                    },
-                )
-            }
+internal fun Check(label: String, value: Boolean, change: (Boolean) -> Unit) {
+    gg.seven.kit.Section { checkbox(label, value, onCheckedChange = change) }
+}
+
+@Composable
+internal fun Choice(label: String, value: String, options: List<String>, change: (String) -> Unit) {
+    val choices =
+        options.map {
+            it to it.ifBlank { "Not recorded" }.replace('_', ' ').replaceFirstChar(Char::uppercase)
         }
-    }
+    if (options.size <= 3 || options.all { it.toIntOrNull() != null || it == "Unlogged" }) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(label, style = MaterialTheme.typography.labelLarge)
+            gg.seven.kit.ConnectedChoice(choices, value, onSelect = change)
+        }
+    } else gg.seven.kit.DropdownField(label, value, choices, onSelect = change)
 }
 
 @Composable
 private fun BackupSettings(model: BloomModel, archive: JSONObject) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val shortKeyboard =
+        androidx.compose.ui.platform.LocalWindowInfo.current.containerSize.height <
+            with(density) { 480.dp.roundToPx() } && WindowInsets.ime.getBottom(density) > 0
+    val passphraseHint = "Use at least 12 characters for an encrypted backup."
     var password by remember { mutableStateOf("") }
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var encrypted by rememberSaveable { mutableStateOf(true) }
     var contacts by rememberSaveable { mutableStateOf(false) }
     var notes by rememberSaveable { mutableStateOf(false) }
@@ -570,11 +589,14 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject) {
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) model.importFile(uri, if (encrypted) password else null)
         }
+    LayoutPreferences()
+    JournalLockSettings(model)
+    HealthFlowSettings(model)
     val profile = archive.getJSONObject("profile")
     Choice(
         "Mode",
         profile.getString("mode"),
-        listOf("cycle", "conceive", "pregnancy", "postpartum"),
+        listOf("cycle", "conceive", "pregnancy", "postpartum", "perimenopause"),
     ) { mode ->
         model.save(
             "profile",
@@ -589,6 +611,27 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject) {
             archive.getLong("revision"),
         ) {}
     }
+    listOf(
+            "discreet" to "Discreet reminders and widgets",
+            "period_reminder" to "Estimated period reminder",
+            "widgets_enabled" to "Enable home-screen widget",
+        )
+        .plus(if (BuildConfig.WEAR_ENABLED) listOf("watch_enabled" to "Enable watch companion") else emptyList())
+        .forEach { (key, label) ->
+            Toggle(label, profile.getBoolean(key)) {
+                model.save(
+                    "profile",
+                    JSONObject(profile.toString()).put(key, it),
+                    archive.getLong("revision"),
+                ) {}
+            }
+        }
+    gg.seven.kit.HomeWidgetSetup(
+        android.content.ComponentName(LocalContext.current, BloomWidget::class.java),
+        "Your day",
+        "Shows a reminder time only. Turn off discreet mode to also show the cycle day. Journal text and contact records never appear.",
+        enabled = profile.getBoolean("widgets_enabled"),
+    )
     Text("Your data stays on this device", style = MaterialTheme.typography.titleLarge)
     Text(
         "Encrypted with an Android Keystore key. System cloud and device-transfer backups are excluded. Export a portable backup before changing devices."
@@ -596,15 +639,36 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject) {
     Text(
         "Encrypted backups and JSON include all records, including sex/contact and notes. CSV includes them only when selected."
     )
-    OutlinedTextField(
+    // Keep the complete field reachable in a short window above the IME. The guidance remains
+    // in the scrollable content instead of making the field taller than the available viewport.
+    if (shortKeyboard) Text(passphraseHint, style = MaterialTheme.typography.bodySmall)
+    TextField(
         password,
         { password = it },
         label = { Text("Backup passphrase") },
-        visualTransformation = PasswordVisualTransformation(),
+        singleLine = true,
+        visualTransformation =
+            if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                autoCorrectEnabled = false,
+                imeAction = ImeAction.Done,
+            ),
+        supportingText = if (shortKeyboard) null else ({ Text(passphraseHint) }),
+        trailingIcon = {
+            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                Icon(
+                    if (passwordVisible) Icons.Outlined.VisibilityOff
+                    else Icons.Outlined.Visibility,
+                    if (passwordVisible) "Hide backup passphrase" else "Show backup passphrase",
+                )
+            }
+        },
         modifier = Modifier.fillMaxWidth(),
     )
-    Toggle("Include contacts in CSV", contacts) { contacts = it }
-    Toggle("Include notes in CSV", notes) { notes = it }
+    Check("Include contacts in CSV", contacts) { contacts = it }
+    Check("Include notes in CSV", notes) { notes = it }
     listOf("age" to "Encrypted backup", "json" to "Full JSON export", "csv" to "CSV export")
         .forEach { (kind, label) ->
             OutlinedButton(
@@ -622,7 +686,7 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject) {
     Toggle("Import is encrypted", encrypted) { encrypted = it }
     OutlinedButton(onClick = { open.launch(arrayOf("*/*")) }) { Text("Choose backup to review") }
     Text(
-        "Health Connect, notification delivery and wearable support are not connected in this Android base."
+        "Health Connect transfer is manual and permission-based. Care reminders use Android notifications and your alarm permissions."
     )
     Text("Archive revision ${archive.getLong("revision")}")
     OutlinedButton(onClick = { erase = true }) { Text("Erase local journal") }

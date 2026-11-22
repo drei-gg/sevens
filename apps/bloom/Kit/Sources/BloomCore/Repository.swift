@@ -99,6 +99,12 @@ public actor BloomRepository {
       now: Int64(now.timeIntervalSince1970), zone: zone, paid: paid)
     return try write(BloomCodec.decode(Archive.self, from: Data(json.utf8)))
   }
+  public func applyWatch(_ request: WatchRequest, paid: Bool, now: Date = Date(), zone: String = TimeZone.current.identifier) throws -> Archive {
+    let current = try read()
+    let json = try bloomWatchApply(archive: BloomCodec.string(current), request: BloomCodec.string(request), now: Int64(now.timeIntervalSince1970), zone: zone, paid: paid)
+    if request.command == nil { return current }
+    return try write(BloomCodec.decode(Archive.self, from: Data(json.utf8)))
+  }
   public func dashboard(now: Date = Date(), zone: String = TimeZone.current.identifier) throws
     -> Dashboard
   {
@@ -136,6 +142,11 @@ public actor BloomRepository {
   public func merge(_ incoming: Archive) throws -> Archive {
     let json = try bloomMerge(
       archive: BloomCodec.string(read()), incoming: BloomCodec.string(incoming))
+    return try write(BloomCodec.decode(Archive.self, from: Data(json.utf8)))
+  }
+  public func importHealth(_ reviewed: Archive) throws -> Archive {
+    let json = try bloomHealthImport(
+      archive: BloomCodec.string(read()), reviewed: BloomCodec.string(reviewed))
     return try write(BloomCodec.decode(Archive.self, from: Data(json.utf8)))
   }
   public func erase() throws -> Archive {

@@ -15,7 +15,7 @@ import UserNotifications
       if phase == .active {
         Task { await delegate.model.resume() }
       } else {
-        delegate.model.protect()
+        delegate.model.protect(cancelAuthentication: phase == .background)
       }
     }
   }

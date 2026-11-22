@@ -69,6 +69,19 @@ pub fn apply(a: &mut Archive, c: Command, now: i64, zone: &str, paid: bool) -> R
             permitted(a.days.iter().any(|x| x.id == d.id), paid)?;
             upsert!(a.days, d);
         }
+        "observation" => {
+            let d: Observation = record(&c)?;
+            historical(&d.day, &time::today(now, &d.zone)?)?;
+            ensure(d.at <= now + 300, "Observation time is in the future.")?;
+            permitted(a.observations.iter().any(|x| x.id == d.id), paid)?;
+            upsert!(a.observations, d);
+        }
+        "exclusion" => {
+            let d: Exclusion = record(&c)?;
+            historical(&d.start, &today)?;
+            // Eligibility corrections remain available after trial expiry.
+            upsert!(a.exclusions, d);
+        }
         "contact" => {
             let d: Contact = record(&c)?;
             historical(&d.day, &today)?;
@@ -77,12 +90,15 @@ pub fn apply(a: &mut Archive, c: Command, now: i64, zone: &str, paid: bool) -> R
             upsert!(a.contacts, d);
         }
         "plan" => {
-            let d: Plan = record(&c)?;
+            let mut d: Plan = record(&c)?;
             let old = a.plans.iter().find(|x| x.id == d.id);
             permitted(
                 old.is_some() && (!d.enabled || old.is_some_and(|p| p.enabled)),
                 paid,
             )?;
+            if old.is_some_and(|p| p.enabled) && !d.enabled && d.end.is_none() && d.start <= today {
+                d.end = Some(today.clone());
+            }
             upsert!(a.plans, d);
         }
         "dose" => {
@@ -147,15 +163,57 @@ pub fn apply(a: &mut Archive, c: Command, now: i64, zone: &str, paid: bool) -> R
                 historical(end, &today)?;
             }
             permitted(a.pregnancies.iter().any(|x| x.id == d.id), paid)?;
-            a.profile.mode = if d.ended.is_none() {
-                "pregnancy".into()
-            } else {
-                "cycle".into()
-            };
+            if d.ended.is_none() {
+                a.profile.mode = "pregnancy".into();
+            } else if a.profile.mode == "pregnancy"
+                && a.pregnancies
+                    .iter()
+                    .any(|p| p.id == d.id && p.ended.is_none())
+            {
+                a.profile.mode = "cycle".into();
+            }
             upsert!(a.pregnancies, d);
         }
         "profile" => {
-            a.profile = record(&c)?;
+            let next: Profile = record(&c)?;
+            for (source, active) in [
+                ("postpartum", next.mode == "postpartum"),
+                ("lactation", next.lactating),
+            ] {
+                let was = if source == "postpartum" {
+                    a.profile.mode == "postpartum"
+                } else {
+                    a.profile.lactating
+                };
+                if active && !was {
+                    a.exclusions.push(Exclusion {
+                        id: uuid::Uuid::new_v4().to_string(),
+                        start: today.clone(),
+                        end: None,
+                        reason: if source == "postpartum" {
+                            "Postpartum".into()
+                        } else {
+                            "Lactation".into()
+                        },
+                        source: source.into(),
+                    });
+                } else if !active && was {
+                    for e in a
+                        .exclusions
+                        .iter_mut()
+                        .filter(|e| e.source == source && e.end.is_none())
+                    {
+                        e.end = Some(today.clone());
+                    }
+                }
+            }
+            a.profile = next;
+        }
+        "delete_observation" => {
+            a.observations.retain(|x| Some(&x.id) != c.id.as_ref());
+        }
+        "delete_exclusion" => {
+            a.exclusions.retain(|x| Some(&x.id) != c.id.as_ref());
         }
         "delete_day" => {
             a.days.retain(|x| Some(&x.id) != c.id.as_ref());
@@ -186,6 +244,9 @@ pub fn apply(a: &mut Archive, c: Command, now: i64, zone: &str, paid: bool) -> R
                 .find(|x| Some(&x.id) == c.id.as_ref())
                 .ok_or(Error::invalid("Plan not found."))?;
             p.enabled = false;
+            if p.end.is_none() && p.start <= today {
+                p.end = Some(today.clone());
+            }
         }
         _ => return Err(Error::invalid("Unsupported action.")),
     }
@@ -218,6 +279,8 @@ pub fn merge(mut a: Archive, b: Archive) -> Result<Archive> {
         };
     }
     merge_rows!(days);
+    merge_rows!(observations);
+    merge_rows!(exclusions);
     merge_rows!(contacts);
     for mut p in b.plans {
         if let Some(old) = a.plans.iter().find(|v| v.id == p.id) {

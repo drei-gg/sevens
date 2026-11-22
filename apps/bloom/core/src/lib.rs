@@ -1,8 +1,11 @@
 uniffi::setup_scaffolding!();
 mod commands;
 mod export;
+mod health;
+mod watch;
 pub mod insights;
 pub mod model;
+pub mod observations;
 pub mod schedule;
 pub mod time;
 use age::secrecy::SecretString;
@@ -52,9 +55,61 @@ pub fn bloom_apply(
 pub fn bloom_dashboard(archive: String, now: i64, zone: String) -> Result<String> {
     json(&insights::dashboard(&decode(&archive)?, now, &zone)?)
 }
+/// Android's rolling receiver must not inherit iOS's finite pending-notification queue cap.
+#[uniffi::export]
+pub fn bloom_due_reminders(archive: String, after: i64, now: i64, zone: String) -> Result<String> {
+    ensure(
+        after < now && now - after <= 86401,
+        "Invalid reminder delivery window.",
+    )?;
+    let d = insights::full_dashboard(&decode(&archive)?, after, &zone)?;
+    json(
+        &d.reminders
+            .into_iter()
+            .filter(|r| r.at <= now)
+            .collect::<Vec<_>>(),
+    )
+}
 #[uniffi::export]
 pub fn bloom_merge(archive: String, incoming: String) -> Result<String> {
     json(&commands::merge(decode(&archive)?, decode(&incoming)?)?)
+}
+#[uniffi::export]
+pub fn bloom_health_export(archive: String) -> Result<String> {
+    let archive = decode(&archive)?;
+    ensure(
+        archive.revision < i64::MAX as u64,
+        "This journal revision cannot be shared with Health.",
+    )?;
+    json(&health::export(&archive))
+}
+#[uniffi::export]
+pub fn bloom_health_review(archive: String, samples: String) -> Result<String> {
+    ensure(samples.len() <= MAX_BYTES, "Health samples are too large.")?;
+    let samples = serde_json::from_str(&samples)
+        .map_err(|_| Error::invalid("Invalid Health flow samples."))?;
+    json(&health::review(&decode(&archive)?, samples)?)
+}
+#[uniffi::export]
+pub fn bloom_health_import(archive: String, reviewed: String) -> Result<String> {
+    let current = decode(&archive)?;
+    let reviewed = decode(&reviewed)?;
+    // Only the reviewed flow values cross this boundary, even if a caller supplies an archive
+    // with additional fields. Recheck occupied dates under the repository's transaction lock.
+    let samples = reviewed
+        .days
+        .into_iter()
+        .map(|d| health::FlowSample {
+            day: d.day,
+            flow: d.flow,
+            period_start: d.period_start,
+        })
+        .collect();
+    let incoming = health::review(&current, samples)?;
+    if incoming.days.is_empty() {
+        return json(&current);
+    }
+    json(&commands::merge(current, incoming)?)
 }
 #[uniffi::export]
 pub fn bloom_csv(archive: String, include_contacts: bool, include_notes: bool) -> Result<String> {
@@ -138,4 +193,15 @@ pub fn bloom_open(data: Vec<u8>, password: String) -> Result<String> {
         String::from_utf8(plaintext.to_vec())
             .map_err(|_| Error::invalid("Backup contents are unreadable."))?,
     )
+}
+
+#[uniffi::export]
+pub fn bloom_watch_snapshot(archive: String, now: i64, zone: String, paid: bool) -> Result<String> {
+    json(&watch::snapshot(&decode(&archive)?, now, &zone, paid)?)
+}
+#[uniffi::export]
+pub fn bloom_watch_apply(archive: String, request: String, now: i64, zone: String, paid: bool) -> Result<String> {
+    let mut archive = decode(&archive)?;
+    watch::apply(&mut archive, &request, now, &zone, paid)?;
+    json(&archive)
 }

@@ -56,11 +56,12 @@ struct DayEditor: View {
   @State private var symptom = ""
   @State private var temperature = ""
   @State private var tags = ""
-  private let symptoms = [
-    "Cramps", "Headache", "Back pain", "Breast tenderness", "Bloating", "Fatigue", "Nausea", "Acne",
-    "Mood changes", "Anxiety", "Low mood", "Hot flashes", "Night sweats", "Sleep difficulty",
-    "Pelvic pain", "Dryness",
-  ]
+  @AppStorage("bloom.favorites") private var favorites = "Cramps,Headache,Fatigue,Calm"
+  @State private var expanded = false
+  private var symptoms: [String] {
+    Array(Set((expanded ? bloomCategories : splitTags(favorites)) + Array(value.symptoms.keys)))
+      .sorted()
+  }
   var body: some View {
     EditorFrame(title: "Daily journal", save: save) {
       BloomSection("Period") {
@@ -76,7 +77,7 @@ struct DayEditor: View {
         { _, on in if on && ["none", "spotting"].contains(value.flow) { value.flow = "medium" } }
       }
       Section {
-        ForEach(Array(Set(symptoms + value.symptoms.keys)).sorted(), id: \.self) { name in
+        ForEach(symptoms, id: \.self) { name in
           Picker(
             name,
             selection: Binding(
@@ -91,13 +92,14 @@ struct DayEditor: View {
           ) {
             Text("Not logged").tag(-1)
             Text("None").tag(0)
-            Text("Mild").tag(1)
-            Text("Moderate").tag(2)
-            Text("Severe").tag(3)
+            Text("Low").tag(1)
+            Text("Medium").tag(2)
+            Text("High").tag(3)
           }
         }
+        Button(expanded ? "Only pinned observations" : "More observations") { expanded.toggle() }
         HStack {
-          TextField("Custom symptom", text: $symptom)
+          TextField("Custom observation", text: $symptom)
           Button("Add") {
             let s = symptom.trimmingCharacters(in: .whitespacesAndNewlines)
             if !s.isEmpty {

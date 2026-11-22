@@ -57,7 +57,7 @@ fn apply(a: &Archive, op: &str, record: serde_json::Value, paid: bool) -> Result
 #[test]
 fn rejects_future_and_corrupt_schema() {
     let mut a = Archive::default();
-    a.schema = 2;
+    a.schema = 999;
     assert!(bloom_validate(serde_json::to_string(&a).unwrap()).is_err());
     assert!(bloom_validate("{broken".into()).is_err());
     assert!(
@@ -374,4 +374,208 @@ fn fixed_zone_dose_can_cross_the_travellers_date() {
         )
         .is_ok()
     );
+}
+
+fn observation(kind: &str, label: &str, at: i64) -> Observation {
+    Observation {
+        id: id(),
+        day: time::today(at, "UTC").unwrap(),
+        at,
+        zone: "UTC".into(),
+        kind: kind.into(),
+        label: label.into(),
+        value: "".into(),
+        level: Some(1),
+        number: None,
+        period_start: false,
+        notes: "private event note".into(),
+    }
+}
+#[test]
+fn v1_migration_preserves_untimed_records_and_is_idempotent() {
+    let mut a = Archive::default();
+    a.days.push(day("2026-11-01", "heavy"));
+    let mut v = json!(a);
+    v["schema"] = json!(1);
+    v.as_object_mut().unwrap().remove("observations");
+    v.as_object_mut().unwrap().remove("exclusions");
+    let migrated = bloom_validate(v.to_string()).unwrap();
+    let b = model::decode(&migrated).unwrap();
+    assert_eq!(b.schema, 2);
+    assert_eq!(b.days, a.days);
+    assert!(b.observations.is_empty());
+    assert_eq!(migrated, bloom_validate(migrated.clone()).unwrap());
+}
+#[test]
+fn timed_events_keep_all_values_but_count_a_symptom_day_once() {
+    let a = Archive::default();
+    let o = observation("symptom", "Focused", NOW - 3600);
+    let a = apply(&a, "observation", json!(o), true).unwrap();
+    let mut o = observation("symptom", "Focused", NOW - 1800);
+    o.level = Some(3);
+    let a = apply(&a, "observation", json!(o), true).unwrap();
+    let d = insights::dashboard(&a, NOW, "UTC").unwrap();
+    assert_eq!(a.observations.len(), 2);
+    assert_eq!(d.symptoms[0].count, 1);
+    assert_eq!(d.symptoms[0].logged_days, 1);
+    assert_eq!(d.symptoms[0].average, 3.0);
+    let report = bloom_report(
+        json!(a).to_string(),
+        "2026-11-01".into(),
+        "2026-11-30".into(),
+        false,
+        false,
+    )
+    .unwrap();
+    assert_eq!(report.matches("symptom Focused").count(), 2);
+    assert!(!report.contains("private event note"));
+}
+#[test]
+fn timed_observations_validate_local_date_and_remain_correctable_after_expiry() {
+    let mut o = observation("symptom", "Pain", NOW - 100);
+    let a = apply(&Archive::default(), "observation", json!(o), true).unwrap();
+    o.level = Some(0);
+    assert!(apply(&a, "observation", json!(o), false).is_ok());
+    o.id = id();
+    assert!(apply(&a, "observation", json!(o), false).is_err());
+    o.day = "2026-01-01".into();
+    assert!(apply(&a, "observation", json!(o), true).is_err());
+}
+#[test]
+fn pregnancy_gap_is_visible_but_never_used_in_estimates_after_mode_exit() {
+    let mut a = Archive::default();
+    for d in [
+        "2025-12-01",
+        "2026-01-01",
+        "2026-09-01",
+        "2026-09-29",
+        "2026-10-27",
+    ] {
+        a.days.push(day(d, "medium"));
+    }
+    a.pregnancies.push(Pregnancy {
+        id: id(),
+        start: "2026-01-10".into(),
+        due: "2026-10-01".into(),
+        ended: Some("2026-08-20".into()),
+        outcome: "".into(),
+        notes: "".into(),
+    });
+    let d = insights::dashboard(&a, NOW, "UTC").unwrap();
+    assert!(d.cycles[1].length.unwrap() > 200);
+    assert_eq!(
+        d.cycles[1].excluded_reason.as_deref(),
+        Some("Pregnancy interval")
+    );
+    assert_eq!(d.lengths, vec![31, 28, 28]);
+    assert!(d.next_period.is_some());
+}
+#[test]
+fn manual_exclusion_and_mode_intervals_preserve_observations() {
+    let mut a = Archive::default();
+    a.days.push(day("2026-11-01", "heavy"));
+    let e = Exclusion {
+        id: id(),
+        start: "2026-10-01".into(),
+        end: None,
+        reason: "Missing records".into(),
+        source: "manual".into(),
+    };
+    a = apply(&a, "exclusion", json!(e), false).unwrap();
+    assert!(
+        insights::dashboard(&a, NOW, "UTC")
+            .unwrap()
+            .next_period
+            .is_none()
+    );
+    assert_eq!(a.days.len(), 1);
+    let mut p = a.profile.clone();
+    p.mode = "postpartum".into();
+    a = apply(&a, "profile", json!(p), false).unwrap();
+    p.mode = "cycle".into();
+    a = apply(&a, "profile", json!(p), false).unwrap();
+    assert!(
+        a.exclusions
+            .iter()
+            .find(|e| e.source == "postpartum")
+            .unwrap()
+            .end
+            .is_some()
+    );
+    assert!(
+        a.exclusions
+            .iter()
+            .find(|e| e.source == "manual")
+            .unwrap()
+            .end
+            .is_none()
+    );
+}
+#[test]
+fn timed_flow_contributes_without_duplicating_daily_summary() {
+    let mut a = Archive::default();
+    a.days.push(day("2026-11-16", "light"));
+    let mut o = observation("flow", "", NOW - 100);
+    o.value = "heavy".into();
+    o.level = None;
+    a = apply(&a, "observation", json!(o), true).unwrap();
+    let d = insights::dashboard(&a, NOW, "UTC").unwrap();
+    assert_eq!(d.cycles.len(), 1);
+    assert_eq!(d.cycles[0].bleeding_days, 1);
+    assert_eq!(d.observed_days[0].flow, "heavy");
+    assert_eq!(a.days[0].flow, "light");
+}
+#[test]
+fn event_import_conflicts_and_backup_round_trip() {
+    let mut a = Archive::default();
+    a.observations
+        .push(observation("symptom", "Calm", NOW - 10));
+    let merged = bloom_merge(bloom_empty(), json!(a).to_string()).unwrap();
+    let mut changed = a.clone();
+    changed.observations[0].level = Some(3);
+    assert!(bloom_merge(merged.clone(), json!(changed).to_string()).is_err());
+    let backup = bloom_seal(merged.clone(), "a long test password".into()).unwrap();
+    assert_eq!(
+        merged,
+        bloom_open(backup, "a long test password".into()).unwrap()
+    );
+}
+#[test]
+fn pausing_a_hormonal_plan_retains_a_bounded_history_interval() {
+    let mut a = Archive::default();
+    let p = plan();
+    a.plans.push(p.clone());
+    let mut paused = p;
+    paused.enabled = false;
+    a = apply(&a, "plan", json!(paused), false).unwrap();
+    assert_eq!(a.plans[0].end, Some(time::today(NOW, "UTC").unwrap()));
+    assert!(bloom_core::observations::exclusion(&a, "2026-11-01", "2026-11-16").is_some());
+    assert!(bloom_core::observations::exclusion(&a, "2026-12-01", "2026-12-30").is_none());
+}
+
+#[test]
+fn rolling_delivery_is_not_capped_by_apples_pending_queue_limit() {
+    let mut a = Archive::default();
+    for i in 0..70 {
+        a.appointments.push(Appointment {
+            id: id(),
+            title: format!("Visit {i}"),
+            at: NOW,
+            remind_minutes: 0,
+            notes: "".into(),
+            kind: "Appointment".into(),
+        });
+    }
+    assert_eq!(
+        insights::dashboard(&a, NOW - 1, "UTC")
+            .unwrap()
+            .reminders
+            .len(),
+        56
+    );
+    let due: serde_json::Value = serde_json::from_str(
+        &bloom_due_reminders(json!(a).to_string(), NOW - 1, NOW, "UTC".into()).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(due.as_array().unwrap().len(), 70);
 }

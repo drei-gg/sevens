@@ -36,6 +36,30 @@ pub fn csv(a: &Archive, contacts: bool, notes: bool) -> String {
             &d.notes,
         );
     }
+    for o in &a.observations {
+        let mut detail = o.clone();
+        detail.notes.clear();
+        row(
+            "observation",
+            &o.id,
+            &o.at.to_string(),
+            serde_json::to_string(&detail).unwrap_or_default(),
+            &o.notes,
+        );
+    }
+    for e in &a.exclusions {
+        row(
+            "exclusion",
+            &e.id,
+            &e.start,
+            format!(
+                "until {}; {}",
+                e.end.as_deref().unwrap_or("ongoing"),
+                e.reason
+            ),
+            "",
+        );
+    }
     if contacts {
         for c in &a.contacts {
             let mut detail = c.clone();
@@ -107,6 +131,46 @@ pub fn report(a: &Archive, from: &str, to: &str, contacts: bool, notes: bool) ->
                 .map(|n| format!("{n} days"))
                 .unwrap_or("not yet known".into())
         ));
+    }
+    for c in &cs {
+        if let Some(reason) = &c.excluded_reason {
+            if c.start.as_str() >= from && c.start.as_str() <= to {
+                text.push_str(&format!(
+                    "{} excluded from estimates: {}\n",
+                    c.start, reason
+                ));
+            }
+        }
+    }
+    text.push_str("\nTIMED OBSERVATIONS\n");
+    let mut events: Vec<_> = a
+        .observations
+        .iter()
+        .filter(|o| o.day.as_str() >= from && o.day.as_str() <= to)
+        .collect();
+    events.sort_by_key(|o| o.at);
+    for o in events {
+        let at = jiff::Timestamp::from_second(o.at)
+            .map_err(|_| crate::Error::invalid("Invalid observation time."))?
+            .to_zoned(
+                jiff::tz::TimeZone::get(&o.zone)
+                    .map_err(|_| crate::Error::invalid("Invalid time zone."))?,
+            );
+        text.push_str(&format!(
+            "{} {}: {} {} {}{}{}\n",
+            at.datetime(),
+            o.zone,
+            o.kind,
+            o.label,
+            o.value,
+            o.level.map(|v| format!(" level {v}/3")).unwrap_or_default(),
+            o.number
+                .map(|v| format!(" measured {v}"))
+                .unwrap_or_default()
+        ));
+        if notes && !o.notes.is_empty() {
+            text.push_str(&format!("  {}\n", o.notes));
+        }
     }
     text.push_str("\nDAILY OBSERVATIONS\n");
     let mut days: Vec<_> = a

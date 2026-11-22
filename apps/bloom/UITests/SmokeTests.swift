@@ -1,6 +1,23 @@
 import XCTest
 
 final class SmokeTests: XCTestCase {
+  @MainActor func testHealthSharingRequiresConfirmationAndCanBeCancelled() throws {
+    let app = XCUIApplication()
+    app.launchArguments = ["-bloom.ui", "-bloom.reset", "-bloom.seed"]
+    app.launch()
+    XCTAssertTrue(app.buttons["logToday"].waitForExistence(timeout: 20))
+    app.tabBars.buttons["Settings"].tap()
+    app.buttons["Apple Health"].tap()
+    XCTAssertTrue(app.buttons["Read Health flow for review"].waitForExistence(timeout: 5))
+    app.buttons["Share journal flow to Health"].tap()
+    XCTAssertTrue(app.buttons["Share flow"].waitForExistence(timeout: 5))
+    capture("Health sharing consent", app: app)
+    // iOS 26 presents a dismissible popover here, without a separate Cancel row.
+    app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.75)).tap()
+    XCTAssertFalse(app.buttons["Share flow"].exists)
+    XCTAssertTrue(app.buttons["Read Health flow for review"].exists)
+    XCTAssertFalse(app.buttons["Import reviewed days"].exists)
+  }
   @MainActor private func capture(_ name: String, app: XCUIApplication) {
     let shot = XCTAttachment(screenshot: app.screenshot())
     shot.name = name
@@ -91,4 +108,37 @@ final class SmokeTests: XCTestCase {
       app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Week ")).firstMatch
         .waitForExistence(timeout: 5))
   }
+  @MainActor func testTimedObservationAndExclusion() throws {
+    let app = XCUIApplication()
+    app.launchArguments = ["-bloom.ui", "-bloom.reset", "-bloom.seed", "-bloom.light"]
+    app.launch()
+    XCTAssertTrue(app.buttons["logToday"].waitForExistence(timeout: 20))
+    app.buttons["Add timed observation"].tap()
+    let name = app.textFields["Observation name"]
+    XCTAssertTrue(name.waitForExistence(timeout: 5))
+    name.tap()
+    name.press(forDuration: 1)
+    if app.menuItems["Select All"].waitForExistence(timeout: 2) {
+      app.menuItems["Select All"].tap()
+    }
+    name.typeText(" Focused")
+    app.buttons["saveRecord"].tap()
+    XCTAssertTrue(app.buttons["logToday"].waitForExistence(timeout: 10))
+    app.tabBars.buttons["Calendar"].tap()
+    app.swipeUp()
+    XCTAssertTrue(app.buttons["Add timed observation"].waitForExistence(timeout: 5))
+    XCTAssertTrue(
+      app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Focused")).firstMatch
+        .waitForExistence(timeout: 5))
+    capture("Timed observation calendar", app: app)
+    app.tabBars.buttons["Settings"].tap()
+    app.buttons["Estimate exclusions"].tap()
+    app.buttons["Exclude an interval"].tap()
+    app.textFields["Reason"].tap()
+    app.textFields["Reason"].typeText("Missing records")
+    app.buttons["saveRecord"].tap()
+    XCTAssertTrue(app.staticTexts["Missing records"].waitForExistence(timeout: 10))
+    capture("Estimate exclusions", app: app)
+  }
+
 }
