@@ -616,7 +616,7 @@ fn water_trend_days_include_missing_logs_and_respect_selected_period() {
 // MARK: CompanionTests.swift
 
 fn request(sent_at: SystemTime, action: CompanionAction, revision: Option<Uuid>, active: Option<Uuid>) -> CompanionRequest {
-    CompanionRequest { version: 1, id: Uuid::new_v4(), sent_at, action, revision, active_id: active }
+    CompanionRequest { version: 1, id: Uuid::new_v4(), sent_at, action, revision, active_id: active, preset_id: None }
 }
 
 #[test]
@@ -659,7 +659,7 @@ fn watch_rejects_expired_malformed_and_unsupported_requests() {
     r.sent_at = plus(now, 31.0);
     assert_eq!(watch_apply(&archive, r.clone(), true, "UTC".into(), now), Err(CompanionFailure::Expired));
     r.sent_at = now;
-    r.version = 2;
+    r.version = 3;
     assert_eq!(watch_apply(&archive, r.clone(), true, "UTC".into(), now), Err(CompanionFailure::Unsupported));
     r.version = 1;
     let archive = watch_apply(&archive, r.clone(), true, "UTC".into(), now).unwrap();
@@ -689,4 +689,73 @@ fn receipt_replay_survives_fractional_date_backup_precision() {
     let restored = archive_decode_slice(&archive_encode(&archive).unwrap(), now).unwrap();
     let replayed = watch_apply(&restored, r, true, "UTC".into(), plus(now, 1.0)).unwrap();
     assert_eq!(replayed.metrics.len(), 1);
+}
+
+#[test]
+fn watch_selected_preset_obeys_revision_receipts_and_access() {
+    let now = at(1_800_000_000.0);
+    let mut archive = new_archive();
+    archive.presets = default_presets();
+    for goal in [Some(1080), None] {
+        archive.presets[0].goal_minutes = goal;
+        archive.presets[0].eating_minutes = 360;
+        let mut selected = request(now, CompanionAction::Start, Some(archive.companion_revision), None);
+        selected.version = 2;
+        selected.preset_id = Some(archive.presets[0].id);
+        assert_eq!(watch_apply(&archive, selected.clone(), false, "UTC".into(), now), Err(CompanionFailure::Locked));
+        let first = watch_apply(&archive, selected.clone(), true, "UTC".into(), now).unwrap();
+        let fast = first.active().unwrap();
+        assert_eq!(fast.goal_minutes, goal);
+        assert_eq!(fast.eating_minutes, 360);
+        let restored = archive_decode_slice(&archive_encode(&first).unwrap(), now).unwrap();
+        assert_eq!(watch_apply(&restored, selected.clone(), false, "UTC".into(), now).unwrap(), restored);
+        let mut changed = selected.clone(); changed.preset_id = Some(Uuid::new_v4());
+        assert_eq!(watch_apply(&first, changed.clone(), true, "UTC".into(), now), Err(CompanionFailure::Malformed));
+        assert_eq!(watch_apply(&archive, changed, true, "UTC".into(), now), Err(CompanionFailure::Stale));
+        selected.revision = Some(Uuid::new_v4());
+        assert_eq!(watch_apply(&archive, selected, true, "UTC".into(), now), Err(CompanionFailure::Stale));
+    }
+}
+
+#[test]
+fn watch_preset_protocol_cannot_silently_fall_back() {
+    let now = at(1_800_000_000.0);
+    let mut archive = new_archive();
+    archive.presets = default_presets();
+    let mut r = request(now, CompanionAction::Start, Some(archive.companion_revision), None);
+    r.preset_id = Some(archive.presets[0].id);
+    assert_eq!(watch_apply(&archive, r.clone(), true, "UTC".into(), now), Err(CompanionFailure::Malformed));
+    r.version = 2; r.preset_id = None;
+    assert_eq!(watch_apply(&archive, r.clone(), true, "UTC".into(), now), Err(CompanionFailure::Malformed));
+    r.preset_id = Some(archive.presets[0].id); r.action = CompanionAction::Water;
+    assert_eq!(watch_apply(&archive, r, true, "UTC".into(), now), Err(CompanionFailure::Malformed));
+    let projected = watch_presets(&archive);
+    assert_eq!(projected.len(), archive.presets.len());
+    for (p, saved) in projected.iter().zip(&archive.presets) {
+        assert_eq!(p.id, saved.id); assert_eq!(p.goal_minutes, saved.goal_minutes); assert_eq!(p.eating_minutes, saved.eating_minutes);
+    }
+}
+
+#[test]
+fn watch_offers_phone_defaults_and_custom_presets_without_id_ambiguity() {
+    let now = at(1_800_000_000.0);
+    let mut archive = new_archive();
+    assert_eq!(watch_presets(&archive).len(), 6);
+    let mut custom = default_presets()[0].clone();
+    custom.id = Uuid::new_v4(); custom.name = "PRIVATE NAME".into(); custom.goal_minutes = Some(845);
+    archive.presets.push(custom.clone());
+    let projected = watch_presets(&archive);
+    assert_eq!(projected.len(), 7);
+    for preset in projected {
+        let mut r = request(now, CompanionAction::Start, Some(archive.companion_revision), None);
+        r.version = 2; r.preset_id = Some(preset.id);
+        let saved = watch_apply(&archive, r, true, "UTC".into(), now).unwrap();
+        assert_eq!(saved.active().unwrap().goal_minutes, preset.goal_minutes);
+        assert_eq!(saved.active().unwrap().eating_minutes, preset.eating_minutes);
+    }
+    let mut overridden = default_presets()[0].clone(); overridden.goal_minutes = Some(900);
+    archive.presets.push(overridden.clone());
+    let projected = watch_presets(&archive);
+    assert_eq!(projected.len(), 7);
+    assert_eq!(projected.iter().find(|p| p.id == overridden.id).unwrap().goal_minutes, Some(900));
 }

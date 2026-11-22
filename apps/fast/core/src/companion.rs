@@ -31,6 +31,9 @@ pub struct CompanionRequest {
     pub revision: Option<Uuid>,
     #[serde(rename = "activeID", with = "upper_opt", default, skip_serializing_if = "Option::is_none")]
     pub active_id: Option<Uuid>,
+    #[serde(rename = "presetID", with = "upper_opt", default, skip_serializing_if = "Option::is_none")]
+    #[uniffi(default = None)]
+    pub preset_id: Option<Uuid>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
@@ -65,8 +68,14 @@ pub enum CompanionFailure {
 #[uniffi::export]
 pub fn watch_apply(archive: &FastArchive, request: CompanionRequest, can_create_records: bool, time_zone_id: String, now: SystemTime) -> Result<FastArchive, CompanionFailure> {
     use CompanionFailure::*;
-    if request.version != 1 {
+    if ![1, 2].contains(&request.version) {
         return Err(Unsupported);
+    }
+    // Version 2 exists only for choosing a saved preset. Older phones reject it instead of
+    // silently starting their legacy 16-hour default when they ignore an unknown field.
+    if (request.version == 2 && (request.action != CompanionAction::Start || request.preset_id.is_none()))
+        || (request.version == 1 && request.preset_id.is_some()) {
+        return Err(Malformed);
     }
     let age = time::seconds_between(now, request.sent_at);
     if !age.is_finite() || !(-30.0..=120.0).contains(&age) {
@@ -95,7 +104,12 @@ pub fn watch_apply(archive: &FastArchive, request: CompanionRequest, can_create_
             if archive.active().is_some() {
                 return Err(Stale);
             }
-            let fast = FastRecord { id: request.id, ..new_fast_record(now, time_zone_id) };
+            let mut fast = FastRecord { id: request.id, ..new_fast_record(now, time_zone_id) };
+            if let Some(preset_id) = request.preset_id {
+                let preset = companion_presets(archive).into_iter().find(|preset| preset.id == preset_id).ok_or(Stale)?;
+                fast.goal_minutes = preset.goal_minutes;
+                fast.eating_minutes = preset.eating_minutes;
+            }
             next.save(fast, now).map_err(|_| SaveFailed)?;
         }
         CompanionAction::End => {
@@ -119,4 +133,29 @@ pub fn watch_apply(archive: &FastArchive, request: CompanionRequest, can_create_
     }
     next.companion_receipts.push(CompanionReceipt { request, saved_at: now });
     Ok(next)
+}
+
+
+/// Only identifiers and timer durations cross to a watch. User-written preset names stay on phone.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct CompanionPreset {
+    pub id: Uuid,
+    pub goal_minutes: Option<i32>,
+    pub eating_minutes: i32,
+}
+#[uniffi::export]
+pub fn watch_presets(archive: &FastArchive) -> Vec<CompanionPreset> {
+    companion_presets(archive).into_iter().map(|preset| CompanionPreset { id: preset.id, goal_minutes: preset.goal_minutes, eating_minutes: preset.eating_minutes }).collect()
+}
+
+// The phone offers built-ins plus saved presets. A saved ID takes precedence so the duration
+// displayed by the watch and the duration committed by Start always come from the same source.
+fn companion_presets(archive: &FastArchive) -> Vec<FastPreset> {
+    let mut presets = default_presets();
+    for preset in &archive.presets {
+        if let Some(existing) = presets.iter_mut().find(|item| item.id == preset.id) {
+            *existing = preset.clone();
+        } else { presets.push(preset.clone()); }
+    }
+    presets
 }

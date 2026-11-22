@@ -7,28 +7,17 @@
 package gg.seven.fast
 
 import android.Manifest
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.os.Build
-import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.fast.core.*
@@ -52,7 +41,9 @@ internal fun NativeDateTime(
 internal fun SwitchLine(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     // Aligned with the fields around it: a form line, not an inset list row.
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(checked, role = Role.Switch, onValueChange = onChange),
+        Modifier.fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .toggleable(checked, role = Role.Switch, onValueChange = onChange),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
@@ -172,16 +163,11 @@ internal fun EditorDialog(
                 } else null
             val eat =
                 if (type in listOf("start", "past", "end", "fast", "plan", "preset"))
-                    ((eating.decimal() ?: error("Enter eating window hours")) * 60)
-                        .roundToInt()
+                    ((eating.decimal() ?: error("Enter eating window hours")) * 60).roundToInt()
                 else 480
             val newMetric =
                 if (type in listOf("metric", "water"))
-                    Units.canonical(
-                        value.decimal() ?: error("Enter an amount"),
-                        kind,
-                        a.settings,
-                    )
+                    Units.canonical(value.decimal() ?: error("Enter an amount"), kind, a.settings)
                 else 0.0
             fun rating(s: String) = if (s.isBlank()) null else integer(s, "rating")
             val newMood = rating(mood)
@@ -242,7 +228,13 @@ internal fun EditorDialog(
                         }
                         "plan" -> {
                             val entry =
-                                PlannedFast(plan?.id ?: newId(), start.instant(), newGoal, eat, intention)
+                                PlannedFast(
+                                    plan?.id ?: newId(),
+                                    start.instant(),
+                                    newGoal,
+                                    eat,
+                                    intention,
+                                )
                             current.copy(
                                 plans = current.plans.filterNot { it.id == entry.id } + entry
                             )
@@ -269,7 +261,23 @@ internal fun EditorDialog(
         }
     }
     val draft =
-        listOf(start, end, openEnded, goal, eating, intention, reflection, text, tags, linkedFast, mood, energy, hunger, kindText, value)
+        listOf(
+                start,
+                end,
+                openEnded,
+                goal,
+                eating,
+                intention,
+                reflection,
+                text,
+                tags,
+                linkedFast,
+                mood,
+                energy,
+                hunger,
+                kindText,
+                value,
+            )
             .joinToString("\u0000")
     val pristine = rememberSaveable { draft }
     val fastLike = type in listOf("start", "past", "end", "fast", "plan", "preset")
@@ -287,7 +295,9 @@ internal fun EditorDialog(
             val presets = FastPreset.defaults + a.presets
             ChoiceChips(
                 presets.map { it to it.name },
-                presets.firstOrNull { it.goalMinutes == goalMinutes && it.eatingMinutes == eatingMinutes },
+                presets.firstOrNull {
+                    it.goalMinutes == goalMinutes && it.eatingMinutes == eatingMinutes
+                },
             ) { p ->
                 openEnded = p.goalMinutes == null
                 goal = plain((p.goalMinutes ?: 960) / 60.0)
@@ -322,7 +332,9 @@ internal fun EditorDialog(
             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                 if (!openEnded)
                     NumberField("Goal", goal, Modifier.weight(1f), suffix = "hr") { goal = it }
-                NumberField("Eating window", eating, Modifier.weight(1f), suffix = "hr") { eating = it }
+                NumberField("Eating window", eating, Modifier.weight(1f), suffix = "hr") {
+                    eating = it
+                }
             }
             Text(
                 "Recording limits are not recommendations.",
@@ -331,11 +343,21 @@ internal fun EditorDialog(
             )
         }
         if (fastLike && type != "preset")
-            TextInput("Intention", intention, minLines = 2, supporting = "What would you like to make room for?") {
+            TextInput(
+                "Intention",
+                intention,
+                minLines = 2,
+                supporting = "What would you like to make room for?",
+            ) {
                 intention = it
             }
         if (hasEnd)
-            TextInput("Reflection", reflection, minLines = 2, supporting = "What did you notice? What would you change?") {
+            TextInput(
+                "Reflection",
+                reflection,
+                minLines = 2,
+                supporting = "What did you notice? What would you change?",
+            ) {
                 reflection = it
             }
         if (type == "rest") TextInput("Note (optional)", text) { text = it }
@@ -344,7 +366,9 @@ internal fun EditorDialog(
                 "Linked fast",
                 linkedFast.orEmpty(),
                 listOf("" to "An ordinary day") +
-                    a.fasts.sortedByDescending { it.start }.map { it.id.toString() to stamp(it.start) },
+                    a.fasts
+                        .sortedByDescending { it.start }
+                        .map { it.id.toString() to stamp(it.start) },
             ) {
                 linkedFast = it.ifEmpty { null }
             }
@@ -370,9 +394,13 @@ internal fun EditorDialog(
             TextInput("Tags", tags, supporting = "Separate with commas") { tags = it }
         if (type in listOf("metric", "water")) {
             if (metric == null && type != "water") {
-                val kinds = MetricKind.entries.filter { a.settings.showWeight || it != MetricKind.WEIGHT }
+                val kinds =
+                    MetricKind.entries.filter { a.settings.showWeight || it != MetricKind.WEIGHT }
                 if (kinds.size > 1)
-                    ConnectedChoice(kinds.map { it to it.key.replaceFirstChar { c -> c.uppercase() } }, kind) {
+                    ConnectedChoice(
+                        kinds.map { it to it.key.replaceFirstChar { c -> c.uppercase() } },
+                        kind,
+                    ) {
                         kindText = it.key
                         value = ""
                     }
@@ -382,13 +410,15 @@ internal fun EditorDialog(
                 value,
                 suffix = Units.label(kind, a.settings),
                 supporting =
-                    if (kind == MetricKind.WATER) "Log your own observations. There is no target you have to meet."
+                    if (kind == MetricKind.WATER)
+                        "Log your own observations. There is no target you have to meet."
                     else null,
             ) {
                 value = it
             }
             if (kind == MetricKind.WATER && metric == null) {
-                val amounts = if (a.settings.useFluidOunces) listOf(8, 12, 16) else listOf(150, 250, 500)
+                val amounts =
+                    if (a.settings.useFluidOunces) listOf(8, 12, 16) else listOf(150, 250, 500)
                 ChoiceChips(
                     amounts.map { it to "$it ${Units.label(kind, a.settings)}" },
                     amounts.firstOrNull { value.decimal() == it.toDouble() },
@@ -410,7 +440,10 @@ internal fun EditorDialog(
             OutlinedButton(
                 onClick = { delete = true },
                 enabled = !busy,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(if (f?.end == null && f != null) "Discard fast" else "Delete")
@@ -475,7 +508,8 @@ internal fun EditorDialog(
 }
 
 @Composable
-internal fun ToggleRow(label: String, enabled: Boolean, onChange: (Boolean) -> Unit) = SwitchLine(label, enabled, onChange)
+internal fun ToggleRow(label: String, enabled: Boolean, onChange: (Boolean) -> Unit) =
+    SwitchLine(label, enabled, onChange)
 
 @Composable
 private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Unit) {
@@ -501,7 +535,11 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
     fun save() {
         try {
             fun amount(raw: String) =
-                Units.canonical(raw.decimal() ?: error("Enter an amount"), MetricKind.WATER, a.settings)
+                Units.canonical(
+                    raw.decimal() ?: error("Enter an amount"),
+                    MetricKind.WATER,
+                    a.settings,
+                )
             val settings =
                 WaterSettings(
                     if (!useGoal) null
@@ -528,7 +566,20 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
             error = e.explanation
         }
     }
-    FullScreenForm("Water settings", dismiss, ::save, busy = busy) {
+    val draft =
+        listOf(useGoal, goal, glass, reminders, paused, start, end, interval).joinToString("|")
+    val original = rememberSaveable { draft }
+    FullScreenForm(
+        "Water settings",
+        dismiss,
+        ::save,
+        busy = busy,
+        confirmDiscard = draft != original,
+        saveEnabled =
+            (!useGoal || (goal.decimal() ?: 0.0) > 0) &&
+                (glass.decimal() ?: 0.0) > 0 &&
+                (!reminders || start.toInt() < end.toInt()),
+    ) {
         FormHeading("Your daily goal")
         SwitchLine("Use a personal goal", useGoal) { useGoal = it }
         if (useGoal) NumberField("Daily amount", goal, suffix = unit) { goal = it }
@@ -538,19 +589,43 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         FormHeading("Quick-add glass")
-        NumberField("Glass", glass, suffix = unit, supporting = "Change units in Settings.") { glass = it }
+        NumberField("Glass", glass, suffix = unit, supporting = "Change units in Settings.") {
+            glass = it
+        }
         fun hour(n: Int) =
             if (n == 24) "Midnight"
-            else SevenFormat.time(java.time.LocalDate.now().atTime(n, 0).atZone(ZoneId.systemDefault()), use24Hour)
+            else
+                SevenFormat.time(
+                    java.time.LocalDate.now().atTime(n, 0).atZone(ZoneId.systemDefault()),
+                    use24Hour,
+                )
         FormHeading("Water reminders")
         SwitchLine("Remind me to drink water", reminders) { reminders = it }
         if (reminders) {
             SwitchLine("Paused until you resume", paused) { paused = it }
             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                DropdownField("From", start, (0..23).map { it.toString() to hour(it) }, Modifier.weight(1f)) { start = it }
-                DropdownField("Until", end, (1..24).map { it.toString() to hour(it) }, Modifier.weight(1f)) { end = it }
+                DropdownField(
+                    "From",
+                    start,
+                    (0..23).map { it.toString() to hour(it) },
+                    Modifier.weight(1f),
+                ) {
+                    start = it
+                }
+                DropdownField(
+                    "Until",
+                    end,
+                    (1..24).map { it.toString() to hour(it) },
+                    Modifier.weight(1f),
+                ) {
+                    end = it
+                }
             }
-            DropdownField("Every", interval, (1..4).map { it.toString() to if (it == 1) "1 hour" else "$it hours" }) {
+            DropdownField(
+                "Every",
+                interval,
+                (1..4).map { it.toString() to if (it == 1) "1 hour" else "$it hours" },
+            ) {
                 interval = it
             }
         }
@@ -567,34 +642,16 @@ private fun WaterSettingsDialog(m: FastModel, a: FastArchive, dismiss: () -> Uni
     }
 }
 
-/** A 1–5 rating as a connected button group; tapping the selected value clears it. */
+/** A nullable rating: selecting a value records it; Clear restores the unrecorded state. */
 @Composable
-private fun RatingField(title: String, low: String, high: String, value: String, change: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-        Row {
-            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-            Text(
-                "1 $low · 5 $high",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
-            (1..5).forEach { n ->
-                ToggleButton(
-                    checked = value == n.toString(),
-                    onCheckedChange = { change(if (it) n.toString() else "") },
-                    shapes =
-                        when (n) {
-                            1 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                            5 -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                            else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-                        },
-                    modifier = Modifier.weight(1f).semantics { contentDescription = "$title $n" },
-                ) {
-                    Text("$n")
-                }
-            }
-        }
+private fun RatingField(
+    title: String,
+    low: String,
+    high: String,
+    value: String,
+    change: (String) -> Unit,
+) {
+    OptionalChoice(title, (1..5).map { it to "$it" }, value.toIntOrNull(), "1 $low · 5 $high") {
+        change(it?.toString().orEmpty())
     }
 }

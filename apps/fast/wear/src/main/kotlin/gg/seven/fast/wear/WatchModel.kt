@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class FastWearApp : Application() {
     val model by lazy { WatchModel(this, DataLayerLink(this)) }
@@ -43,7 +44,10 @@ class WatchModel(private val context: Context, private val link: PhoneLink) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private val _snapshot = MutableStateFlow(stored(SNAPSHOT)?.let(::snapshotOf))
-    private val _pending = MutableStateFlow(stored(PENDING)?.let { runCatching { WireCodec.decodeRequest(it) }.getOrNull() })
+    private val _pending =
+        MutableStateFlow(
+            stored(PENDING)?.let { runCatching { WireCodec.decodeRequest(it) }.getOrNull() }
+        )
     private val _busy = MutableStateFlow(false)
     private val _status = MutableStateFlow<Int?>(null)
     private val _reachable = MutableStateFlow(false)
@@ -57,9 +61,14 @@ class WatchModel(private val context: Context, private val link: PhoneLink) {
     private fun stored(key: String) = prefs.getString(key, null)?.encodeToByteArray()
 
     private fun snapshotOf(bytes: ByteArray): WireSnapshot? =
-        runCatching { WireCodec.decodeReply(bytes) }.getOrNull()?.takeIf { it.version == WireCodec.VERSION }?.snapshot
+        runCatching { WireCodec.decodeReply(bytes) }
+            .getOrNull()
+            ?.takeIf { it.version == WireCodec.VERSION }
+            ?.snapshot
 
-    /** A snapshot from the Data Layer or inside a reply. Older snapshots never replace newer ones. */
+    /**
+     * A snapshot from the Data Layer or inside a reply. Older snapshots never replace newer ones.
+     */
     @Synchronized
     fun receive(bytes: ByteArray) {
         val incoming = snapshotOf(bytes) ?: return
@@ -96,9 +105,18 @@ class WatchModel(private val context: Context, private val link: PhoneLink) {
 
     suspend fun perform(request: WireRequest) {
         if (_busy.value || _pending.value != null) return
-        _pending.value = request
-        prefs.edit { putString(PENDING, WireCodec.encode(request).decodeToString()) }
-        retry()
+        _busy.value = true
+        try {
+            val encoded = WireCodec.encode(request).decodeToString()
+            check(savePending(encoded))
+            _pending.value = request
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            _status.value = R.string.status_storage
+        } finally {
+            _busy.value = false
+        }
+        if (_pending.value != null) retry()
     }
 
     suspend fun retry() {
@@ -108,7 +126,8 @@ class WatchModel(private val context: Context, private val link: PhoneLink) {
         try {
             val data = link.request(WireCodec.encode(request))
             val reply = WireCodec.decodeReply(data)
-            if (reply.version != WireCodec.VERSION || reply.requestId != request.id) throw WireException(WireFailure.MALFORMED)
+            if (reply.version != WireCodec.VERSION || reply.requestId != request.id)
+                throw WireException(WireFailure.MALFORMED)
             receive(data)
             _status.value = reply.failure?.let(::explanation) ?: R.string.status_saved
             // A valid reply resolves this attempt, including a definitive rejection.
@@ -122,15 +141,37 @@ class WatchModel(private val context: Context, private val link: PhoneLink) {
     }
 
     fun dismissPending() {
-        clearPending()
-        _status.value = R.string.status_check_phone
-        scope.launch { refresh() }
+        if (_busy.value) return
+        _busy.value = true
+        scope.launch {
+            val cleared = clearPending()
+            _busy.value = false
+            if (cleared) {
+                _status.value = R.string.status_check_phone
+                refresh()
+            }
+        }
     }
 
-    private fun clearPending() {
-        _pending.value = null
-        prefs.edit { remove(PENDING) }
+    private suspend fun clearPending(): Boolean {
+        val saved = savePending(null)
+        if (saved) _pending.value = null else _status.value = R.string.status_storage
+        return saved
     }
+
+    // KTX edit(commit = true) discards commit's Boolean. A failed queue write must not send an
+    // action. Commit runs on IO; apply cannot establish durability before transport.
+    @android.annotation.SuppressLint("UseKtx", "ApplySharedPref")
+    private suspend fun savePending(value: String?): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val editor = prefs.edit()
+                if (value == null) editor.remove(PENDING) else editor.putString(PENDING, value)
+                editor.commit()
+            } catch (_: Exception) {
+                false
+            }
+        }
 
     companion object {
         private const val SNAPSHOT = "fast.watch.snapshot"
@@ -144,7 +185,8 @@ class WatchModel(private val context: Context, private val link: PhoneLink) {
                 WireFailure.EXPIRED -> R.string.failure_expired
                 WireFailure.UNAVAILABLE -> R.string.failure_unavailable
                 WireFailure.SAVE_FAILED -> R.string.failure_save
-                WireFailure.UNSUPPORTED, WireFailure.MALFORMED -> R.string.failure_update
+                WireFailure.UNSUPPORTED,
+                WireFailure.MALFORMED -> R.string.failure_update
             }
     }
 }

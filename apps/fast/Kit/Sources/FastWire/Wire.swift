@@ -13,8 +13,19 @@ public struct FastWatchRequest: Codable, Equatable, Sendable {
     public var action: Action
     public var revision: UUID?
     public var activeID: UUID?
-    public init(id: UUID = UUID(), sentAt: Date = Date(), action: Action, revision: UUID? = nil, activeID: UUID? = nil) {
+    public var presetID: UUID?
+    public init(id: UUID = UUID(), sentAt: Date = Date(), action: Action, revision: UUID? = nil, activeID: UUID? = nil, presetID: UUID? = nil) {
         self.id = id; self.sentAt = sentAt; self.action = action; self.revision = revision; self.activeID = activeID
+        self.presetID = presetID; self.version = presetID == nil ? 1 : 2
+    }
+}
+
+public struct FastWatchPreset: Codable, Equatable, Sendable, Identifiable {
+    public var id: UUID
+    public var goalMinutes: Int32?
+    public var eatingMinutes: Int32
+    public init(id: UUID, goalMinutes: Int32?, eatingMinutes: Int32) {
+        self.id = id; self.goalMinutes = goalMinutes; self.eatingMinutes = eatingMinutes
     }
 }
 
@@ -26,11 +37,12 @@ public struct FastWatchSnapshot: Codable, Equatable, Sendable {
     public var goal: Date?
     public var waterMilliliters: Double
     public var canCreateRecords: Bool
+    public var presets: [FastWatchPreset]?
     public init(revision: UUID, generatedAt: Date, activeID: UUID?, start: Date?, goal: Date?,
-                waterMilliliters: Double, canCreateRecords: Bool) {
+                waterMilliliters: Double, canCreateRecords: Bool, presets: [FastWatchPreset]? = nil) {
         self.revision = revision; self.generatedAt = generatedAt; self.activeID = activeID
         self.start = start; self.goal = goal; self.waterMilliliters = waterMilliliters
-        self.canCreateRecords = canCreateRecords
+        self.canCreateRecords = canCreateRecords; self.presets = presets
     }
 }
 

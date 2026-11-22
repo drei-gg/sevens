@@ -32,7 +32,20 @@
     <string name="complication_label">Fast timer</string>
     <string name="not_fasting">Not fasting</string>
     <string name="no_fast">No fast</string>
+    <string name="sync_fast">Sync Fast</string>
+    <string name="open_ended">Open-ended fast</string>
     <string name="open">Open</string>
     <string name="channel_running">Running fast</string>
     <string name="elapsed_of_goal">%1$s of %2$s</string>
+    <string name="choose_fast">Start fast</string>
+    <string name="saved_presets">Saved presets</string>
+    <string name="start_duration">Start %1$s fast</string>
+    <string name="start_open">Start open-ended fast</string>
+    <string name="eating_window">%1$s eating window</string>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_hours">%1$d hr</string>
+    <string name="duration_hours_minutes">%1$d hr %2$d min</string>
+    <string name="status_storage">The watch could not save its action queue. Check storage and try again.</string>
+    <string name="dismiss_confirm">Clear pending action?</string>
+    <string name="dismiss_explanation">This clears the watch queue. Check your phone in case the action was saved before the connection dropped.</string>
 </resources>

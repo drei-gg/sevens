@@ -41,7 +41,7 @@ import Testing
     #expect(throws: FastWatchFailure.expired) { try archive.applyWatch(request, canCreateRecords: true, now: now) }
     request.sentAt = now.addingTimeInterval(31)
     #expect(throws: FastWatchFailure.expired) { try archive.applyWatch(request, canCreateRecords: true, now: now) }
-    request.sentAt = now; request.version = 2
+    request.sentAt = now; request.version = 3
     #expect(throws: FastWatchFailure.unsupported) { try archive.applyWatch(request, canCreateRecords: true, now: now) }
     request.version = 1
     try archive.applyWatch(request, canCreateRecords: true, now: now)
@@ -95,4 +95,26 @@ import Testing
     let relaunched = ArchiveStore(file: url, writer: { _, _ in throw TrackerError.ReadOnly })
     let reply = try await relaunched.transact(now: now) { try $0.applyWatch(request, canCreateRecords: true, now: now) }
     #expect(reply.metrics.count == 1)
+}
+
+@Test func watchStartsSelectedDurationAndRejectsRemovedPreset() throws {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    var archive = FastArchive()
+    archive.presets = defaultPresets()
+    archive.presets[0].id = UUID()
+    archive.presets[0].goalMinutes = 1110
+    archive.presets[0].eatingMinutes = 330
+    let snapshot = FastWatchSnapshot(archive: archive, canCreateRecords: true, now: now)
+    let preset = try #require(snapshot.presets?.first { $0.id == archive.presets[0].id })
+    let request = FastWatchRequest(sentAt: now, action: .start, revision: snapshot.revision, presetID: preset.id)
+    #expect(request.version == 2)
+    #expect(try FastWatchCodec.decode(FastWatchRequest.self, from: FastWatchCodec.encode(request)) == request)
+    var missing = archive; missing.presets = []
+    #expect(throws: FastWatchFailure.stale) { try missing.applyWatch(request, canCreateRecords: true, now: now) }
+    try archive.applyWatch(request, canCreateRecords: true, now: now)
+    #expect(archive.active?.goalMinutes == 1110)
+    #expect(archive.active?.eatingMinutes == 330)
+    var restored = try ArchiveCodec.decode(ArchiveCodec.encode(archive), now: now)
+    try restored.applyWatch(request, canCreateRecords: false, now: now)
+    #expect(restored.fasts.count == 1)
 }

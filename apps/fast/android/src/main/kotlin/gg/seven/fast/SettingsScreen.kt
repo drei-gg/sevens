@@ -85,6 +85,8 @@ internal fun SettingsScreen(m: FastModel, a: FastArchive?, onUnlock: () -> Unit)
                     importJson.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
                 }
             }
+            HomeWidgetSetup(android.content.ComponentName(context, FastWidget::class.java), "Fasting timer",
+                "A live timer and your planned finish. Tap to open the app; journal text and measurements stay private.")
             HealthImportPanel(m)
             Section(title = "Make it yours") {
                 switch("Weight in pounds", a.settings.usePounds) { saveSettings(a.settings.copy(usePounds = it)) }

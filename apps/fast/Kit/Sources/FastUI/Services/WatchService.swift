@@ -21,7 +21,9 @@ extension FastModel {
         do {
             let request = try FastWatchCodec.decode(FastWatchRequest.self, from: data)
             reply.requestID = request.id
-            guard request.version == 1 else { throw FastWatchFailure.unsupported }
+            guard (1...2).contains(request.version) else { throw FastWatchFailure.unsupported }
+            guard !(request.version == 2 && (request.action != .start || request.presetID == nil)),
+                  !(request.version == 1 && request.presetID != nil) else { throw FastWatchFailure.malformed }
             guard isReady, store.hasStarted, !inFlight else { throw FastWatchFailure.unavailable }
             let reveal = beginWrite()
             defer { endWrite(reveal) }

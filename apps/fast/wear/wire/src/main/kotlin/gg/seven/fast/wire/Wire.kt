@@ -59,6 +59,7 @@ data class WireRequest(
     val action: WireAction,
     @Serializable(UuidSerializer::class) val revision: UUID? = null,
     @SerialName("activeID") @Serializable(UuidSerializer::class) val activeId: UUID? = null,
+    @SerialName("presetID") @Serializable(UuidSerializer::class) val presetId: UUID? = null,
 ) {
     companion object {
         fun create(
@@ -67,9 +68,27 @@ data class WireRequest(
             activeId: UUID? = null,
             now: Long = System.currentTimeMillis(),
             id: UUID = UUID.randomUUID(),
-        ) = WireRequest(WireCodec.VERSION, id, now, action, revision, activeId)
+            presetId: UUID? = null,
+        ) =
+            WireRequest(
+                if (presetId == null) WireCodec.VERSION else 2,
+                id,
+                now,
+                action,
+                revision,
+                activeId,
+                presetId,
+            )
     }
 }
+
+/** Saved timer durations only. Private preset names never leave the phone. */
+@Serializable
+data class WirePreset(
+    @Serializable(UuidSerializer::class) val id: UUID,
+    val goalMinutes: Int? = null,
+    val eatingMinutes: Int,
+)
 
 @Serializable
 data class WireSnapshot(
@@ -83,6 +102,7 @@ data class WireSnapshot(
     val goal: Long? = null,
     val waterMilliliters: Double,
     val canCreateRecords: Boolean,
+    val presets: List<WirePreset>? = null,
 )
 
 @Serializable
@@ -104,14 +124,18 @@ object WireCodec {
         encodeDefaults = true
     }
 
-    fun encode(request: WireRequest): ByteArray = limit(json.encodeToString(WireRequest.serializer(), request))
+    fun encode(request: WireRequest): ByteArray =
+        limit(json.encodeToString(WireRequest.serializer(), request))
 
-    fun encode(reply: WireReply): ByteArray = limit(json.encodeToString(WireReply.serializer(), reply))
+    fun encode(reply: WireReply): ByteArray =
+        limit(json.encodeToString(WireReply.serializer(), reply))
 
     /** Throws [WireException] with [WireFailure.MALFORMED] for oversized or unreadable input. */
-    fun decodeRequest(bytes: ByteArray): WireRequest = decode(bytes) { json.decodeFromString(WireRequest.serializer(), it) }
+    fun decodeRequest(bytes: ByteArray): WireRequest =
+        decode(bytes) { json.decodeFromString(WireRequest.serializer(), it) }
 
-    fun decodeReply(bytes: ByteArray): WireReply = decode(bytes) { json.decodeFromString(WireReply.serializer(), it) }
+    fun decodeReply(bytes: ByteArray): WireReply =
+        decode(bytes) { json.decodeFromString(WireReply.serializer(), it) }
 
     private fun limit(text: String): ByteArray {
         val bytes = text.encodeToByteArray()
@@ -134,10 +158,13 @@ object WireCodec {
 
 /** Canonical 36-character UUIDs, written upper-case like Foundation's UUID, read in either case. */
 internal object UuidSerializer : KSerializer<UUID> {
-    private val shape = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
-    override val descriptor = PrimitiveSerialDescriptor("gg.seven.fast.wire.UUID", PrimitiveKind.STRING)
+    private val shape =
+        Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+    override val descriptor =
+        PrimitiveSerialDescriptor("gg.seven.fast.wire.UUID", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: UUID) = encoder.encodeString(value.toString().uppercase())
+    override fun serialize(encoder: Encoder, value: UUID) =
+        encoder.encodeString(value.toString().uppercase())
 
     override fun deserialize(decoder: Decoder): UUID {
         val text = decoder.decodeString()

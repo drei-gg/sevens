@@ -34,9 +34,12 @@ class WearRequestHandlerTest {
             snapshot = { snapshot.takeIf { ready } },
         )
 
-    private fun reply(handler: WearRequestHandler, bytes: ByteArray): WireReply = runBlocking { WireCodec.decodeReply(handler.handle(bytes)) }
+    private fun reply(handler: WearRequestHandler, bytes: ByteArray): WireReply = runBlocking {
+        WireCodec.decodeReply(handler.handle(bytes))
+    }
 
-    private fun reply(handler: WearRequestHandler, request: WireRequest) = reply(handler, WireCodec.encode(request))
+    private fun reply(handler: WearRequestHandler, request: WireRequest) =
+        reply(handler, WireCodec.encode(request))
 
     @Test
     fun everyCoreFailureMapsToItsWireFailure() {
@@ -82,9 +85,16 @@ class WearRequestHandlerTest {
 
     @Test
     fun actionsMapOneToOne() {
-        for ((wire, core) in listOf(WireAction.START to CompanionAction.START, WireAction.WATER to CompanionAction.WATER, WireAction.END to CompanionAction.END))
-            assertEquals(core, WireRequest.create(wire).companion().action)
-        assertEquals(CompanionAction.REFRESH, WireRequest.create(WireAction.REFRESH).companion().action)
+        for ((wire, core) in
+            listOf(
+                WireAction.START to CompanionAction.START,
+                WireAction.WATER to CompanionAction.WATER,
+                WireAction.END to CompanionAction.END,
+            )) assertEquals(core, WireRequest.create(wire).companion().action)
+        assertEquals(
+            CompanionAction.REFRESH,
+            WireRequest.create(WireAction.REFRESH).companion().action,
+        )
     }
 
     @Test
@@ -105,19 +115,42 @@ class WearRequestHandlerTest {
 
     @Test
     fun undecodableRequestIsMalformedWithoutAnId() {
-        val reply = reply(handler(), """{"version":1,"id":"${UUID.randomUUID()}","sentAt":1,"action":"delete"}""".encodeToByteArray())
+        val reply =
+            reply(
+                handler(),
+                """{"version":1,"id":"${UUID.randomUUID()}","sentAt":1,"action":"delete"}"""
+                    .encodeToByteArray(),
+            )
         assertEquals(WireFailure.MALFORMED, reply.failure)
         assertNull(reply.requestId)
         assertTrue(applied.isEmpty())
-        assertEquals(WireFailure.MALFORMED, reply(handler(), ByteArray(WireCodec.MAXIMUM_BYTES + 1)).failure)
+        assertEquals(
+            WireFailure.MALFORMED,
+            reply(handler(), ByteArray(WireCodec.MAXIMUM_BYTES + 1)).failure,
+        )
     }
 
     @Test
     fun newerVersionIsUnsupported() {
-        val request = WireRequest.create(WireAction.WATER).copy(version = 2)
+        val request = WireRequest.create(WireAction.WATER).copy(version = 3)
         val reply = reply(handler(), request)
         assertEquals(WireFailure.UNSUPPORTED, reply.failure)
         assertEquals(request.id, reply.requestId)
+        assertTrue(applied.isEmpty())
+    }
+
+    @Test
+    fun presetStartCrossesBridgeAndMalformedRefreshCannotBypassValidation() {
+        val id = UUID.randomUUID()
+        val request = WireRequest.create(WireAction.START, snapshot.revision, presetId = id)
+        assertNull(reply(handler(), request).failure)
+        assertEquals(id, applied.single().presetId)
+        assertEquals(2, applied.single().version)
+        applied.clear()
+        assertEquals(
+            WireFailure.MALFORMED,
+            reply(handler(), request.copy(action = WireAction.REFRESH)).failure,
+        )
         assertTrue(applied.isEmpty())
     }
 }

@@ -1,0 +1,4 @@
+<resources>
+    <string name="widget_placeholder">No fast running</string>
+    <string name="widget_name">Fasting timer</string>
+</resources>

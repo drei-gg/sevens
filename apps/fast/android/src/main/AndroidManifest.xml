@@ -15,7 +15,7 @@
         <activity-alias android:name="ViewHealthPermissionUsageActivity" android:exported="true" android:targetActivity=".HealthRationaleActivity" android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
             <intent-filter><action android:name="android.intent.action.VIEW_PERMISSION_USAGE" /><category android:name="android.intent.category.HEALTH_PERMISSIONS" /></intent-filter>
         </activity-alias>
-        <receiver android:name=".FastWidget" android:exported="false">
+        <receiver android:name=".FastWidget" android:label="@string/widget_name" android:exported="false">
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/fast_widget_info" />
         </receiver>
@@ -23,5 +23,6 @@
         <receiver android:name=".RestoreRemindersReceiver" android:exported="true">
             <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.TIME_SET" /><action android:name="android.intent.action.TIMEZONE_CHANGED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
         </receiver>
+        <receiver android:name=".WidgetGoalReceiver" android:exported="false" />
     </application>
 </manifest>

@@ -34,6 +34,9 @@ dependencies {
     implementation("net.java.dev.jna:jna:5.17.0@aar")
     implementation("androidx.glance:glance-appwidget:1.2.0")
     implementation("androidx.glance:glance-material3:1.2.0")
+    // Match Bloom: Glance alone resolves WorkManager 2.7.1 / Room 2.2.5, whose
+    // generated WorkDatabase constructor fails under the current release shrinker.
+    implementation("androidx.work:work-runtime-ktx:2.11.0")
     implementation("com.kizitonwose.calendar:compose:2.9.0")
     implementation("com.patrykandpatrick.vico:compose-m3:2.3.6")
     implementation("androidx.health.connect:connect-client:1.1.0")
@@ -44,6 +47,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.17.0")
     androidTestImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4-accessibility")
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

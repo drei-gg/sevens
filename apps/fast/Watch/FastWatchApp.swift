@@ -1,6 +1,7 @@
 import SwiftUI
 import FastWire
 import SevenCompanion
+import WidgetKit
 
 @main
 struct FastWatchApp: App {
@@ -32,6 +33,7 @@ final class WatchModel {
         if let data = defaults.data(forKey: "fast.watch.pending") {
             pending = try? FastWatchCodec.decode(FastWatchRequest.self, from: data)
         }
+        if let snapshot { publishTimer(snapshot) }
     }
     func start() {
         guard !started else { return }; started = true
@@ -44,6 +46,19 @@ final class WatchModel {
         if let old = snapshot, old.generatedAt > incoming.generatedAt { return }
         snapshot = incoming
         defaults.set(data, forKey: "fast.watch.snapshot")
+        publishTimer(incoming)
+    }
+    private func publishTimer(_ snapshot: FastWatchSnapshot) {
+        guard let group = Bundle.main.object(forInfoDictionaryKey: "SevensAppGroup") as? String,
+              let directory = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)
+        else { return }
+        do {
+            let data = try FastWatchCodec.encode(WatchTimerSnapshot(snapshot))
+            try data.write(to: directory.appendingPathComponent(WatchTimerSnapshot.filename), options: .atomic)
+            WidgetCenter.shared.reloadTimelines(ofKind: WatchTimerSnapshot.widgetKind)
+        } catch {
+            status = String(localized: "The watch face could not update. Open Fast again to retry.")
+        }
     }
     func refresh() async {
         guard !busy, session.reachable else { return }
@@ -96,6 +111,7 @@ final class WatchModel {
 struct WatchHome: View {
     @Environment(WatchModel.self) private var model
     @State private var confirmEnd = false
+    @State private var confirmClear = false
     @State private var endRequest: FastWatchRequest?
     var body: some View {
         NavigationStack {
@@ -116,8 +132,14 @@ struct WatchHome: View {
                         } else {
                             Image(systemName: "sun.horizon").font(.largeTitle).foregroundStyle(.secondary)
                             Text("At your own pace.").font(.headline)
-                            Button("Start 16-hour fast") { Task { await model.perform(.start) } }
-                                .disabled(!canAct || !snapshot.canCreateRecords)
+                            if let presets = snapshot.presets, !presets.isEmpty {
+                                NavigationLink("Start fast") {
+                                    WatchPresets(snapshot: snapshot, presets: presets)
+                                }.disabled(!canAct || !snapshot.canCreateRecords)
+                            } else {
+                                Button("Start 16-hour fast") { Task { await model.perform(.start) } }
+                                    .disabled(!canAct || !snapshot.canCreateRecords)
+                            }
                         }
                         Divider()
                         Text("Water: \(Int(snapshot.waterMilliliters)) mL").font(.footnote)
@@ -133,7 +155,7 @@ struct WatchHome: View {
                     if let status = model.status { Text(status).font(.footnote) }
                     if model.pending != nil {
                         Button("Retry same request") { Task { await model.retry() } }.disabled(model.busy || !model.session.reachable)
-                        Button("Dismiss request") { model.dismissPending() }.disabled(model.busy)
+                        Button("Dismiss request") { confirmClear = true }.disabled(model.busy)
                     }
                     Button("Refresh") { Task { await model.refresh() } }.disabled(model.busy || !model.session.reachable)
                 }.padding(.horizontal, 8)
@@ -144,8 +166,46 @@ struct WatchHome: View {
                     if let request = endRequest { Task { await model.perform(request) } }
                 }
             }
+            .confirmationDialog("Clear pending action?", isPresented: $confirmClear) {
+                Button("Clear pending action", role: .destructive) { model.dismissPending() }
+            } message: {
+                Text("This clears the watch queue. Check your iPhone in case the action was saved before the connection dropped.")
+            }
             .onChange(of: model.session.reachable) { _, connected in if connected { Task { await model.refresh() } } }
         }
     }
     private var canAct: Bool { model.session.reachable && !model.busy && model.pending == nil }
+}
+
+private struct WatchPresets: View {
+    @Environment(WatchModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    let snapshot: FastWatchSnapshot
+    let presets: [FastWatchPreset]
+    private var canAct: Bool { model.session.reachable && !model.busy && model.pending == nil }
+    var body: some View {
+                                    List(presets) { preset in
+                                        Button {
+                                            let request = FastWatchRequest(action: .start, revision: snapshot.revision,
+                                                                           activeID: snapshot.activeID, presetID: preset.id)
+                                            Task { await model.perform(request); dismiss() }
+                                        } label: {
+                                            VStack(alignment: .leading) {
+                                                Text(preset.goalMinutes.map { minutes in "Start \(duration(minutes)) fast" } ?? "Start open-ended fast")
+                                                if preset.eatingMinutes > 0 {
+                                                    Text("\(duration(preset.eatingMinutes)) eating window").font(.caption2)
+                                                }
+                                            }
+                                        }
+                                        .disabled(!canAct || !snapshot.canCreateRecords || model.snapshot?.activeID != nil)
+                                    }
+                                    .navigationTitle("Saved presets")
+
+    }
+    private func duration(_ minutes: Int32) -> String {
+        let hours = minutes / 60, remainder = minutes % 60
+        if hours == 0 { return "\(remainder) min" }
+        if remainder == 0 { return "\(hours) hr" }
+        return "\(hours) hr \(remainder) min"
+    }
 }

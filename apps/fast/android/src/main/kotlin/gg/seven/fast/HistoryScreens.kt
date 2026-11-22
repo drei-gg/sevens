@@ -9,14 +9,12 @@ package gg.seven.fast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -68,168 +66,187 @@ internal fun HistoryScreen(m: FastModel, a: FastArchive, now: Double, open: Open
             }
             .filter {
                 mode == "List" ||
+                    query.isNotBlank() ||
                     History.hours(a.copy(fasts = listOf(it)), day, zone, now) > 0 ||
                     History.onDay(it.start, day, zone)
             }
     Box(Modifier.fillMaxSize()) {
-    LazyColumn(
-        Modifier.widthIn(max = 960.dp).fillMaxSize(),
-        contentPadding = PaddingValues(start = Space.m, end = Space.m, top = Space.s, bottom = 96.dp),
-        verticalArrangement = Arrangement.spacedBy(Space.m),
-    ) {
-        item { SearchInput("Search intentions, reflections & tags", state = search) }
-        item { ConnectedChoice(listOf("Calendar", "Heatmap", "List").map { it to it }, mode) { mode = it } }
-        item {
-            Text(
-                "Days follow your current timezone: ${zone.id}.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (mode == "Calendar") item { HistoryCalendar(a, day, now) { dayText = it.toString() } }
-        if (mode == "Heatmap")
+        LazyColumn(
+            Modifier.widthIn(max = 960.dp).fillMaxSize(),
+            contentPadding =
+                PaddingValues(start = Space.m, end = Space.m, top = Space.s, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(Space.m),
+        ) {
+            item { SearchInput("Search intentions, reflections & tags", state = search) }
             item {
-                val end = LocalDate.parse(heatEnd)
-                Panel("13 weeks of recorded time") {
-                    Text(
-                        "Darker means more recorded hours. It is not a score. Scroll sideways for all 13 weeks."
-                    )
-                    val first = end.minusDays(90)
-                    Text("$first — $end", style = MaterialTheme.typography.bodySmall)
-                    val heat =
-                        rememberHeatMapCalendarState(
-                            startMonth = YearMonth.from(first),
-                            endMonth = YearMonth.from(end),
-                            firstVisibleMonth = YearMonth.from(end),
-                        )
-                    HeatMapCalendar(
-                        state = heat,
-                        monthHeader = { month ->
-                            Text(
-                                month.yearMonth.format(
-                                    java.time.format.DateTimeFormatter.ofPattern("MMM yyyy")
-                                ),
-                                modifier = Modifier.padding(bottom = 8.dp),
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        },
-                        weekHeader = { weekday ->
-                            Box(
-                                Modifier.height(52.dp).padding(end = 8.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    weekday.getDisplayName(
-                                        java.time.format.TextStyle.SHORT,
-                                        androidx.compose.ui.platform.LocalConfiguration.current.locales[0],
-                                    ),
-                                    style = MaterialTheme.typography.labelSmall,
-                                )
-                            }
-                        },
-                        dayContent = { cell, _ ->
-                            val date = cell.date
-                            val included = date in first..end
-                            val hours = History.hours(a, date, zone, now)
-                            val color =
-                                if (hours == 0.0 || !included)
-                                    MaterialTheme.colorScheme.surfaceVariant
-                                else
-                                    SevenColors.time.copy(
-                                        alpha =
-                                            (0.25 + hours / 24 * 0.75).toFloat().coerceAtMost(1f)
-                                    )
-                            Box(
-                                Modifier.padding(2.dp)
-                                    .size(48.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(color)
-                                    .clickable(enabled = included) { dayText = date.toString() }
-                                    .semantics {
-                                        contentDescription =
-                                            if (included) "$date, ${hours.number()} recorded hours"
-                                            else "Outside selected period"
-                                    }
-                            )
-                        },
-                    )
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = { heatEnd = end.minusWeeks(13).toString() }) {
-                            Text("Earlier 13 weeks")
-                        }
-                        TextButton(onClick = { heatEnd = end.plusWeeks(13).toString() }) {
-                            Text("Later 13 weeks")
-                        }
-                    }
+                ConnectedChoice(listOf("Calendar", "Heatmap", "List").map { it to it }, mode) {
+                    mode = it
                 }
             }
-        if (mode != "List")
             item {
-                Heading("$day · ${History.hours(a, day, zone, now).number()} hours")
-                a.journal
-                    .filter { History.onDay(it.date, day, zone) }
-                    .forEach { entry ->
-                        TextButton(onClick = { open("journal", entry.id) }) {
-                            Text(entry.text.ifBlank { "Journal check-in" })
-                        }
-                    }
-                a.plans
-                    .filter { History.onDay(it.start, day, zone) }
-                    .forEach { plan ->
-                        TextButton(onClick = { open("plan", plan.id) }) {
-                            Text("Plan · ${stamp(plan.start)}")
-                        }
-                    }
-                a.restDays
-                    .filter { History.onDay(it.date, day, zone) }
-                    .forEach { rest ->
-                        TextButton(onClick = { open("rest", rest.id) }) {
-                            Text("Rest day · ${rest.note}")
-                        }
-                    }
-            }
-        item {
-            ChoiceChips(
-                listOf("All" to "All fasts", "Goal reached" to "Goal reached", "Shorter" to "Shorter than planned"),
-                filter,
-            ) {
-                filter = it
-            }
-        }
-        if (records.isEmpty())
-            item {
-                Empty(
-                    "A history worth keeping",
-                    "Your records will be here. Add a forgotten fast whenever you need.",
+                Text(
+                    "Days follow your current timezone: ${zone.id}.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        if (records.isNotEmpty())
-            item {
-                Section {
-                    records.forEach { fast ->
-                        item(
-                            duration(fast.duration(now)),
-                            supporting =
-                                listOfNotNull(
-                                        "${stamp(fast.start)} – ${fast.end?.let(::stamp) ?: "now"}",
-                                        fast.intention.takeIf { it.isNotBlank() },
-                                        when (fast.metGoal) {
-                                            false -> "Shorter than planned · still a valid record"
-                                            null -> if (fast.end == null) "In progress" else null
-                                            true -> null
-                                        },
-                                    )
-                                    .joinToString("\n"),
-                            onClick = { open("detail", fast.id) },
-                            trailing =
-                                if (fast.metGoal == true) {
-                                    { Icon(Icons.Outlined.CheckCircle, "Chosen time reached") }
-                                } else null,
+            if (mode == "Calendar" && query.isBlank())
+                item { HistoryCalendar(a, day, now) { dayText = it.toString() } }
+            if (mode == "Heatmap" && query.isBlank())
+                item {
+                    val end = LocalDate.parse(heatEnd)
+                    Panel("13 weeks of recorded time") {
+                        Text(
+                            "Darker means more recorded hours. It is not a score. Scroll sideways for all 13 weeks."
                         )
+                        val first = end.minusDays(90)
+                        Text("$first — $end", style = MaterialTheme.typography.bodySmall)
+                        val heat =
+                            rememberHeatMapCalendarState(
+                                startMonth = YearMonth.from(first),
+                                endMonth = YearMonth.from(end),
+                                firstVisibleMonth = YearMonth.from(end),
+                            )
+                        HeatMapCalendar(
+                            state = heat,
+                            monthHeader = { month ->
+                                Text(
+                                    month.yearMonth.format(
+                                        java.time.format.DateTimeFormatter.ofPattern("MMM yyyy")
+                                    ),
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                            },
+                            weekHeader = { weekday ->
+                                Box(
+                                    Modifier.height(52.dp).padding(end = 8.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        weekday.getDisplayName(
+                                            java.time.format.TextStyle.SHORT,
+                                            androidx.compose.ui.platform.LocalConfiguration.current
+                                                .locales[0],
+                                        ),
+                                        style = MaterialTheme.typography.labelSmall,
+                                    )
+                                }
+                            },
+                            dayContent = { cell, _ ->
+                                val date = cell.date
+                                val included = date in first..end
+                                val hours = History.hours(a, date, zone, now)
+                                val color =
+                                    if (hours == 0.0 || !included)
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                    else
+                                        SevenColors.time.copy(
+                                            alpha =
+                                                (0.25 + hours / 24 * 0.75)
+                                                    .toFloat()
+                                                    .coerceAtMost(1f)
+                                        )
+                                Box(
+                                    Modifier.padding(2.dp)
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(color)
+                                        .clickable(enabled = included) { dayText = date.toString() }
+                                        .semantics {
+                                            contentDescription =
+                                                if (included)
+                                                    "$date, ${hours.number()} recorded hours"
+                                                else "Outside selected period"
+                                        }
+                                )
+                            },
+                        )
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = { heatEnd = end.minusWeeks(13).toString() }) {
+                                Text("Earlier 13 weeks")
+                            }
+                            TextButton(onClick = { heatEnd = end.plusWeeks(13).toString() }) {
+                                Text("Later 13 weeks")
+                            }
+                        }
                     }
                 }
+            if (mode != "List" && query.isBlank())
+                item {
+                    Heading("$day · ${History.hours(a, day, zone, now).number()} hours")
+                    a.journal
+                        .filter { History.onDay(it.date, day, zone) }
+                        .forEach { entry ->
+                            TextButton(onClick = { open("journal", entry.id) }) {
+                                Text(entry.text.ifBlank { "Journal check-in" })
+                            }
+                        }
+                    a.plans
+                        .filter { History.onDay(it.start, day, zone) }
+                        .forEach { plan ->
+                            TextButton(onClick = { open("plan", plan.id) }) {
+                                Text("Plan · ${stamp(plan.start)}")
+                            }
+                        }
+                    a.restDays
+                        .filter { History.onDay(it.date, day, zone) }
+                        .forEach { rest ->
+                            TextButton(onClick = { open("rest", rest.id) }) {
+                                Text("Rest day · ${rest.note}")
+                            }
+                        }
+                }
+            item {
+                ChoiceChips(
+                    listOf(
+                        "All" to "All fasts",
+                        "Goal reached" to "Goal reached",
+                        "Shorter" to "Shorter than planned",
+                    ),
+                    filter,
+                ) {
+                    filter = it
+                }
             }
-    }
+            if (records.isEmpty())
+                item {
+                    Empty(
+                        if (query.isNotBlank()) "No matching fasts" else "A history worth keeping",
+                        if (query.isNotBlank())
+                            "Try another word from an intention, reflection or tag."
+                        else "Your records will be here. Add a forgotten fast whenever you need.",
+                    )
+                }
+            if (records.isNotEmpty())
+                item {
+                    Section {
+                        records.forEach { fast ->
+                            item(
+                                duration(fast.duration(now)),
+                                supporting =
+                                    listOfNotNull(
+                                            "${stamp(fast.start)} – ${fast.end?.let(::stamp) ?: "now"}",
+                                            fast.intention.takeIf { it.isNotBlank() },
+                                            when (fast.metGoal) {
+                                                false ->
+                                                    "Shorter than planned · still a valid record"
+                                                null ->
+                                                    if (fast.end == null) "In progress" else null
+                                                true -> null
+                                            },
+                                        )
+                                        .joinToString("\n"),
+                                onClick = { open("detail", fast.id) },
+                                trailing =
+                                    if (fast.metGoal == true) {
+                                        { Icon(Icons.Outlined.CheckCircle, "Chosen time reached") }
+                                    } else null,
+                            )
+                        }
+                    }
+                }
+        }
         // Two ways to add: the Expressive FAB menu.
         FloatingActionButtonMenu(
             expanded = adding,
@@ -240,18 +257,26 @@ internal fun HistoryScreen(m: FastModel, a: FastArchive, now: Double, open: Open
                     Icon(
                         if (checkedProgress > 0.5f) Icons.Outlined.Close else Icons.Outlined.Add,
                         if (adding) "Close" else "Add",
-                        with(ToggleFloatingActionButtonDefaults) { Modifier.animateIcon({ checkedProgress }) },
+                        with(ToggleFloatingActionButtonDefaults) {
+                            Modifier.animateIcon({ checkedProgress })
+                        },
                     )
                 }
             },
         ) {
             FloatingActionButtonMenuItem(
-                onClick = { adding = false; open("past", null) },
+                onClick = {
+                    adding = false
+                    open("past", null)
+                },
                 text = { Text("Add past fast") },
                 icon = { Icon(Icons.Outlined.History, null) },
             )
             FloatingActionButtonMenuItem(
-                onClick = { adding = false; open("rest", null) },
+                onClick = {
+                    adding = false
+                    open("rest", null)
+                },
                 text = { Text("Mark a rest day") },
                 icon = { Icon(Icons.Outlined.Bedtime, null) },
             )
@@ -270,7 +295,8 @@ internal fun JournalScreen(a: FastArchive, open: OpenEditor) {
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
             Modifier.widthIn(max = 960.dp).fillMaxSize(),
-            contentPadding = PaddingValues(start = Space.m, end = Space.m, top = Space.s, bottom = 96.dp),
+            contentPadding =
+                PaddingValues(start = Space.m, end = Space.m, top = Space.s, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
             item { SearchInput("Search observations & tags", state = search) }
@@ -285,8 +311,10 @@ internal fun JournalScreen(a: FastArchive, open: OpenEditor) {
             if (entries.isEmpty())
                 item {
                     Empty(
-                        "Nothing required",
-                        "A thought, an observation, or a reflection. Mood, energy and hunger are always optional.",
+                        if (query.isNotBlank()) "No matching entries" else "Nothing required",
+                        if (query.isNotBlank()) "Try another word from an observation or tag."
+                        else
+                            "A thought, an observation, or a reflection. Mood, energy and hunger are always optional.",
                     )
                 }
             if (entries.isNotEmpty())
@@ -304,7 +332,9 @@ internal fun JournalScreen(a: FastArchive, open: OpenEditor) {
                                 supporting =
                                     listOfNotNull(
                                             stamp(entry.date),
-                                            entry.tags.takeIf { it.isNotEmpty() }?.joinToString(" · "),
+                                            entry.tags
+                                                .takeIf { it.isNotEmpty() }
+                                                ?.joinToString(" · "),
                                             ratings.takeIf { it.isNotEmpty() }?.joinToString(" · "),
                                         )
                                         .joinToString("\n"),
@@ -396,8 +426,7 @@ internal fun TrendsScreen(a: FastArchive, now: Double, open: OpenEditor) {
                     }
                 }
             }
-        val observations =
-            a.journal.filter { it.date.atZone(zone).toLocalDate() in start..end }
+        val observations = a.journal.filter { it.date.atZone(zone).toLocalDate() in start..end }
         Panel("Your check-ins") {
             Text("${observations.size} observations")
             listOf(
@@ -425,7 +454,11 @@ internal fun PeriodPicker(
     onEnd: (LocalDate) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
-        ConnectedChoice(listOf(7 to "Week", 30 to "Month", 90 to "Quarter", 365 to "Year"), days, onSelect = onDays)
+        ConnectedChoice(
+            listOf(7 to "Week", 30 to "Month", 90 to "Quarter", 365 to "Year"),
+            days,
+            onSelect = onDays,
+        )
         DateField("Ending", end, onChange = onEnd)
     }
 }
@@ -554,18 +587,26 @@ internal fun WaterEntriesScreen(a: FastArchive, open: OpenEditor) {
     val entries = a.metrics.filter { it.kind == MetricKind.WATER }.sortedByDescending { it.date }
     LazyColumn(
         Modifier.widthIn(max = 960.dp).fillMaxSize(),
-        contentPadding = PaddingValues(start = Space.m, end = Space.m, top = Space.s, bottom = Space.xl),
+        contentPadding =
+            PaddingValues(start = Space.m, end = Space.m, top = Space.s, bottom = Space.xl),
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
         if (entries.isEmpty()) item { Empty("No drinks logged", "Add a drink whenever you need.") }
         itemsIndexed(entries, key = { _, e -> e.id }) { index, entry ->
-            WaterEntryRow(entry, a, ListItemDefaults.segmentedShapes(index, entries.size)) { open("water", entry.id) }
+            WaterEntryRow(entry, a, ListItemDefaults.segmentedShapes(index, entries.size)) {
+                open("water", entry.id)
+            }
         }
     }
 }
 
 @Composable
-private fun WaterEntryRow(entry: MetricEntry, a: FastArchive, shapes: ListItemShapes, click: () -> Unit) {
+private fun WaterEntryRow(
+    entry: MetricEntry,
+    a: FastArchive,
+    shapes: ListItemShapes,
+    click: () -> Unit,
+) {
     SegmentedListItem(
         onClick = click,
         shapes = shapes,
@@ -573,7 +614,9 @@ private fun WaterEntryRow(entry: MetricEntry, a: FastArchive, shapes: ListItemSh
         leadingContent = { Icon(Icons.Filled.WaterDrop, null, tint = SevenColors.water) },
         trailingContent = { Icon(Icons.Outlined.Edit, "Edit") },
     ) {
-        Text("${Units.display(entry.value, entry.kind, a.settings).number(0)} ${Units.label(entry.kind, a.settings)}")
+        Text(
+            "${Units.display(entry.value, entry.kind, a.settings).number(0)} ${Units.label(entry.kind, a.settings)}"
+        )
     }
 }
 
@@ -684,46 +727,51 @@ internal fun WaterScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
-        entries.forEachIndexed { index, entry ->
-            val shapes = ListItemDefaults.segmentedShapes(index, entries.size)
-            key(entry.id) {
-                val swipe = rememberSwipeToDismissBoxState()
-                LaunchedEffect(swipe.currentValue) {
-                    // A drink is easy to put back, so a swipe deletes it with Undo, no question.
-                    if (swipe.currentValue == SwipeToDismissBoxValue.EndToStart)
-                        m.mutate(
-                            { it.copy(metrics = it.metrics.filterNot { e -> e.id == entry.id }) },
-                            onSaved = {
-                                m.undoable.value =
-                                    FastModel.Undoable("Drink deleted") {
-                                        m.mutate({ it.copy(metrics = it.metrics + entry) })
-                                    }
-                            },
-                        )
-                }
-                SwipeToDismissBox(
-                    state = swipe,
-                    modifier = Modifier.clip(shapes.shape),
-                    enableDismissFromStartToEnd = false,
-                    backgroundContent = {
-                        Box(
-                            Modifier.fillMaxSize()
-                                .background(MaterialTheme.colorScheme.errorContainer)
-                                .padding(20.dp),
-                            contentAlignment = Alignment.CenterEnd,
-                        ) {
-                            Icon(
-                                Icons.Outlined.Delete,
-                                "Delete drink",
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
+            entries.forEachIndexed { index, entry ->
+                val shapes = ListItemDefaults.segmentedShapes(index, entries.size)
+                key(entry.id) {
+                    val swipe = rememberSwipeToDismissBoxState()
+                    LaunchedEffect(swipe.currentValue) {
+                        // A drink is easy to put back, so a swipe deletes it with Undo, no
+                        // question.
+                        if (swipe.currentValue == SwipeToDismissBoxValue.EndToStart)
+                            m.mutate(
+                                {
+                                    it.copy(
+                                        metrics = it.metrics.filterNot { e -> e.id == entry.id }
+                                    )
+                                },
+                                onSaved = {
+                                    m.undoable.value =
+                                        FastModel.Undoable("Drink deleted") {
+                                            m.mutate({ it.copy(metrics = it.metrics + entry) })
+                                        }
+                                },
                             )
-                        }
-                    },
-                ) {
-                    WaterEntryRow(entry, a, shapes) { open("water", entry.id) }
+                    }
+                    SwipeToDismissBox(
+                        state = swipe,
+                        modifier = Modifier.clip(shapes.shape),
+                        enableDismissFromStartToEnd = false,
+                        backgroundContent = {
+                            Box(
+                                Modifier.fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.errorContainer)
+                                    .padding(20.dp),
+                                contentAlignment = Alignment.CenterEnd,
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Delete,
+                                    "Delete drink",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                            }
+                        },
+                    ) {
+                        WaterEntryRow(entry, a, shapes) { open("water", entry.id) }
+                    }
                 }
             }
-        }
         }
         Panel("Last seven days") {
             val week = History.waterDays(a.metrics, today, 7, zone)
@@ -739,9 +787,13 @@ internal fun WaterScreen(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 week.forEach { value ->
                     FilterChip(
-                        selected = value.date == day,
+                        selected = value.date.atZone(zone).toLocalDate() == day,
                         onClick = { dayText = value.date.atZone(zone).toLocalDate().toString() },
-                        label = { Text(value.date.atZone(zone).format(DateTimeFormatter.ofPattern("EEE d"))) },
+                        label = {
+                            Text(
+                                value.date.atZone(zone).format(DateTimeFormatter.ofPattern("EEE d"))
+                            )
+                        },
                     )
                 }
             }
@@ -751,8 +803,16 @@ internal fun WaterScreen(
             )
         }
         Section {
-            item("Water trends", icon = Icons.Outlined.Insights, onClick = { onPage("Water trends") })
-            item("All water entries", icon = Icons.Outlined.List, onClick = { onPage("All water entries") })
+            item(
+                "Water trends",
+                icon = Icons.Outlined.Insights,
+                onClick = { onPage("Water trends") },
+            )
+            item(
+                "All water entries",
+                icon = Icons.Outlined.List,
+                onClick = { onPage("All water entries") },
+            )
         }
     }
 }
@@ -777,7 +837,11 @@ private fun HistoryCalendar(
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(
                 onClick = {
-                    scope.launch { state.animateScrollToMonth(shown.minusMonths(1).coerceAtLeast(state.startMonth)) }
+                    scope.launch {
+                        state.animateScrollToMonth(
+                            shown.minusMonths(1).coerceAtLeast(state.startMonth)
+                        )
+                    }
                 }
             ) {
                 Icon(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, "Previous month")
@@ -790,7 +854,9 @@ private fun HistoryCalendar(
             )
             IconButton(
                 onClick = {
-                    scope.launch { state.animateScrollToMonth(shown.plusMonths(1).coerceAtMost(state.endMonth)) }
+                    scope.launch {
+                        state.animateScrollToMonth(shown.plusMonths(1).coerceAtMost(state.endMonth))
+                    }
                 }
             ) {
                 Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, "Next month")
@@ -799,7 +865,11 @@ private fun HistoryCalendar(
         if (LocalDensity.current.fontScale >= 1.5f || YearMonth.from(selectedDay) != shown)
             NativeDateTime(
                 "Jump to day",
-                selectedDay.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli().toDouble(),
+                selectedDay
+                    .atStartOfDay(ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli()
+                    .toDouble(),
                 false,
             ) {
                 val day = it.instant().atZone(ZoneId.systemDefault()).toLocalDate()
@@ -821,7 +891,8 @@ private fun HistoryCalendar(
                                     Text(
                                         day.date.dayOfWeek.getDisplayName(
                                             java.time.format.TextStyle.SHORT,
-                                            androidx.compose.ui.platform.LocalConfiguration.current.locales[0],
+                                            androidx.compose.ui.platform.LocalConfiguration.current
+                                                .locales[0],
                                         ),
                                         Modifier.weight(1f),
                                         style = MaterialTheme.typography.bodySmall,
@@ -843,8 +914,7 @@ private fun HistoryCalendar(
                             }
                         },
                         dayContent = { day ->
-                            val hours =
-                                History.hours(a, day.date, ZoneId.systemDefault(), now)
+                            val hours = History.hours(a, day.date, ZoneId.systemDefault(), now)
                             val journal =
                                 a.journal.any {
                                     History.onDay(it.date, day.date, ZoneId.systemDefault())
@@ -933,18 +1003,30 @@ internal fun FastDetailScreen(a: FastArchive, id: java.util.UUID?, now: Double, 
             }
             if (fast.intention.isNotBlank())
                 Section(title = "Intention") {
-                    content { androidx.compose.foundation.text.selection.SelectionContainer { Text(fast.intention) } }
+                    content {
+                        androidx.compose.foundation.text.selection.SelectionContainer {
+                            Text(fast.intention)
+                        }
+                    }
                 }
             if (fast.reflection.isNotBlank())
                 Section(title = "Reflection") {
-                    content { androidx.compose.foundation.text.selection.SelectionContainer { Text(fast.reflection) } }
+                    content {
+                        androidx.compose.foundation.text.selection.SelectionContainer {
+                            Text(fast.reflection)
+                        }
+                    }
                 }
             Section(title = "Observations") {
                 a.journal
                     .filter { it.fastId == id }
                     .sortedBy { it.date }
                     .forEach { entry ->
-                        item(entry.text.ifBlank { "A quiet check-in" }, supporting = stamp(entry.date), onClick = { open("journal", entry.id) })
+                        item(
+                            entry.text.ifBlank { "A quiet check-in" },
+                            supporting = stamp(entry.date),
+                            onClick = { open("journal", entry.id) },
+                        )
                     }
                 action("Add a check-in", Icons.Outlined.EditNote) { open("journal", null) }
             }

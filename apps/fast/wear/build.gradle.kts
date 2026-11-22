@@ -34,5 +34,11 @@ dependencies {
     implementation("androidx.concurrent:concurrent-futures:1.3.0")
     // Google Play services' Wearable Data Layer: the platform transport between watch and phone.
     implementation("com.google.android.gms:play-services-wearable:20.0.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    debugImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     testImplementation("junit:junit:4.13.2")
 }

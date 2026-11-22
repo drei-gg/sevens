@@ -21,8 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -73,8 +73,17 @@ internal fun TodayScreen(
     val daily: @Composable ColumnScope.() -> Unit = {
         WaterTodayCard(m, a, open, onPage, onUnlock)
         Section {
-            item("Check in", supporting = "Notice your day", icon = Icons.Outlined.EditNote, onClick = { open("journal", null) })
-            item("Log measurement", icon = Icons.Outlined.MonitorWeight, onClick = { open("metric", null) })
+            item(
+                "Check in",
+                supporting = "Notice your day",
+                icon = Icons.Outlined.EditNote,
+                onClick = { open("journal", null) },
+            )
+            item(
+                "Log measurement",
+                icon = Icons.Outlined.MonitorWeight,
+                onClick = { open("metric", null) },
+            )
         }
     }
     Page {
@@ -264,7 +273,10 @@ internal fun PlansScreen(m: FastModel, a: FastArchive, open: OpenEditor) {
         )
         Section(title = "Planned fasts") {
             if (a.plans.isEmpty())
-                item("Room for a plan", supporting = "Pick a date and time. Change your mind whenever you need.")
+                item(
+                    "Room for a plan",
+                    supporting = "Pick a date and time. Change your mind whenever you need.",
+                )
             a.plans
                 .sortedBy { it.start }
                 .forEach { plan ->
@@ -292,7 +304,11 @@ internal fun PlansScreen(m: FastModel, a: FastArchive, open: OpenEditor) {
 
 /** The screen's one primary action: an Expressive large button whose shape morphs on press. */
 @Composable
-private fun PrimaryAction(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector?, onClick: () -> Unit) {
+private fun PrimaryAction(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector?,
+    onClick: () -> Unit,
+) {
     val height = ButtonDefaults.LargeContainerHeight
     Button(
         onClick = onClick,
@@ -315,6 +331,8 @@ internal fun timerClock(milliseconds: Double): String {
 
 @Composable
 private fun TimeCard(label: String, date: Double, action: () -> Unit) {
+    val moment = date.instant().atZone(ZoneId.systemDefault())
+    val h24 = android.text.format.DateFormat.is24HourFormat(LocalContext.current)
     Card(
         onClick = action,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -329,10 +347,7 @@ private fun TimeCard(label: String, date: Double, action: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                date
-                    .instant()
-                    .atZone(ZoneId.systemDefault())
-                    .format(DateTimeFormatter.ofPattern("EEE · HH:mm")),
+                "${moment.format(DateTimeFormatter.ofPattern("EEE"))} · ${SevenFormat.time(moment, h24)}",
                 style = MaterialTheme.typography.titleMedium,
             )
             Text("Edit", style = MaterialTheme.typography.bodySmall)

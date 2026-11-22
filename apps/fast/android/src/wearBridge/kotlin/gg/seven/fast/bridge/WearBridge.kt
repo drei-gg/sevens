@@ -23,11 +23,13 @@ import gg.seven.fast.core.active
 import gg.seven.fast.core.fastGoalDate
 import gg.seven.fast.core.localDate
 import gg.seven.fast.core.watchApply
+import gg.seven.fast.core.watchPresets
 import gg.seven.fast.wire.WireAction
 import gg.seven.fast.wire.WireCodec
 import gg.seven.fast.wire.WireException
 import gg.seven.fast.wire.WireFailure
 import gg.seven.fast.wire.WirePaths
+import gg.seven.fast.wire.WirePreset
 import gg.seven.fast.wire.WireReply
 import gg.seven.fast.wire.WireRequest
 import gg.seven.fast.wire.WireSnapshot
@@ -72,11 +74,12 @@ internal fun WireRequest.companion() =
         },
         revision,
         activeId,
+        presetId,
     )
 
 /**
- * Decodes a request, guards readiness, applies it inside the store's transaction and replies with
- * a fresh snapshot or a failure, as WatchService.receiveWatch does on iOS.
+ * Decodes a request, guards readiness, applies it inside the store's transaction and replies with a
+ * fresh snapshot or a failure, as WatchService.receiveWatch does on iOS.
  *
  * @param ready loads the archive if needed; false while it is missing or read-only.
  * @param apply applies a non-refresh request atomically, throwing the core's failure.
@@ -93,23 +96,42 @@ internal class WearRequestHandler(
             try {
                 val request = WireCodec.decodeRequest(bytes)
                 requestId = request.id
-                if (request.version != WireCodec.VERSION) throw WireException(WireFailure.UNSUPPORTED)
+                if (request.version !in 1..2) throw WireException(WireFailure.UNSUPPORTED)
+                if (
+                    (request.version == 2 &&
+                        (request.action != WireAction.START || request.presetId == null)) ||
+                        (request.version == 1 && request.presetId != null)
+                )
+                    throw WireException(WireFailure.MALFORMED)
                 if (!ready()) throw WireException(WireFailure.UNAVAILABLE)
                 if (request.action != WireAction.REFRESH) apply(request.companion())
                 WireReply(requestId = requestId, snapshot = snapshot())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                WireReply(requestId = requestId, snapshot = runCatching { snapshot() }.getOrNull(), failure = wireFailure(e))
+                WireReply(
+                    requestId = requestId,
+                    snapshot = runCatching { snapshot() }.getOrNull(),
+                    failure = wireFailure(e),
+                )
             }
-        return runCatching { WireCodec.encode(reply) }.getOrElse { WireCodec.encode(WireReply(requestId = requestId, failure = WireFailure.MALFORMED)) }
+        return runCatching { WireCodec.encode(reply) }
+            .getOrElse {
+                WireCodec.encode(WireReply(requestId = requestId, failure = WireFailure.MALFORMED))
+            }
     }
 }
 
 internal object WearBridge {
-    private fun canCreate(app: FastApplication) = app.access.canCreate(app.purchaseSource.state.value, System.currentTimeMillis())
+    private fun canCreate(app: FastApplication) =
+        app.access.canCreate(app.purchaseSource.state.value, System.currentTimeMillis())
 
-    fun snapshot(archive: FastArchive, canCreateRecords: Boolean, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): WireSnapshot {
+    fun snapshot(
+        archive: FastArchive,
+        canCreateRecords: Boolean,
+        now: Instant = Instant.now(),
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): WireSnapshot {
         val active = archive.active
         return WireSnapshot(
             revision = archive.companionRevision,
@@ -119,6 +141,8 @@ internal object WearBridge {
             goal = active?.let(::fastGoalDate)?.toEpochMilli(),
             waterMilliliters = History.water(archive.metrics, now.localDate(zone), zone),
             canCreateRecords = canCreateRecords,
+            presets =
+                watchPresets(archive).map { WirePreset(it.id, it.goalMinutes, it.eatingMinutes) },
         )
     }
 
@@ -137,8 +161,12 @@ internal object WearBridge {
             apply = { request ->
                 val now = Instant.now()
                 val permitted = canCreate(app)
-                val saved = app.repository.update { watchApply(it, request, permitted, ZoneId.systemDefault().id, now) }
-                // Records are saved; reminders and the timer surfaces follow, as after a phone edit.
+                val saved =
+                    app.repository.update {
+                        watchApply(it, request, permitted, ZoneId.systemDefault().id, now)
+                    }
+                // Records are saved; reminders and the timer surfaces follow, as after a phone
+                // edit.
                 runCatching { ReminderScheduler.reconcile(app, saved) }
             },
             snapshot = { current(app) },
@@ -154,15 +182,22 @@ internal object WearBridge {
         val data = Wearable.getDataClient(app)
         scope.launch {
             app.repository.state.filterNotNull().first()
-            combine(app.repository.state, app.repository.failure, app.purchaseSource.state) { archive, failure, _ ->
-                    if (archive == null || failure != null) null else archive.companionRevision to canCreate(app)
+            combine(app.repository.state, app.repository.failure, app.purchaseSource.state) {
+                    archive,
+                    failure,
+                    _ ->
+                    if (archive == null || failure != null) null
+                    else archive.companionRevision to canCreate(app)
                 }
                 .filterNotNull()
                 .distinctUntilChanged()
                 .collect {
                     val snapshot = current(app) ?: return@collect
                     runCatching {
-                        val request = PutDataRequest.create(WirePaths.SNAPSHOT).setData(WireCodec.encode(WireReply(snapshot = snapshot))).setUrgent()
+                        val request =
+                            PutDataRequest.create(WirePaths.SNAPSHOT)
+                                .setData(WireCodec.encode(WireReply(snapshot = snapshot)))
+                                .setUrgent()
                         Tasks.await(data.putDataItem(request))
                     } // No watch, or no Wear OS app on this phone: nothing to deliver.
                 }

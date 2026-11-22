@@ -5,6 +5,158 @@
 	"objectVersion" = "77";
 	"archiveVersion" = "1";
 	"objects" = {
+		"BEECC30854820BD99522D783" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.app-extension";
+			"includeInIndex" = "0";
+			"path" = "FastWatchWidgets.appex";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"C0B2C826622B806F03536501" = {
+			"isa" = "PBXFileSystemSynchronizedRootGroup";
+			"path" = "WatchWidgets";
+			"sourceTree" = "<group>";
+		};
+		"2DDF5A879977FD1792435014" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "FastWire";
+		};
+		"08CA3250C692DD47C7C06582" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "2DDF5A879977FD1792435014";
+		};
+		"8215A5292211A0B9E4FEAA62" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"08CA3250C692DD47C7C06582",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"4C3C03FB16F2D0158E832F94" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"1C248C3F2872C8025D653C5D" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"3AA6D145297BBBC5C43BF0B5" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"baseConfigurationReference" = "5028FB1D19B817FF991C7D5E";
+			"buildSettings" = {
+				"WATCHOS_DEPLOYMENT_TARGET" = "10.0";
+				"TARGETED_DEVICE_FAMILY" = "4";
+				"SKIP_INSTALL" = "YES";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"SUPPORTED_PLATFORMS" = "watchos watchsimulator";
+				"SDKROOT" = "watchos";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).watchkitapp.widgets";
+				"APPLICATION_EXTENSION_API_ONLY" = "YES";
+				"INFOPLIST_FILE" = "Config/Widgets-Info.plist";
+				"CODE_SIGN_ENTITLEMENTS" = "Config/Widgets.entitlements";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+			};
+		};
+		"DF776E83B0584C7E485F1EB6" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"baseConfigurationReference" = "0462E5556301BB380E2C8DF1";
+			"buildSettings" = {
+				"WATCHOS_DEPLOYMENT_TARGET" = "10.0";
+				"TARGETED_DEVICE_FAMILY" = "4";
+				"SKIP_INSTALL" = "YES";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"SUPPORTED_PLATFORMS" = "watchos watchsimulator";
+				"SDKROOT" = "watchos";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).watchkitapp.widgets";
+				"APPLICATION_EXTENSION_API_ONLY" = "YES";
+				"INFOPLIST_FILE" = "Config/Widgets-Info.plist";
+				"CODE_SIGN_ENTITLEMENTS" = "Config/Widgets.entitlements";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+			};
+		};
+		"B9BE5115B33248531CE2F075" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"3AA6D145297BBBC5C43BF0B5",
+				"DF776E83B0584C7E485F1EB6",
+			);
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+		};
+		"4F40AC7688711D549CBA5EAC" = {
+			"isa" = "PBXNativeTarget";
+			"name" = "FastWatchWidgets";
+			"productName" = "FastWatchWidgets";
+			"productType" = "com.apple.product-type.app-extension";
+			"productReference" = "BEECC30854820BD99522D783";
+			"buildConfigurationList" = "B9BE5115B33248531CE2F075";
+			"buildPhases" = (
+				"4C3C03FB16F2D0158E832F94",
+				"8215A5292211A0B9E4FEAA62",
+				"1C248C3F2872C8025D653C5D",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+			"packageProductDependencies" = (
+				"2DDF5A879977FD1792435014",
+			);
+			"fileSystemSynchronizedGroups" = (
+				"C0B2C826622B806F03536501",
+			);
+		};
+		"977E3F4E4083BF54885F4C78" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "11D86C02E99C0D687FB1CECB";
+			"proxyType" = "1";
+			"remoteGlobalIDString" = "4F40AC7688711D549CBA5EAC";
+			"remoteInfo" = "FastWatchWidgets";
+		};
+		"15590B4E898A0672F2D548E2" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "4F40AC7688711D549CBA5EAC";
+			"targetProxy" = "977E3F4E4083BF54885F4C78";
+		};
+		"94D761738651A355F886C335" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "BEECC30854820BD99522D783";
+			"settings" = {
+				"ATTRIBUTES" = (
+					"RemoveHeadersOnCopy",
+				);
+			};
+		};
+		"8E459D375B600B654B0DCBD4" = {
+			"isa" = "PBXCopyFilesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"dstPath" = "";
+			"dstSubfolderSpec" = "13";
+			"name" = "Embed Watch Widgets";
+			"files" = (
+				"94D761738651A355F886C335",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
 		"91339408208ECF8A407F313A" = {
 			"isa" = "XCConfigurationList";
 			"defaultConfigurationIsVisible" = "0";
@@ -299,6 +451,7 @@
 				"DE1CA77BE513E3ACC8CDAE65",
 				"C58A0EAC9263B9A24FDAA336",
 				"D87CABA05D90965FAB7859D6",
+				"4F40AC7688711D549CBA5EAC",
 			);
 			"minimizedProjectReferenceProxies" = "1";
 			"developmentRegion" = "en";
@@ -475,6 +628,7 @@
 				"68EC0353C057F58199C5FCEE",
 				"A43DC8579C4344DF97EF9577",
 				"D53611B138EAAB5B46ADDAB5",
+				"C0B2C826622B806F03536501",
 			);
 		};
 		"E7D252C9B384308C78918437" = {
@@ -528,6 +682,7 @@
 				"8BA674758970176A2F86E305",
 				"2F1EA0A7B220918020E3DBE9",
 				"20FA42B6683980E509AE7296",
+				"BEECC30854820BD99522D783",
 			);
 			"sourceTree" = "<group>";
 		};
@@ -602,54 +757,58 @@
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
 		"81D0D9DFF94B130F8C4DCD52" = {
-			"isa" = "XCBuildConfiguration";
-			"name" = "Debug";
 			"baseConfigurationReference" = "5028FB1D19B817FF991C7D5E";
+			"isa" = "XCBuildConfiguration";
 			"buildSettings" = {
-				"PRODUCT_NAME" = "$(TARGET_NAME)";
-				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).watchkitapp";
-				"SDKROOT" = "watchos";
-				"SUPPORTED_PLATFORMS" = "watchos watchsimulator";
-				"TARGETED_DEVICE_FAMILY" = "4";
 				"WATCHOS_DEPLOYMENT_TARGET" = "10.0";
-				"GENERATE_INFOPLIST_FILE" = "YES";
-				"INFOPLIST_KEY_WKApplication" = "YES";
-				"INFOPLIST_KEY_WKCompanionAppBundleIdentifier" = "$(SEVENS_BUNDLE_ID)";
-				"INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp" = "NO";
-				"INFOPLIST_KEY_CFBundleDisplayName" = "$(SEVENS_DISPLAY_NAME)";
-				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				"SKIP_INSTALL" = "YES";
-				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 				"LD_RUNPATH_SEARCH_PATHS" = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp" = "NO";
+				"TARGETED_DEVICE_FAMILY" = "4";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				"SKIP_INSTALL" = "YES";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "$(SEVENS_DISPLAY_NAME)";
+				"SUPPORTED_PLATFORMS" = "watchos watchsimulator";
+				"SDKROOT" = "watchos";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"INFOPLIST_KEY_WKCompanionAppBundleIdentifier" = "$(SEVENS_BUNDLE_ID)";
+				"INFOPLIST_KEY_WKApplication" = "YES";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).watchkitapp";
+				"CODE_SIGN_ENTITLEMENTS" = "Config/Widgets.entitlements";
+				"INFOPLIST_KEY_SevensAppGroup" = "$(SEVENS_APP_GROUP)";
 			};
+			"name" = "Debug";
 		};
 		"82065CF173523F9D515947A5" = {
-			"isa" = "XCBuildConfiguration";
-			"name" = "Release";
 			"baseConfigurationReference" = "0462E5556301BB380E2C8DF1";
+			"isa" = "XCBuildConfiguration";
 			"buildSettings" = {
-				"PRODUCT_NAME" = "$(TARGET_NAME)";
-				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).watchkitapp";
-				"SDKROOT" = "watchos";
-				"SUPPORTED_PLATFORMS" = "watchos watchsimulator";
-				"TARGETED_DEVICE_FAMILY" = "4";
 				"WATCHOS_DEPLOYMENT_TARGET" = "10.0";
-				"GENERATE_INFOPLIST_FILE" = "YES";
-				"INFOPLIST_KEY_WKApplication" = "YES";
-				"INFOPLIST_KEY_WKCompanionAppBundleIdentifier" = "$(SEVENS_BUNDLE_ID)";
-				"INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp" = "NO";
-				"INFOPLIST_KEY_CFBundleDisplayName" = "$(SEVENS_DISPLAY_NAME)";
-				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				"SKIP_INSTALL" = "YES";
-				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 				"LD_RUNPATH_SEARCH_PATHS" = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp" = "NO";
+				"TARGETED_DEVICE_FAMILY" = "4";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				"SKIP_INSTALL" = "YES";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "$(SEVENS_DISPLAY_NAME)";
+				"SUPPORTED_PLATFORMS" = "watchos watchsimulator";
+				"SDKROOT" = "watchos";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"INFOPLIST_KEY_WKCompanionAppBundleIdentifier" = "$(SEVENS_BUNDLE_ID)";
+				"INFOPLIST_KEY_WKApplication" = "YES";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "$(SEVENS_BUNDLE_ID).watchkitapp";
+				"CODE_SIGN_ENTITLEMENTS" = "Config/Widgets.entitlements";
+				"INFOPLIST_KEY_SevensAppGroup" = "$(SEVENS_APP_GROUP)";
 			};
+			"name" = "Release";
 		};
 		"19655252014B5E4F1DF5EDDD" = {
 			"isa" = "XCConfigurationList";
@@ -661,27 +820,29 @@
 			"defaultConfigurationName" = "Release";
 		};
 		"D87CABA05D90965FAB7859D6" = {
-			"isa" = "PBXNativeTarget";
-			"name" = "FastWatch";
-			"productName" = "FastWatch";
+			"fileSystemSynchronizedGroups" = (
+				"D53611B138EAAB5B46ADDAB5",
+			);
 			"productType" = "com.apple.product-type.application";
 			"productReference" = "20FA42B6683980E509AE7296";
 			"buildConfigurationList" = "19655252014B5E4F1DF5EDDD";
+			"packageProductDependencies" = (
+				"4ABB415FC52F9246453A3AC4",
+				"E72E79F7589142800903E757",
+			);
+			"productName" = "FastWatch";
+			"isa" = "PBXNativeTarget";
 			"buildPhases" = (
 				"96FC3BB219C1ADD266103B1F",
 				"F93138EDF1588B8EAAC176DD",
 				"9066D453BDA4D7C9CCBFE96C",
-			);
-			"buildRules" = (
+				"8E459D375B600B654B0DCBD4",
 			);
 			"dependencies" = (
+				"15590B4E898A0672F2D548E2",
 			);
-			"fileSystemSynchronizedGroups" = (
-				"D53611B138EAAB5B46ADDAB5",
-			);
-			"packageProductDependencies" = (
-				"4ABB415FC52F9246453A3AC4",
-				"E72E79F7589142800903E757",
+			"name" = "FastWatch";
+			"buildRules" = (
 			);
 		};
 		"2841FA48DD110B8328D56506" = {

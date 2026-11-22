@@ -25,6 +25,7 @@ object TimerSurfaces {
                 Intent(context, MainActivity::class.java),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
+        WidgetGoalRefresh.schedule(context, archive)
         widgetScope.launch { FastGlanceWidget.refresh(context) }
         val notifications = context.getSystemService(NotificationManager::class.java)
         if (active == null || !archive.settings.liveActivity) {

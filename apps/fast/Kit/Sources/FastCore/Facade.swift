@@ -205,7 +205,8 @@ public extension FastWatchSnapshot {
         let active = archive.active
         self.init(revision: archive.companionRevision, generatedAt: now, activeID: active?.id, start: active?.start,
                   goal: active?.goalDate, waterMilliliters: WaterHistory.total(archive.metrics, on: now, calendar: calendar),
-                  canCreateRecords: canCreateRecords)
+                  canCreateRecords: canCreateRecords,
+                  presets: watchPresets(archive: archive).map { FastWatchPreset(id: $0.id, goalMinutes: $0.goalMinutes, eatingMinutes: $0.eatingMinutes) })
     }
 }
 
@@ -220,7 +221,7 @@ public extension FastArchive {
         case .water: .water
         }
         let companion = CompanionRequest(version: Int32(clamping: request.version), id: request.id, sentAt: request.sentAt,
-                                         action: action, revision: request.revision, activeId: request.activeID)
+                                         action: action, revision: request.revision, activeId: request.activeID, presetId: request.presetID)
         do {
             self = try watchApply(archive: self, request: companion, canCreateRecords: canCreateRecords,
                                   timeZoneId: TimeZone.current.identifier, now: now)

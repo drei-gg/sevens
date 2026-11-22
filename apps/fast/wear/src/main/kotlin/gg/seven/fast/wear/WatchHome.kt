@@ -13,7 +13,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -29,15 +31,18 @@ import androidx.wear.compose.material3.FilledTonalButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.MaterialTheme
-import androidx.wear.compose.material3.ProgressIndicatorDefaults
 import androidx.wear.compose.material3.OutlinedButton
+import androidx.wear.compose.material3.ProgressIndicatorDefaults
 import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
+import androidx.wear.compose.material3.lazy.rememberTransformationSpec
+import androidx.wear.compose.material3.lazy.transformedHeight
 import gg.seven.fast.wire.WireAction
 import gg.seven.fast.wire.WireRequest
+import gg.seven.fast.wire.WireSnapshot
 import java.util.Date
-import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -49,9 +54,12 @@ fun WatchHome(model: WatchModel) {
     val busy by model.busy.collectAsState()
     val status by model.status.collectAsState()
     val reachable by model.reachable.collectAsState()
+    var dismissPending by remember { mutableStateOf(false) }
+    var presetSnapshot by remember { mutableStateOf<WireSnapshot?>(null) }
     var endRequest by remember { mutableStateOf<WireRequest?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
     val canAct = reachable && !busy && pending == null
     val now by
         produceState(System.currentTimeMillis()) {
@@ -62,6 +70,7 @@ fun WatchHome(model: WatchModel) {
         }
     val listState = rememberTransformingLazyColumnState()
     MaterialTheme(colorScheme = SevensWatchColors) {
+        val transformation = rememberTransformationSpec()
         AppScaffold(timeText = { TimeText() }) {
             ScreenScaffold(listState) { padding ->
                 Box(Modifier.fillMaxSize()) {
@@ -73,19 +82,41 @@ fun WatchHome(model: WatchModel) {
                             colors = ProgressIndicatorDefaults.colors(indicatorColor = TimeHue),
                         )
                     }
-                    TransformingLazyColumn(state = listState, contentPadding = padding) {
+                    TransformingLazyColumn(
+                        state = listState,
+                        contentPadding = padding,
+                        modifier = Modifier.testTag("watch-list"),
+                    ) {
                         item { ListHeader { Text(stringResource(R.string.title)) } }
                         val current = snapshot
                         if (current != null) {
                             val start = current.start
                             if (start != null) {
-                                item { Text(stringResource(R.string.fasting), style = MaterialTheme.typography.titleMedium) }
-                                item { Text(elapsedText(now - start), style = MaterialTheme.typography.displaySmall) }
+                                item {
+                                    Text(
+                                        stringResource(R.string.fasting),
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+                                }
+                                item {
+                                    Text(
+                                        elapsedText(now - start),
+                                        style = MaterialTheme.typography.displaySmall,
+                                    )
+                                }
                                 current.goal?.let { goal ->
                                     item {
-                                        val pattern = DateFormat.getBestDateTimePattern(Locale.getDefault(), if (DateFormat.is24HourFormat(context)) "Hm" else "hm")
+                                        val pattern =
+                                            DateFormat.getBestDateTimePattern(
+                                                locale,
+                                                if (DateFormat.is24HourFormat(context)) "Hm"
+                                                else "hm",
+                                            )
                                         Text(
-                                            stringResource(R.string.goal, DateFormat.format(pattern, Date(goal)).toString()),
+                                            stringResource(
+                                                R.string.goal,
+                                                DateFormat.format(pattern, Date(goal)).toString(),
+                                            ),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -93,66 +124,158 @@ fun WatchHome(model: WatchModel) {
                                 }
                                 item {
                                     Button(
-                                        onClick = { endRequest = WireRequest.create(WireAction.END, current.revision, current.activeId) },
+                                        onClick = {
+                                            endRequest =
+                                                WireRequest.create(
+                                                    WireAction.END,
+                                                    current.revision,
+                                                    current.activeId,
+                                                )
+                                        },
                                         enabled = canAct,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer),
+                                        modifier =
+                                            Modifier.fillMaxWidth()
+                                                .transformedHeight(this, transformation),
+                                        transformation = SurfaceTransformation(transformation),
+                                        colors =
+                                            ButtonDefaults.buttonColors(
+                                                containerColor =
+                                                    MaterialTheme.colorScheme.errorContainer,
+                                                contentColor =
+                                                    MaterialTheme.colorScheme.onErrorContainer,
+                                            ),
                                         label = { Text(stringResource(R.string.end_fast)) },
                                     )
                                 }
                             } else {
-                                item { Text(stringResource(R.string.own_pace), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center) }
+                                item {
+                                    Text(
+                                        stringResource(R.string.own_pace),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
                                 item {
                                     Button(
-                                        onClick = { scope.launch { model.perform(WireAction.START) } },
+                                        onClick = {
+                                            if (current.presets.isNullOrEmpty())
+                                                scope.launch { model.perform(WireAction.START) }
+                                            else presetSnapshot = current
+                                        },
                                         enabled = canAct && current.canCreateRecords,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        label = { Text(stringResource(R.string.start_fast)) },
+                                        modifier =
+                                            Modifier.fillMaxWidth()
+                                                .transformedHeight(this, transformation),
+                                        transformation = SurfaceTransformation(transformation),
+                                        label = {
+                                            Text(
+                                                stringResource(
+                                                    if (current.presets.isNullOrEmpty())
+                                                        R.string.start_fast
+                                                    else R.string.choose_fast
+                                                )
+                                            )
+                                        },
                                     )
                                 }
                             }
-                            item { Text(stringResource(R.string.water, current.waterMilliliters.toInt()), style = MaterialTheme.typography.bodySmall) }
+                            item {
+                                Text(
+                                    stringResource(
+                                        R.string.water,
+                                        current.waterMilliliters.toInt(),
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
                             item {
                                 FilledTonalButton(
                                     onClick = { scope.launch { model.perform(WireAction.WATER) } },
                                     enabled = canAct && current.canCreateRecords,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    icon = { Icon(painterResource(R.drawable.ic_water), contentDescription = null, tint = WaterHue) },
+                                    modifier =
+                                        Modifier.fillMaxWidth()
+                                            .transformedHeight(this, transformation),
+                                    transformation = SurfaceTransformation(transformation),
+                                    icon = {
+                                        Icon(
+                                            painterResource(R.drawable.ic_water),
+                                            contentDescription = null,
+                                            tint = WaterHue,
+                                        )
+                                    },
                                     label = { Text(stringResource(R.string.add_water)) },
                                 )
                             }
                             item {
-                                val pattern = DateFormat.getBestDateTimePattern(Locale.getDefault(), if (DateFormat.is24HourFormat(context)) "MMMdHm" else "MMMdhm")
+                                val pattern =
+                                    DateFormat.getBestDateTimePattern(
+                                        locale,
+                                        if (DateFormat.is24HourFormat(context)) "MMMdHm"
+                                        else "MMMdhm",
+                                    )
                                 Text(
-                                    stringResource(R.string.last_synced, DateFormat.format(pattern, Date(current.generatedAt)).toString()),
+                                    stringResource(
+                                        R.string.last_synced,
+                                        DateFormat.format(pattern, Date(current.generatedAt))
+                                            .toString(),
+                                    ),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center,
                                 )
                             }
                         } else {
-                            item { Text(stringResource(R.string.no_snapshot), textAlign = TextAlign.Center) }
+                            item {
+                                Text(
+                                    stringResource(R.string.no_snapshot),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
                         }
                         if (!reachable)
                             item {
-                                Text(stringResource(R.string.disconnected), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                                Text(
+                                    stringResource(R.string.disconnected),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
                             }
-                        if (busy) item { Text(stringResource(R.string.saving), style = MaterialTheme.typography.bodySmall) }
-                        status?.let { item { Text(stringResource(it), style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center) } }
+                        if (busy)
+                            item {
+                                Text(
+                                    stringResource(R.string.saving),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        status?.let {
+                            item {
+                                Text(
+                                    stringResource(it),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
                         if (pending != null) {
                             item {
                                 FilledTonalButton(
                                     onClick = { scope.launch { model.retry() } },
                                     enabled = !busy && reachable,
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier =
+                                        Modifier.fillMaxWidth()
+                                            .transformedHeight(this, transformation),
+                                    transformation = SurfaceTransformation(transformation),
                                     label = { Text(stringResource(R.string.retry)) },
                                 )
                             }
                             item {
                                 OutlinedButton(
-                                    onClick = model::dismissPending,
+                                    onClick = { dismissPending = true },
                                     enabled = !busy,
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier =
+                                        Modifier.fillMaxWidth()
+                                            .transformedHeight(this, transformation),
+                                    transformation = SurfaceTransformation(transformation),
                                     label = { Text(stringResource(R.string.dismiss)) },
                                 )
                             }
@@ -161,10 +284,74 @@ fun WatchHome(model: WatchModel) {
                             OutlinedButton(
                                 onClick = { scope.launch { model.refresh() } },
                                 enabled = !busy && reachable,
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier =
+                                    Modifier.fillMaxWidth().transformedHeight(this, transformation),
+                                transformation = SurfaceTransformation(transformation),
                                 label = { Text(stringResource(R.string.refresh)) },
                             )
                         }
+                    }
+                }
+            }
+            AlertDialog(
+                visible = dismissPending,
+                onDismissRequest = { dismissPending = false },
+                title = { Text(stringResource(R.string.dismiss_confirm)) },
+                text = { Text(stringResource(R.string.dismiss_explanation)) },
+                confirmButton = {
+                    AlertDialogDefaults.ConfirmButton(
+                        onClick = {
+                            dismissPending = false
+                            model.dismissPending()
+                        }
+                    )
+                },
+                dismissButton = {
+                    AlertDialogDefaults.DismissButton(onClick = { dismissPending = false })
+                },
+            )
+            AlertDialog(
+                visible = presetSnapshot != null,
+                onDismissRequest = { presetSnapshot = null },
+                title = { Text(stringResource(R.string.saved_presets)) },
+            ) {
+                val source = presetSnapshot
+                source?.presets?.forEach { preset ->
+                    item {
+                        Button(
+                            modifier = Modifier.fillMaxWidth().testTag("preset-${preset.id}"),
+                            enabled =
+                                canAct &&
+                                    snapshot?.activeId == null &&
+                                    snapshot?.canCreateRecords == true,
+                            onClick = {
+                                val request =
+                                    WireRequest.create(
+                                        WireAction.START,
+                                        source.revision,
+                                        source.activeId,
+                                        presetId = preset.id,
+                                    )
+                                presetSnapshot = null
+                                scope.launch { model.perform(request) }
+                            },
+                            label = {
+                                Text(
+                                    preset.goalMinutes?.let {
+                                        stringResource(R.string.start_duration, durationText(it))
+                                    } ?: stringResource(R.string.start_open)
+                                )
+                            },
+                            secondaryLabel = {
+                                if (preset.eatingMinutes > 0)
+                                    Text(
+                                        stringResource(
+                                            R.string.eating_window,
+                                            durationText(preset.eatingMinutes),
+                                        )
+                                    )
+                            },
+                        )
                     }
                 }
             }
@@ -181,7 +368,9 @@ fun WatchHome(model: WatchModel) {
                         }
                     )
                 },
-                dismissButton = { AlertDialogDefaults.DismissButton(onClick = { endRequest = null }) },
+                dismissButton = {
+                    AlertDialogDefaults.DismissButton(onClick = { endRequest = null })
+                },
             )
         }
     }
@@ -212,3 +401,11 @@ private val SevensWatchColors =
 /** Data hues colour data only (the goal ring, the water glyph), never controls. */
 private val TimeHue = androidx.compose.ui.graphics.Color(0xFFF5913A)
 private val WaterHue = androidx.compose.ui.graphics.Color(0xFF5EA8F2)
+
+@Composable
+private fun durationText(minutes: Int): String =
+    when {
+        minutes < 60 -> stringResource(R.string.duration_minutes, minutes)
+        minutes % 60 == 0 -> stringResource(R.string.duration_hours, minutes / 60)
+        else -> stringResource(R.string.duration_hours_minutes, minutes / 60, minutes % 60)
+    }

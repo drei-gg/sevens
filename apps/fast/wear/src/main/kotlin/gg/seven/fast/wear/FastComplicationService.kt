@@ -8,6 +8,7 @@ import androidx.wear.watchface.complications.data.ComplicationType
 import androidx.wear.watchface.complications.data.CountUpTimeReference
 import androidx.wear.watchface.complications.data.LongTextComplicationData
 import androidx.wear.watchface.complications.data.MonochromaticImage
+import androidx.wear.watchface.complications.data.NoDataComplicationData
 import androidx.wear.watchface.complications.data.PlainComplicationText
 import androidx.wear.watchface.complications.data.RangedValueComplicationData
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
@@ -27,46 +28,118 @@ class FastComplicationService : SuspendingComplicationDataSourceService() {
     override fun getPreviewData(type: ComplicationType): ComplicationData? {
         val now = System.currentTimeMillis()
         val start = now - (3 * 60 + 25) * 60_000L
-        return data(type, WireSnapshot(java.util.UUID(0, 0), now, null, start, start + 16 * 3_600_000L, 0.0, true), now)
+        return data(
+            type,
+            WireSnapshot(
+                java.util.UUID(0, 0),
+                now,
+                null,
+                start,
+                start + 16 * 3_600_000L,
+                0.0,
+                true,
+            ),
+            now,
+        )
     }
 
     private fun plain(text: String) = PlainComplicationText.Builder(text).build()
 
-    private fun data(type: ComplicationType, snapshot: WireSnapshot?, now: Long): ComplicationData? {
+    private fun data(
+        type: ComplicationType,
+        snapshot: WireSnapshot?,
+        now: Long,
+    ): ComplicationData? {
         val start = snapshot?.start
-        val icon = MonochromaticImage.Builder(Icon.createWithResource(this, R.drawable.ic_fast)).build()
+        val icon =
+            MonochromaticImage.Builder(Icon.createWithResource(this, R.drawable.ic_fast)).build()
         val tap = Surfaces.openApp(this)
         val description = plain(getString(R.string.complication_label))
         if (start == null) {
-            val idle = getString(R.string.no_fast)
+            val idle = getString(if (snapshot == null) R.string.sync_fast else R.string.no_fast)
             return when (type) {
-                ComplicationType.SHORT_TEXT -> ShortTextComplicationData.Builder(plain(idle), description).setMonochromaticImage(icon).setTapAction(tap).build()
+                ComplicationType.SHORT_TEXT ->
+                    ShortTextComplicationData.Builder(plain(idle), description)
+                        .setMonochromaticImage(icon)
+                        .setTapAction(tap)
+                        .build()
                 ComplicationType.LONG_TEXT ->
-                    LongTextComplicationData.Builder(plain(getString(R.string.not_fasting)), description).setMonochromaticImage(icon).setTapAction(tap).build()
+                    LongTextComplicationData.Builder(
+                            plain(
+                                getString(
+                                    if (snapshot == null) R.string.no_snapshot
+                                    else R.string.not_fasting
+                                )
+                            ),
+                            description,
+                        )
+                        .setMonochromaticImage(icon)
+                        .setTapAction(tap)
+                        .build()
                 ComplicationType.RANGED_VALUE ->
-                    RangedValueComplicationData.Builder(0f, 0f, 1f, description).setText(plain(idle)).setMonochromaticImage(icon).setTapAction(tap).build()
+                    RangedValueComplicationData.Builder(0f, 0f, 1f, description)
+                        .setText(plain(idle))
+                        .setMonochromaticImage(icon)
+                        .setTapAction(tap)
+                        .build()
                 else -> null
             }
         }
         val elapsed =
-            TimeDifferenceComplicationText.Builder(TimeDifferenceStyle.SHORT_DUAL_UNIT, CountUpTimeReference(Instant.ofEpochMilli(start)))
+            TimeDifferenceComplicationText.Builder(
+                    TimeDifferenceStyle.SHORT_DUAL_UNIT,
+                    CountUpTimeReference(Instant.ofEpochMilli(start)),
+                )
                 .setMinimumTimeUnit(TimeUnit.MINUTES)
                 .build()
         val goal = snapshot.goal
         return when (type) {
-            ComplicationType.SHORT_TEXT -> ShortTextComplicationData.Builder(elapsed, description).setMonochromaticImage(icon).setTapAction(tap).build()
+            ComplicationType.SHORT_TEXT ->
+                ShortTextComplicationData.Builder(elapsed, description)
+                    .setMonochromaticImage(icon)
+                    .setTapAction(tap)
+                    .build()
             ComplicationType.LONG_TEXT -> {
                 val text =
                     if (goal != null && goal > start)
-                        TimeDifferenceComplicationText.Builder(TimeDifferenceStyle.SHORT_DUAL_UNIT, CountUpTimeReference(Instant.ofEpochMilli(start)))
+                        TimeDifferenceComplicationText.Builder(
+                                TimeDifferenceStyle.SHORT_DUAL_UNIT,
+                                CountUpTimeReference(Instant.ofEpochMilli(start)),
+                            )
                             .setMinimumTimeUnit(TimeUnit.MINUTES)
-                            .setText(getString(R.string.elapsed_of_goal, "^1", shortDuration(goal - start)))
+                            .setText(
+                                getString(
+                                    R.string.elapsed_of_goal,
+                                    "^1",
+                                    shortDuration(goal - start),
+                                )
+                            )
                             .build()
                     else elapsed
-                LongTextComplicationData.Builder(text, description).setTitle(plain(getString(R.string.fasting))).setMonochromaticImage(icon).setTapAction(tap).build()
+                LongTextComplicationData.Builder(text, description)
+                    .setTitle(plain(getString(R.string.fasting)))
+                    .setMonochromaticImage(icon)
+                    .setTapAction(tap)
+                    .build()
             }
             ComplicationType.RANGED_VALUE -> {
-                val span = if (goal != null && goal > start) (goal - start) / 1000f else 16 * 3600f
+                // An open-ended fast has elapsed time, but no goal percentage. Keep its live
+                // text and tap action while marking the unsupported range as unavailable.
+                if (goal == null || goal <= start) {
+                    return NoDataComplicationData(
+                        RangedValueComplicationData.Builder(
+                                RangedValueComplicationData.PLACEHOLDER,
+                                0f,
+                                1f,
+                                plain(getString(R.string.open_ended)),
+                            )
+                            .setText(elapsed)
+                            .setMonochromaticImage(icon)
+                            .setTapAction(tap)
+                            .build()
+                    )
+                }
+                val span = (goal - start) / 1000f
                 val seconds = ((now - start) / 1000f).coerceIn(0f, span)
                 // Live where the watch face supports dynamic values; the static value otherwise.
                 val live =
@@ -75,13 +148,10 @@ class FastComplicationService : SuspendingComplicationDataSourceService() {
                         .toIntSeconds()
                         .asFloat()
                 val builder =
-                    if (Build.VERSION.SDK_INT >= 33) RangedValueComplicationData.Builder(live, seconds, 0f, span, description)
+                    if (Build.VERSION.SDK_INT >= 33)
+                        RangedValueComplicationData.Builder(live, seconds, 0f, span, description)
                     else RangedValueComplicationData.Builder(seconds, 0f, span, description)
-                builder
-                    .setText(elapsed)
-                    .setMonochromaticImage(icon)
-                    .setTapAction(tap)
-                    .build()
+                builder.setText(elapsed).setMonochromaticImage(icon).setTapAction(tap).build()
             }
             else -> null
         }

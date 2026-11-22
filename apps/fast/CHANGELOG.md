@@ -1,5 +1,11 @@
 # Changelog
 
+## 18 November 2026 — feature continuation, not released
+
+- Native Wear/watchOS preset selection now includes built-in and saved durations with versioned commands, stale-state/replay checks, and no private names in the snapshot. Wear persists its pending queue before sending, observes locale changes, and uses native list transformations. Both watches confirm queue clearing.
+
+- Added Apple Watch timer complications and a timer-only app-group snapshot. Android Wear now distinguishes an unsynced watch from an idle timer and avoids fabricated progress for open-ended fasts. Paired physical-watch acceptance remains open.
+
 ## 0.1.0 — in development
 
 - Editable fasting and eating windows, including open-ended records and forgotten fasts.
@@ -56,3 +62,10 @@
 - Native Android timer widget/notification, local reminders and optional manual Health Connect weight import.
 - Store-only Google Play one-time purchase integration; production Play configuration and device acceptance remain release work.
 - See [Android](android/README.md) for platform differences and the [shared build guide](../../android/README.md) for build/signing gates.
+
+### Android controls and widgets — 17 November 2026
+
+- Shared Material 3 Expressive controls keep date/time pickers accessible, offer keyboard time entry and respect the device's clock preference. Connected choices wrap at large text sizes; inline search has a clear action.
+- Compact and wide timer widgets use a live system clock, show the planned finish or goal-reached state, and refresh after saves and at the goal even when reminder notifications are off. Android may delay background updates. The widget can be added from Settings and is eligible for lock-screen placement on supporting hosts.
+
+- Pin the widget worker runtime to WorkManager 2.11.0, matching Bloom; fixes the optimized build failing to initialize the older transitive Room database.
