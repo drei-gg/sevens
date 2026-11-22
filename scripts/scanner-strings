@@ -32,12 +32,14 @@ plurals = {
  'unreadable':('%lld document folder could not be read. Its files have been preserved. Backup is paused until it can be recovered.',
                '%lld document folders could not be read. Their files have been preserved. Backup is paused until they can be recovered.'),
  'annotate':('Annotate · %lld mark','Annotate · %lld marks'),
- 'overflow':('This document holds 50 pages at most, so the last %lld page you scanned was saved as a new document.',
-             'This document holds 50 pages at most, so the last %lld pages you scanned were saved as a new document.'),
- 'overflowDocuments':('This document holds 50 pages at most, so the pages that didn’t fit were saved as %lld new document.',
-                      'This document holds 50 pages at most, so the pages that didn’t fit were saved as %lld new documents.'),
- 'split':('Documents hold 50 pages at most, so this scan was saved as %lld document.',
-          'Documents hold 50 pages at most, so this scan was saved as %lld documents.')}
+ 'overflow':('Not every page fit in this document (50 pages and 100 MB of images at most), so the last %lld page you scanned was saved as a new document.',
+             'Not every page fit in this document (50 pages and 100 MB of images at most), so the last %lld pages you scanned were saved as a new document.'),
+ 'overflowDocuments':('Not every page fit in this document (50 pages and 100 MB of images at most), so the rest were saved as %lld new document.',
+                      'Not every page fit in this document (50 pages and 100 MB of images at most), so the rest were saved as %lld new documents.'),
+ 'split':('A document holds 50 pages and 100 MB of images at most, so this scan was saved as %lld document.',
+          'A document holds 50 pages and 100 MB of images at most, so this scan was saved as %lld documents.'),
+ 'unsaved':('%lld scanned page couldn’t be saved. It is kept until you try again or discard it.',
+            '%lld scanned pages couldn’t be saved. They are kept until you try again or discard them.')}
 for key,(one,other) in plurals.items():
  catalog['strings']['scanner.count.'+key]={'comment':'Scanner count. %lld is the number.','extractionState':'manual','localizations':{'en':{'variations':{'plural':{n:{'stringUnit':{'state':'translated','value':v}} for n,v in [('one',one),('other',other)]}}}}}
 path.write_text(json.dumps(catalog,ensure_ascii=False,indent=2,sort_keys=True)+'\n')
