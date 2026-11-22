@@ -93,6 +93,28 @@ private enum Fixtures {
     #expect(report.signals.map(\.id).contains(.asksForSecret))
 }
 
+@Test func specGapAPIsReachTheCore() {
+    let analyzer = Analyzer(data: BundledData.shared)
+    let https = analyzer.analyze(ScannedCode(text: "https://bit.ly/abc"))
+    #expect(https.canPeek)
+    #expect(analyzer.analyze(ScannedCode(text: "http://example.com/")).canPeek)
+    #expect(!analyzer.analyze(ScannedCode(text: "javascript:alert(1)")).canPeek)
+    let capture = PeekCapture(hops: [PeekHop(url: "https://bit.ly/abc", status: 301),
+                                     PeekHop(url: "https://landing.example.org/", status: 200)], stoppedBecause: .finished)
+    #expect(PeekAge.link(original: https, capture: capture, data: BundledData.shared)?.hostASCII == "landing.example.org")
+    var known = KnownAddresses()
+    known.add("example.org", at: Date(timeIntervalSince1970: 0))
+    let report = PeekAnalyzer.withKnown(data: BundledData.shared, known: known)
+        .report(original: https, capture: capture, ageDays: 4000)
+    #expect(report.hopAnalyses.count == 2)
+    #expect(report.hopAnalyses[1].signals.map(\.id).contains(.knownByYou))
+    #expect(PhoneNumber.international("0063 917 123 4567") == "+639171234567")
+    #expect(PhoneNumber.international("0917 123 4567") == nil)
+    let csv = HistoryExport.csv([], known: known)
+    #expect(csv.hasSuffix(",knownAddress,,,example.org,,,,\r\n"))
+    #expect(batchReview(text: "").issueKind == .empty)
+}
+
 @Test func historyAndKnownFilesRoundTrip() throws {
     let analysis = Analyzer(data: BundledData.shared).analyze(ScannedCode(text: "http://paypa1-secure.example.zip/login"))
     let item = HistoryItem(analysis: analysis, kind: .scanned, date: Date(timeIntervalSince1970: 1_800_000_000))

@@ -1,0 +1,24 @@
+{
+ "id": "peekreport-http-original-not-fetched",
+ "original": "http://menu.example.com/",
+ "hops": [
+  {
+   "url": "http://menu.example.com/",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "httpTarget",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": 4000,
+ "expect": {
+  "title": null,
+  "signals": [],
+  "info": [],
+  "level": 1,
+  "finalHost": null,
+  "hopLevels": [
+   1
+  ]
+ }
+}

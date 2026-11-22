@@ -299,20 +299,70 @@ fn analyzer_embedded_keeps_symbology_and_never_recurses() {
 }
 
 #[test]
-fn analyzer_at_most_ten_embedded() {
-    let text = format!(
-        "links: {}",
-        (0..25)
-            .map(|i| format!("http://h{i}.example.com/"))
-            .collect::<Vec<_>>()
-            .join(" ")
-    );
+fn analyzer_checks_every_embedded_link_in_the_window() {
+    // The verdict sees the 25th link too (SPEC §4.2: links found inside get checked).
+    let mut links: Vec<String> = (0..24)
+        .map(|i| format!("https://h{i}.example.com/"))
+        .collect();
+    links.push("javascript:alert(1)".into());
+    let text = format!("links: {}", links.join(" "));
     let a = run(&text, Symbology::Qr);
-    assert_eq!(a.embedded.len(), 10);
+    assert_eq!(a.embedded.len(), 25);
     let Payload::Text { info } = &a.payload else {
         panic!()
     };
-    assert_eq!(info.links.len(), 10);
+    assert_eq!(info.links.len(), 25);
+    assert_eq!(a.level, Level::LikelyScam);
+    assert!(ids(&a.embedded[24].signals).contains(&SignalId::DangerousScheme));
+}
+
+#[test]
+fn analyzer_links_past_eight_kilobytes_are_not_searched() {
+    let text = format!("{} https://paypa1.com/x", "word ".repeat(1700));
+    assert!(text.len() < 9000 && text.len() > 8192);
+    let a = run(&text, Symbology::Qr);
+    assert!(a.embedded.is_empty());
+    assert_eq!(a.level, Level::Normal);
+}
+
+#[test]
+fn analyzer_many_links_stay_fast() {
+    let text = "www.a.com ".repeat(819);
+    let start = std::time::Instant::now();
+    let a = run(&text, Symbology::Qr);
+    assert_eq!(a.embedded.len(), 1); // deduplicated
+    let distinct: String = (0..800).map(|i| format!("www.a{i}.com ")).collect();
+    let b = run(&distinct[..8000], Symbology::Qr);
+    assert!(b.embedded.len() > 600);
+    assert!(start.elapsed().as_secs_f64() < 5.0, "{:?}", start.elapsed());
+}
+
+#[test]
+fn analyzer_dangerous_schemes_inside_text_reach_the_verdict() {
+    for (text, scheme) in [
+        ("Tap javascript:fetch('//x.example') now", "javascript"),
+        ("img data:text/html,<script>", "data"),
+        ("open FILE:///etc/passwd", "file"),
+        ("x data:;base64,AAAA", "data"),
+    ] {
+        let a = run(text, Symbology::Qr);
+        assert_eq!(a.level, Level::LikelyScam, "{text}");
+        let e = &a.embedded[0];
+        assert_eq!(arg(e.signals.first(), "scheme"), Some(scheme), "{text}");
+    }
+    // Prose that only looks like it.
+    for text in [
+        "Mobile data: 5 GB",
+        "the metadata:x/y field",
+        "profile file: notes",
+        "see file:notes.txt",
+        "Read JavaScript: the good parts",
+        "used data:5GB",
+    ] {
+        let a = run(text, Symbology::Qr);
+        assert!(a.embedded.is_empty(), "{text}: {:?}", a.embedded);
+        assert_eq!(a.level, Level::Normal, "{text}");
+    }
 }
 
 #[test]
@@ -357,6 +407,53 @@ fn analyzer_eight_kilobyte_cap() {
         panic!()
     };
     assert!(!info.is_truncated);
+}
+
+#[test]
+fn analyzer_long_structured_codes_keep_their_structure() {
+    // SPEC §4.2: only the link search stops at 8 KB; a big vCard is still a contact.
+    let note = "Lorem ipsum dolor sit amet. ".repeat(500);
+    let card = format!(
+        "BEGIN:VCARD\nVERSION:3.0\nFN:Ana Reyes\nNOTE:{note} https://paypa1.com/late\nTEL:+639171234567\nURL:https://example.com/\nEND:VCARD"
+    );
+    assert!(card.len() > 12_000);
+    let a = run(&card, Symbology::Qr);
+    let Payload::Contact { info } = &a.payload else {
+        panic!("{:?}", a.payload.type_id())
+    };
+    assert_eq!(info.name.as_deref(), Some("Ana Reyes"));
+    assert_eq!(info.phones, vec!["+639171234567".to_string()]);
+    // The URL field is a link of its own; the note's late link is past its 8 KB window.
+    assert_eq!(info.links, vec!["https://example.com/".to_string()]);
+    assert_eq!(a.level, Level::Normal);
+    let event = format!(
+        "BEGIN:VEVENT\nSUMMARY:Launch\nDTSTART:20261110T090000Z\nDESCRIPTION:{note}\nLOCATION:Hall https://e.example/2\nEND:VEVENT"
+    );
+    let e = run(&event, Symbology::Qr);
+    let Payload::Event { info } = &e.payload else {
+        panic!()
+    };
+    assert_eq!(info.summary.as_deref(), Some("Launch"));
+    assert_eq!(info.links, vec!["https://e.example/2".to_string()]);
+}
+
+#[test]
+fn analyzer_long_links_and_fixed_formats_are_text() {
+    let link = format!("https://example.com/{}", "a".repeat(9000));
+    let Payload::Text { info } = run(&link, Symbology::Qr).payload else {
+        panic!()
+    };
+    assert!(info.is_truncated && info.text.len() <= 8192);
+    // The link's own first 8 KB is still searched.
+    assert_eq!(info.links.len(), 1);
+    let wifi = format!("WIFI:T:nopass;S:Big;;{}", "a".repeat(9000));
+    assert_eq!(run(&wifi, Symbology::Qr).payload.type_id(), "text");
+    // Past the 64 KB input cap even a contact is shown cut, as text.
+    let huge = format!("BEGIN:VCARD\nFN:A\nNOTE:{}\nEND:VCARD", "a".repeat(70_000));
+    let Payload::Text { info } = run(&huge, Symbology::Qr).payload else {
+        panic!()
+    };
+    assert!(info.is_truncated);
 }
 
 #[test]

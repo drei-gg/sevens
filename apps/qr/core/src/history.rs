@@ -315,6 +315,16 @@ pub fn export_known_addresses(bytes: &[u8]) -> KnownAddresses {
 
 /// RFC 4180 (CRLF); a cell starting with `= + - @` gets a leading `'`.
 pub fn export_csv(items: &[HistoryItem]) -> String {
+    export_csv_with_known(items, None)
+}
+
+/// The `kind` of a CSV row that is an address the person told us they know, not a scan.
+pub const CSV_KNOWN_ADDRESS_KIND: &str = "knownAddress";
+
+/// `export_csv`, then with `known` one row per address the person told us they know (SPEC §10):
+/// `date` is when they said so, `kind` is `knownAddress`, `payload` is the registrable domain and
+/// the other cells are empty.
+pub fn export_csv_with_known(items: &[HistoryItem], known: Option<&KnownAddresses>) -> String {
     let mut rows = vec!["date,kind,type,level,payload,note,signals,symbology,id".to_string()];
     for i in items {
         let level = match i.level {
@@ -332,6 +342,20 @@ pub fn export_csv(items: &[HistoryItem]) -> String {
             i.signal_ids.join(" "),
             i.symbology.raw().to_string(),
             i.id.hyphenated().to_string().to_uppercase(),
+        ];
+        rows.push(cells.iter().map(|c| cell(c)).collect::<Vec<_>>().join(","));
+    }
+    for entry in known.map(|k| k.entries.as_slice()).unwrap_or_default() {
+        let cells = [
+            time::iso8601(entry.added),
+            CSV_KNOWN_ADDRESS_KIND.to_string(),
+            String::new(),
+            String::new(),
+            entry.domain.clone(),
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
         ];
         rows.push(cells.iter().map(|c| cell(c)).collect::<Vec<_>>().join(","));
     }
@@ -362,6 +386,15 @@ pub fn history_export_known_addresses(bytes: Vec<u8>) -> KnownAddresses {
 #[uniffi::export]
 pub fn history_export_csv(items: Vec<HistoryItem>) -> String {
     export_csv(&items)
+}
+
+/// The CSV export with the addresses the person knows as `knownAddress` rows (SPEC §10).
+#[uniffi::export]
+pub fn history_export_csv_with_known(
+    items: Vec<HistoryItem>,
+    known: Option<KnownAddresses>,
+) -> String {
+    export_csv_with_known(&items, known.as_ref())
 }
 
 /// `history.v1.json`, the file the platform store keeps.

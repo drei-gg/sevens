@@ -1,0 +1,28 @@
+{
+ "id": "peekreport-age-after-timeout",
+ "original": "https://slow-new.example.com/",
+ "hops": [
+  {
+   "url": "https://slow-new.example.com/",
+   "status": null
+  }
+ ],
+ "stoppedBecause": "timeout",
+ "contentType": null,
+ "contentDisposition": null,
+ "ageDays": 10,
+ "expect": {
+  "title": null,
+  "signals": [
+   "domainVeryNew"
+  ],
+  "info": [
+   "peekIncomplete"
+  ],
+  "level": 2,
+  "finalHost": null,
+  "hopLevels": [
+   0
+  ]
+ }
+}

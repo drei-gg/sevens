@@ -883,6 +883,100 @@ pub const DOWNLOAD_EXTENSIONS: &[&str] = &[
     "bat",
 ];
 
+/// Content types that mean the link hands over a file to install or open rather than a page:
+/// configuration profiles, app packages, installers, disk images and archives.
+/// `application/octet-stream` counts too, unless the body is a page after all.
+pub const DOWNLOAD_MIME_TYPES: &[&str] = &[
+    "application/x-apple-aspen-config",
+    "application/vnd.android.package-archive",
+    "application/x-itunes-ipa",
+    "application/x-ios-app",
+    "application/x-msdownload",
+    "application/x-msdos-program",
+    "application/x-dosexec",
+    "application/vnd.microsoft.portable-executable",
+    "application/x-msi",
+    "application/x-ms-installer",
+    "application/x-ms-shortcut",
+    "application/x-apple-diskimage",
+    "application/vnd.apple.installer+xml",
+    "application/x-newton-compatible-pkg",
+    "application/java-archive",
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/x-7z-compressed",
+    "application/x-rar-compressed",
+    "application/vnd.rar",
+    "application/x-sh",
+    "application/x-bat",
+];
+
+/// The `type/subtype` of a Content-Type header, lowercased, without parameters.
+fn mime_essence(content_type: &str) -> String {
+    let lower = t::lower(content_type);
+    lower.split(';').next().unwrap_or("").trim().to_string()
+}
+
+/// Peek can look at this scan: a web link (https is fetched; plain http only has its domain's
+/// age looked up, SPEC §6.1). False for other payloads and for `javascript:`, `data:` and
+/// `file:` links, which have no page to fetch.
+pub fn peek_available_for(analysis: &Analysis) -> bool {
+    match &analysis.payload {
+        Payload::Link { info } => {
+            (info.scheme == "https" || info.scheme == "http") && !info.host_ascii.is_empty()
+        }
+        _ => false,
+    }
+}
+
+/// Whether to offer Peek for a scan (SPEC §3, §6). Platforms gate the Peek button on this.
+#[uniffi::export]
+pub fn peek_available(analysis: Analysis) -> bool {
+    peek_available_for(&analysis)
+}
+
+/// The last hop that answered (status set), parsed: the page Peek actually reached.
+fn final_reached(capture: &PeekCapture, data: &BundledData) -> Option<LinkInfo> {
+    capture
+        .hops
+        .iter()
+        .rev()
+        .find(|h| h.status.is_some())
+        .and_then(|h| WebAddress::parse(&h.url, &data.public_suffixes))
+        .map(|a| a.link)
+}
+
+/// SPEC §6.2: the address whose domain age Peek reports. The last hop that answered, when it has
+/// a registrable domain; otherwise the scanned link (a timeout, a failed fetch, a plain-http link
+/// that isn't fetched). None when neither has a registrable domain (an IP address, an unknown
+/// ending).
+pub fn age_link_for(
+    original: &Analysis,
+    capture: &PeekCapture,
+    data: &BundledData,
+) -> Option<LinkInfo> {
+    let usable = |l: &LinkInfo| l.registrable_domain.is_some() && !l.is_ip_address;
+    if let Some(reached) = final_reached(capture, data).filter(usable) {
+        return Some(reached);
+    }
+    match &original.payload {
+        Payload::Link { info } if usable(info) => Some(info.clone()),
+        _ => None,
+    }
+}
+
+/// The address whose registration age Peek looks up, once the fetch is over (see `age_link_for`).
+/// A platform may start the lookup for the scanned link alongside the fetch and reuse it when
+/// this comes back with the same registrable domain.
+#[uniffi::export]
+pub fn peek_age_link(
+    original: Analysis,
+    capture: PeekCapture,
+    data: Arc<BundledData>,
+) -> Option<LinkInfo> {
+    age_link_for(&original, &capture, &data)
+}
+
 /// Hops + page → signals (SPEC §6).
 #[derive(uniffi::Object)]
 pub struct PeekAnalyzer {
@@ -892,8 +986,14 @@ pub struct PeekAnalyzer {
 
 impl PeekAnalyzer {
     pub fn with_data(data: Arc<BundledData>) -> Self {
+        Self::with_data_and_known(data, KnownAddresses::default())
+    }
+
+    /// Every hop is checked with the addresses the person said they know (SPEC §4.4), as the
+    /// original scan was.
+    pub fn with_data_and_known(data: Arc<BundledData>, known: KnownAddresses) -> Self {
         PeekAnalyzer {
-            analyzer: Analyzer::with_known(data.clone(), KnownAddresses::default()),
+            analyzer: Analyzer::with_known(data.clone(), known),
             data,
         }
     }
@@ -947,11 +1047,19 @@ impl PeekAnalyzer {
         Some(sniff(&c.body, c.content_type.as_deref()))
     }
 
-    fn downloads(c: &PeekCapture, final_link: &LinkInfo) -> bool {
+    fn downloads(c: &PeekCapture, final_link: &LinkInfo, is_page: bool) -> bool {
         if let Some(d) = &c.content_disposition
             && t::has_prefix(t::trim_ws(&t::lower(d)), "attachment")
         {
             return true;
+        }
+        if let Some(ct) = &c.content_type {
+            let mime = mime_essence(ct);
+            if DOWNLOAD_MIME_TYPES.contains(&mime.as_str())
+                || (mime == "application/octet-stream" && !is_page)
+            {
+                return true;
+            }
         }
         let path = t::prefix_while(&final_link.path_and_query, |g| {
             !t::ch_eq(g, '?') && !t::ch_eq(g, '#')
@@ -973,8 +1081,15 @@ impl PeekAnalyzer {
         Arc::new(Self::with_data(data))
     }
 
-    /// `age_days` None means the age is unknown (no RDAP service, 404, no registration event,
-    /// timeout).
+    /// The analyzer the apps use: hops are checked with the person's known addresses, so a
+    /// domain they said they know doesn't get its list-based signals back in Peek (SPEC §4.4).
+    #[uniffi::constructor]
+    pub fn with_known(data: Arc<BundledData>, known: KnownAddresses) -> Arc<Self> {
+        Arc::new(Self::with_data_and_known(data, known))
+    }
+
+    /// `age_days` is the registration age of `peek_age_link`'s domain; None means it is unknown
+    /// (no RDAP service, 404, no registration event, timeout, nothing to look up).
     pub fn report(
         &self,
         original: Analysis,
@@ -983,23 +1098,34 @@ impl PeekAnalyzer {
     ) -> PeekReport {
         let psl = &self.data.public_suffixes;
         let symbology = original.code.symbology;
+        let scanned = match &original.payload {
+            Payload::Link { info } => Some(info.normalized.as_str()),
+            _ => None,
+        };
+        // The first hop is the scanned link: it keeps the original's analysis, which already
+        // carries the person's known addresses.
         let hop_analyses: Vec<Analysis> = capture
             .hops
             .iter()
-            .map(|h| self.analyzer.analyze(ScannedCode::text(&h.url, symbology)))
+            .enumerate()
+            .map(|(i, h)| {
+                if i == 0 && scanned == Some(h.url.as_str()) {
+                    original.clone()
+                } else {
+                    self.analyzer.analyze(ScannedCode::text(&h.url, symbology))
+                }
+            })
             .collect();
-        let final_link = capture
-            .hops
-            .iter()
-            .rev()
-            .find(|h| h.status.is_some())
-            .and_then(|h| WebAddress::parse(&h.url, psl))
-            .map(|a| a.link);
+        let final_link = final_reached(&capture, &self.data);
+        // A redirect happened only when there is a hop after the scanned link.
+        let redirected = capture.hops.len() > 1;
 
         let mut signals = Vec::new();
         match capture.stopped_because {
             StopReason::TooManyRedirects => signals.push(Signal::new(SignalId::TooManyRedirects)),
-            StopReason::HttpTarget => {
+            // A plain-http link itself isn't fetched (SPEC §6.1); its own plainHttp warning says
+            // so. Only a redirect to http earns this signal.
+            StopReason::HttpTarget if redirected => {
                 let host = capture
                     .hops
                     .last()
@@ -1010,6 +1136,9 @@ impl PeekAnalyzer {
                     None => Signal::new(SignalId::RedirectsToHttp),
                 });
             }
+            StopReason::HttpTarget => {}
+            // Likewise a link that was never a web link didn't redirect anywhere.
+            StopReason::NonWebTarget if !redirected => {}
             StopReason::NonWebTarget => {
                 let scheme = capture
                     .hops
@@ -1031,10 +1160,11 @@ impl PeekAnalyzer {
 
         let mut title = None;
         if let Some(fl) = &final_link {
-            if Self::downloads(&capture, fl) {
+            let sniffed = Self::sniff_capture(&capture);
+            if Self::downloads(&capture, fl, sniffed.is_some()) {
                 signals.push(Signal::new(SignalId::DownloadsFile));
             }
-            if let Some(s) = Self::sniff_capture(&capture) {
+            if let Some(s) = sniffed {
                 title = s.title.clone();
                 signals.extend(self.page_signals(&s, fl));
             }
@@ -1044,18 +1174,20 @@ impl PeekAnalyzer {
                     &[("suffix", fl.public_suffix.as_deref().unwrap_or(""))],
                 ));
             }
-            match age_days {
-                None => signals.push(Signal::new(SignalId::AgeUnknown)),
-                Some(d) if d < 30 => signals.push(Signal::with(
-                    SignalId::DomainVeryNew,
-                    &[("days", &d.to_string())],
-                )),
-                Some(d) if d < 183 => signals.push(Signal::with(
-                    SignalId::DomainNew,
-                    &[("days", &d.to_string())],
-                )),
-                _ => {}
-            }
+        }
+        // SPEC §6.2: the age of the page reached, or of the scanned domain when no page was
+        // reached (`age_link_for`), so a timeout or a plain-http link still gets it.
+        match age_days {
+            None => signals.push(Signal::new(SignalId::AgeUnknown)),
+            Some(d) if d < 30 => signals.push(Signal::with(
+                SignalId::DomainVeryNew,
+                &[("days", &d.to_string())],
+            )),
+            Some(d) if d < 183 => signals.push(Signal::with(
+                SignalId::DomainNew,
+                &[("days", &d.to_string())],
+            )),
+            _ => {}
         }
 
         let mut seen = HashSet::new();

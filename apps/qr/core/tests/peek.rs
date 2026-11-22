@@ -211,7 +211,229 @@ fn peek_analyzer_final_link_is_last_fetched_hop() {
         None,
     );
     assert!(none.final_link.is_none());
-    assert!(!ids(&none.signals).contains(&AgeUnknown));
+    // The scanned domain's age is still looked up when no page was reached; unknown says so.
+    assert!(ids(&none.signals).contains(&AgeUnknown));
+}
+
+// MARK: gaps fixed after the Swift port
+
+#[test]
+fn peek_plain_http_link_is_not_called_a_redirect() {
+    let url = "http://menu.example.com/";
+    let r = peek().report(
+        analyze(url),
+        capture(vec![hop(url, None)], StopReason::HttpTarget),
+        Some(4000),
+    );
+    assert!(!ids(&r.signals).contains(&RedirectsToHttp));
+    assert!(r.signals.is_empty(), "{:?}", r.signals);
+    // The original's own plainHTTP warning still sets the level.
+    assert_eq!(r.level, Level::Careful);
+    assert_eq!(r.hop_analyses.len(), 1);
+    // A link that was never a web link didn't redirect out of the web either.
+    let js = peek().report(
+        analyze("javascript:alert(1)"),
+        capture(
+            vec![hop("javascript:alert(1)", None)],
+            StopReason::NonWebTarget,
+        ),
+        None,
+    );
+    assert!(!ids(&js.signals).contains(&RedirectLeavesWeb));
+}
+
+#[test]
+fn peek_available_only_for_web_links() {
+    assert!(peek_available(analyze("https://example.com/")));
+    assert!(peek_available(analyze("http://example.com/")));
+    assert!(peek_available(analyze("www.example.com")));
+    assert!(!peek_available(analyze("javascript:alert(1)")));
+    assert!(!peek_available(analyze("data:text/html,x")));
+    assert!(!peek_available(analyze("hello there")));
+    assert!(!peek_available(analyze("WIFI:S:x;T:nopass;;")));
+}
+
+#[test]
+fn peek_age_link_prefers_the_page_reached_then_the_scanned_link() {
+    let data = shared();
+    let host = |l: Option<LinkInfo>| l.map(|l| l.host_ascii);
+    let original = analyze("https://bit.ly/abc");
+    let reached = capture(
+        vec![
+            hop("https://bit.ly/abc", Some(301)),
+            hop("https://landing.example.org/x", Some(200)),
+        ],
+        StopReason::Finished,
+    );
+    assert_eq!(
+        host(peek_age_link(original.clone(), reached, data.clone())),
+        Some("landing.example.org".into())
+    );
+    // Redirected to plain http: the last hop that answered is the shortener.
+    let downgraded = capture(
+        vec![
+            hop("https://bit.ly/abc", Some(301)),
+            hop("http://plain.example.net/", None),
+        ],
+        StopReason::HttpTarget,
+    );
+    assert_eq!(
+        host(peek_age_link(original.clone(), downgraded, data.clone())),
+        Some("bit.ly".into())
+    );
+    // Timed out before any answer: the scanned link.
+    let timeout = capture(vec![hop("https://bit.ly/abc", None)], StopReason::Timeout);
+    assert_eq!(
+        host(peek_age_link(original, timeout, data.clone())),
+        Some("bit.ly".into())
+    );
+    // An IP address has no registrable domain; a page on one falls back to the scanned domain.
+    let ip = capture(
+        vec![
+            hop("https://example.com/", Some(302)),
+            hop("https://203.0.113.9/", Some(200)),
+        ],
+        StopReason::Finished,
+    );
+    assert_eq!(
+        host(peek_age_link(
+            analyze("https://example.com/"),
+            ip,
+            data.clone()
+        )),
+        Some("example.com".into())
+    );
+    let bare_ip = capture(vec![hop("https://203.0.113.9/", None)], StopReason::Timeout);
+    assert_eq!(
+        host(peek_age_link(
+            analyze("https://203.0.113.9/"),
+            bare_ip,
+            data
+        )),
+        None
+    );
+}
+
+#[test]
+fn peek_age_applies_after_a_timeout_or_tls_failure() {
+    for stop in [
+        StopReason::Timeout,
+        StopReason::NetworkError,
+        StopReason::TlsFailure,
+    ] {
+        let url = "https://new.example.com/";
+        let r = peek().report(
+            analyze(url),
+            capture(vec![hop(url, None)], stop.clone()),
+            Some(3),
+        );
+        assert!(ids(&r.signals).contains(&DomainVeryNew), "{stop:?}");
+        assert!(!ids(&r.signals).contains(&AgeUnknown), "{stop:?}");
+        assert_eq!(r.level, Level::LikelyScam);
+    }
+}
+
+#[test]
+fn peek_with_known_addresses_keeps_a_known_domain_quiet() {
+    let data = shared();
+    let mut known = KnownAddresses::default();
+    known.add("paypal-help.com", at(0.0));
+    let plain = Analyzer::with_known(data.clone(), KnownAddresses::default());
+    let knowing = Analyzer::with_known(data.clone(), known.clone());
+    let url = "https://paypal-help.com/";
+    // Without the known address the domain is a brand in someone else's domain.
+    assert_eq!(
+        plain.analyze(ScannedCode::text(url, Symbology::Qr)).level,
+        Level::LikelyScam
+    );
+    let original = knowing.analyze(ScannedCode::text(url, Symbology::Qr));
+    assert!(ids(&original.signals).contains(&KnownByYou));
+    let page = |hops: Vec<PeekHop>| PeekCapture {
+        content_type: Some("text/html".into()),
+        body: format!("<html><body>{}</body></html>", "word ".repeat(80)).into_bytes(),
+        ..capture(hops, StopReason::Finished)
+    };
+    // The old constructor re-checks every hop without them: the hop reads "Likely scam" again.
+    let old = PeekAnalyzer::with_data(data.clone()).report(
+        original.clone(),
+        page(vec![
+            hop("https://bit.ly/x", Some(301)),
+            hop(url, Some(200)),
+        ]),
+        Some(4000),
+    );
+    assert_eq!(old.level, Level::LikelyScam);
+    // With the person's known addresses, a redirect to that domain stays as the scan was.
+    let peek = PeekAnalyzer::with_known(data.clone(), known);
+    let r = peek.report(
+        original.clone(),
+        page(vec![
+            hop("https://bit.ly/x", Some(301)),
+            hop(url, Some(200)),
+        ]),
+        Some(4000),
+    );
+    assert_eq!(r.hop_analyses[1].level, Level::Normal);
+    assert!(ids(&r.hop_analyses[1].signals).contains(&KnownByYou));
+    assert_eq!(r.level, Level::Careful); // the shortener hop only
+    // Scanned directly: hop 0 is the original analysis itself.
+    let direct = PeekAnalyzer::with_data(data).report(
+        original.clone(),
+        page(vec![hop(&original_url(&original), Some(200))]),
+        Some(4000),
+    );
+    assert_eq!(direct.hop_analyses[0], original);
+    assert_eq!(direct.level, Level::Normal);
+}
+
+fn original_url(a: &Analysis) -> String {
+    match &a.payload {
+        Payload::Link { info } => info.normalized.clone(),
+        _ => panic!(),
+    }
+}
+
+#[test]
+fn peek_downloads_by_content_type() {
+    let has = |ct: &str, body: &str| {
+        ids(&run_full(
+            "https://f.example.com/get",
+            body,
+            Some(ct),
+            None,
+            StopReason::Finished,
+            Some(5000),
+        )
+        .signals)
+        .contains(&DownloadsFile)
+    };
+    for ct in [
+        "application/x-apple-aspen-config",
+        "application/vnd.android.package-archive",
+        "application/x-itunes-ipa",
+        "application/x-msdownload",
+        "application/zip",
+        "application/x-apple-diskimage",
+        "application/vnd.apple.installer+xml",
+        "Application/X-Apple-Aspen-Config; charset=utf-8",
+    ] {
+        assert!(has(ct, ""), "{ct}");
+    }
+    assert!(has("application/octet-stream", "\u{1}\u{2}binary"));
+    assert!(has("application/octet-stream", ""));
+    // A page served with the wrong type is still a page.
+    assert!(!has(
+        "application/octet-stream",
+        "<html><body>hi</body></html>"
+    ));
+    for ct in [
+        "text/html",
+        "application/pdf",
+        "image/png",
+        "application/json",
+    ] {
+        assert!(!has(ct, ""), "{ct}");
+    }
 }
 
 #[test]

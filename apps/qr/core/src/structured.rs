@@ -9,8 +9,10 @@ use crate::text as t;
 pub mod stext {
     use crate::text as t;
 
-    /// Analysis input cap: scanned codes are attacker-controlled.
-    pub const MAX_BYTES: usize = 8192;
+    /// Analysis input cap: scanned codes are attacker-controlled. The analyzer's own input cap
+    /// (64 KB, a pasted code), so a long vCard or event keeps its structure; links inside are
+    /// still searched only in their first 8 KB.
+    pub const MAX_BYTES: usize = crate::analyzer::MAX_INPUT_BYTES;
 
     pub fn capped(s: &str) -> String {
         if s.len() <= MAX_BYTES {
@@ -1163,9 +1165,7 @@ pub fn encode(r: &MakeRequest) -> String {
         MakeRequest::Event { info } => v_event(info),
         MakeRequest::Email { info } => encode_email(info),
         MakeRequest::Sms { info } => encode_sms(info),
-        MakeRequest::Phone { number } => {
-            format!("TEL:{}", percent_encode(trimmed(number), NUMBER_KEEP))
-        }
+        MakeRequest::Phone { number } => format!("TEL:{}", encode_number(number)),
         MakeRequest::Geo { info } => encode_geo(info),
     }
 }
@@ -1178,6 +1178,49 @@ pub fn payload_encode(request: MakeRequest) -> String {
 
 /// Characters a phone number keeps readable; everything else is percent-encoded.
 const NUMBER_KEEP: &str = "+()*#,;=/ ";
+
+/// E.164: at most 15 digits with the country code. The shortest real international numbers
+/// (small territories) have 7.
+const INTERNATIONAL_DIGITS: std::ops::RangeInclusive<usize> = 7..=15;
+
+/// SPEC §8: a number Make can write as `TEL:+…`. `+` (or a leading `00`, the international call
+/// prefix most countries use) and then digits, with spaces, dashes, dots and parentheses between
+/// them, which are dropped: `+63 (917) 123-4567` → `+639171234567`. The first digit (the
+/// country code's) is never 0. None for anything else, such as a local number: turning one into
+/// the international form needs the caller's country, which an offline app can't know.
+pub fn international_number(text: &str) -> Option<String> {
+    let s = trimmed(text);
+    let rest = if let Some(r) = s.strip_prefix('+') {
+        r
+    } else {
+        s.strip_prefix("00")?
+    };
+    let mut digits = String::new();
+    for c in rest.chars() {
+        match c {
+            '0'..='9' => digits.push(c),
+            ' ' | '-' | '.' | '(' | ')' | '\u{00A0}' => {}
+            _ => return None,
+        }
+    }
+    if digits.starts_with('0') || !INTERNATIONAL_DIGITS.contains(&digits.len()) {
+        return None;
+    }
+    Some(format!("+{digits}"))
+}
+
+/// The international form Make writes (`+639171234567`), or None when `text` isn't an
+/// international number. Make's phone and SMS fields require one.
+#[uniffi::export]
+pub fn phone_number_international(text: String) -> Option<String> {
+    international_number(&text)
+}
+
+/// The international form when there is one; otherwise the number as given, percent-encoded
+/// (a caller that didn't validate, such as an older screen).
+fn encode_number(number: &str) -> String {
+    international_number(number).unwrap_or_else(|| percent_encode(trimmed(number), NUMBER_KEEP))
+}
 
 fn encode_wifi(w: &WiFiInfo) -> String {
     let mut s = String::from("WIFI:");
@@ -1232,7 +1275,7 @@ fn encode_email(e: &EmailInfo) -> String {
 }
 
 fn encode_sms(m: &SmsInfo) -> String {
-    let number = percent_encode(trimmed(&m.number), NUMBER_KEEP);
+    let number = encode_number(&m.number);
     match m.body.as_deref().filter(|b| !b.is_empty()) {
         Some(b) => format!("SMSTO:{number}:{b}"),
         None => format!("sms:{number}"),

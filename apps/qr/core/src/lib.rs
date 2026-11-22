@@ -33,7 +33,7 @@ pub use data::*;
 pub use fields::*;
 pub use history::*;
 pub use known::*;
-pub use peek::{HtmlInput, HtmlSniff, PeekAnalyzer};
+pub use peek::{HtmlInput, HtmlSniff, PeekAnalyzer, peek_age_link, peek_available};
 pub use render::*;
 pub use url::{HostKind, PublicSuffixList, PublicSuffixMatch, WebAddress};
 

@@ -584,19 +584,25 @@ impl CheckContext {
 
 // MARK: embedded links
 
-/// `http://`, `https://` and `www.` runs up to whitespace or `< > "`, trailing `. , ) ]` dropped,
-/// at most 10.
+/// `http://`, `https://`, `www.` and dangerous-scheme (`javascript:`, `data:`, `file:`) runs up to
+/// whitespace or `< > "`, trailing `. , ) ]` dropped, deduplicated. Only the first 8 KB of a text
+/// is searched (SPEC §4.2); every link in that window is returned, so the verdict sees them all.
 pub mod embedded_links {
-    pub const MAX_LINKS: usize = 10;
+    /// The search window: the first 8 KB of UTF-8.
+    pub const SEARCH_BYTES: usize = 8192;
+    /// What a screen lists before "and more"; the verdict never stops here.
+    pub const DISPLAY_LINKS: usize = 10;
+    /// Old name of `DISPLAY_LINKS`.
+    pub const MAX_LINKS: usize = DISPLAY_LINKS;
 
     pub fn find(text: Option<&str>) -> Vec<String> {
         let Some(text) = text.filter(|s| !s.is_empty()) else {
             return vec![];
         };
-        let s: Vec<char> = text.chars().collect();
+        let s: Vec<char> = crate::text::cut_utf8(text, SEARCH_BYTES).chars().collect();
         let mut out: Vec<String> = Vec::new();
         let mut i = 0;
-        while i < s.len() && out.len() < MAX_LINKS {
+        while i < s.len() {
             let Some(plen) = prefix_length(i, &s) else {
                 i += 1;
                 continue;
@@ -621,7 +627,7 @@ pub mod embedded_links {
         out
     }
 
-    /// Several fields at once, in order, deduplicated, capped at 10.
+    /// Several fields at once, in order, deduplicated. Each list was found in its own window.
     pub fn merge(lists: &[Vec<String>]) -> Vec<String> {
         let mut out: Vec<String> = Vec::new();
         for l in lists.iter().flatten() {
@@ -629,12 +635,19 @@ pub mod embedded_links {
                 out.push(l.clone());
             }
         }
-        out.truncate(MAX_LINKS);
         out
     }
 
     fn is_terminator(c: char) -> bool {
         c.is_whitespace() || c == '<' || c == '>' || c == '"' || (c as u32) < 0x20
+    }
+
+    /// A letter, digit, `.` or `-` right before `i`: the prefix is inside a word ("awww.", "metadata:").
+    fn inside_word(i: usize, s: &[char]) -> bool {
+        i > 0 && {
+            let p = s[i - 1];
+            p.is_alphabetic() || crate::text::has_numeric_type(p) || p == '.' || p == '-'
+        }
     }
 
     fn prefix_length(i: usize, s: &[char]) -> Option<usize> {
@@ -645,15 +658,37 @@ pub mod embedded_links {
             return Some(7);
         }
         if matches(b"www.", i, s) {
-            if i > 0 {
-                let p = s[i - 1];
-                if p.is_alphabetic() || crate::text::has_numeric_type(p) || p == '.' || p == '-' {
-                    return None;
-                }
-            }
-            return Some(4);
+            return (!inside_word(i, s)).then_some(4);
+        }
+        if inside_word(i, s) {
+            return None;
+        }
+        // Dangerous schemes, only where what follows is shaped like one, so prose such as
+        // "Mobile data: 5 GB" or "profile file: notes" isn't a link.
+        if matches(b"javascript:", i, s) {
+            return Some(11);
+        }
+        if matches(b"data:", i, s) && data_shaped(i + 5, s) {
+            return Some(5);
+        }
+        if matches(b"file:", i, s) && s.get(i + 5) == Some(&'/') {
+            return Some(5);
         }
         None
+    }
+
+    /// After `data:`: `,` or `;`, or a media type (`text/html`, `image/svg+xml`).
+    fn data_shaped(k: usize, s: &[char]) -> bool {
+        match s.get(k) {
+            Some(',') | Some(';') => true,
+            _ => {
+                let mut n = k;
+                while n < s.len() && (s[n].is_ascii_alphanumeric() || "+-.".contains(s[n])) {
+                    n += 1;
+                }
+                n > k && s.get(n) == Some(&'/')
+            }
+        }
     }
 
     fn matches(p: &[u8], i: usize, s: &[char]) -> bool {
@@ -668,7 +703,8 @@ pub mod embedded_links {
     }
 }
 
-/// Links inside free text: `http://`, `https://` and `www.` runs, at most 10.
+/// Links inside free text: `http://`, `https://`, `www.` and `javascript:`/`data:`/`file:` runs
+/// in the first 8 KB, every one of them.
 #[uniffi::export]
 pub fn embedded_links_in(text: String) -> Vec<String> {
     embedded_links::find(Some(&text))

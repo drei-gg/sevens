@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-download-octet-stream",
+ "original": "https://files.example.net/f/9",
+ "hops": [
+  {
+   "url": "https://files.example.net/f/9",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "application/octet-stream",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "downloadsFile"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "files.example.net",
+  "hopLevels": [
+   0
+  ]
+ }
+}

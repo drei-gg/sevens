@@ -270,6 +270,55 @@ fn csv_header_rows_and_crlf() {
 }
 
 #[test]
+fn csv_carries_the_addresses_you_know() {
+    // SPEC §10: the export includes the addresses you told us you know, as their own rows.
+    let items = vec![simple("https://x.test", 1_700_000_000.0, None)];
+    let mut known = KnownAddresses::default();
+    known.add("paypal-help.com", at(1_700_000_100.0));
+    known.add("=evil.example", at(1_700_000_200.0));
+    let csv = history_export_csv_with_known(items.clone(), Some(known.clone()));
+    let lines: Vec<&str> = csv.split("\r\n").collect();
+    assert_eq!(
+        lines[0],
+        "date,kind,type,level,payload,note,signals,symbology,id"
+    );
+    assert!(lines[1].starts_with("2023-11-14T22:13:20Z,scanned,"));
+    let rows: Vec<&str> = lines[2..]
+        .iter()
+        .copied()
+        .filter(|l| !l.is_empty())
+        .collect();
+    assert_eq!(
+        rows,
+        known
+            .entries
+            .iter()
+            .map(|e| {
+                let payload = if e.domain.starts_with('=') {
+                    format!("'{}", e.domain)
+                } else {
+                    e.domain.clone()
+                };
+                format!(
+                    "{},knownAddress,,,{payload},,,,",
+                    qr_core::time::iso8601(e.added)
+                )
+            })
+            .collect::<Vec<_>>()
+    );
+    assert!(csv.ends_with("\r\n"));
+    // Without addresses (or with none) it is the plain export, which keeps its old signature.
+    assert_eq!(
+        history_export_csv_with_known(items.clone(), None),
+        export_csv(&items)
+    );
+    assert_eq!(
+        history_export_csv_with_known(items.clone(), Some(KnownAddresses::default())),
+        history_export_csv(items)
+    );
+}
+
+#[test]
 fn csv_quoting() {
     let csv = export_csv(&[simple("a,b \"q\"\r\nline2", 1_700_000_000.0, Some("x\ny"))]);
     assert!(csv.contains("\"a,b \"\"q\"\"\r\nline2\""));

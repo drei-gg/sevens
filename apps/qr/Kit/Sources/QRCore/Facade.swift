@@ -281,6 +281,12 @@ public enum PayloadEncoder {
     public static func encode(_ request: MakeRequest) -> String { payloadEncode(request: request) }
 }
 
+public enum PhoneNumber {
+    /// `+` and digits (`+639171234567`) from `+63 (917) 123-4567` or `0063 917 123 4567`; nil
+    /// for anything that isn't an international number (SPEC §8).
+    public static func international(_ text: String) -> String? { phoneNumberInternational(text: text) }
+}
+
 public enum LinkCompactor {
     public static func trimmed(_ link: String) -> String { linkTrimmed(link: link) }
     public static func capitalized(_ link: String) -> String? { linkCapitalized(link: link) }
@@ -369,6 +375,20 @@ public enum RDAPResponse {
     public static func registrationDate(json: Data) -> Date? { rdapRegistrationDate(json: json) }
 }
 
+public extension Analysis {
+    /// Peek can look at this scan (SPEC §6): an http or https link. https is fetched; a plain
+    /// http link isn't, and only has its domain's age looked up (§6.1).
+    var canPeek: Bool { peekAvailable(analysis: self) }
+}
+
+public enum PeekAge {
+    /// The address whose registration age a Peek reports (SPEC §6.2): the last hop that
+    /// answered when it has a registrable domain, otherwise the scanned link.
+    public static func link(original: Analysis, capture: PeekCapture, data: BundledData) -> LinkInfo? {
+        peekAgeLink(original: original, capture: capture, data: data)
+    }
+}
+
 public enum DomainAge {
     /// Whole days, never negative.
     public static func days(registeredAt: Date, now: Date) -> Int {
@@ -441,5 +461,8 @@ public enum HistoryExport {
         historyExportJson(items: items, known: known)
     }
     public static func knownAddresses(in data: Data) -> KnownAddresses { historyExportKnownAddresses(bytes: data) }
-    public static func csv(_ items: [HistoryItem]) -> String { historyExportCsv(items: items) }
+    /// With `known`, one `knownAddress` row per address the person knows follows the items (SPEC §10).
+    public static func csv(_ items: [HistoryItem], known: KnownAddresses? = nil) -> String {
+        historyExportCsvWithKnown(items: items, known: known)
+    }
 }

@@ -16,7 +16,9 @@
   "signals": [
    "tlsProblem"
   ],
-  "info": [],
+  "info": [
+   "ageUnknown"
+  ],
   "level": 2,
   "finalHost": null,
   "hopLevels": [

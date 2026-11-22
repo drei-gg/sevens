@@ -11,7 +11,12 @@ use crate::text as t;
 use crate::url::{self, WebAddress, url_text};
 use std::sync::Arc;
 
+/// SPEC §4.2: only the first 8 KB of a code's text is searched for links, and a link longer than
+/// this is shown as text.
 pub const MAX_BYTES: usize = 8192;
+/// The longest text read at all: a pasted code (QRUI's paste cap). Structured payloads (a vCard,
+/// an event) are parsed at full length up to here; longer text is shown cut, as text.
+pub const MAX_INPUT_BYTES: usize = 64 * 1024;
 
 pub struct Classified {
     pub payload: Payload,
@@ -41,10 +46,11 @@ pub fn classify(ctx: &CheckContext, code: &ScannedCode) -> Classified {
     if tt.is_empty() {
         return binary();
     }
-    if raw.len() > MAX_BYTES {
+    // Too long to be a link: shown as text, cut at 8 KB, with the links in that window.
+    let cut_text = || {
         let cut = t::cut_utf8(raw, MAX_BYTES).to_string();
         let links = embedded_links::find(Some(&cut));
-        return res(
+        res(
             Payload::Text {
                 info: TextInfo {
                     text: cut,
@@ -53,13 +59,21 @@ pub fn classify(ctx: &CheckContext, code: &ScannedCode) -> Classified {
                 },
             },
             vec![],
-        );
+        )
+    };
+    if raw.len() > MAX_INPUT_BYTES {
+        return cut_text();
     }
+    // Formats with free-text fields (a contact, an event, a message) are read at full length;
+    // the fixed-size ones (Wi-Fi, payments, tel, geo) are never this long, so over 8 KB they
+    // fall through to text like a link does.
+    let short = raw.len() <= MAX_BYTES;
     let head = t::lower(t::prefix(tt, 32));
     let hp = |p: &str| t::has_prefix(&head, p);
     let psl = &data.public_suffixes;
 
-    if hp("wifi:")
+    if short
+        && hp("wifi:")
         && let Some(w) = structured::wifi::parse(tt)
     {
         let s = checks::open_wifi(&w).into_iter().collect();
@@ -88,7 +102,7 @@ pub fn classify(ctx: &CheckContext, code: &ScannedCode) -> Classified {
         ]);
         return res(Payload::Event { info: e }, vec![]);
     }
-    if hp("000201") {
+    if short && hp("000201") {
         let n = t::count(tt);
         if n >= 8
             && t::has_prefix(t::drop_first(tt, n - 8), "6304")
@@ -99,30 +113,35 @@ pub fn classify(ctx: &CheckContext, code: &ScannedCode) -> Classified {
     }
     let first_line: String = tt.chars().take_while(|&c| c != '\n' && c != '\r').collect();
     let first_line = t::trim_ws(&first_line);
-    if t::str_eq(first_line, "BCD")
+    if short
+        && t::str_eq(first_line, "BCD")
         && let Some(p) = payments::epc::parse(tt)
     {
         return payment(p);
     }
-    if t::str_eq(first_line, "SPC")
+    if short
+        && t::str_eq(first_line, "SPC")
         && let Some(p) = payments::swiss::parse(tt)
     {
         return payment(p);
     }
-    if hp("upi://")
+    if short
+        && hp("upi://")
         && let Some(p) = payments::upi::parse(tt)
     {
         return payment(p);
     }
     let schemes = &data.payment_networks.crypto_schemes;
-    if schemes
-        .iter()
-        .any(|s| hp(&format!("{}:", t::lower(&s.scheme))))
+    if short
+        && schemes
+            .iter()
+            .any(|s| hp(&format!("{}:", t::lower(&s.scheme))))
         && let Some(c) = payments::crypto_uri::parse(tt, schemes)
     {
         return res(Payload::Crypto { info: c }, vec![]);
     }
-    if hp("tel:")
+    if short
+        && hp("tel:")
         && let Some(p) = structured::phone::parse(tt)
     {
         return res(Payload::Phone { info: p }, vec![]);
@@ -139,12 +158,17 @@ pub fn classify(ctx: &CheckContext, code: &ScannedCode) -> Classified {
         m.links = embedded_links::find(m.body.as_deref());
         return res(Payload::Email { info: m }, vec![]);
     }
-    if hp("geo:")
+    if short
+        && hp("geo:")
         && let Some(g) = structured::geo::parse(tt)
     {
         return res(Payload::Geo { info: g }, vec![]);
     }
 
+    // Every rule from here on reads a link (or a crypto address), which is never this long.
+    if !short {
+        return cut_text();
+    }
     let scheme = WebAddress::scheme_of(raw);
     if matches!(scheme.as_deref(), Some("http" | "https"))
         && let Some(a) = WebAddress::parse(raw, psl)

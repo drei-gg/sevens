@@ -869,15 +869,17 @@
   }
  },
  {
-  "id": "classify-text-links-capped",
+  "id": "classify-text-links-all-checked",
   "spec": "5.3",
   "input": "Links:\nhttps://example.com/p0\nhttps://example.com/p1\nhttps://example.com/p2\nhttps://example.com/p3\nhttps://example.com/p4\nhttps://example.com/p5\nhttps://example.com/p6\nhttps://example.com/p7\nhttps://example.com/p8\nhttps://example.com/p9\nhttps://example.com/p10\nhttps://example.com/p11\nhttp://example.org/last",
   "symbology": "qr",
-  "note": "only the first ten links are analysed; the plain-http link is the 13th",
+  "note": "every link in the first 8 KB reaches the verdict; the plain-http link is the 13th",
   "expect": {
    "type": "text",
-   "level": 0,
-   "signals": []
+   "level": 1,
+   "signals": [
+    "plainHTTP"
+   ]
   }
  },
  {

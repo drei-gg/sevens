@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-download-apk-mime",
+ "original": "https://apps.example.net/latest",
+ "hops": [
+  {
+   "url": "https://apps.example.net/latest",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "application/vnd.android.package-archive; charset=binary",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "downloadsFile"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "apps.example.net",
+  "hopLevels": [
+   0
+  ]
+ }
+}

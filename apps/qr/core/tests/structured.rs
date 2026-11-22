@@ -3,7 +3,10 @@
 
 mod common;
 use common::*;
-use qr_core::structured::{contact, email, encode, event, geo, phone, sms, wifi};
+use qr_core::structured::{
+    contact, email, encode, event, geo, international_number, phone, phone_number_international,
+    sms, wifi,
+};
 use qr_core::*;
 
 fn s(v: &str) -> Option<String> {
@@ -265,17 +268,24 @@ fn garbage_never_crashes() {
 
 #[test]
 fn huge_input_is_capped() {
+    // At the analyzer's input cap (64 KB, a pasted code), not at 8 KB: a long vCard keeps its
+    // structure (SPEC §4.2 limits only the link search to 8 KB).
     let big = format!("BEGIN:VCARD\nNOTE:{}\nEND:VCARD", "a".repeat(100_000));
     assert!(
         contact::parse(&big)
             .and_then(|c| c.note)
             .map_or(0, |n| n.len())
-            <= 8192
+            <= 65_536
     );
-    let tail = format!("WIFI:S:x;{}P:late;;", ";".repeat(20_000));
+    let tail = format!("WIFI:S:x;{}P:late;;", ";".repeat(70_000));
     assert_eq!(wifi::parse(&tail).unwrap().password, None);
-    let card = format!("BEGIN:VCARD\n{}TEL:123\nEND:VCARD", "X:y\n".repeat(5_000));
+    let card = format!("BEGIN:VCARD\n{}TEL:123\nEND:VCARD", "X:y\n".repeat(17_000));
     assert!(contact::parse(&card).unwrap().phones.is_empty());
+    let long = format!("BEGIN:VCARD\n{}TEL:123\nEND:VCARD", "X:y\n".repeat(5_000));
+    assert_eq!(
+        contact::parse(&long).unwrap().phones,
+        vec!["123".to_string()]
+    );
 }
 
 #[test]
@@ -547,22 +557,94 @@ fn round_trip_sms() {
     );
     for c in cases {
         let text = encode(&MakeRequest::Sms { info: c.clone() });
-        assert_eq!(sms::parse(&text), Some(c), "{text}");
+        // Written in international form (SPEC §8): separators dropped.
+        let want = SmsInfo {
+            number: international_number(&c.number).unwrap(),
+            ..c
+        };
+        assert_eq!(sms::parse(&text), Some(want), "{text}");
+    }
+    assert_eq!(
+        encode(&MakeRequest::Sms {
+            info: m("0063 917 123 4567", s("hi"))
+        }),
+        "SMSTO:+639171234567:hi"
+    );
+}
+
+#[test]
+fn international_numbers() {
+    for (input, want) in [
+        ("+639171234567", "+639171234567"),
+        (" +63 (917) 123-4567 ", "+639171234567"),
+        ("+1.555.010.0100", "+15550100100"),
+        ("0063 917 123 4567", "+639171234567"),
+        ("00 44 20 7946 0958", "+442079460958"),
+        ("+683 4002", "+6834002"),
+        ("+1\u{A0}555 010 0100", "+15550100100"),
+    ] {
+        assert_eq!(
+            international_number(input).as_deref(),
+            Some(want),
+            "{input}"
+        );
+        assert_eq!(
+            phone_number_international(input.into()).as_deref(),
+            Some(want)
+        );
+    }
+    for bad in [
+        "",
+        "0917 123 4567",
+        "(02) 8123-4567",
+        "917-123-4567",
+        "+",
+        "+0 917 123 4567",
+        "000917",
+        "+63 917 abc",
+        "+63/917/1234567",
+        "*123#",
+        "+12345",
+        "+1234567890123456",
+        "+63 917 123 4567 ext 5",
+        "++639171234567",
+        "0+639171234567",
+    ] {
+        assert_eq!(international_number(bad), None, "{bad}");
+    }
+}
+
+#[test]
+fn phone_is_written_in_international_form() {
+    for (n, want) in [
+        ("+63 (917) 123-4567", "TEL:+639171234567"),
+        ("0063 917 123 4567", "TEL:+639171234567"),
+        ("+639171234567", "TEL:+639171234567"),
+    ] {
+        assert_eq!(encode(&MakeRequest::Phone { number: n.into() }), want);
+    }
+}
+
+#[test]
+fn scanned_tel_codes_still_decode_as_written() {
+    for (code, number) in [
+        ("TEL:0917 123 4567", "0917 123 4567"),
+        ("tel:*123%23", "*123#"),
+        ("TEL:+63 917 123 4567", "+63 917 123 4567"),
+        ("tel:(02)8123-4567", "(02)8123-4567"),
+    ] {
+        assert_eq!(
+            phone::parse(code).map(|p| p.number).as_deref(),
+            Some(number),
+            "{code}"
+        );
     }
 }
 
 #[test]
 fn round_trip_phone() {
-    for n in [
-        "+639171234567",
-        "+63 (917) 123-4567",
-        "*123#",
-        "0917;ext=5",
-        "1,2",
-        "٣٤٥",
-        "a%b",
-        "x?y",
-    ] {
+    // A number that isn't international (a caller that didn't validate) is written as given.
+    for n in ["*123#", "0917;ext=5", "1,2", "٣٤٥", "a%b", "x?y"] {
         let text = encode(&MakeRequest::Phone { number: n.into() });
         assert!(text.starts_with("TEL:"));
         assert_eq!(

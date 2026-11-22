@@ -1,0 +1,24 @@
+{
+ "id": "peekreport-download-octet-stream-html-near-miss",
+ "original": "https://misconfigured.example.net/",
+ "hops": [
+  {
+   "url": "https://misconfigured.example.net/",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "Application/Octet-Stream",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": "Menu",
+  "signals": [],
+  "info": [],
+  "level": 0,
+  "finalHost": "misconfigured.example.net",
+  "hopLevels": [
+   0
+  ]
+ }
+}

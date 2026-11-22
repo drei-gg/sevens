@@ -1,0 +1,26 @@
+{
+ "id": "peekreport-download-profile-mime",
+ "original": "https://wifi.example.net/get?id=7",
+ "hops": [
+  {
+   "url": "https://wifi.example.net/get?id=7",
+   "status": 200
+  }
+ ],
+ "stoppedBecause": "finished",
+ "contentType": "application/x-apple-aspen-config",
+ "contentDisposition": null,
+ "ageDays": 3000,
+ "expect": {
+  "title": null,
+  "signals": [
+   "downloadsFile"
+  ],
+  "info": [],
+  "level": 1,
+  "finalHost": "wifi.example.net",
+  "hopLevels": [
+   0
+  ]
+ }
+}

@@ -184,15 +184,50 @@ fn checks_embedded_ignores_bare_schemes_and_words_ending_in_www() {
 }
 
 #[test]
-fn checks_embedded_caps_at_ten_and_deduplicates() {
+fn checks_embedded_finds_every_link_in_eight_kilobytes_and_deduplicates() {
     let many = (0..30)
         .map(|i| format!("https://e.example/{i}"))
         .collect::<Vec<_>>()
         .join(" ");
-    assert_eq!(find(&many).len(), 10);
+    assert_eq!(find(&many).len(), 30);
     assert_eq!(
         find("https://e.example/a https://e.example/a"),
         strs(&["https://e.example/a"])
+    );
+    // Only the first 8 KB is searched.
+    let late = format!("{}https://late.example/", "x ".repeat(4096));
+    assert!(find(&late).is_empty());
+    let edge = format!("{}https://in.example/", "x ".repeat(4000));
+    assert_eq!(find(&edge), strs(&["https://in.example/"]));
+}
+
+#[test]
+fn checks_embedded_finds_dangerous_schemes() {
+    assert_eq!(
+        find("a javascript:alert(1) b DATA:text/html;base64,PHNj c file:///etc/hosts d data:,x"),
+        strs(&[
+            "javascript:alert(1",
+            "DATA:text/html;base64,PHNj",
+            "file:///etc/hosts",
+            "data:,x"
+        ])
+    );
+    for s in [
+        "javascript: is a language",
+        "Mobile data: 5 GB",
+        "data:5GB",
+        "metadata:text/x",
+        "my-file:/x",
+        "profile file: notes",
+        "file:notes.txt",
+        "nojavascript:x",
+    ] {
+        assert!(find(s).is_empty(), "{s}: {:?}", find(s));
+    }
+    // Inside an https link it stays part of that link.
+    assert_eq!(
+        find("https://a.example/?next=javascript:x"),
+        strs(&["https://a.example/?next=javascript:x"])
     );
 }
 
