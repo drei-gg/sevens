@@ -56,6 +56,7 @@ fun VaultApp() {
         when {
             model.library == null -> LockScreen(model)
             model.needsRecoveryReplacement -> RecoveryReplacementScreen(model)
+            model.needsNewSecret -> NewSecretScreen(model)
             else -> LibraryScreen(model)
         }
     }
@@ -424,6 +425,87 @@ fun RecoveryReplacementScreen(model: VaultModel) {
                 ) {
                     Text("Create a new recovery key")
                 }
+                Spacer(Modifier.navigationBarsPadding())
+            }
+        }
+    }
+}
+
+/**
+ * Shown instead of the library after a restore authorised by the recovery key: the backup's own
+ * unlock secret couldn't be checked against the other vaults here, so the person sets a new one
+ * (the usual change, with its duplicate check) before continuing.
+ */
+@Composable
+fun NewSecretScreen(model: VaultModel) {
+    var kind by rememberSaveable { mutableStateOf(VaultCredentialKind.PASSPHRASE) }
+    var password by remember { mutableStateOf("") }
+    var repeated by remember { mutableStateOf("") }
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            SevenTopBar("New unlock secret") {
+                IconButton(onClick = model::lock) { Icon(Icons.Outlined.Lock, "Lock") }
+            }
+        },
+    ) { padding ->
+        Column(
+            Modifier.padding(padding)
+                .consumeWindowInsets(padding)
+                .fillMaxSize()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Space.m, vertical = Space.s),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Column(
+                Modifier.widthIn(max = ContentWidth).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(Space.m),
+            ) {
+                Text(
+                    "Choose a new unlock secret",
+                    Modifier.semantics { heading() },
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                Text(
+                    "This vault was restored with its recovery key, so its old secret couldn’t be checked against your other vaults. Choose a new PIN, pattern or passphrase to open it from now on.",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                CredentialKindPicker(kind) {
+                    kind = it
+                    password = ""
+                    repeated = ""
+                }
+                CredentialInput(kind, password, "New " + kind.title.lowercaseTitle(), "vault.newSecret") { password = it }
+                CredentialInput(kind, repeated, "Repeat " + kind.title.lowercaseTitle(), "vault.repeatNewSecret") { repeated = it }
+                if (repeated.length >= password.length && repeated.isNotEmpty() && password != repeated)
+                    Text(
+                        "These don’t match.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                if (model.busy) Progress(model.progress)
+                Button(
+                    shapes = ButtonDefaults.shapes(),
+                    onClick = {
+                        val secret = password
+                        val chosen = kind
+                        model.update(then = {
+                            password = ""
+                            repeated = ""
+                            model.showNotice("Unlock secret set. Older backups still open with their old one.")
+                        }) { model.repository.changeCredential(secret, chosen) }
+                    },
+                    enabled = kind.valid(password) && password == repeated && !model.busy,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("vault.setNewSecret"),
+                ) {
+                    Text("Set unlock secret")
+                }
+                Text(
+                    "Older backups still open with the secret they were made with.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Spacer(Modifier.navigationBarsPadding())
             }
         }

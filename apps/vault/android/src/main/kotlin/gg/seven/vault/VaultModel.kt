@@ -607,6 +607,13 @@ class VaultModel(app: Application) : AndroidViewModel(app) {
     val needsRecoveryReplacement: Boolean
         get() = library?.recoveryUnconfirmed == true && recoveryKey == null
 
+    /**
+     * Restored with its recovery key: the backup's own secret may already open another vault here,
+     * so a new one must be set (with the usual duplicate check) before the library opens.
+     */
+    val needsNewSecret: Boolean
+        get() = library?.secretChangeRequired == true
+
     // MARK: automatic backup (iOS VaultModel extension)
 
     fun scheduleAutomaticBackup() {

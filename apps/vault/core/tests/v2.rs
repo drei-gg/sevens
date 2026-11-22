@@ -632,3 +632,15 @@ fn credential_neutral_messages() {
         assert!(!vault_error_description(error).contains('\''), "straight apostrophe in {error:?}");
     }
 }
+
+#[test]
+fn a_required_secret_change_is_recorded_inside_the_authenticated_index() {
+    let vault = create("secret-change", VaultCredentialKind::Passphrase, SECRET);
+    assert!(!vault.library.secret_change_required);
+    assert!(!String::from_utf8(library_encode(&vault.library).unwrap()).unwrap().contains("secretChangeRequired"));
+    let flagged = library_set_secret_change_required(&vault.library, true);
+    assert!(String::from_utf8(library_encode(&flagged).unwrap()).unwrap().contains("\"secretChangeRequired\":true"));
+    let opened = index_open(index_seal(&flagged, &vault.identity).unwrap(), &vault.identity, vault.header.id).unwrap();
+    assert!(opened.secret_change_required);
+    assert_eq!(library_set_secret_change_required(&opened, false), vault.library);
+}

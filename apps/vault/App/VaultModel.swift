@@ -320,6 +320,9 @@ struct PresentedFiles: Identifiable { var id = UUID(); let urls: [URL]; var shar
     /// The open vault's recovery key was issued but never confirmed as saved (Vault locked or quit
     /// while it was shown): it must be replaced before the library opens.
     var needsRecoveryReplacement: Bool { library?.recoveryUnconfirmed == true && recoveryKey == nil }
+    /// Restored with its recovery key: the backup's own secret may already open another vault here,
+    /// so a new one must be set (with the usual duplicate check) before the library opens.
+    var needsNewSecret: Bool { library?.secretChangeRequired == true }
     /// Removes the stored vault's Keychain item (whichever vault is open, if any) and any stray one.
     func disableBiometrics(announce shouldAnnounce: Bool = true) {
         for account in BiometricCustody.removing(stored: biometricVaultID?.uuidString, items: BiometricKey.accounts()) { BiometricKey.remove(account: account) }

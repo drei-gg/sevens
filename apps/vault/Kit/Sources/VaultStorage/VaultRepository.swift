@@ -262,6 +262,11 @@ public actor VaultRepository {
         case .v2(let identity):
             try writeHeader(headerV2RewrapPassword(header: headerV2(at: folder), identity: identity, kind: kind, credential: passphrase), to: folder)
         }
+        // The required new secret (after a recovery-key restore) is now set.
+        if value.secretChangeRequired {
+            let cleared = librarySetSecretChangeRequired(library: value, required: false)
+            try save(cleared, keys: keys, at: folder); library = cleared
+        }
     }
     /// A new recovery key to show once. The index records it as unconfirmed first, so an interruption
     /// or a lock before the person saves it leads to another replacement prompt, never to a key
@@ -521,7 +526,14 @@ public actor VaultRepository {
             // can't check the backup's secret; the person can change it afterwards.)
             if !recovery { for folder in try folders() { if try opens(folder, secret: credential, kind: kind) { throw VaultError.SecretInUse } } }
             for item in loaded.items { try verify(blob(item.id, keys: keys, in: staging), keys: keys, item: item) }
-            let value = try confirmedByRecovery(loaded, recovery: recovery, keys: keys, at: staging)
+            // A recovery-key restore can't check the backup's own secret against this device's vaults,
+            // so the index requires a new one before the library opens. The recovery key has just
+            // proved itself, so its reminder is cleared.
+            var value = loaded
+            if recovery {
+                value = librarySetSecretChangeRequired(library: librarySetRecoveryUnconfirmed(library: loaded, unconfirmed: false), required: true)
+                try save(value, keys: keys, at: staging)
+            }
             try FileManager.default.moveItem(at: staging, to: target)
             lock(); open(keys, value, target)
             if case .v1(let old) = header, !recovery { migrate(header: old, credential: credential) }

@@ -28,6 +28,7 @@ struct VaultRoot: View {
         Group {
             if model.library == nil { VaultLockView() }
             else if model.needsRecoveryReplacement { RecoveryReplacementView() }
+            else if model.needsNewSecret { NewSecretView() }
             else { VaultLibraryView() }
         }.id(model.generation)
             .task(id: model.store.hasStarted) { if model.store.hasStarted && model.store.state != .unlocked && model.store.launchSheet == .beforeYouBuy { before = true } }
@@ -154,6 +155,40 @@ struct RecoveryReplacementView: View {
                     Button("Create a new recovery key") { Task { await model.replaceRecoveryKey() } }.disabled(model.busy).accessibilityIdentifier("vault.replaceRecovery")
                 } footer: { Text("Old backups still open with the recovery key they were made with.") }
             }.navigationTitle("Recovery key")
+                .toolbar { Button { model.lock() } label: { Label("Lock", systemImage: "lock.fill") } }
+        }
+    }
+}
+/// Shown instead of the library after a restore authorised by the recovery key: the backup's own
+/// unlock secret couldn't be checked against the other vaults here, so the person sets a new one (the
+/// usual change, with its duplicate check) before continuing.
+struct NewSecretView: View {
+    @Environment(VaultModel.self) private var model
+    @State private var kind = VaultCredentialKind.passphrase
+    @State private var password = ""
+    @State private var repeated = ""
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Text("Choose a new unlock secret").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                    Text("This vault was restored with its recovery key, so its old secret couldn’t be checked against your other vaults. Choose a new PIN, pattern or passphrase to open it from now on.")
+                }
+                Section {
+                    CredentialKindPicker(kind: $kind).onChange(of: kind) { password = ""; repeated = "" }
+                    CredentialInput(kind: kind, value: $password, label: kind.newLabel, identifier: "vault.newSecret")
+                    CredentialInput(kind: kind, value: $repeated, label: kind.repeatLabel, identifier: "vault.repeatNewSecret")
+                    if model.busy { ProgressView(model.progress) }
+                    Button("Set unlock secret") {
+                        let secret = password, chosen = kind; password = ""; repeated = ""
+                        Task {
+                            if await model.update(action: { try await model.repository.changePassphrase(secret, kind: chosen) }) {
+                                model.announce(String(localized: "Unlock secret set. Older backups still open with their old one."))
+                            }
+                        }
+                    }.disabled((try? kind.validate(password)) == nil || password != repeated || model.busy).accessibilityIdentifier("vault.setNewSecret")
+                } footer: { Text("Older backups still open with the secret they were made with.") }
+            }.scrollDismissesKeyboard(.interactively).navigationTitle("New unlock secret")
                 .toolbar { Button { model.lock() } label: { Label("Lock", systemImage: "lock.fill") } }
         }
     }

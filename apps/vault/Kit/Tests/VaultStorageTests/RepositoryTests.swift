@@ -370,11 +370,24 @@ func names(_ folder: URL) throws -> Set<String> { Set(try FileManager.default.co
     await other.lock()
     await #expect(throws: VaultError.SecretInUse) { try await other.restore(backup, credential: password, recovery: false) }
     #expect(try await other.vaultIDs() == [existing.library.id])
-    // The recovery key restores it; a new secret then separates the two.
-    #expect(try await other.restore(backup, credential: made.recoveryKey, recovery: true).id == made.library.id)
+    // The recovery key restores it, and the restored vault requires a new secret, even after a lock.
+    let restored = try await other.restore(backup, credential: made.recoveryKey, recovery: true)
+    #expect(restored.id == made.library.id); #expect(restored.secretChangeRequired)
+    await other.lock()
+    #expect(try await other.unlock(credential: made.recoveryKey, recovery: true).secretChangeRequired)
+    // The new secret gets the same duplicate check as any change.
+    await #expect(throws: VaultError.DuplicateVault) { try await other.changePassphrase(password) }
+    #expect(try await other.snapshot().secretChangeRequired)
     try await other.changePassphrase("a brand new restored secret")
+    #expect(try await other.snapshot().secretChangeRequired == false)
     await other.lock()
     #expect(try await other.unlock(credential: password).id == existing.library.id)
+    await other.lock()
+    let reopened = try await other.unlock(credential: "a brand new restored secret")
+    #expect(reopened.id == made.library.id); #expect(reopened.secretChangeRequired == false)
+    // A restore with the secret itself (no collision) needs no extra step.
+    let h = Fixture(); defer { h.cleanup() }; let third = h.repo; try await third.prepare()
+    #expect(try await third.restore(backup, credential: password, recovery: false).secretChangeRequired == false)
 }
 
 @Test func anUnconfirmedRecoveryKeyOutlivesTheSessionUntilConfirmedOrReplaced() async throws {

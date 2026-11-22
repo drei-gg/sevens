@@ -203,12 +203,27 @@ class VaultRepositoryTest {
         assertThrows(VaultException.SecretInUse::class.java) { runBlocking { other.restore(backup.path, secret, false, VaultCredentialKind.PASSPHRASE) } }
         assertEquals("nothing published", 1, other.root.listFiles()!!.count { it.isDirectory && !it.name.startsWith(".") })
         assertEquals(existing.library.id, other.unlock(secret, false, VaultCredentialKind.PASSPHRASE).id)
-        // The recovery key still restores it; the person then chooses a new secret.
+        // The recovery key still restores it, and the restored vault requires a new secret.
         val restored = other.restore(backup.path, created.recoveryKey, true, VaultCredentialKind.PASSPHRASE)
         assertEquals(created.library.id, restored.id)
+        assertTrue(restored.secretChangeRequired)
+        // Locking first doesn't skip it: the requirement is in the index.
+        other.lock()
+        assertTrue(other.unlock(created.recoveryKey, true, VaultCredentialKind.PASSPHRASE).secretChangeRequired)
+        // The new secret gets the same duplicate check as any change.
+        assertThrows(VaultException.DuplicateVault::class.java) { runBlocking { other.changeCredential(secret, VaultCredentialKind.PASSPHRASE) } }
+        assertTrue(other.snapshot().secretChangeRequired)
         other.changeCredential("a brand new restored secret", VaultCredentialKind.PASSPHRASE)
+        assertFalse(other.snapshot().secretChangeRequired)
         other.lock()
         assertEquals(existing.library.id, other.unlock(secret, false, VaultCredentialKind.PASSPHRASE).id)
+        other.lock()
+        val reopened = other.unlock("a brand new restored secret", false, VaultCredentialKind.PASSPHRASE)
+        assertEquals(created.library.id, reopened.id)
+        assertFalse(reopened.secretChangeRequired)
+        // A restore with the secret itself (no collision) needs no extra step.
+        val third = repository("third").apply { prepare() }
+        assertFalse(third.restore(backup.path, secret, false, VaultCredentialKind.PASSPHRASE).secretChangeRequired)
     }
 
     @Test

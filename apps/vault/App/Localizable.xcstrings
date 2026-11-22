@@ -565,6 +565,18 @@
         }
       }
     },
+    "Choose a new unlock secret": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a new unlock secret"
+          }
+        }
+      }
+    },
     "Choose automatic backup folder": {
       "comment": "Vault interface copy. Keep it calm, concrete and short.",
       "extractionState": "manual",
@@ -1549,6 +1561,18 @@
         }
       }
     },
+    "New unlock secret": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New unlock secret"
+          }
+        }
+      }
+    },
     "New vault": {
       "comment": "Vault interface copy. Keep it calm, concrete and short.",
       "extractionState": "manual",
@@ -1749,6 +1773,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Old backups still open with the recovery key they were made with."
+          }
+        }
+      }
+    },
+    "Older backups still open with the secret they were made with.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Older backups still open with the secret they were made with."
           }
         }
       }
@@ -2641,6 +2677,18 @@
         }
       }
     },
+    "Set unlock secret": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set unlock secret"
+          }
+        }
+      }
+    },
     "Set up Face ID or Touch ID first.": {
       "comment": "Vault interface copy. Keep it calm, concrete and short.",
       "extractionState": "manual",
@@ -2845,6 +2893,18 @@
         }
       }
     },
+    "This vault was restored with its recovery key, so its old secret couldn’t be checked against your other vaults. Choose a new PIN, pattern or passphrase to open it from now on.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This vault was restored with its recovery key, so its old secret couldn’t be checked against your other vaults. Choose a new PIN, pattern or passphrase to open it from now on."
+          }
+        }
+      }
+    },
     "Try another file name, or include note text.": {
       "comment": "Vault interface copy. Keep it calm, concrete and short.",
       "extractionState": "manual",
@@ -2913,6 +2973,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Unlock secret changed. Older backups still open with the old one."
+          }
+        }
+      }
+    },
+    "Unlock secret set. Older backups still open with their old one.": {
+      "comment": "Vault interface copy. Keep it calm, concrete and short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock secret set. Older backups still open with their old one."
           }
         }
       }

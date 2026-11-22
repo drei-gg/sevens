@@ -36,7 +36,7 @@ pub enum VaultError {
     /// Restoring with an unlock secret that already opens another vault here: publishing it would
     /// leave one secret opening two vaults. The recovery key restores it; then choose a new secret.
     #[error(
-        "This backup’s unlock secret already opens another vault on this device. Restore it with its recovery key instead, then choose a new unlock secret in Settings."
+        "This backup’s unlock secret already opens another vault on this device. Restore it with its recovery key instead; you’ll then choose a new unlock secret."
     )]
     SecretInUse,
 }

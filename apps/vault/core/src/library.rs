@@ -121,6 +121,11 @@ pub struct VaultLibrary {
     /// Absent (false) in older indexes and omitted when false, so existing files read back equal.
     #[serde(rename = "recoveryUnconfirmed", default, skip_serializing_if = "is_false")]
     pub recovery_unconfirmed: bool,
+    /// Restored with its recovery key: the backup's own unlock secret could not be checked against
+    /// the other vaults on this device, so a new one must be chosen before the library opens.
+    /// Cleared when the secret is changed. Omitted when false, like `recoveryUnconfirmed`.
+    #[serde(rename = "secretChangeRequired", default, skip_serializing_if = "is_false")]
+    pub secret_change_required: bool,
 }
 
 fn is_false(value: &bool) -> bool {
@@ -133,7 +138,7 @@ impl VaultLibrary {
     }
 
     pub fn with_id(id: Uuid, name: String) -> Self {
-        Self { version: 1, id, name, items: vec![], folders: vec![], sort: VaultOrder::Newest, grid: false, backup_prepared: None, recovery_unconfirmed: false }
+        Self { version: 1, id, name, items: vec![], folders: vec![], sort: VaultOrder::Newest, grid: false, backup_prepared: None, recovery_unconfirmed: false, secret_change_required: false }
     }
 
     pub fn validate_name(name: &str) -> Result<(), VaultError> {

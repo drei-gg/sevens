@@ -245,7 +245,12 @@ class VaultRepository(val root: File, val temporary: File) {
                 throw VaultException.DuplicateVault()
             val changed = headerV2RewrapPassword(readHeader(s.directory), s.identity, kind, secret)
             writeHeader(changed, s.directory)
-            commitHeader(s, changed)
+            // The required new secret (after a recovery-key restore) is now set.
+            if (s.library.secretChangeRequired) {
+                val cleared = librarySetSecretChangeRequired(s.library, false)
+                save(cleared, s.identity, s.directory)
+                commit(s, cleared, changed)
+            } else commitHeader(s, changed)
         }
     }
 
@@ -609,7 +614,14 @@ class VaultRepository(val root: File, val temporary: File) {
                     item.bytes,
                     item.digest,
                 )
-                val value = confirmedByRecovery(loaded, recovery, opened, staging)
+                // A recovery-key restore can't check the backup's own secret against this device's
+                // vaults, so the index requires a new one before the library opens. The recovery key
+                // has just proved itself, so its reminder is cleared.
+                val value =
+                    if (!recovery) loaded
+                    else
+                        librarySetSecretChangeRequired(librarySetRecoveryUnconfirmed(loaded, false), true)
+                            .also { save(it, opened, staging) }
                 if (!staging.renameTo(target)) throw VaultException.Damaged()
                 publish(opened, found, value, target)
                 value

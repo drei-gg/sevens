@@ -200,3 +200,12 @@ pub fn library_set_recovery_unconfirmed(library: &VaultLibrary, unconfirmed: boo
     changed.recovery_unconfirmed = unconfirmed;
     changed
 }
+
+/// Record whether the vault must get a new unlock secret before its library opens: true after a
+/// restore authorised by the recovery key, false once the secret has been changed.
+#[uniffi::export]
+pub fn library_set_secret_change_required(library: &VaultLibrary, required: bool) -> VaultLibrary {
+    let mut changed = library.clone();
+    changed.secret_change_required = required;
+    changed
+}
