@@ -299,8 +299,10 @@ fun <T> ConnectedChoice(
         // every label fits; wrapping filter chips keep all choices legible on narrow screens.
         val widest =
             options.maxOfOrNull { measurer.measure(it.second, style, maxLines = 1).size.width } ?: 0
-        val required = with(density) { widest.toDp() } + 40.dp
-        if (required * options.size + 2.dp * (options.size - 1).coerceAtLeast(0) > maxWidth) {
+        // ToggleButton pads its label by ButtonDefaults.ContentPadding: 24 dp a side.
+        val required = with(density) { widest.toDp() } + 48.dp
+        val gaps = ButtonGroupDefaults.ConnectedSpaceBetween * (options.size - 1).coerceAtLeast(0)
+        if (required * options.size + gaps > maxWidth) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                 options.forEach { (value, label) ->
                     FilterChip(
