@@ -37,12 +37,15 @@ class PlayPurchaseSource(
                     BillingClient.BillingResponseCode.OK,
                     BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> refresh()
                     BillingClient.BillingResponseCode.USER_CANCELED ->
-                        state.update { it.copy(busy = false, message = "Purchase cancelled") }
+                        state.update {
+                            it.copy(busy = false, message = null, messageRes = R.string.billing_cancelled)
+                        }
                     else ->
                         state.update {
                             it.copy(
                                 busy = false,
-                                message = "Google Play could not complete the purchase. Try again.",
+                                message = null,
+                                messageRes = R.string.billing_failed,
                             )
                         }
                 }
@@ -92,8 +95,8 @@ class PlayPurchaseSource(
                                 it.copy(
                                     busy = false,
                                     loaded = true,
-                                    message =
-                                        "Google Play is unavailable. Saved access still works offline.",
+                                    message = null,
+                                    messageRes = R.string.billing_unavailable,
                                 )
                             }
                     }
@@ -126,9 +129,8 @@ class PlayPurchaseSource(
             state.update {
                 it.copy(
                     price = product?.oneTimePurchaseOfferDetailsList?.firstOrNull()?.formattedPrice,
-                    message =
-                        if (product == null) "Unlock is unavailable on Google Play right now."
-                        else null,
+                    message = null,
+                    messageRes = if (product == null) R.string.billing_no_product else null,
                 )
             }
         }
@@ -142,7 +144,8 @@ class PlayPurchaseSource(
                     it.copy(
                         busy = false,
                         loaded = true,
-                        message = "Could not refresh purchases. Try Restore again when online.",
+                        message = null,
+                        messageRes = R.string.billing_refresh_failed,
                     )
                 }
                 return@queryPurchasesAsync
@@ -167,9 +170,8 @@ class PlayPurchaseSource(
                     pending = pending,
                     busy = false,
                     loaded = true,
-                    message =
-                        if (pending) "Payment pending. Access starts when Google Play confirms it."
-                        else it.message,
+                    message = if (pending) null else it.message,
+                    messageRes = if (pending) R.string.billing_pending else it.messageRes,
                 )
             }
             if (owned != null && !owned.isAcknowledged)
@@ -181,8 +183,8 @@ class PlayPurchaseSource(
                     if (ack.responseCode != BillingClient.BillingResponseCode.OK)
                         state.update {
                             it.copy(
-                                message =
-                                    "Purchase received; confirmation will retry when the app reopens."
+                                message = null,
+                                messageRes = R.string.billing_ack_retry,
                             )
                         }
                 }
@@ -197,14 +199,16 @@ class PlayPurchaseSource(
                 .setProductDetails(detail)
                 .apply { offer.offerToken?.let { setOfferToken(it) } }
                 .build()
-        state.update { it.copy(busy = true, message = null) }
+        state.update { it.copy(busy = true, message = null, messageRes = null) }
         val result =
             client.launchBillingFlow(
                 activity,
                 BillingFlowParams.newBuilder().setProductDetailsParamsList(listOf(params)).build(),
             )
         if (result.responseCode != BillingClient.BillingResponseCode.OK)
-            state.update { it.copy(busy = false, message = "Could not open Google Play checkout.") }
+            state.update {
+                it.copy(busy = false, message = null, messageRes = R.string.billing_checkout_failed)
+            }
     }
 
     override fun close() {

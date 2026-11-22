@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="billing_cancelled">Purchase cancelled.</string>
+    <string name="billing_failed">Google Play couldn’t complete the purchase. Try again.</string>
+    <string name="billing_unavailable">Google Play is unavailable. Saved access still works offline.</string>
+    <string name="billing_no_product">Unlock is unavailable on Google Play right now.</string>
+    <string name="billing_refresh_failed">Couldn’t refresh purchases. Try Restore again when you’re online.</string>
+    <string name="billing_pending">Payment pending. Access starts when Google Play confirms it.</string>
+    <string name="billing_ack_retry">Purchase received. Confirmation will retry when the app reopens.</string>
+    <string name="billing_checkout_failed">Couldn’t open Google Play checkout.</string>
+</resources>
