@@ -2,12 +2,14 @@
 //! ChecksSkeletonScriptTests.
 
 mod common;
+use SignalId::*;
 use common::*;
-use qr_core::checks::{self, BrandMatcher, CheckContext, Skeleton, damerau_levenshtein, embedded_links, script_mix};
+use qr_core::checks::{
+    self, BrandMatcher, CheckContext, Skeleton, damerau_levenshtein, embedded_links, script_mix,
+};
 use qr_core::*;
 use std::collections::HashSet;
 use std::sync::{Arc, OnceLock};
-use SignalId::*;
 
 fn ctx() -> &'static CheckContext {
     static C: OnceLock<CheckContext> = OnceLock::new();
@@ -34,14 +36,28 @@ fn strs(v: &[&str]) -> Vec<String> {
 
 #[test]
 fn checks_tokens_split_on_separators_and_digits() {
-    assert_eq!(BrandMatcher::tokens(&strs(&["secure-paypal_login"])), strs(&["secure", "paypal", "login"]));
-    assert_eq!(BrandMatcher::tokens(&strs(&["paypa1", "amazon24x"])), strs(&["paypa", "1", "amazon", "24", "x"]));
-    assert_eq!(BrandMatcher::tokens(&strs(&["b\u{00FC}cher"])), strs(&["b\u{00FC}cher"]));
+    assert_eq!(
+        BrandMatcher::tokens(&strs(&["secure-paypal_login"])),
+        strs(&["secure", "paypal", "login"])
+    );
+    assert_eq!(
+        BrandMatcher::tokens(&strs(&["paypa1", "amazon24x"])),
+        strs(&["paypa", "1", "amazon", "24", "x"])
+    );
+    assert_eq!(
+        BrandMatcher::tokens(&strs(&["b\u{00FC}cher"])),
+        strs(&["b\u{00FC}cher"])
+    );
 }
 
 #[test]
 fn checks_damerau_levenshtein() {
-    let d = |a: &str, b: &str| damerau_levenshtein(&a.chars().collect::<Vec<_>>(), &b.chars().collect::<Vec<_>>());
+    let d = |a: &str, b: &str| {
+        damerau_levenshtein(
+            &a.chars().collect::<Vec<_>>(),
+            &b.chars().collect::<Vec<_>>(),
+        )
+    };
     assert_eq!(d("paypal", "paypal"), 0);
     assert_eq!(d("paypa", "paypal"), 1);
     assert_eq!(d("gogole", "google"), 1);
@@ -56,7 +72,10 @@ fn checks_brand_signal_args() {
     assert_eq!(s.first().map(|x| x.id), Some(LookalikeBrand));
     assert_eq!(arg(s.first(), "brand"), Some("PayPal"));
     let u = sig("https://bank.com@evil.site/");
-    assert_eq!(arg(u.iter().find(|x| x.id == UserinfoTrick), "host"), Some("evil.site"));
+    assert_eq!(
+        arg(u.iter().find(|x| x.id == UserinfoTrick), "host"),
+        Some("evil.site")
+    );
     assert_eq!(arg(sig("https://x.top/").first(), "tld"), Some("top"));
 }
 
@@ -78,13 +97,21 @@ fn checks_skeleton_match_never_fires_on_exact_brand_label() {
 #[test]
 fn checks_only_one_signal_per_id_and_stable_order() {
     let s = sig("http://a.b.c.d.paypa1-secure.top/login");
-    assert_eq!(s.iter().map(|x| x.id).collect::<HashSet<_>>().len(), s.len());
+    assert_eq!(
+        s.iter().map(|x| x.id).collect::<HashSet<_>>().len(),
+        s.len()
+    );
     assert_eq!(s, in_stable_order(&s));
 }
 
 #[test]
 fn checks_brand_overrides_keep_regional_sites_quiet() {
-    for u in ["https://www.google.co.uk/", "https://www.ebay.de/", "https://www.yahoo.co.jp/", "https://www.paypal.com.au/"] {
+    for u in [
+        "https://www.google.co.uk/",
+        "https://www.ebay.de/",
+        "https://www.yahoo.co.jp/",
+        "https://www.paypal.com.au/",
+    ] {
         assert!(sid(u).is_empty(), "{u}");
     }
     assert!(sid("https://google.xyz/").contains(&BrandInDomain));
@@ -93,13 +120,26 @@ fn checks_brand_overrides_keep_regional_sites_quiet() {
 #[test]
 fn checks_common_words_do_not_misfire() {
     for u in [
-        "https://www.smart-home-guide.com/", "https://www.zoom.com/", "https://store.steampowered.com/", "https://www.bookingholdings.com/",
-        "https://www.grabcad.com/", "https://www.ubereats.com/", "https://www.ledger.com/", "https://www.orange.com/",
-        "https://www.claroshop.com/", "https://www.bostonglobe.com/", "https://www.mayoclinic.org/", "https://www.visa.co.uk/",
-        "https://www.targetcorp.com/", "https://www.dito.example.com/",
+        "https://www.smart-home-guide.com/",
+        "https://www.zoom.com/",
+        "https://store.steampowered.com/",
+        "https://www.bookingholdings.com/",
+        "https://www.grabcad.com/",
+        "https://www.ubereats.com/",
+        "https://www.ledger.com/",
+        "https://www.orange.com/",
+        "https://www.claroshop.com/",
+        "https://www.bostonglobe.com/",
+        "https://www.mayoclinic.org/",
+        "https://www.visa.co.uk/",
+        "https://www.targetcorp.com/",
+        "https://www.dito.example.com/",
     ] {
         let r = sid(u);
-        assert!(!r.iter().any(|i| i.severity() == Severity::Strong), "{u}: {r:?}");
+        assert!(
+            !r.iter().any(|i| i.severity() == Severity::Strong),
+            "{u}: {r:?}"
+        );
     }
 }
 
@@ -112,12 +152,25 @@ fn find(s: &str) -> Vec<String> {
 #[test]
 fn checks_embedded_finds_three_shapes() {
     let t = "a http://one.example/x b HTTPS://Two.example/y c www.three.example/z d";
-    assert_eq!(find(t), strs(&["http://one.example/x", "HTTPS://Two.example/y", "www.three.example/z"]));
+    assert_eq!(
+        find(t),
+        strs(&[
+            "http://one.example/x",
+            "HTTPS://Two.example/y",
+            "www.three.example/z"
+        ])
+    );
 }
 
 #[test]
 fn checks_embedded_drops_trailing_punctuation_and_stops_at_angle_and_quote() {
-    for s in ["(see https://a.example/p).", "[https://a.example/p],", "<https://a.example/p>", "href=\"https://a.example/p\"", "https://a.example/p..."] {
+    for s in [
+        "(see https://a.example/p).",
+        "[https://a.example/p],",
+        "<https://a.example/p>",
+        "href=\"https://a.example/p\"",
+        "https://a.example/p...",
+    ] {
         assert_eq!(find(s), strs(&["https://a.example/p"]), "{s}");
     }
 }
@@ -132,9 +185,15 @@ fn checks_embedded_ignores_bare_schemes_and_words_ending_in_www() {
 
 #[test]
 fn checks_embedded_caps_at_ten_and_deduplicates() {
-    let many = (0..30).map(|i| format!("https://e.example/{i}")).collect::<Vec<_>>().join(" ");
+    let many = (0..30)
+        .map(|i| format!("https://e.example/{i}"))
+        .collect::<Vec<_>>()
+        .join(" ");
     assert_eq!(find(&many).len(), 10);
-    assert_eq!(find("https://e.example/a https://e.example/a"), strs(&["https://e.example/a"]));
+    assert_eq!(
+        find("https://e.example/a https://e.example/a"),
+        strs(&["https://e.example/a"])
+    );
 }
 
 #[test]
@@ -147,22 +206,36 @@ fn checks_embedded_is_linear_on_hostile_input() {
 
 fn fix_data(bait: &[&str]) -> BundledData {
     let s = shared();
-    let brand = |name: &str, kw: &str, domains: &[&str], cat: &str, region: &str, amb: bool| Brand {
-        name: name.into(),
-        keywords: strs(&[kw]),
-        domains: strs(domains),
-        category: cat.into(),
-        region: region.into(),
-        ambiguous: amb,
-    };
+    let brand =
+        |name: &str, kw: &str, domains: &[&str], cat: &str, region: &str, amb: bool| Brand {
+            name: name.into(),
+            keywords: strs(&[kw]),
+            domains: strs(domains),
+            category: cat.into(),
+            region: region.into(),
+            ambiguous: amb,
+        };
     let mut d = BundledData::new(s.public_suffixes.clone());
     d.brands = vec![
         brand("DHL", "dhl", &["dhl.com"], "shipping", "global", false),
         brand("BPI", "bpi", &["bpi.com.ph"], "bank", "ph", false),
-        brand("PayPal", "paypal", &["paypal.com", "paypal.me"], "payments", "global", false),
+        brand(
+            "PayPal",
+            "paypal",
+            &["paypal.com", "paypal.me"],
+            "payments",
+            "global",
+            false,
+        ),
         brand("Apple", "apple", &["apple.com"], "tech", "global", true),
     ];
-    d.risky_tlds = ["help", "top", "cc"].iter().map(|t| qr_core::data::RiskyTld { tld: t.to_string(), source: "https://example.org/report".into() }).collect();
+    d.risky_tlds = ["help", "top", "cc"]
+        .iter()
+        .map(|t| qr_core::data::RiskyTld {
+            tld: t.to_string(),
+            source: "https://example.org/report".into(),
+        })
+        .collect();
     d.confusables = s.confusables.clone();
     d.bait_words = strs(bait);
     d
@@ -195,7 +268,12 @@ fn checks_fix_three_letter_brand_is_never_gentle_or_lookalike() {
     let r = fix("https://online.dhl.de/");
     assert!(r.contains(&BrandInDomain));
     assert!(!r.contains(&BrandOtherEnding));
-    for u in ["https://dh1-tracking.help/", "https://dh1.com/", "https://bp1-online.net/", "https://dhi-login.net/"] {
+    for u in [
+        "https://dh1-tracking.help/",
+        "https://dh1.com/",
+        "https://bp1-online.net/",
+        "https://dhi-login.net/",
+    ] {
         assert!(!fix(u).contains(&LookalikeBrand), "{u}");
         assert!(!fix(u).contains(&NearBrand), "{u}");
     }
@@ -238,14 +316,24 @@ fn checks_fix_strong_beats_gentle_when_two_brands_match() {
 #[test]
 fn checks_fix_unknown_ending_falls_back_to_last_label() {
     let a = link("https://paypal.evil-site.newtldxyz/");
-    assert_eq!(a.link.registrable_domain.as_deref(), Some("evil-site.newtldxyz"));
+    assert_eq!(
+        a.link.registrable_domain.as_deref(),
+        Some("evil-site.newtldxyz")
+    );
     let r = checks::link_signals(&a, fix_ctx());
     assert_eq!(ids(&r), vec![BrandInDomain, UnknownEnding]);
-    assert_eq!(r.iter().find(|s| s.id == UnknownEnding).map(|s| s.severity()), Some(Severity::Info));
+    assert_eq!(
+        r.iter()
+            .find(|s| s.id == UnknownEnding)
+            .map(|s| s.severity()),
+        Some(Severity::Info)
+    );
     assert!(!fix("https://example.com/").contains(&UnknownEnding));
     assert!(fix("https://localhost/").is_empty());
     assert_eq!(fix("https://10.0.0.1/"), vec![IpHost]);
-    assert!(WebAddress::parse_schemeless("www.example.newtldxyz", &shared().public_suffixes).is_none());
+    assert!(
+        WebAddress::parse_schemeless("www.example.newtldxyz", &shared().public_suffixes).is_none()
+    );
 }
 
 #[test]
@@ -261,30 +349,61 @@ fn checks_fix_lookalike_words_inside_labels() {
 #[test]
 fn checks_fix_nested_link_only_counts_in_the_path() {
     let fires = |s: &str| {
-        WebAddress::parse(s, &shared().public_suffixes).is_some_and(|a| checks::obfuscated_path(&a.link, &strs(&["login"])).is_some())
+        WebAddress::parse(s, &shared().public_suffixes)
+            .is_some_and(|a| checks::obfuscated_path(&a.link, &strs(&["login"])).is_some())
     };
-    assert!(!fires("https://example.com/login?next=https://other.example/"));
-    assert!(!fires("https://example.com/login?next=https%3A%2F%2Fother.example"));
+    assert!(!fires(
+        "https://example.com/login?next=https://other.example/"
+    ));
+    assert!(!fires(
+        "https://example.com/login?next=https%3A%2F%2Fother.example"
+    ));
     assert!(!fires("https://example.com/login#https://other.example/"));
     assert!(fires("https://example.com/login/https://other.example/"));
-    assert!(fires("https://example.com/login/http%3A%2F%2Fother.example"));
-    assert!(!fires("https://example.com/login/x?y=1&u=http://z.example/"));
-    assert!(!fires(&format!("https://example.com/login?x={}", "a".repeat(200))));
-    assert!(!fires("https://example.com/login?x=%41%42%43%44%45%46%47%48%49%4A%4B"));
-    assert!(fires(&format!("https://example.com/login/{}", "a".repeat(200))));
-    assert!(fires("https://example.com/login/%41%42%43%44%45%46%47%48%49%4A%4B"));
+    assert!(fires(
+        "https://example.com/login/http%3A%2F%2Fother.example"
+    ));
+    assert!(!fires(
+        "https://example.com/login/x?y=1&u=http://z.example/"
+    ));
+    assert!(!fires(&format!(
+        "https://example.com/login?x={}",
+        "a".repeat(200)
+    )));
+    assert!(!fires(
+        "https://example.com/login?x=%41%42%43%44%45%46%47%48%49%4A%4B"
+    ));
+    assert!(fires(&format!(
+        "https://example.com/login/{}",
+        "a".repeat(200)
+    )));
+    assert!(fires(
+        "https://example.com/login/%41%42%43%44%45%46%47%48%49%4A%4B"
+    ));
 }
 
 #[test]
 fn checks_fix_host_is_folded_before_any_check() {
     let psl = &shared().public_suffixes;
-    for s in ["https://ｐａｙｐａｌ.com/", "https://paypal。com/", "https://paypal．com/", "https://paypal｡com/", "https://ＰＡＹＰＡＬ.COM/"] {
+    for s in [
+        "https://ｐａｙｐａｌ.com/",
+        "https://paypal。com/",
+        "https://paypal．com/",
+        "https://paypal｡com/",
+        "https://ＰＡＹＰＡＬ.COM/",
+    ] {
         let a = WebAddress::parse(s, psl).unwrap_or_else(|| panic!("{s}"));
         assert_eq!(a.link.host_ascii, "paypal.com", "{s}");
         assert_eq!(a.link.registrable_domain.as_deref(), Some("paypal.com"));
         assert!(!a.has_malformed_label);
     }
-    assert_eq!(WebAddress::parse("https://\u{FB01}le.example.com/", psl).unwrap().link.host_ascii, "file.example.com");
+    assert_eq!(
+        WebAddress::parse("https://\u{FB01}le.example.com/", psl)
+            .unwrap()
+            .link
+            .host_ascii,
+        "file.example.com"
+    );
     assert!(WebAddress::parse("https://example.com\u{FF0F}paypal.com/", psl).is_none());
 }
 
@@ -301,8 +420,14 @@ fn checks_skeleton_maps_confusables() {
     assert_eq!(s.of("rnicrosoft"), s.of("microsoft"));
     assert_eq!(s.of("g00gle"), s.of("google"));
     assert_eq!(s.of("vvikipedia"), s.of("wikipedia"));
-    assert_eq!(s.of("\u{0430}\u{0440}\u{0440}\u{04CF}\u{0435}"), s.of("apple"));
-    assert_eq!(s.of("\u{FF50}\u{FF41}\u{FF59}\u{FF50}\u{FF41}\u{FF4C}"), s.of("paypal"));
+    assert_eq!(
+        s.of("\u{0430}\u{0440}\u{0440}\u{04CF}\u{0435}"),
+        s.of("apple")
+    );
+    assert_eq!(
+        s.of("\u{FF50}\u{FF41}\u{FF59}\u{FF50}\u{FF41}\u{FF4C}"),
+        s.of("paypal")
+    );
 }
 
 #[test]
@@ -334,8 +459,15 @@ fn mixed(s: &str) -> bool {
 #[test]
 fn checks_script_mix_single_scripts_are_fine() {
     for s in [
-        "example", "b\u{00FC}cher", "\u{043F}\u{0440}\u{0438}\u{043C}\u{0435}\u{0440}", "\u{03B1}\u{03B2}\u{03B3}",
-        "\u{0645}\u{062B}\u{0627}\u{0644}", "\u{4F8B}\u{3048}", "\u{D55C}\u{AD6D}", "my-site-2026", "123",
+        "example",
+        "b\u{00FC}cher",
+        "\u{043F}\u{0440}\u{0438}\u{043C}\u{0435}\u{0440}",
+        "\u{03B1}\u{03B2}\u{03B3}",
+        "\u{0645}\u{062B}\u{0627}\u{0644}",
+        "\u{4F8B}\u{3048}",
+        "\u{D55C}\u{AD6D}",
+        "my-site-2026",
+        "123",
         "\u{0E15}\u{0E31}\u{0E27}\u{0E2D}\u{0E22}\u{0E48}\u{0E32}\u{0E07}",
     ] {
         assert!(!mixed(s), "{s}");
@@ -352,7 +484,15 @@ fn checks_script_mix_allowed_combinations() {
 
 #[test]
 fn checks_script_mix_forbidden_combinations() {
-    for s in ["ex\u{0430}mple", "g\u{03BF}\u{03BF}d", "abc\u{0645}", "\u{043F}\u{03B1}", "\u{D55C}\u{3042}", "abc\u{D55C}\u{3042}", "abc\u{1200}"] {
+    for s in [
+        "ex\u{0430}mple",
+        "g\u{03BF}\u{03BF}d",
+        "abc\u{0645}",
+        "\u{043F}\u{03B1}",
+        "\u{D55C}\u{3042}",
+        "abc\u{D55C}\u{3042}",
+        "abc\u{1200}",
+    ] {
         assert!(mixed(s), "{s}");
     }
 }

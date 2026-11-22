@@ -30,7 +30,9 @@ fn swift_written_history_round_trips_byte_for_byte() {
 #[test]
 fn swift_written_known_addresses_round_trip_byte_for_byte() {
     let swift = include_bytes!("fixtures/swift-known.json");
-    let KnownAddressesDecoded::Addresses { known } = decode_known_file(swift) else { panic!() };
+    let KnownAddressesDecoded::Addresses { known } = decode_known_file(swift) else {
+        panic!()
+    };
     assert_eq!(known.entries.len(), 3);
     assert_eq!(text(&encode_known_file(&known)), text(swift));
 }
@@ -46,7 +48,10 @@ fn swift_written_history_export_round_trips_byte_for_byte() {
 #[test]
 fn fractional_dates_are_written_as_swift_writes_them() {
     let swift = include_bytes!("fixtures/swift-history-fractional.json");
-    assert_eq!(text(&encode_history(&items(FRACTIONAL_INPUT.as_bytes()))), text(swift));
+    assert_eq!(
+        text(&encode_history(&items(FRACTIONAL_INPUT.as_bytes()))),
+        text(swift)
+    );
 }
 
 #[test]
@@ -61,7 +66,10 @@ fn swift_encoder_lists_bundle_reads_equal() {
     let swift = ListsBundle::decode(include_bytes!("fixtures/swift-encoder-lists.json")).unwrap();
     let published = ListsBundle::decode(include_bytes!("fixtures/lists-refresh.json")).unwrap();
     // Swift's dictionary order is random; compare confusables as a map.
-    assert_eq!(swift.files.confusables.to_map(), published.files.confusables.to_map());
+    assert_eq!(
+        swift.files.confusables.to_map(),
+        published.files.confusables.to_map()
+    );
     let mut s = swift.clone();
     s.files.confusables = published.files.confusables.clone();
     assert_eq!(s, published);

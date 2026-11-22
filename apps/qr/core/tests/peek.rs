@@ -2,14 +2,16 @@
 //! PeekHTMLSnifferTests, PeekRDAPTests and PeekDomainAgeTests.
 
 mod common;
+use SignalId::*;
 use common::*;
-use qr_core::peek::{RdapBootstrap, domain_age_days, domain_age_days_in, rdap_registration_date_of, sniff};
+use qr_core::peek::{
+    RdapBootstrap, domain_age_days, domain_age_days_in, rdap_registration_date_of, sniff,
+};
 use qr_core::*;
 use serde::Deserialize;
 use std::collections::HashSet;
 use std::sync::OnceLock;
 use std::time::Instant;
-use SignalId::*;
 
 fn peek() -> &'static PeekAnalyzer {
     static P: OnceLock<PeekAnalyzer> = OnceLock::new();
@@ -17,14 +19,31 @@ fn peek() -> &'static PeekAnalyzer {
 }
 
 fn hop(url: &str, status: Option<i64>) -> PeekHop {
-    PeekHop { url: url.into(), status }
+    PeekHop {
+        url: url.into(),
+        status,
+    }
 }
 
 fn capture(hops: Vec<PeekHop>, stop: StopReason) -> PeekCapture {
-    PeekCapture { hops, stopped_because: stop, content_type: None, content_disposition: None, body: vec![], tls_version: None }
+    PeekCapture {
+        hops,
+        stopped_because: stop,
+        content_type: None,
+        content_disposition: None,
+        body: vec![],
+        tls_version: None,
+    }
 }
 
-fn run_full(url: &str, body: &str, ct: Option<&str>, disposition: Option<&str>, stop: StopReason, age: Option<i64>) -> PeekReport {
+fn run_full(
+    url: &str,
+    body: &str,
+    ct: Option<&str>,
+    disposition: Option<&str>,
+    stop: StopReason,
+    age: Option<i64>,
+) -> PeekReport {
     let c = PeekCapture {
         content_type: ct.map(String::from),
         content_disposition: disposition.map(String::from),
@@ -35,11 +54,21 @@ fn run_full(url: &str, body: &str, ct: Option<&str>, disposition: Option<&str>, 
 }
 
 fn run(body: &str) -> PeekReport {
-    run_full("https://page.example.com/", body, Some("text/html"), None, StopReason::Finished, Some(5000))
+    run_full(
+        "https://page.example.com/",
+        body,
+        Some("text/html"),
+        None,
+        StopReason::Finished,
+        Some(5000),
+    )
 }
 
 fn form(input: &str) -> String {
-    format!("<html><body><p>{}</p><form>{input}</form></body></html>", "text ".repeat(60))
+    format!(
+        "<html><body><p>{}</p><form>{input}</form></body></html>",
+        "text ".repeat(60)
+    )
 }
 
 // MARK: PeekAnalyzerRulesTests.swift
@@ -48,7 +77,10 @@ fn form(input: &str) -> String {
 fn peek_analyzer_secret_kinds() {
     for (input, kind) in [
         ("<input type=password name=p>", "password"),
-        ("<input type=text autocomplete=current-password>", "password"),
+        (
+            "<input type=text autocomplete=current-password>",
+            "password",
+        ),
         ("<input type=text autocomplete=one-time-code>", "code"),
         ("<input name=otp>", "code"),
         ("<input name=mpin>", "code"),
@@ -62,26 +94,63 @@ fn peek_analyzer_secret_kinds() {
         ("<input name=cvc>", "card"),
     ] {
         let r = run(&form(input));
-        assert_eq!(arg(r.signals.iter().find(|s| s.id == AsksForSecret), "kind"), Some(kind), "{input}");
+        assert_eq!(
+            arg(r.signals.iter().find(|s| s.id == AsksForSecret), "kind"),
+            Some(kind),
+            "{input}"
+        );
     }
 }
 
 #[test]
 fn peek_analyzer_pin_needs_word_boundaries() {
-    for input in ["<input name=pinterest>", "<input name=shipping>", "<input name=email>", "<input type=hidden name=pin>"] {
-        assert!(!ids(&run(&form(input)).signals).contains(&AsksForSecret), "{input}");
+    for input in [
+        "<input name=pinterest>",
+        "<input name=shipping>",
+        "<input name=email>",
+        "<input type=hidden name=pin>",
+    ] {
+        assert!(
+            !ids(&run(&form(input)).signals).contains(&AsksForSecret),
+            "{input}"
+        );
     }
 }
 
 #[test]
 fn peek_analyzer_sniffs_only_html_or_angle_bracket() {
-    let html = format!("<html><head><title>Hello</title></head><body>{}</body></html>", "x ".repeat(150));
-    let t = |body: &str, ct: Option<&str>| run_full("https://page.example.com/", body, ct, None, StopReason::Finished, Some(5000)).title;
+    let html = format!(
+        "<html><head><title>Hello</title></head><body>{}</body></html>",
+        "x ".repeat(150)
+    );
+    let t = |body: &str, ct: Option<&str>| {
+        run_full(
+            "https://page.example.com/",
+            body,
+            ct,
+            None,
+            StopReason::Finished,
+            Some(5000),
+        )
+        .title
+    };
     assert_eq!(t(&html, Some("text/html")).as_deref(), Some("Hello"));
-    assert_eq!(t(&html, Some("application/xhtml+xml")).as_deref(), Some("Hello"));
-    assert_eq!(t(&format!("  \n{html}"), Some("application/octet-stream")).as_deref(), Some("Hello"));
+    assert_eq!(
+        t(&html, Some("application/xhtml+xml")).as_deref(),
+        Some("Hello")
+    );
+    assert_eq!(
+        t(&format!("  \n{html}"), Some("application/octet-stream")).as_deref(),
+        Some("Hello")
+    );
     assert_eq!(t(&html, None).as_deref(), Some("Hello"));
-    assert_eq!(t("{\"title\":\"<title>No</title>\"}", Some("application/json")), None);
+    assert_eq!(
+        t(
+            "{\"title\":\"<title>No</title>\"}",
+            Some("application/json")
+        ),
+        None
+    );
     assert_eq!(t("plain text <title>No</title>", Some("text/plain")), None);
 }
 
@@ -89,13 +158,30 @@ fn peek_analyzer_sniffs_only_html_or_angle_bracket() {
 fn peek_analyzer_stop_reasons() {
     let one = |stop: StopReason, hops: Vec<PeekHop>| {
         let original = analyze(&hops[0].url);
-        ids(&peek().report(original, capture(hops, stop), Some(5000)).signals)
+        ids(&peek()
+            .report(original, capture(hops, stop), Some(5000))
+            .signals)
     };
     let a = || hop("https://a.example.com/", Some(301));
     assert!(one(StopReason::TooManyRedirects, vec![a()]).contains(&TooManyRedirects));
-    assert!(one(StopReason::HttpTarget, vec![a(), hop("http://b.example.com/", None)]).contains(&RedirectsToHttp));
-    assert!(one(StopReason::NonWebTarget, vec![a(), hop("tel:+631", None)]).contains(&RedirectLeavesWeb));
-    assert!(one(StopReason::TlsFailure, vec![a(), hop("https://b.example.com/", None)]).contains(&TlsProblem));
+    assert!(
+        one(
+            StopReason::HttpTarget,
+            vec![a(), hop("http://b.example.com/", None)]
+        )
+        .contains(&RedirectsToHttp)
+    );
+    assert!(
+        one(StopReason::NonWebTarget, vec![a(), hop("tel:+631", None)])
+            .contains(&RedirectLeavesWeb)
+    );
+    assert!(
+        one(
+            StopReason::TlsFailure,
+            vec![a(), hop("https://b.example.com/", None)]
+        )
+        .contains(&TlsProblem)
+    );
     assert!(one(StopReason::Timeout, vec![a()]).contains(&PeekIncomplete));
     assert!(one(StopReason::NetworkError, vec![a()]).contains(&PeekIncomplete));
     assert!(!one(StopReason::Finished, vec![a()]).contains(&PeekIncomplete));
@@ -103,12 +189,27 @@ fn peek_analyzer_stop_reasons() {
 
 #[test]
 fn peek_analyzer_final_link_is_last_fetched_hop() {
-    let hops = vec![hop("https://a.example.com/", Some(302)), hop("https://b.example.org/x", Some(200)), hop("http://c.example.net/", None)];
-    let r = peek().report(analyze(&hops[0].url), capture(hops.clone(), StopReason::HttpTarget), Some(400));
-    assert_eq!(r.final_link.as_ref().map(|l| l.host_ascii.as_str()), Some("b.example.org"));
+    let hops = vec![
+        hop("https://a.example.com/", Some(302)),
+        hop("https://b.example.org/x", Some(200)),
+        hop("http://c.example.net/", None),
+    ];
+    let r = peek().report(
+        analyze(&hops[0].url),
+        capture(hops.clone(), StopReason::HttpTarget),
+        Some(400),
+    );
+    assert_eq!(
+        r.final_link.as_ref().map(|l| l.host_ascii.as_str()),
+        Some("b.example.org")
+    );
     assert_eq!(r.hop_analyses.len(), 3);
     assert!(ids(&r.hop_analyses[2].signals).contains(&PlainHttp));
-    let none = peek().report(analyze(&hops[0].url), capture(vec![hop(&hops[0].url, None)], StopReason::Timeout), None);
+    let none = peek().report(
+        analyze(&hops[0].url),
+        capture(vec![hop(&hops[0].url, None)], StopReason::Timeout),
+        None,
+    );
     assert!(none.final_link.is_none());
     assert!(!ids(&none.signals).contains(&AgeUnknown));
 }
@@ -124,8 +225,14 @@ fn peek_analyzer_level_combines_original_and_hops() {
         Some(5000),
     );
     assert_eq!(r.level, Level::Careful);
-    let hops = vec![hop("https://example.com/a", Some(302)), hop("https://paypa1.com/", Some(200))];
-    let c = PeekCapture { content_type: Some("text/html".into()), ..capture(hops.clone(), StopReason::Finished) };
+    let hops = vec![
+        hop("https://example.com/a", Some(302)),
+        hop("https://paypa1.com/", Some(200)),
+    ];
+    let c = PeekCapture {
+        content_type: Some("text/html".into()),
+        ..capture(hops.clone(), StopReason::Finished)
+    };
     let r2 = peek().report(analyze(&hops[0].url), c, Some(5000));
     assert_eq!(r2.level, Level::LikelyScam);
     assert!(r2.signals.iter().all(|s| s.severity() == Severity::Info));
@@ -133,11 +240,28 @@ fn peek_analyzer_level_combines_original_and_hops() {
 
 #[test]
 fn peek_analyzer_age_boundaries() {
-    let r = |age: Option<i64>| run_full("https://page.example.com/", "", None, None, StopReason::Finished, age);
-    for (age, expected) in [(0, DomainVeryNew), (29, DomainVeryNew), (30, DomainNew), (182, DomainNew)] {
+    let r = |age: Option<i64>| {
+        run_full(
+            "https://page.example.com/",
+            "",
+            None,
+            None,
+            StopReason::Finished,
+            age,
+        )
+    };
+    for (age, expected) in [
+        (0, DomainVeryNew),
+        (29, DomainVeryNew),
+        (30, DomainNew),
+        (182, DomainNew),
+    ] {
         let rep = r(Some(age));
         assert!(ids(&rep.signals).contains(&expected), "age {age}");
-        assert_eq!(arg(rep.signals.iter().find(|s| s.id == expected), "days"), Some(age.to_string().as_str()));
+        assert_eq!(
+            arg(rep.signals.iter().find(|s| s.id == expected), "days"),
+            Some(age.to_string().as_str())
+        );
     }
     assert!(!ids(&r(Some(183)).signals).contains(&DomainNew));
     assert!(ids(&r(None).signals).contains(&AgeUnknown));
@@ -146,19 +270,51 @@ fn peek_analyzer_age_boundaries() {
 #[test]
 fn peek_analyzer_downloads() {
     let has = |url: &str, ct: Option<&str>, d: Option<&str>| {
-        ids(&run_full(url, "", ct, d, StopReason::Finished, Some(5000)).signals).contains(&DownloadsFile)
+        ids(&run_full(url, "", ct, d, StopReason::Finished, Some(5000)).signals)
+            .contains(&DownloadsFile)
     };
-    assert!(has("https://f.example.com/x", Some("application/zip"), Some("Attachment; filename=x")));
-    for ext in ["apk", "ipa", "mobileconfig", "exe", "msi", "dmg", "pkg", "zip", "scr", "bat"] {
-        assert!(has(&format!("https://f.example.com/a.{ext}?v=1#x"), None, None), "{ext}");
+    assert!(has(
+        "https://f.example.com/x",
+        Some("application/zip"),
+        Some("Attachment; filename=x")
+    ));
+    for ext in [
+        "apk",
+        "ipa",
+        "mobileconfig",
+        "exe",
+        "msi",
+        "dmg",
+        "pkg",
+        "zip",
+        "scr",
+        "bat",
+    ] {
+        assert!(
+            has(&format!("https://f.example.com/a.{ext}?v=1#x"), None, None),
+            "{ext}"
+        );
     }
-    assert!(!has("https://f.example.com/a.pdf", Some("application/pdf"), None));
+    assert!(!has(
+        "https://f.example.com/a.pdf",
+        Some("application/pdf"),
+        None
+    ));
     assert!(!has("https://f.example.com/zip", None, None));
 }
 
 #[test]
 fn peek_analyzer_shared_hosting_uses_final_suffix() {
-    let r = |u: &str| run_full(u, "", Some("text/html"), None, StopReason::Finished, Some(5000));
+    let r = |u: &str| {
+        run_full(
+            u,
+            "",
+            Some("text/html"),
+            None,
+            StopReason::Finished,
+            Some(5000),
+        )
+    };
     assert!(ids(&r("https://user.github.io/").signals).contains(&SharedHostingDomain));
     assert!(!ids(&r("https://example.com/").signals).contains(&SharedHostingDomain));
 }
@@ -166,23 +322,43 @@ fn peek_analyzer_shared_hosting_uses_final_suffix() {
 #[test]
 fn peek_analyzer_signal_order_and_uniqueness() {
     let body = "<html><head><meta http-equiv=refresh content=\"0;url=https://x.example.net/\"></head><body><form action=\"https://z.example.net/\"><input type=password></form><script>top.location='x'</script></body></html>";
-    let r = run_full("https://page.example.com/", body, Some("text/html"), None, StopReason::Finished, Some(3));
+    let r = run_full(
+        "https://page.example.com/",
+        body,
+        Some("text/html"),
+        None,
+        StopReason::Finished,
+        Some(3),
+    );
     assert_eq!(r.signals, in_stable_order(&r.signals));
     let i = ids(&r.signals);
     assert_eq!(i.iter().collect::<HashSet<_>>().len(), i.len());
-    assert!(i.contains(&DomainVeryNew) && i.contains(&FormPostsElsewhere) && i.contains(&ScriptRedirect));
+    assert!(
+        i.contains(&DomainVeryNew)
+            && i.contains(&FormPostsElsewhere)
+            && i.contains(&ScriptRedirect)
+    );
 }
 
 #[test]
 fn peek_analyzer_hostile_bodies_do_not_crash() {
-    let junk: Vec<u8> = (0..20_000u32).map(|i| (i.wrapping_mul(31).wrapping_add(7)) as u8).collect();
+    let junk: Vec<u8> = (0..20_000u32)
+        .map(|i| (i.wrapping_mul(31).wrapping_add(7)) as u8)
+        .collect();
     let c = PeekCapture {
         content_type: Some("text/html".into()),
         body: junk,
-        ..capture(vec![hop("https://x.example.com/", Some(200))], StopReason::Finished)
+        ..capture(
+            vec![hop("https://x.example.com/", Some(200))],
+            StopReason::Finished,
+        )
     };
     peek().report(analyze("https://x.example.com/"), c, Some(1));
-    let r = peek().report(analyze("https://x.example.com/"), capture(vec![], StopReason::NetworkError), None);
+    let r = peek().report(
+        analyze("https://x.example.com/"),
+        capture(vec![], StopReason::NetworkError),
+        None,
+    );
     assert!(r.final_link.is_none() && r.hop_analyses.is_empty());
 }
 
@@ -254,7 +430,8 @@ fn pair_matches_expectation() {
         let (pair, body) = load_pair(&path);
         let c = PeekCapture {
             hops: pair.hops.iter().map(|h| hop(&h.url, h.status)).collect(),
-            stopped_because: StopReason::from_raw(&pair.stopped_because).unwrap_or(StopReason::Finished),
+            stopped_because: StopReason::from_raw(&pair.stopped_because)
+                .unwrap_or(StopReason::Finished),
             content_type: pair.content_type.clone(),
             content_disposition: pair.content_disposition.clone(),
             body,
@@ -262,11 +439,29 @@ fn pair_matches_expectation() {
         };
         let r = peek().report(analyze(&pair.original), c, pair.age_days);
         let id = &pair.id;
-        let non_info: HashSet<&str> = r.signals.iter().filter(|s| s.severity() != Severity::Info).map(|s| s.id.raw()).collect();
-        assert_eq!(non_info, pair.expect.signals.iter().map(String::as_str).collect(), "{id} signals");
-        assert_eq!(r.signals.iter().map(|s| s.id).collect::<HashSet<_>>().len(), r.signals.len(), "{id}");
+        let non_info: HashSet<&str> = r
+            .signals
+            .iter()
+            .filter(|s| s.severity() != Severity::Info)
+            .map(|s| s.id.raw())
+            .collect();
+        assert_eq!(
+            non_info,
+            pair.expect.signals.iter().map(String::as_str).collect(),
+            "{id} signals"
+        );
+        assert_eq!(
+            r.signals.iter().map(|s| s.id).collect::<HashSet<_>>().len(),
+            r.signals.len(),
+            "{id}"
+        );
         if let Some(info) = &pair.expect.info {
-            let got: HashSet<&str> = r.signals.iter().filter(|s| s.severity() == Severity::Info).map(|s| s.id.raw()).collect();
+            let got: HashSet<&str> = r
+                .signals
+                .iter()
+                .filter(|s| s.severity() == Severity::Info)
+                .map(|s| s.id.raw())
+                .collect();
             assert_eq!(got, info.iter().map(String::as_str).collect(), "{id} info");
         }
         assert_eq!(r.title, pair.expect.title, "{id} title");
@@ -274,10 +469,21 @@ fn pair_matches_expectation() {
             assert_eq!(r.level.raw(), level, "{id} level");
         }
         if path.starts_with("peekreport") {
-            assert_eq!(r.final_link.map(|l| l.host_unicode), pair.expect.final_host, "{id} final host");
+            assert_eq!(
+                r.final_link.map(|l| l.host_unicode),
+                pair.expect.final_host,
+                "{id} final host"
+            );
         }
         if let Some(h) = &pair.expect.hop_levels {
-            assert_eq!(&r.hop_analyses.iter().map(|a| a.level.raw()).collect::<Vec<_>>(), h, "{id} hop levels");
+            assert_eq!(
+                &r.hop_analyses
+                    .iter()
+                    .map(|a| a.level.raw())
+                    .collect::<Vec<_>>(),
+                h,
+                "{id} hop levels"
+            );
         }
         assert_eq!(r.hop_analyses.len(), pair.hops.len());
         assert_eq!(r.signals, in_stable_order(&r.signals));
@@ -295,8 +501,23 @@ fn every_peek_pair_is_covered() {
 #[test]
 fn pairs_exist() {
     let n = names("peek");
-    for required in ["plain", "login", "brand-mismatch-login", "cross-domain-form", "meta-refresh", "script-redirect", "js-only-shell", "non-utf8", "card-form", "otp-form", "download"] {
-        assert!(n.contains(&format!("peek/{required}")), "missing {required}");
+    for required in [
+        "plain",
+        "login",
+        "brand-mismatch-login",
+        "cross-domain-form",
+        "meta-refresh",
+        "script-redirect",
+        "js-only-shell",
+        "non-utf8",
+        "card-form",
+        "otp-form",
+        "download",
+    ] {
+        assert!(
+            n.contains(&format!("peek/{required}")),
+            "missing {required}"
+        );
     }
 }
 
@@ -309,7 +530,13 @@ fn sniff_matches_expectation() {
         assert_eq!(r.title, pair.expect.title, "{}", pair.id);
         let Some(e) = pair.expect.sniff else { continue };
         if let Some(v) = e.form_actions {
-            assert_eq!(r.form_actions.iter().map(|a| a.clone().unwrap_or_default()).collect::<Vec<_>>(), v);
+            assert_eq!(
+                r.form_actions
+                    .iter()
+                    .map(|a| a.clone().unwrap_or_default())
+                    .collect::<Vec<_>>(),
+                v
+            );
         }
         if let Some(v) = e.script_redirect {
             assert_eq!(r.script_redirect, v, "{}", pair.id);
@@ -318,7 +545,13 @@ fn sniff_matches_expectation() {
             assert_eq!(r.script_count, v);
         }
         if let Some(v) = e.input_types {
-            assert_eq!(r.inputs.iter().map(|i| i.input_type.clone().unwrap_or_default()).collect::<Vec<_>>(), v);
+            assert_eq!(
+                r.inputs
+                    .iter()
+                    .map(|i| i.input_type.clone().unwrap_or_default())
+                    .collect::<Vec<_>>(),
+                v
+            );
         }
         assert_eq!(r.meta_refresh_url, e.meta_refresh_url, "{}", pair.id);
     }
@@ -347,12 +580,20 @@ fn sn(html: &str) -> HtmlSniff {
 #[test]
 fn title_decodes_entities_and_collapses_whitespace() {
     let r = sn("<TITLE>\n  Tom &amp; Jerry&nbsp;&#169; &#x41;\t&lt;ok&gt; &bogus; </title>");
-    assert_eq!(r.title.as_deref(), Some("Tom & Jerry \u{A9} A <ok> &bogus;"));
+    assert_eq!(
+        r.title.as_deref(),
+        Some("Tom & Jerry \u{A9} A <ok> &bogus;")
+    );
 }
 
 #[test]
 fn title_caps_at_200() {
-    assert_eq!(sn(&format!("<title>{}</title>", "a".repeat(500))).title.map(|t| t.chars().count()), Some(200));
+    assert_eq!(
+        sn(&format!("<title>{}</title>", "a".repeat(500)))
+            .title
+            .map(|t| t.chars().count()),
+        Some(200)
+    );
 }
 
 #[test]
@@ -363,8 +604,17 @@ fn empty_or_missing_title_is_nil() {
 
 #[test]
 fn forms_and_inputs_with_all_quote_styles() {
-    let r = sn("<FORM ACTION='/a?x=1&amp;y=2'><form><form action=https://o.example/p>\n<input type=password NAME=\"pw\" id='p1' Autocomplete=\"current-password\" placeholder=Secret>\n<input name=q>");
-    assert_eq!(r.form_actions, vec![Some("/a?x=1&y=2".into()), None, Some("https://o.example/p".into())]);
+    let r = sn(
+        "<FORM ACTION='/a?x=1&amp;y=2'><form><form action=https://o.example/p>\n<input type=password NAME=\"pw\" id='p1' Autocomplete=\"current-password\" placeholder=Secret>\n<input name=q>",
+    );
+    assert_eq!(
+        r.form_actions,
+        vec![
+            Some("/a?x=1&y=2".into()),
+            None,
+            Some("https://o.example/p".into())
+        ]
+    );
     assert_eq!(r.inputs.len(), 2);
     assert_eq!(
         r.inputs[0],
@@ -376,22 +626,59 @@ fn forms_and_inputs_with_all_quote_styles() {
             placeholder: Some("Secret".into())
         }
     );
-    assert_eq!(r.inputs[1], HtmlInput { name: Some("q".into()), ..Default::default() });
+    assert_eq!(
+        r.inputs[1],
+        HtmlInput {
+            name: Some("q".into()),
+            ..Default::default()
+        }
+    );
 }
 
 #[test]
 fn meta_refresh_forms() {
-    assert_eq!(sn(r#"<meta http-equiv="refresh" content="5; url=https://a.example/x">"#).meta_refresh_url.as_deref(), Some("https://a.example/x"));
-    assert_eq!(sn(r#"<META HTTP-EQUIV=REFRESH CONTENT="0;URL='/next'">"#).meta_refresh_url.as_deref(), Some("/next"));
-    assert_eq!(sn(r#"<meta http-equiv="refresh" content="0; https://b.example">"#).meta_refresh_url.as_deref(), Some("https://b.example"));
-    assert_eq!(sn(r#"<meta http-equiv="refresh" content="30">"#).meta_refresh_url, None);
-    assert_eq!(sn(r#"<meta name="x" content="5; url=/y">"#).meta_refresh_url, None);
+    assert_eq!(
+        sn(r#"<meta http-equiv="refresh" content="5; url=https://a.example/x">"#)
+            .meta_refresh_url
+            .as_deref(),
+        Some("https://a.example/x")
+    );
+    assert_eq!(
+        sn(r#"<META HTTP-EQUIV=REFRESH CONTENT="0;URL='/next'">"#)
+            .meta_refresh_url
+            .as_deref(),
+        Some("/next")
+    );
+    assert_eq!(
+        sn(r#"<meta http-equiv="refresh" content="0; https://b.example">"#)
+            .meta_refresh_url
+            .as_deref(),
+        Some("https://b.example")
+    );
+    assert_eq!(
+        sn(r#"<meta http-equiv="refresh" content="30">"#).meta_refresh_url,
+        None
+    );
+    assert_eq!(
+        sn(r#"<meta name="x" content="5; url=/y">"#).meta_refresh_url,
+        None
+    );
 }
 
 #[test]
 fn script_redirect_patterns() {
-    for js in ["location.href='/x'", "location.replace('/x')", "location.assign('/x')", "window.location = '/x'", "window.location='/x'", "LOCATION.HREF = 1"] {
-        assert!(sn(&format!("<script>{js}</script>")).script_redirect, "{js}");
+    for js in [
+        "location.href='/x'",
+        "location.replace('/x')",
+        "location.assign('/x')",
+        "window.location = '/x'",
+        "window.location='/x'",
+        "LOCATION.HREF = 1",
+    ] {
+        assert!(
+            sn(&format!("<script>{js}</script>")).script_redirect,
+            "{js}"
+        );
     }
     assert!(!sn("<script>if (window.location == 'a') {}</script>").script_redirect);
     assert!(!sn("<script>var a = 1;</script>").script_redirect);
@@ -401,25 +688,48 @@ fn script_redirect_patterns() {
 
 #[test]
 fn script_count_and_visible_text() {
-    let r = sn("<html><head><style>p { color: red }</style><script>var a = \"not shown\";</script><script src=x.js></script></head>\n<!-- <script>location.href='/hidden'</script> hidden comment text -->\n<body>Hello   <b>big</b>\nworld&nbsp;&amp; <noscript>enable JS</noscript></body></html>");
+    let r = sn(
+        "<html><head><style>p { color: red }</style><script>var a = \"not shown\";</script><script src=x.js></script></head>\n<!-- <script>location.href='/hidden'</script> hidden comment text -->\n<body>Hello   <b>big</b>\nworld&nbsp;&amp; <noscript>enable JS</noscript></body></html>",
+    );
     assert_eq!(r.script_count, 2);
     assert!(!r.script_redirect);
-    assert_eq!(r.visible_text_length, "Hello big world & enable JS".chars().count() as i64);
+    assert_eq!(
+        r.visible_text_length,
+        "Hello big world & enable JS".chars().count() as i64
+    );
 }
 
 #[test]
 fn comments_are_ignored_everywhere() {
-    let r = sn("<!-- <title>no</title><form action='/x'><input type=password> --><title>yes</title>");
+    let r =
+        sn("<!-- <title>no</title><form action='/x'><input type=password> --><title>yes</title>");
     assert_eq!(r.title.as_deref(), Some("yes"));
     assert!(r.form_actions.is_empty() && r.inputs.is_empty());
 }
 
 #[test]
 fn cut_mid_tag_terminates_without_crash() {
-    for p in ["<form action=\"/x", "<input type=\"pass", "<script>location.", "<!-- open", "<title>abc", "<a href='", "<", "</", "<!", "<meta http-equiv=refresh content=\"0; url=", "<p attr", "<p attr=", "<p a=b"] {
+    for p in [
+        "<form action=\"/x",
+        "<input type=\"pass",
+        "<script>location.",
+        "<!-- open",
+        "<title>abc",
+        "<a href='",
+        "<",
+        "</",
+        "<!",
+        "<meta http-equiv=refresh content=\"0; url=",
+        "<p attr",
+        "<p attr=",
+        "<p a=b",
+    ] {
         sn(&format!("<p>ok</p>{p}"));
     }
-    assert_eq!(sn("<title>ok</title><form action=\"/x").title.as_deref(), Some("ok"));
+    assert_eq!(
+        sn("<title>ok</title><form action=\"/x").title.as_deref(),
+        Some("ok")
+    );
     assert!(!sn("<p>ok</p><script>location.").script_redirect);
 }
 
@@ -438,8 +748,14 @@ fn windows1252_by_header() {
     bytes.push(0x94);
     bytes.extend(b"</title>");
     let r = sniff(&bytes, Some("text/html; Charset=\"windows-1252\""));
-    assert_eq!(r.title.as_deref(), Some("caf\u{E9} \u{20AC} \u{201C}x\u{201D}"));
-    assert_eq!(sniff(&bytes, Some("text/html; charset=ISO-8859-1")).title, r.title);
+    assert_eq!(
+        r.title.as_deref(),
+        Some("caf\u{E9} \u{20AC} \u{201C}x\u{201D}")
+    );
+    assert_eq!(
+        sniff(&bytes, Some("text/html; charset=ISO-8859-1")).title,
+        r.title
+    );
 }
 
 #[test]
@@ -447,8 +763,13 @@ fn windows1252_by_meta_in_first1024_bytes() {
     let mut b = b"<meta charset=windows-1252><title>na".to_vec();
     b.push(0xEF);
     b.extend(b"ve</title>");
-    assert_eq!(sniff(&b, Some("text/html")).title.as_deref(), Some("na\u{EF}ve"));
-    let mut h = br#"<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"><title>"#.to_vec();
+    assert_eq!(
+        sniff(&b, Some("text/html")).title.as_deref(),
+        Some("na\u{EF}ve")
+    );
+    let mut h =
+        br#"<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"><title>"#
+            .to_vec();
     h.push(0xFC);
     h.extend(b"</title>");
     assert_eq!(sniff(&h, None).title.as_deref(), Some("\u{FC}"));
@@ -464,18 +785,37 @@ fn header_charset_beats_meta() {
     let mut b = b"<meta charset=windows-1252><title>".to_vec();
     b.extend([0xC3, 0xA9]);
     b.extend(b"</title>");
-    assert_eq!(sniff(&b, Some("text/html; charset=utf-8")).title.as_deref(), Some("\u{E9}"));
+    assert_eq!(
+        sniff(&b, Some("text/html; charset=utf-8")).title.as_deref(),
+        Some("\u{E9}")
+    );
 }
 
 #[test]
 fn utf16_with_bom() {
     let units: Vec<u16> = "<title>Hi \u{20AC}</title>".encode_utf16().collect();
     let mut le = vec![0xFF, 0xFE];
-    le.extend(units.iter().flat_map(|u| [(u & 0xFF) as u8, (u >> 8) as u8]));
+    le.extend(
+        units
+            .iter()
+            .flat_map(|u| [(u & 0xFF) as u8, (u >> 8) as u8]),
+    );
     let mut be = vec![0xFE, 0xFF];
-    be.extend(units.iter().flat_map(|u| [(u >> 8) as u8, (u & 0xFF) as u8]));
-    assert_eq!(sniff(&le, Some("text/html")).title.as_deref(), Some("Hi \u{20AC}"));
-    assert_eq!(sniff(&be, Some("text/html; charset=utf-8")).title.as_deref(), Some("Hi \u{20AC}"));
+    be.extend(
+        units
+            .iter()
+            .flat_map(|u| [(u >> 8) as u8, (u & 0xFF) as u8]),
+    );
+    assert_eq!(
+        sniff(&le, Some("text/html")).title.as_deref(),
+        Some("Hi \u{20AC}")
+    );
+    assert_eq!(
+        sniff(&be, Some("text/html; charset=utf-8"))
+            .title
+            .as_deref(),
+        Some("Hi \u{20AC}")
+    );
 }
 
 #[test]
@@ -514,40 +854,99 @@ fn body_cut_at512_kb_mid_tag() {
 
 #[test]
 fn many_unclosed_tags_stay_linear() {
-    assert_eq!(sniff("<a ".repeat(150_000).as_bytes(), None).script_count, 0);
-    assert_eq!(sniff("<script>".repeat(60_000).as_bytes(), None).script_count, 1);
+    assert_eq!(
+        sniff("<a ".repeat(150_000).as_bytes(), None).script_count,
+        0
+    );
+    assert_eq!(
+        sniff("<script>".repeat(60_000).as_bytes(), None).script_count,
+        1
+    );
 }
 
 #[test]
 fn script_redirect_fires_on_assignments_and_calls() {
     let yes = [
-        "location = '/x'", "location='/x'", "location.href = '/x'", "location . href = '/x'", "window.location = '/x'",
-        "window.location.href = '/x'", "window . location . href = '/x'", "document.location = '/x'", "document.location.href='/x'",
-        "top.location = '/x'", "top.location.href = '/x'", "self.location = '/x'", "self.location.replace('/x')", "parent.location = '/x'",
-        "location.replace('/x')", "location.replace ('/x')", "location.assign('/x')", "window.location.replace('/x')",
-        "window.location.assign( '/x' )", "location[\"href\"] = '/x'", "location['href']='/x'", "window.location[ \"href\" ] = 1",
-        "location[\"replace\"]('/x')", "window.location = 1", "setTimeout(function(){ location.href = u }, 5)",
-        "if (a) location = b; else x()", "var u = 1;\nlocation\n=\n'/x'", "document.location.replace('/x')", "Location.Replace('/x')",
+        "location = '/x'",
+        "location='/x'",
+        "location.href = '/x'",
+        "location . href = '/x'",
+        "window.location = '/x'",
+        "window.location.href = '/x'",
+        "window . location . href = '/x'",
+        "document.location = '/x'",
+        "document.location.href='/x'",
+        "top.location = '/x'",
+        "top.location.href = '/x'",
+        "self.location = '/x'",
+        "self.location.replace('/x')",
+        "parent.location = '/x'",
+        "location.replace('/x')",
+        "location.replace ('/x')",
+        "location.assign('/x')",
+        "window.location.replace('/x')",
+        "window.location.assign( '/x' )",
+        "location[\"href\"] = '/x'",
+        "location['href']='/x'",
+        "window.location[ \"href\" ] = 1",
+        "location[\"replace\"]('/x')",
+        "window.location = 1",
+        "setTimeout(function(){ location.href = u }, 5)",
+        "if (a) location = b; else x()",
+        "var u = 1;\nlocation\n=\n'/x'",
+        "document.location.replace('/x')",
+        "Location.Replace('/x')",
         "x=1;window.location=x",
     ];
     for js in yes {
-        assert!(sn(&format!("<script>{js}</script>")).script_redirect, "{js}");
+        assert!(
+            sn(&format!("<script>{js}</script>")).script_redirect,
+            "{js}"
+        );
     }
 }
 
 #[test]
 fn script_redirect_ignores_reads_comparisons_and_lookalikes() {
     let no = [
-        "var u = location.href", "var u = window.location.href;", "if (location.href.indexOf('a') > -1) {}",
-        "ga('send', 'pageview', location.href)", "location.href == x", "location.href === x", "location.href != x",
-        "location.href !== x", "window.location == 'a'", "window.location === a", "window.location != a", "mylocation = 1",
-        "geolocation = 1", "navigator.geolocation.getCurrentPosition(f)", "var location_name = 1", "location.hostname = 'a'",
-        "location.search", "location.hash = '#x'", "foo(location)", "x = location", "console.log(location.replace)", "a.location = 1",
-        "this.location = 1", "obj.window.location = 1", "location => 1", "relocation.href = 1", "location.reload()",
-        "location.href.replace('a','b')", "location[\"hash\"] = 1", "location.href", "var s = 'location is here'", "",
+        "var u = location.href",
+        "var u = window.location.href;",
+        "if (location.href.indexOf('a') > -1) {}",
+        "ga('send', 'pageview', location.href)",
+        "location.href == x",
+        "location.href === x",
+        "location.href != x",
+        "location.href !== x",
+        "window.location == 'a'",
+        "window.location === a",
+        "window.location != a",
+        "mylocation = 1",
+        "geolocation = 1",
+        "navigator.geolocation.getCurrentPosition(f)",
+        "var location_name = 1",
+        "location.hostname = 'a'",
+        "location.search",
+        "location.hash = '#x'",
+        "foo(location)",
+        "x = location",
+        "console.log(location.replace)",
+        "a.location = 1",
+        "this.location = 1",
+        "obj.window.location = 1",
+        "location => 1",
+        "relocation.href = 1",
+        "location.reload()",
+        "location.href.replace('a','b')",
+        "location[\"hash\"] = 1",
+        "location.href",
+        "var s = 'location is here'",
+        "",
     ];
     for js in no {
-        assert!(!sn(&format!("<script>{js}</script>")).script_redirect, "{js}");
+        assert!(
+            !sn(&format!("<script>{js}</script>")).script_redirect,
+            "{js}"
+        );
     }
 }
 
@@ -561,7 +960,9 @@ fn script_redirect_needs_inline_script() {
 
 #[test]
 fn script_redirect_meta_refresh_unchanged() {
-    let r = sn(r#"<meta http-equiv="refresh" content="0; url=/x"><script>var u = location.href</script>"#);
+    let r = sn(
+        r#"<meta http-equiv="refresh" content="0; url=/x"><script>var u = location.href</script>"#,
+    );
     assert_eq!(r.meta_refresh_url.as_deref(), Some("/x"));
     assert!(!r.script_redirect);
 }
@@ -595,7 +996,10 @@ fn rdap(name: &str) -> Vec<u8> {
 
 #[test]
 fn real_verisign_com() {
-    assert_eq!(rdap_registration_date_of(&rdap("com.json")), Some(utc(1997, 9, 15, 4, 0, 0)));
+    assert_eq!(
+        rdap_registration_date_of(&rdap("com.json")),
+        Some(utc(1997, 9, 15, 4, 0, 0))
+    );
 }
 
 #[test]
@@ -612,7 +1016,10 @@ fn real_google_registry_dev() {
 
 #[test]
 fn real_nominet_uk() {
-    assert_eq!(rdap_registration_date_of(&rdap("uk.json")), Some(utc(1994, 12, 13, 3, 49, 48)));
+    assert_eq!(
+        rdap_registration_date_of(&rdap("uk.json")),
+        Some(utc(1994, 12, 13, 3, 49, 48))
+    );
 }
 
 #[test]
@@ -622,31 +1029,64 @@ fn not_found_body_has_no_date() {
 
 #[test]
 fn offsets_and_odd_forms() {
-    let reg = |s: &str| rdap_registration_date_of(format!(r#"{{"events":[{{"eventAction":"Registration","eventDate":"{s}"}}]}}"#).as_bytes());
-    assert_eq!(reg("2020-03-04T05:06:07+02:00"), Some(utc(2020, 3, 4, 3, 6, 7)));
-    assert_eq!(reg("2020-03-04T05:06:07-0530"), Some(utc(2020, 3, 4, 10, 36, 7)));
+    let reg = |s: &str| {
+        rdap_registration_date_of(
+            format!(r#"{{"events":[{{"eventAction":"Registration","eventDate":"{s}"}}]}}"#)
+                .as_bytes(),
+        )
+    };
+    assert_eq!(
+        reg("2020-03-04T05:06:07+02:00"),
+        Some(utc(2020, 3, 4, 3, 6, 7))
+    );
+    assert_eq!(
+        reg("2020-03-04T05:06:07-0530"),
+        Some(utc(2020, 3, 4, 10, 36, 7))
+    );
     assert!(reg("2020-03-04T05:06:07.123456789Z").is_some());
     assert_eq!(reg("2020-03-04T05:06:07z"), Some(utc(2020, 3, 4, 5, 6, 7)));
-    for s in ["2020-02-30T00:00:00Z", "2020-03-04T05:06:07", "yesterday", ""] {
+    for s in [
+        "2020-02-30T00:00:00Z",
+        "2020-03-04T05:06:07",
+        "yesterday",
+        "",
+    ] {
         assert_eq!(reg(s), None, "{s}");
     }
 }
 
 #[test]
 fn skips_other_events_and_bad_shapes() {
-    assert_eq!(rdap_registration_date_of(br#"{"events":[{"eventAction":"expiration","eventDate":"2030-01-01T00:00:00Z"}]}"#), None);
+    assert_eq!(
+        rdap_registration_date_of(
+            br#"{"events":[{"eventAction":"expiration","eventDate":"2030-01-01T00:00:00Z"}]}"#
+        ),
+        None
+    );
     assert_eq!(
         rdap_registration_date_of(br#"{"events":[{"eventAction":"registration"},{"eventAction":"registration","eventDate":"2010-01-01T00:00:00Z"}]}"#),
         Some(utc(2010, 1, 1, 0, 0, 0))
     );
-    for bad in ["", "[]", "{}", "null", r#"{"events":"x"}"#, r#"{"events":[1,null,"a"]}"#, "{{{", r#"{"events":[{"eventAction":5,"eventDate":5}]}"#] {
+    for bad in [
+        "",
+        "[]",
+        "{}",
+        "null",
+        r#"{"events":"x"}"#,
+        r#"{"events":[1,null,"a"]}"#,
+        "{{{",
+        r#"{"events":[{"eventAction":5,"eventDate":5}]}"#,
+    ] {
         assert_eq!(rdap_registration_date_of(bad.as_bytes()), None, "{bad}");
     }
 }
 
 #[test]
 fn oversized_body_is_ignored() {
-    let json = format!(r#"{{"pad":"{}","events":[{{"eventAction":"registration","eventDate":"2010-01-01T00:00:00Z"}}]}}"#, "x".repeat(300 * 1024));
+    let json = format!(
+        r#"{{"pad":"{}","events":[{{"eventAction":"registration","eventDate":"2010-01-01T00:00:00Z"}}]}}"#,
+        "x".repeat(300 * 1024)
+    );
     assert_eq!(rdap_registration_date_of(json.as_bytes()), None);
 }
 
@@ -662,30 +1102,65 @@ const SAMPLE: &str = r#"{"description":"x","publication":"2026-01-01T00:00:00Z",
 #[test]
 fn bootstrap_prefers_https_and_adds_slash() {
     let b = RdapBootstrap::new(SAMPLE.as_bytes());
-    assert_eq!(b.base_url("com").as_deref(), Some("https://rdap.example.com/v1/"));
-    assert_eq!(b.base_url("net").as_deref(), Some("https://rdap.example.com/v1/"));
-    assert_eq!(b.base_url("org").as_deref(), Some("http://only-http.example/"));
-    assert_eq!(b.base_url("COM").as_deref(), Some("https://rdap.example.com/v1/"));
+    assert_eq!(
+        b.base_url("com").as_deref(),
+        Some("https://rdap.example.com/v1/")
+    );
+    assert_eq!(
+        b.base_url("net").as_deref(),
+        Some("https://rdap.example.com/v1/")
+    );
+    assert_eq!(
+        b.base_url("org").as_deref(),
+        Some("http://only-http.example/")
+    );
+    assert_eq!(
+        b.base_url("COM").as_deref(),
+        Some("https://rdap.example.com/v1/")
+    );
     assert_eq!(b.base_url("zzz"), None);
 }
 
 #[test]
 fn bootstrap_query_url_uses_last_label() {
     let b = RdapBootstrap::new(SAMPLE.as_bytes());
-    assert_eq!(b.query_url("example.com").as_deref(), Some("https://rdap.example.com/v1/domain/example.com"));
-    assert_eq!(b.query_url("Shop.Example.CO.UK").as_deref(), Some("https://rdap.nominet.example/uk/domain/shop.example.co.uk"));
-    assert_eq!(b.query_url("xn--80aswg.xn--p1ai").as_deref(), Some("https://rdap.cctld.example/domain/xn--80aswg.xn--p1ai"));
+    assert_eq!(
+        b.query_url("example.com").as_deref(),
+        Some("https://rdap.example.com/v1/domain/example.com")
+    );
+    assert_eq!(
+        b.query_url("Shop.Example.CO.UK").as_deref(),
+        Some("https://rdap.nominet.example/uk/domain/shop.example.co.uk")
+    );
+    assert_eq!(
+        b.query_url("xn--80aswg.xn--p1ai").as_deref(),
+        Some("https://rdap.cctld.example/domain/xn--80aswg.xn--p1ai")
+    );
     assert_eq!(b.query_url("example.zzz"), None);
     assert_eq!(b.query_url(""), None);
     assert!(b.query_url("com").is_some());
-    for bad in ["exa mple.com", "example.com/x", "münchen.com", "example.com.", "a.com?x=1", "ex@mple.com"] {
+    for bad in [
+        "exa mple.com",
+        "example.com/x",
+        "münchen.com",
+        "example.com.",
+        "a.com?x=1",
+        "ex@mple.com",
+    ] {
         assert_eq!(b.query_url(bad), None, "{bad}");
     }
 }
 
 #[test]
 fn bad_bootstrap_json_knows_nothing() {
-    for bad in ["", "{}", "[]", "nonsense", r#"{"services":5}"#, r#"{"services":[[["com"]]]}"#] {
+    for bad in [
+        "",
+        "{}",
+        "[]",
+        "nonsense",
+        r#"{"services":5}"#,
+        r#"{"services":[[["com"]]]}"#,
+    ] {
         let b = RdapBootstrap::new(bad.as_bytes());
         assert_eq!(b.base_url("com"), None);
         assert_eq!(b.query_url("example.com"), None);
@@ -697,9 +1172,15 @@ fn shipped_iana_file_parses() {
     let b = RdapBootstrap::new(qr_core::data::resource("rdap-dns.json").unwrap());
     for tld in ["com", "org", "net", "uk", "dev", "app", "xyz"] {
         let base = b.base_url(tld).unwrap_or_else(|| panic!("{tld}"));
-        assert!(base.starts_with("https://") && base.ends_with('/'), "{tld} {base}");
+        assert!(
+            base.starts_with("https://") && base.ends_with('/'),
+            "{tld} {base}"
+        );
     }
-    assert_eq!(b.query_url("example.com").as_deref(), Some("https://rdap.verisign.com/com/v1/domain/example.com"));
+    assert_eq!(
+        b.query_url("example.com").as_deref(),
+        Some("https://rdap.verisign.com/com/v1/domain/example.com")
+    );
 }
 
 // MARK: PeekDomainAgeTests

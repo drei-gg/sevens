@@ -1,6 +1,5 @@
 package gg.seven.qr
 
-import androidx.core.graphics.createBitmap
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -8,6 +7,7 @@ import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.text.TextPaint
 import android.text.TextUtils
+import androidx.core.graphics.createBitmap
 import gg.seven.qr.core.BitMatrix
 import gg.seven.qr.core.PaperSize
 import gg.seven.qr.core.RgbColor
@@ -27,7 +27,10 @@ import kotlin.math.roundToInt
 /* Make's export (SPEC §8): PNG at any size, SVG from the module grid, a PDF ready to print. */
 
 fun RgbColor.argb(): Int =
-    (0xFF shl 24) or ((red * 255).roundToInt().coerceIn(0, 255) shl 16) or ((green * 255).roundToInt().coerceIn(0, 255) shl 8) or (blue * 255).roundToInt().coerceIn(0, 255)
+    (0xFF shl 24) or
+        ((red * 255).roundToInt().coerceIn(0, 255) shl 16) or
+        ((green * 255).roundToInt().coerceIn(0, 255) shl 8) or
+        (blue * 255).roundToInt().coerceIn(0, 255)
 
 val BLACK = RgbColor(0.0, 0.0, 0.0)
 val WHITE = RgbColor(1.0, 1.0, 1.0)
@@ -38,7 +41,10 @@ enum class MakeExportFormat(val title: String, val ext: String, val mime: String
     PDF("PDF", "pdf", "application/pdf"),
 }
 
-enum class PdfLayout { SINGLE, SHEET }
+enum class PdfLayout {
+    SINGLE,
+    SHEET,
+}
 
 val SheetGrid.title
     get() =
@@ -86,12 +92,22 @@ data class MakeExportOptions(
 
         fun clampedSize(raw: String): Int {
             val digits = raw.trim()
-            val n = digits.toIntOrNull() ?: return if (digits.isNotEmpty() && digits.all { it in '0'..'9' }) PngRenderer.MAX_PIXEL_SIZE else 1024
+            val n =
+                digits.toIntOrNull()
+                    ?: return if (digits.isNotEmpty() && digits.all { it in '0'..'9' })
+                        PngRenderer.MAX_PIXEL_SIZE
+                    else 1024
             return n.coerceIn(MIN_PIXEL_SIZE, PngRenderer.MAX_PIXEL_SIZE)
         }
 
         /** `qr-link-20260311-1405.png`; sheets end `-sheet.pdf`. Fixed calendar and digits. */
-        fun fileName(symbology: MakeSymbology, kind: MakeFormKind, at: LocalDateTime, format: MakeExportFormat, sheet: Boolean): String {
+        fun fileName(
+            symbology: MakeSymbology,
+            kind: MakeFormKind,
+            at: LocalDateTime,
+            format: MakeExportFormat,
+            sheet: Boolean,
+        ): String {
             val stamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmm", Locale.ROOT).format(at)
             val suffix = if (sheet && format == MakeExportFormat.PDF) "-sheet" else ""
             return "${symbology.raw}-${kind.fileToken}-$stamp$suffix.${format.ext}"
@@ -103,28 +119,46 @@ object PngRenderer {
     const val MAX_PIXEL_SIZE = 4096
 
     /** Integer pixels per module: floor(pixelSize / columns), at least 1. */
-    fun scale(columns: Int, pixelSize: Int): Int = if (columns <= 0) 1 else maxOf(1, pixelSize.coerceIn(1, MAX_PIXEL_SIZE) / columns)
+    fun scale(columns: Int, pixelSize: Int): Int =
+        if (columns <= 0) 1 else maxOf(1, pixelSize.coerceIn(1, MAX_PIXEL_SIZE) / columns)
 
     /** Opaque, a whole number of pixels per module, so it can be a little under [pixelSize]. */
-    fun bitmap(matrix: BitMatrix, pixelSize: Int, foreground: RgbColor, background: RgbColor): Bitmap? {
+    fun bitmap(
+        matrix: BitMatrix,
+        pixelSize: Int,
+        foreground: RgbColor,
+        background: RgbColor,
+    ): Bitmap? {
         if (matrix.width <= 0 || matrix.height <= 0) return null
         val s = scale(matrix.width.toInt(), pixelSize)
         val rows = MakeGeometry.rows(matrix)
         val bitmap = createBitmap(matrix.width.toInt() * s, rows * s)
         val canvas = Canvas(bitmap)
         canvas.drawColor(background.argb())
-        val paint = Paint().apply {
-            color = foreground.argb()
-            isAntiAlias = false
-            style = Paint.Style.FILL
-        }
+        val paint =
+            Paint().apply {
+                color = foreground.argb()
+                isAntiAlias = false
+                style = Paint.Style.FILL
+            }
         for (run in MakeGeometry.runs(matrix)) {
-            canvas.drawRect((run.x * s).toFloat(), (run.row * s).toFloat(), ((run.x + run.length) * s).toFloat(), ((run.row + 1) * s).toFloat(), paint)
+            canvas.drawRect(
+                (run.x * s).toFloat(),
+                (run.row * s).toFloat(),
+                ((run.x + run.length) * s).toFloat(),
+                ((run.row + 1) * s).toFloat(),
+                paint,
+            )
         }
         return bitmap
     }
 
-    fun png(matrix: BitMatrix, pixelSize: Int, foreground: RgbColor, background: RgbColor): ByteArray {
+    fun png(
+        matrix: BitMatrix,
+        pixelSize: Int,
+        foreground: RgbColor,
+        background: RgbColor,
+    ): ByteArray {
         val bitmap = bitmap(matrix, pixelSize, foreground, background) ?: return ByteArray(0)
         return ByteArrayOutputStream().use {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
@@ -135,8 +169,14 @@ object PngRenderer {
 
 object SvgRenderer {
     /** UTF-8 SVG from the core's writer; one-row codes are stretched to the bar height first. */
-    fun data(matrix: BitMatrix, moduleSize: Int, foreground: RgbColor, background: RgbColor?): ByteArray =
-        svg(MakeGeometry.stretched(matrix), moduleSize.toLong(), foreground, background).toByteArray()
+    fun data(
+        matrix: BitMatrix,
+        moduleSize: Int,
+        foreground: RgbColor,
+        background: RgbColor?,
+    ): ByteArray =
+        svg(MakeGeometry.stretched(matrix), moduleSize.toLong(), foreground, background)
+            .toByteArray()
 }
 
 object PdfRenderer {
@@ -144,11 +184,62 @@ object PdfRenderer {
     private const val SINGLE_CAPTION = 12f
     private const val SHEET_CAPTION = 8f
 
+    /** Distinct codes in input order, continued across pages; numbering matches the review. */
+    fun batch(matrices: List<BitMatrix>, grid: SheetGrid, paper: PaperSize): ByteArray {
+        require(matrices.isNotEmpty())
+        val cells = sheetCells(grid, paper)
+        val size = paperSizePoints(paper)
+        val doc = PdfDocument()
+        try {
+            matrices.chunked(cells.size).forEachIndexed { pageIndex, codes ->
+                val page =
+                    doc.startPage(
+                        PdfDocument.PageInfo.Builder(
+                                size.width.roundToInt(),
+                                size.height.roundToInt(),
+                                pageIndex + 1,
+                            )
+                            .create()
+                    )
+                codes.forEachIndexed { index, matrix ->
+                    val cell = cells[index]
+                    draw(
+                        page.canvas,
+                        matrix,
+                        cell.x.toFloat(),
+                        cell.y.toFloat(),
+                        cell.width.toFloat(),
+                        cell.height.toFloat(),
+                        "${pageIndex * cells.size + index + 1}",
+                        SHEET_CAPTION,
+                        BLACK,
+                        WHITE,
+                    )
+                }
+                doc.finishPage(page)
+            }
+            return ByteArrayOutputStream().use {
+                doc.writeTo(it)
+                it.toByteArray()
+            }
+        } finally {
+            doc.close()
+        }
+    }
+
     private fun document(paper: PaperSize, draw: (Canvas) -> Unit): ByteArray {
         val size = paperSizePoints(paper)
         val doc = PdfDocument()
         try {
-            val page = doc.startPage(PdfDocument.PageInfo.Builder(size.width.roundToInt(), size.height.roundToInt(), 1).create())
+            val page =
+                doc.startPage(
+                    PdfDocument.PageInfo.Builder(
+                            size.width.roundToInt(),
+                            size.height.roundToInt(),
+                            1,
+                        )
+                        .create()
+                )
             draw(page.canvas)
             doc.finishPage(page)
             return ByteArrayOutputStream().use {
@@ -161,7 +252,13 @@ object PdfRenderer {
     }
 
     /** One code centred on the page inside the margin, its caption under it. */
-    fun single(matrix: BitMatrix, caption: String?, foreground: RgbColor, background: RgbColor, paper: PaperSize): ByteArray {
+    fun single(
+        matrix: BitMatrix,
+        caption: String?,
+        foreground: RgbColor,
+        background: RgbColor,
+        paper: PaperSize,
+    ): ByteArray {
         val size = paperSizePoints(paper)
         val margin = sheetMargin().toFloat()
         val areaW = size.width.toFloat() - 2 * margin
@@ -169,28 +266,62 @@ object PdfRenderer {
         val side = minOf(areaW, areaH * 0.8f)
         val left = margin + areaW / 2 - side / 2
         val top = margin + areaH / 2 - side / 2 - 10
-        return document(paper) { draw(it, matrix, left, top, side, side, caption, SINGLE_CAPTION, foreground, background) }
+        return document(paper) {
+            draw(it, matrix, left, top, side, side, caption, SINGLE_CAPTION, foreground, background)
+        }
     }
 
     /** A one-page label sheet: the same code in every cell of the core's layout, scaled to fit. */
-    fun sheet(matrix: BitMatrix, caption: String?, grid: SheetGrid, paper: PaperSize, foreground: RgbColor, background: RgbColor): ByteArray =
+    fun sheet(
+        matrix: BitMatrix,
+        caption: String?,
+        grid: SheetGrid,
+        paper: PaperSize,
+        foreground: RgbColor,
+        background: RgbColor,
+    ): ByteArray =
         document(paper) { canvas ->
             sheetCells(grid, paper).forEach { cell ->
-                draw(canvas, matrix, cell.x.toFloat(), cell.y.toFloat(), cell.width.toFloat(), cell.height.toFloat(), caption, SHEET_CAPTION, foreground, background)
+                draw(
+                    canvas,
+                    matrix,
+                    cell.x.toFloat(),
+                    cell.y.toFloat(),
+                    cell.width.toFloat(),
+                    cell.height.toFloat(),
+                    caption,
+                    SHEET_CAPTION,
+                    foreground,
+                    background,
+                )
             }
         }
 
-    /** The code scaled to fit the box, centred horizontally and kept at the top, the caption below. */
-    private fun draw(canvas: Canvas, matrix: BitMatrix, x: Float, y: Float, w: Float, h: Float, caption: String?, captionSize: Float, foreground: RgbColor, background: RgbColor) {
+    /**
+     * The code scaled to fit the box, centred horizontally and kept at the top, the caption below.
+     */
+    private fun draw(
+        canvas: Canvas,
+        matrix: BitMatrix,
+        x: Float,
+        y: Float,
+        w: Float,
+        h: Float,
+        caption: String?,
+        captionSize: Float,
+        foreground: RgbColor,
+        background: RgbColor,
+    ) {
         if (matrix.width <= 0 || matrix.height <= 0) return
         val rows = MakeGeometry.rows(matrix)
         val text = caption?.trim()?.takeIf { it.isNotEmpty() }
-        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = captionSize
-            color = 0xFF000000.toInt()
-            typeface = Typeface.DEFAULT
-            textAlign = Paint.Align.CENTER
-        }
+        val paint =
+            TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                textSize = captionSize
+                color = 0xFF000000.toInt()
+                typeface = Typeface.DEFAULT
+                textAlign = Paint.Align.CENTER
+            }
         val lineHeight = ceil(paint.fontSpacing)
         val captionHeight = if (text != null) lineHeight + 4 else 0f
         val availH = maxOf(1f, h - captionHeight)
@@ -208,8 +339,13 @@ object PdfRenderer {
         fill.color = background.argb()
         canvas.drawRect(ox, oy, ox + cw, oy + ch, fill)
         fill.color = foreground.argb()
-        for (run in MakeGeometry.runs(matrix))
-            canvas.drawRect(ox + run.x * module, oy + run.row * module, ox + (run.x + run.length) * module, oy + (run.row + 1) * module, fill)
+        for (run in MakeGeometry.runs(matrix)) canvas.drawRect(
+            ox + run.x * module,
+            oy + run.row * module,
+            ox + (run.x + run.length) * module,
+            oy + (run.row + 1) * module,
+            fill,
+        )
         if (text != null) {
             val shown = TextUtils.ellipsize(text, paint, w, TextUtils.TruncateAt.END).toString()
             canvas.drawText(shown, x + w / 2, oy + ch + 3 - paint.fontMetrics.ascent, paint)
@@ -218,14 +354,35 @@ object PdfRenderer {
 }
 
 object MakeExportWriter {
-    fun data(options: MakeExportOptions, matrix: BitMatrix, foreground: RgbColor, background: RgbColor): ByteArray =
+    fun data(
+        options: MakeExportOptions,
+        matrix: BitMatrix,
+        foreground: RgbColor,
+        background: RgbColor,
+    ): ByteArray =
         when (options.format) {
-            MakeExportFormat.PNG -> PngRenderer.png(matrix, options.pixelSize, foreground, background)
+            MakeExportFormat.PNG ->
+                PngRenderer.png(matrix, options.pixelSize, foreground, background)
             MakeExportFormat.SVG -> SvgRenderer.data(matrix, 10, foreground, background)
             MakeExportFormat.PDF ->
                 when (options.pdfLayout) {
-                    PdfLayout.SINGLE -> PdfRenderer.single(matrix, options.cleanCaption, foreground, background, options.paper)
-                    PdfLayout.SHEET -> PdfRenderer.sheet(matrix, options.cleanCaption, options.grid, options.paper, foreground, background)
+                    PdfLayout.SINGLE ->
+                        PdfRenderer.single(
+                            matrix,
+                            options.cleanCaption,
+                            foreground,
+                            background,
+                            options.paper,
+                        )
+                    PdfLayout.SHEET ->
+                        PdfRenderer.sheet(
+                            matrix,
+                            options.cleanCaption,
+                            options.grid,
+                            options.paper,
+                            foreground,
+                            background,
+                        )
                 }
         }
 }

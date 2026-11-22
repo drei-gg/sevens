@@ -10,6 +10,7 @@
 uniffi::setup_scaffolding!();
 
 pub mod analyzer;
+pub mod batch;
 pub mod checks;
 pub mod contract;
 pub mod data;
@@ -65,6 +66,10 @@ pub fn web_address_parse_schemeless(text: String, data: Arc<BundledData>) -> Opt
 
 /// A redirect `Location` or form `action` resolved against the page it came from.
 #[uniffi::export]
-pub fn web_address_resolve(reference: String, base: LinkInfo, data: Arc<BundledData>) -> Option<WebAddress> {
+pub fn web_address_resolve(
+    reference: String,
+    base: LinkInfo,
+    data: Arc<BundledData>,
+) -> Option<WebAddress> {
     WebAddress::resolve(&reference, &base, &data.public_suffixes)
 }

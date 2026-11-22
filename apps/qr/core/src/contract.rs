@@ -29,9 +29,22 @@ pub enum Symbology {
 
 impl Symbology {
     pub const ALL: [Symbology; 16] = [
-        Self::Qr, Self::MicroQr, Self::Aztec, Self::Pdf417, Self::MicroPdf417, Self::DataMatrix, Self::Code128,
-        Self::Code39, Self::Code93, Self::Ean13, Self::Ean8, Self::Upce, Self::Itf14, Self::Codabar,
-        Self::Gs1DataBar, Self::Other,
+        Self::Qr,
+        Self::MicroQr,
+        Self::Aztec,
+        Self::Pdf417,
+        Self::MicroPdf417,
+        Self::DataMatrix,
+        Self::Code128,
+        Self::Code39,
+        Self::Code93,
+        Self::Ean13,
+        Self::Ean8,
+        Self::Upce,
+        Self::Itf14,
+        Self::Codabar,
+        Self::Gs1DataBar,
+        Self::Other,
     ];
 
     /// Swift's raw value ("qr", "microQR", …), as stored in history files.
@@ -72,7 +85,11 @@ pub struct ScannedCode {
 impl ScannedCode {
     /// A text code; `bytes` are its UTF-8.
     pub fn text(text: &str, symbology: Symbology) -> Self {
-        ScannedCode { text: Some(text.to_string()), bytes: text.as_bytes().to_vec(), symbology }
+        ScannedCode {
+            text: Some(text.to_string()),
+            bytes: text.as_bytes().to_vec(),
+            symbology,
+        }
     }
 }
 
@@ -313,7 +330,11 @@ pub struct WiFiInfo {
 
 impl WiFiInfo {
     pub fn is_enterprise(&self) -> bool {
-        self.eap_method.is_some() || self.security.as_deref().is_some_and(|s| crate::text::contains(s, "EAP"))
+        self.eap_method.is_some()
+            || self
+                .security
+                .as_deref()
+                .is_some_and(|s| crate::text::contains(s, "EAP"))
     }
 
     /// SPEC §4.2 `openWiFi`: `T` missing, empty or `nopass`.
@@ -434,20 +455,46 @@ pub struct GeoInfo {
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
 pub enum Payload {
     /// http/https (including schemeless links) and the dangerous schemes.
-    Link { info: LinkInfo },
+    Link {
+        info: LinkInfo,
+    },
     /// Any other scheme (carries `unknownScheme`).
-    AppLink { info: AppLinkInfo },
-    Payment { info: PaymentInfo },
-    Crypto { info: CryptoInfo },
-    Wifi { info: WiFiInfo },
-    Contact { info: ContactInfo },
-    Event { info: EventInfo },
-    Phone { info: PhoneInfo },
-    Sms { info: SmsInfo },
-    Email { info: EmailInfo },
-    Geo { info: GeoInfo },
-    Text { info: TextInfo },
-    Binary { byte_count: i64 },
+    AppLink {
+        info: AppLinkInfo,
+    },
+    Payment {
+        info: PaymentInfo,
+    },
+    Crypto {
+        info: CryptoInfo,
+    },
+    Wifi {
+        info: WiFiInfo,
+    },
+    Contact {
+        info: ContactInfo,
+    },
+    Event {
+        info: EventInfo,
+    },
+    Phone {
+        info: PhoneInfo,
+    },
+    Sms {
+        info: SmsInfo,
+    },
+    Email {
+        info: EmailInfo,
+    },
+    Geo {
+        info: GeoInfo,
+    },
+    Text {
+        info: TextInfo,
+    },
+    Binary {
+        byte_count: i64,
+    },
 }
 
 impl Payload {
@@ -547,13 +594,40 @@ pub enum SignalId {
 
 impl SignalId {
     pub const ALL: [SignalId; 34] = [
-        Self::DangerousScheme, Self::UserinfoTrick, Self::MixedScript, Self::LookalikeBrand, Self::BrandInDomain,
-        Self::NearBrand, Self::IpHost, Self::Shortener, Self::PlainHttp, Self::RiskyTld, Self::DeepSubdomains,
-        Self::ObfuscatedPath, Self::UnknownScheme, Self::BrandOtherEnding, Self::OpenWiFi, Self::PaymentChecksumFail,
-        Self::TlsProblem, Self::SecretFormBrandMismatch, Self::DomainVeryNew, Self::RedirectsToHttp,
-        Self::RedirectLeavesWeb, Self::TooManyRedirects, Self::ScriptRedirect, Self::AsksForSecret,
-        Self::FormPostsElsewhere, Self::DownloadsFile, Self::DomainNew, Self::AssumedHttps, Self::SharedHostingDomain,
-        Self::NeedsJavaScript, Self::AgeUnknown, Self::PeekIncomplete, Self::UnknownEnding, Self::KnownByYou,
+        Self::DangerousScheme,
+        Self::UserinfoTrick,
+        Self::MixedScript,
+        Self::LookalikeBrand,
+        Self::BrandInDomain,
+        Self::NearBrand,
+        Self::IpHost,
+        Self::Shortener,
+        Self::PlainHttp,
+        Self::RiskyTld,
+        Self::DeepSubdomains,
+        Self::ObfuscatedPath,
+        Self::UnknownScheme,
+        Self::BrandOtherEnding,
+        Self::OpenWiFi,
+        Self::PaymentChecksumFail,
+        Self::TlsProblem,
+        Self::SecretFormBrandMismatch,
+        Self::DomainVeryNew,
+        Self::RedirectsToHttp,
+        Self::RedirectLeavesWeb,
+        Self::TooManyRedirects,
+        Self::ScriptRedirect,
+        Self::AsksForSecret,
+        Self::FormPostsElsewhere,
+        Self::DownloadsFile,
+        Self::DomainNew,
+        Self::AssumedHttps,
+        Self::SharedHostingDomain,
+        Self::NeedsJavaScript,
+        Self::AgeUnknown,
+        Self::PeekIncomplete,
+        Self::UnknownEnding,
+        Self::KnownByYou,
     ];
 
     /// Swift's raw value ("dangerousScheme", …).
@@ -604,13 +678,21 @@ impl SignalId {
     pub fn severity(self) -> Severity {
         use SignalId::*;
         match self {
-            DangerousScheme | UserinfoTrick | MixedScript | LookalikeBrand | BrandInDomain | PaymentChecksumFail
-            | TlsProblem | SecretFormBrandMismatch | DomainVeryNew => Severity::Strong,
-            NearBrand | IpHost | Shortener | PlainHttp | RiskyTld | DeepSubdomains | ObfuscatedPath | UnknownScheme
-            | OpenWiFi | RedirectsToHttp | RedirectLeavesWeb | TooManyRedirects | ScriptRedirect | AsksForSecret
-            | FormPostsElsewhere | DownloadsFile | DomainNew | BrandOtherEnding => Severity::Warning,
-            AssumedHttps | SharedHostingDomain | NeedsJavaScript | AgeUnknown | PeekIncomplete | UnknownEnding
-            | KnownByYou => Severity::Info,
+            DangerousScheme
+            | UserinfoTrick
+            | MixedScript
+            | LookalikeBrand
+            | BrandInDomain
+            | PaymentChecksumFail
+            | TlsProblem
+            | SecretFormBrandMismatch
+            | DomainVeryNew => Severity::Strong,
+            NearBrand | IpHost | Shortener | PlainHttp | RiskyTld | DeepSubdomains
+            | ObfuscatedPath | UnknownScheme | OpenWiFi | RedirectsToHttp | RedirectLeavesWeb
+            | TooManyRedirects | ScriptRedirect | AsksForSecret | FormPostsElsewhere
+            | DownloadsFile | DomainNew | BrandOtherEnding => Severity::Warning,
+            AssumedHttps | SharedHostingDomain | NeedsJavaScript | AgeUnknown | PeekIncomplete
+            | UnknownEnding | KnownByYou => Severity::Info,
         }
     }
 }
@@ -639,11 +721,20 @@ pub struct Signal {
 
 impl Signal {
     pub fn new(id: SignalId) -> Self {
-        Signal { id, args: HashMap::new() }
+        Signal {
+            id,
+            args: HashMap::new(),
+        }
     }
 
     pub fn with(id: SignalId, args: &[(&str, &str)]) -> Self {
-        Signal { id, args: args.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect() }
+        Signal {
+            id,
+            args: args
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
+        }
     }
 
     pub fn severity(&self) -> Severity {

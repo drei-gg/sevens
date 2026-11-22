@@ -1,4 +1,8 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalFoundationApi::class)
+@file:OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalFoundationApi::class,
+)
 
 package gg.seven.qr
 
@@ -24,9 +28,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -83,18 +87,28 @@ fun HistoryScreen(model: QrModel, nav: QrNav) {
     var exportMenu by remember { mutableStateOf(false) }
     var exportFailed by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
-    val selecting = selection.isNotEmpty()
+    var selectionMode by rememberSaveable { mutableStateOf(false) }
+    val selecting = selectionMode || selection.isNotEmpty()
     val searching = query.isNotBlank()
 
     LaunchedEffect(query, items) { results = if (searching) model.searchHistory(query) else null }
     LaunchedEffect(items.size) { if (items.isEmpty()) selection = emptySet() }
-    BackHandler(selecting) { selection = emptySet() }
+    BackHandler(selecting) {
+        selection = emptySet()
+        selectionMode = false
+    }
 
     fun delete(ids: Set<UUID>) {
         val removed = items.filter { it.id in ids }
         scope.launch {
             model.deleteHistory(ids)
-            val outcome = snackbar.showSnackbar(if (removed.size == 1) "Deleted from history" else "Deleted ${removed.size} items", actionLabel = "Undo", duration = SnackbarDuration.Long)
+            val outcome =
+                snackbar.showSnackbar(
+                    if (removed.size == 1) "Deleted from history"
+                    else "Deleted ${removed.size} items",
+                    actionLabel = "Undo",
+                    duration = SnackbarDuration.Long,
+                )
             if (outcome == SnackbarResult.ActionPerformed) removed.forEach { model.history.add(it) }
         }
     }
@@ -102,9 +116,16 @@ fun HistoryScreen(model: QrModel, nav: QrNav) {
     fun export(json: Boolean) {
         scope.launch {
             runCatching {
-                    val bytes = if (json) model.exportHistoryJson() else model.exportHistoryCsv().toByteArray()
+                    val bytes =
+                        if (json) model.exportHistoryJson()
+                        else model.exportHistoryCsv().toByteArray()
                     val file = FileShare.write(context, HistoryExportFiles.fileName(json), bytes)
-                    FileShare.share(context, file, if (json) "application/json" else "text/csv", file.name)
+                    FileShare.share(
+                        context,
+                        file,
+                        if (json) "application/json" else "text/csv",
+                        file.name,
+                    )
                 }
                 .onFailure { exportFailed = true }
         }
@@ -117,38 +138,89 @@ fun HistoryScreen(model: QrModel, nav: QrNav) {
             if (selecting)
                 TopAppBar(
                     title = { Text("${selection.size} selected") },
-                    navigationIcon = { IconButton(onClick = { selection = emptySet() }) { Icon(Icons.Rounded.Close, "Cancel selection") } },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = {
+                                selection = emptySet()
+                                selectionMode = false
+                            }
+                        ) {
+                            Icon(Icons.Rounded.Close, "Cancel selection")
+                        }
+                    },
                     actions = {
-                        IconButton(onClick = {
-                            delete(selection.map(UUID::fromString).toSet())
-                            selection = emptySet()
-                        }) {
+                        IconButton(
+                            onClick = {
+                                selection =
+                                    (if (searching) results.orEmpty() else items)
+                                        .map { it.id.toString() }
+                                        .toSet()
+                            }
+                        ) {
+                            Icon(Icons.Rounded.SelectAll, "Select all shown")
+                        }
+                        IconButton(
+                            enabled = selection.isNotEmpty(),
+                            onClick = {
+                                delete(selection.map(UUID::fromString).toSet())
+                                selection = emptySet()
+                                selectionMode = false
+                            },
+                        ) {
                             Icon(Icons.Rounded.Delete, "Delete selected")
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer
+                        ),
                 )
             else
                 TopAppBar(
                     title = { Text("History") },
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+                    navigationIcon = {
+                        IconButton(onClick = nav::pop) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                        }
+                    },
                     actions = {
                         if (empty == HistoryEmptyState.LIST)
+                            IconButton(onClick = { selectionMode = true }) {
+                                Icon(Icons.Rounded.Checklist, "Select history")
+                            }
+                        if (empty == HistoryEmptyState.LIST)
                             Box {
-                                IconButton(onClick = { exportMenu = true }, Modifier.testTag("history.export")) { Icon(Icons.Rounded.Share, "Export") }
-                                DropdownMenu(exportMenu, onDismissRequest = { exportMenu = false }) {
-                                    DropdownMenuItem(text = { Text("Export as JSON") }, onClick = {
-                                        exportMenu = false
-                                        export(json = true)
-                                    })
-                                    DropdownMenuItem(text = { Text("Export as CSV") }, onClick = {
-                                        exportMenu = false
-                                        export(json = false)
-                                    })
+                                IconButton(
+                                    onClick = { exportMenu = true },
+                                    Modifier.testTag("history.export"),
+                                ) {
+                                    Icon(Icons.Rounded.Share, "Export")
+                                }
+                                DropdownMenu(
+                                    exportMenu,
+                                    onDismissRequest = { exportMenu = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Export as JSON") },
+                                        onClick = {
+                                            exportMenu = false
+                                            export(json = true)
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Export as CSV") },
+                                        onClick = {
+                                            exportMenu = false
+                                            export(json = false)
+                                        },
+                                    )
                                 }
                             }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background
+                        ),
                 )
         },
     ) { padding ->
@@ -158,23 +230,50 @@ fun HistoryScreen(model: QrModel, nav: QrNav) {
                     val shown = if (searching) results.orEmpty() else items
                     LazyColumn(
                         Modifier.fillMaxSize().testTag("history.list"),
-                        contentPadding = PaddingValues(start = Space.m, end = Space.m, bottom = Space.xl + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                        contentPadding =
+                            PaddingValues(
+                                start = Space.m,
+                                end = Space.m,
+                                bottom =
+                                    Space.xl +
+                                        WindowInsets.navigationBars
+                                            .asPaddingValues()
+                                            .calculateBottomPadding(),
+                            ),
                         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
                     ) {
                         item(key = "search") {
-                            SearchInput("Search history", Modifier.padding(bottom = Space.s).testTag("history.search"), state = search)
+                            SearchInput(
+                                "Search history",
+                                Modifier.padding(bottom = Space.s).testTag("history.search"),
+                                state = search,
+                            )
                         }
-                        if (HistoryEmptyState.showsLockedNote(items.size, keep, locked, history.readOnly))
+                        if (
+                            HistoryEmptyState.showsLockedNote(
+                                items.size,
+                                keep,
+                                locked,
+                                history.readOnly,
+                            )
+                        )
                             item(key = "locked") {
                                 QrCard(Modifier.padding(bottom = Space.s)) {
                                     Text(LOCKED_TEXT, style = MaterialTheme.typography.bodyLarge)
                                     OutlinedButton(onClick = { gate.offer() }) { Text("Unlock") }
                                 }
                             }
-                        if (!searching && !selecting) item(key = "summary") { Summary(items, Modifier.padding(bottom = Space.s)) }
+                        if (!searching && !selecting)
+                            item(key = "summary") {
+                                Summary(items, Modifier.padding(bottom = Space.s))
+                            }
                         if (searching && results?.isEmpty() == true)
                             item(key = "none") {
-                                EmptyState("No results for “${query.trim()}”", "Check the spelling or try another word.", icon = Icons.Rounded.SearchOff)
+                                EmptyState(
+                                    "No results for “${query.trim()}”",
+                                    "Check the spelling or try another word.",
+                                    icon = Icons.Rounded.SearchOff,
+                                )
                             }
                         val count = shown.size
                         itemsIndexed(shown, key = { _, it -> it.id.toString() }) { index, item ->
@@ -185,7 +284,9 @@ fun HistoryScreen(model: QrModel, nav: QrNav) {
                                 selected = id in selection,
                                 selecting = selecting,
                                 onClick = {
-                                    if (selecting) selection = if (id in selection) selection - id else selection + id
+                                    if (selecting)
+                                        selection =
+                                            if (id in selection) selection - id else selection + id
                                     else nav.push(Route.HistoryDetail(item.id))
                                 },
                                 onLongClick = {
@@ -197,11 +298,32 @@ fun HistoryScreen(model: QrModel, nav: QrNav) {
                     }
                 }
                 HistoryEmptyState.READ_ONLY ->
-                    CenteredEmpty("History can’t be read", history.readOnlyReason ?: "This version can’t read the saved history, so it is left as it is.", Icons.Rounded.Warning)
+                    CenteredEmpty(
+                        "History can’t be read",
+                        history.readOnlyReason
+                            ?: "This version can’t read the saved history, so it is left as it is.",
+                        Icons.Rounded.Warning,
+                    )
                 HistoryEmptyState.HISTORY_OFF ->
-                    CenteredEmpty("Keep history is off", "Nothing you scan or make is being saved.", Icons.Rounded.HistoryToggleOff, "Open Settings" to { nav.push(Route.Settings) })
-                HistoryEmptyState.LOCKED -> CenteredEmpty("Nothing saved", LOCKED_TEXT, Icons.Rounded.Lock, "Unlock" to { gate.offer() })
-                HistoryEmptyState.NO_ITEMS -> CenteredEmpty("Nothing here yet", "Codes you scan or make will show up here.", Icons.Rounded.History)
+                    CenteredEmpty(
+                        "Keep history is off",
+                        "Nothing you scan or make is being saved.",
+                        Icons.Rounded.HistoryToggleOff,
+                        "Open Settings" to { nav.push(Route.Settings) },
+                    )
+                HistoryEmptyState.LOCKED ->
+                    CenteredEmpty(
+                        "Nothing saved",
+                        LOCKED_TEXT,
+                        Icons.Rounded.Lock,
+                        "Unlock" to { gate.offer() },
+                    )
+                HistoryEmptyState.NO_ITEMS ->
+                    CenteredEmpty(
+                        "Nothing here yet",
+                        "Codes you scan or make will show up here.",
+                        Icons.Rounded.History,
+                    )
             }
         }
     }
@@ -216,7 +338,12 @@ fun HistoryScreen(model: QrModel, nav: QrNav) {
 private const val LOCKED_TEXT = "Your history stays here. Saving new scans needs the unlock."
 
 @Composable
-private fun CenteredEmpty(title: String, detail: String, icon: androidx.compose.ui.graphics.vector.ImageVector, action: Pair<String, () -> Unit>? = null) {
+private fun CenteredEmpty(
+    title: String,
+    detail: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    action: Pair<String, () -> Unit>? = null,
+) {
     Box(Modifier.fillMaxSize().testTag("history.list"), contentAlignment = Alignment.Center) {
         EmptyState(title, detail, icon = icon, action = action)
     }
@@ -234,33 +361,58 @@ private fun Summary(items: List<HistoryItem>, modifier: Modifier = Modifier) {
         StatTile("Warnings", warned.toString(), Icons.Rounded.Warning, m)
     }
     if (LocalDensity.current.fontScale >= 1.5f)
-        Column(modifier.semantics { contentDescription = "Summary" }, verticalArrangement = Arrangement.spacedBy(Space.s)) { tiles(Modifier.fillMaxWidth()) }
-    else Row(modifier.semantics(mergeDescendants = false) {}, horizontalArrangement = Arrangement.spacedBy(Space.s)) { tiles(Modifier.weight(1f)) }
+        Column(
+            modifier.semantics { contentDescription = "Summary" },
+            verticalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            tiles(Modifier.fillMaxWidth())
+        }
+    else
+        Row(
+            modifier.semantics(mergeDescendants = false) {},
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            tiles(Modifier.weight(1f))
+        }
 }
 
-/** One History row as library lists draw it: type tile, short payload, verdict at the time, note, when. */
+/**
+ * One History row as library lists draw it: type tile, short payload, verdict at the time, note,
+ * when.
+ */
 @Composable
-private fun HistoryRow(item: HistoryItem, shapes: ListItemShapes, selected: Boolean, selecting: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun HistoryRow(
+    item: HistoryItem,
+    shapes: ListItemShapes,
+    selected: Boolean,
+    selecting: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+) {
     val typeName = QrText.typeName(item.typeId)
     val payload = HistoryRowSummary.shortPayload(item)
     val note = HistoryRowSummary.notePreview(item.note)
     val meta = "$typeName · ${HistoryLabels.kind(item.kind)} · ${item.dateText()}"
-    val label = buildList {
-        add(QrText.verdict(item.level))
-        add(typeName)
-        add(payload)
-        note?.let { add("Note: $it") }
-        add(HistoryLabels.kind(item.kind))
-        add(item.dateText())
-    }.joinToString(". ")
+    val label =
+        buildList {
+                add(QrText.verdict(item.level))
+                add(typeName)
+                add(payload)
+                note?.let { add("Note: $it") }
+                add(HistoryLabels.kind(item.kind))
+                add(item.dateText())
+            }
+            .joinToString(". ")
     SegmentedListItem(
         onClick = onClick,
         onLongClick = onLongClick,
         shapes = shapes,
-        modifier = Modifier.testTag("history.row").clearAndSetSemantics {
-            contentDescription = label
-            this.selected = selected
-        },
+        modifier =
+            Modifier.testTag("history.row").semantics(mergeDescendants = true) {
+                contentDescription = label
+                this.selected = selected
+                if (selecting) role = androidx.compose.ui.semantics.Role.Checkbox
+            },
         leadingContent = {
             if (selecting) Checkbox(checked = selected, onCheckedChange = null)
             else TypeTile(VerdictIcons.type(item.typeId))
@@ -291,6 +443,23 @@ fun HistoryDetail(model: QrModel, nav: QrNav, id: UUID) {
     var noteFailed by remember { mutableStateOf(false) }
     var checking by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
+    var saving by remember { mutableStateOf(false) }
+    var discarding by remember { mutableStateOf(false) }
+    val close = {
+        if (!saving) {
+            if (item != null && HistoryNote.isChanged(draft, item.note)) discarding = true
+            else nav.pop()
+        }
+    }
+    BackHandler { close() }
+    if (discarding)
+        gg.seven.kit.DiscardChangesDialog(
+            { discarding = false },
+            {
+                discarding = false
+                nav.pop()
+            },
+        )
     LaunchedEffect(item == null) { if (item == null && history.items.isNotEmpty()) nav.pop() }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -298,8 +467,15 @@ fun HistoryDetail(model: QrModel, nav: QrNav, id: UUID) {
         topBar = {
             TopAppBar(
                 title = { Text(item?.let { QrText.typeName(it.typeId) }.orEmpty()) },
-                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+                navigationIcon = {
+                    IconButton(onClick = close, enabled = !saving) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                    }
+                },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    ),
             )
         },
     ) { padding ->
@@ -307,23 +483,52 @@ fun HistoryDetail(model: QrModel, nav: QrNav, id: UUID) {
         val signals = historySignals(item.signalIds)
         val typeName = QrText.typeName(item.typeId)
         Column(
-            Modifier.padding(padding).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = Space.m).padding(bottom = Space.xl),
+            Modifier.padding(padding)
+                .consumeWindowInsets(padding)
+                .fillMaxSize()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Space.m)
+                .padding(bottom = Space.xl),
             verticalArrangement = Arrangement.spacedBy(Space.l),
         ) {
             ReadableColumn {
-                VerdictHeader(item.level, typeName, signals, caption = "$typeName · the verdict when it was saved")
+                VerdictHeader(
+                    item.level,
+                    typeName,
+                    signals,
+                    caption = "$typeName · the verdict when it was saved",
+                )
                 val reasons = SignalText.sentences(signals.filter { it.severity != Severity.INFO })
                 if (reasons.isNotEmpty())
-                    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) { reasons.forEach { Text(it, style = MaterialTheme.typography.bodyLarge) } }
-                ResultCard(title = if (item.payloadEncoding == PayloadEncoding.BASE64) "Contents (binary, shown as base64)" else "Contents") {
-                    SelectionContainer { Text(item.payload, style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace)) }
+                    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                        reasons.forEach { Text(it, style = MaterialTheme.typography.bodyLarge) }
+                    }
+                ResultCard(
+                    title =
+                        if (item.payloadEncoding == PayloadEncoding.BASE64)
+                            "Contents (binary, shown as base64)"
+                        else "Contents"
+                ) {
+                    SelectionContainer {
+                        Text(
+                            item.payload,
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontFamily = FontFamily.Monospace
+                                ),
+                        )
+                    }
                 }
                 Section {
                     item("Scanned or made", HistoryLabels.kind(item.kind))
                     item("Code type", HistoryLabels.symbology(item.symbology))
                     item("Date", item.dateText())
                 }
-                Section(footer = "Runs today’s checks on this code. The verdict above is the one it got when it was saved.") {
+                Section(
+                    footer =
+                        "Runs today’s checks on this code. The verdict above is the one it got when it was saved."
+                ) {
                     action("Check again", icon = Icons.Rounded.Refresh, enabled = !checking) {
                         checking = true
                         scope.launch {
@@ -334,7 +539,12 @@ fun HistoryDetail(model: QrModel, nav: QrNav, id: UUID) {
                     }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                    Text("Note", Modifier.semantics { heading() }, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Note",
+                        Modifier.semantics { heading() },
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                     OutlinedTextField(
                         draft,
                         { draft = QrText.prefix(it, HistoryStore.MAX_NOTE_LENGTH) },
@@ -344,16 +554,24 @@ fun HistoryDetail(model: QrModel, nav: QrNav, id: UUID) {
                     )
                     FilledTonalButton(
                         onClick = {
+                            saving = true
                             scope.launch {
-                                if (!model.setNote(draft, item.id)) noteFailed = true else snackbar.showSnackbar("Note saved")
+                                val saved = model.setNote(draft, item.id)
+                                saving = false
+                                if (!saved) noteFailed = true
+                                else snackbar.showSnackbar("Note saved")
                             }
                         },
-                        enabled = HistoryNote.isChanged(draft, item.note),
+                        enabled = !saving && HistoryNote.isChanged(draft, item.note),
                     ) {
                         Text("Save note")
                     }
                 }
-                Section { action("Delete from history", icon = Icons.Rounded.Delete, destructive = true) { confirmDelete = true } }
+                Section {
+                    action("Delete from history", icon = Icons.Rounded.Delete, destructive = true) {
+                        confirmDelete = true
+                    }
+                }
             }
         }
     }
@@ -371,7 +589,10 @@ fun HistoryDetail(model: QrModel, nav: QrNav, id: UUID) {
                             nav.pop()
                         }
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
                 ) {
                     Text("Delete")
                 }
@@ -384,4 +605,3 @@ fun HistoryDetail(model: QrModel, nav: QrNav, id: UUID) {
             confirmButton = { TextButton(onClick = { noteFailed = false }) { Text("OK") } },
         )
 }
-

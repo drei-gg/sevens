@@ -70,7 +70,9 @@ impl TrackingParam {
         let key = t::lower(key);
         if t::has_suffix(&self.name, "*") {
             let prefix = t::drop_last(&self.name, 1);
-            return !prefix.is_empty() && t::has_prefix(&key, prefix) && t::count(&key) > t::count(prefix);
+            return !prefix.is_empty()
+                && t::has_prefix(&key, prefix)
+                && t::count(&key) > t::count(prefix);
         }
         t::str_eq(&key, &self.name)
     }
@@ -93,7 +95,11 @@ pub struct ListsVersion {
 
 impl ListsVersion {
     fn empty() -> Self {
-        ListsVersion { schema: CURRENT_SCHEMA, version: 0, built: String::new() }
+        ListsVersion {
+            schema: CURRENT_SCHEMA,
+            version: 0,
+            built: String::new(),
+        }
     }
 }
 
@@ -116,7 +122,10 @@ pub struct OrderedStrings(pub Vec<(String, String)>);
 
 impl OrderedStrings {
     pub fn get(&self, key: &str) -> Option<&str> {
-        self.0.iter().find(|(k, _)| k == key).map(|(_, v)| v.as_str())
+        self.0
+            .iter()
+            .find(|(k, _)| k == key)
+            .map(|(_, v)| v.as_str())
     }
     pub fn set(&mut self, key: &str, value: &str) {
         match self.0.iter_mut().find(|(k, _)| k == key) {
@@ -148,7 +157,10 @@ impl<'de> Deserialize<'de> for OrderedStrings {
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str("an object of strings")
             }
-            fn visit_map<A: serde::de::MapAccess<'de>>(self, mut a: A) -> Result<OrderedStrings, A::Error> {
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut a: A,
+            ) -> Result<OrderedStrings, A::Error> {
                 let mut out = OrderedStrings::default();
                 while let Some((k, v)) = a.next_entry::<String, String>()? {
                     out.set(&k, &v);
@@ -195,7 +207,11 @@ pub struct ListsBundle {
 
 impl ListsBundle {
     pub fn header(&self) -> ListsVersion {
-        ListsVersion { schema: self.schema, version: self.version, built: self.built.clone() }
+        ListsVersion {
+            schema: self.schema,
+            version: self.version,
+            built: self.built.clone(),
+        }
     }
 
     /// Reads a `lists.json`.
@@ -300,11 +316,16 @@ impl BundledData {
 
     /// Only what shipped with the app.
     pub fn load() -> BundledData {
-        let psl = resource("public_suffix_list.dat").and_then(|b| std::str::from_utf8(b).ok()).unwrap_or("");
+        let psl = resource("public_suffix_list.dat")
+            .and_then(|b| std::str::from_utf8(b).ok())
+            .unwrap_or("");
         BundledData {
             public_suffixes: PublicSuffixList::new(psl),
             brands: json("brands.json").unwrap_or_default(),
-            shorteners: json::<Vec<String>>("shorteners.json").unwrap_or_default().into_iter().collect(),
+            shorteners: json::<Vec<String>>("shorteners.json")
+                .unwrap_or_default()
+                .into_iter()
+                .collect(),
             risky_tlds: json("risky-tlds.json").unwrap_or_default(),
             confusables: json("confusables.json").unwrap_or_default(),
             bait_words: json("bait-words.json").unwrap_or_default(),
@@ -330,7 +351,10 @@ impl BundledData {
             payment_networks: f.payment_networks.clone(),
             currencies: base.currencies.clone(),
             rdap: RdapBootstrap::from_file(&f.rdap),
-            tracking_params: f.tracking_params.clone().unwrap_or_else(|| base.tracking_params.clone()),
+            tracking_params: f
+                .tracking_params
+                .clone()
+                .unwrap_or_else(|| base.tracking_params.clone()),
             lists: bundle.header(),
         }
     }
@@ -339,11 +363,15 @@ impl BundledData {
     /// invalid or older download gives the bundled data.
     pub fn load_downloaded(downloaded: Option<&[u8]>) -> BundledData {
         let bundled = Self::load();
-        let Some(bytes) = downloaded else { return bundled };
+        let Some(bytes) = downloaded else {
+            return bundled;
+        };
         if bytes.len() > LISTS_MAX_BYTES {
             return bundled;
         }
-        let Some(bundle) = ListsBundle::decode(bytes) else { return bundled };
+        let Some(bundle) = ListsBundle::decode(bytes) else {
+            return bundled;
+        };
         if bundle.version <= bundled.lists.version || validate(&bundle).is_err() {
             return bundled;
         }
@@ -434,17 +462,26 @@ pub fn bundled_lists_version() -> ListsVersion {
 /// Every acceptance rule of a downloaded `lists.json` except the network and the signature (which
 /// the platform checks first, over the exact bytes): size, format, schema, no rollback, shape.
 #[uniffi::export]
-pub fn lists_bundle_check(bytes: Vec<u8>, installed_version: i64) -> Result<ListsVersion, ListsBundleError> {
+pub fn lists_bundle_check(
+    bytes: Vec<u8>,
+    installed_version: i64,
+) -> Result<ListsVersion, ListsBundleError> {
     if bytes.len() > LISTS_MAX_BYTES {
         return Err(ListsBundleError::TooLarge);
     }
-    let header: ListsVersion = serde_json::from_slice(&bytes).map_err(|_| ListsBundleError::Unreadable)?;
+    let header: ListsVersion =
+        serde_json::from_slice(&bytes).map_err(|_| ListsBundleError::Unreadable)?;
     if header.schema != CURRENT_SCHEMA {
-        return Err(ListsBundleError::UnknownSchema { schema: header.schema });
+        return Err(ListsBundleError::UnknownSchema {
+            schema: header.schema,
+        });
     }
     let bundle = ListsBundle::decode(&bytes).ok_or(ListsBundleError::Unreadable)?;
     if bundle.version <= installed_version {
-        return Err(ListsBundleError::NotNewer { installed: installed_version, offered: bundle.version });
+        return Err(ListsBundleError::NotNewer {
+            installed: installed_version,
+            offered: bundle.version,
+        });
     }
     validate(&bundle)?;
     Ok(bundle.header())
@@ -466,13 +503,24 @@ fn is_lower(s: &str) -> bool {
 
 pub(crate) fn is_iso_date(text: &str) -> bool {
     let parts = t::split_ch(text, '-', false);
-    if parts.len() != 3 || t::count(parts[0]) != 4 || t::count(parts[1]) != 2 || t::count(parts[2]) != 2 {
+    if parts.len() != 3
+        || t::count(parts[0]) != 4
+        || t::count(parts[1]) != 2
+        || t::count(parts[2]) != 2
+    {
         return false;
     }
-    let (Some(y), Some(m), Some(d)) = (t::parse_int(parts[0]), t::parse_int(parts[1]), t::parse_int(parts[2])) else {
+    let (Some(y), Some(m), Some(d)) = (
+        t::parse_int(parts[0]),
+        t::parse_int(parts[1]),
+        t::parse_int(parts[2]),
+    ) else {
         return false;
     };
-    y >= 2000 && (1..=12).contains(&m) && (1..=31).contains(&d) && text.bytes().all(|b| b == b'-' || b.is_ascii_digit())
+    y >= 2000
+        && (1..=12).contains(&m)
+        && (1..=31).contains(&d)
+        && text.bytes().all(|b| b == b'-' || b.is_ascii_digit())
 }
 
 fn valid_brands(list: &[Brand], bait: &HashSet<&str>) -> bool {
@@ -498,7 +546,12 @@ fn valid_brands(list: &[Brand], bait: &HashSet<&str>) -> bool {
             }
         }
         for w in &b.keywords {
-            if !is_lower(w) || t::count(w) < 3 || !ascii(w) || bait.contains(w.as_str()) || !keywords.insert(w.clone()) {
+            if !is_lower(w)
+                || t::count(w) < 3
+                || !ascii(w)
+                || bait.contains(w.as_str())
+                || !keywords.insert(w.clone())
+            {
                 return false;
             }
         }
@@ -509,26 +562,47 @@ fn valid_brands(list: &[Brand], bait: &HashSet<&str>) -> bool {
 fn valid_shorteners(list: &[String]) -> bool {
     list.len() >= 60
         && list.iter().collect::<HashSet<_>>().len() == list.len()
-        && list.iter().all(|s| is_lower(s) && t::contains(s, ".") && !t::contains(s, "/"))
+        && list
+            .iter()
+            .all(|s| is_lower(s) && t::contains(s, ".") && !t::contains(s, "/"))
 }
 
 fn valid_risky(list: &[RiskyTld]) -> bool {
-    if !(15..=40).contains(&list.len()) || list.iter().map(|r| &r.tld).collect::<HashSet<_>>().len() != list.len() {
+    if !(15..=40).contains(&list.len())
+        || list.iter().map(|r| &r.tld).collect::<HashSet<_>>().len() != list.len()
+    {
         return false;
     }
-    list.iter().all(|r| !r.tld.is_empty() && is_lower(&r.tld) && !t::contains(&r.tld, ".") && ascii(&r.tld) && https_source(&r.source))
+    list.iter().all(|r| {
+        !r.tld.is_empty()
+            && is_lower(&r.tld)
+            && !t::contains(&r.tld, ".")
+            && ascii(&r.tld)
+            && https_source(&r.source)
+    })
 }
 
 fn valid_bait(list: &[String]) -> bool {
     let set: HashSet<&str> = list.iter().map(String::as_str).collect();
     (30..=60).contains(&list.len())
         && set.len() == list.len()
-        && list.iter().all(|w| is_lower(w) && !w.is_empty() && ascii(w))
-        && ["login", "verify", "secure", "account"].iter().all(|w| set.contains(w))
+        && list
+            .iter()
+            .all(|w| is_lower(w) && !w.is_empty() && ascii(w))
+        && ["login", "verify", "secure", "account"]
+            .iter()
+            .all(|w| set.contains(w))
 }
 
 fn valid_networks(n: &PaymentNetworks) -> bool {
-    if n.emv.is_empty() || n.emv.iter().map(|e| t::lower(&e.id)).collect::<HashSet<_>>().len() != n.emv.len() {
+    if n.emv.is_empty()
+        || n.emv
+            .iter()
+            .map(|e| t::lower(&e.id))
+            .collect::<HashSet<_>>()
+            .len()
+            != n.emv.len()
+    {
         return false;
     }
     let emv_ok = n.emv.iter().all(|e| {
@@ -542,8 +616,20 @@ fn valid_networks(n: &PaymentNetworks) -> bool {
     let schemes: HashSet<&str> = n.crypto_schemes.iter().map(|s| s.scheme.as_str()).collect();
     emv_ok
         && schemes.len() == n.crypto_schemes.len()
-        && n.crypto_schemes.iter().all(|s| is_lower(&s.scheme) && !t::contains(&s.scheme, ":") && !s.name.is_empty())
-        && ["bitcoin", "ethereum", "litecoin", "bitcoincash", "dogecoin", "monero", "lightning"].iter().all(|s| schemes.contains(s))
+        && n.crypto_schemes
+            .iter()
+            .all(|s| is_lower(&s.scheme) && !t::contains(&s.scheme, ":") && !s.name.is_empty())
+        && [
+            "bitcoin",
+            "ethereum",
+            "litecoin",
+            "bitcoincash",
+            "dogecoin",
+            "monero",
+            "lightning",
+        ]
+        .iter()
+        .all(|s| schemes.contains(s))
 }
 
 fn valid_confusables(map: &OrderedStrings) -> bool {
@@ -566,11 +652,15 @@ fn valid_confusables(map: &OrderedStrings) -> bool {
 }
 
 fn valid_psl(text: &str) -> bool {
-    if !t::contains(text, "===BEGIN ICANN DOMAINS===") || !t::contains(text, "===END ICANN DOMAINS===") {
+    if !t::contains(text, "===BEGIN ICANN DOMAINS===")
+        || !t::contains(text, "===END ICANN DOMAINS===")
+    {
         return false;
     }
     let m = PublicSuffixList::new(text).match_host("example.com");
-    m.public_suffix == "com" && m.registrable_domain.as_deref() == Some("example.com") && m.matched_explicit_rule
+    m.public_suffix == "com"
+        && m.registrable_domain.as_deref() == Some("example.com")
+        && m.matched_explicit_rule
 }
 
 fn valid_rdap(file: &RdapFile) -> bool {
@@ -598,17 +688,31 @@ fn valid_tracking(list: &[TrackingParam]) -> bool {
         return false;
     }
     list.iter().all(|p| {
-        let body = if t::has_suffix(&p.name, "*") { t::drop_last(&p.name, 1) } else { &p.name };
-        !body.is_empty() && body.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_') && https_source(&p.source)
+        let body = if t::has_suffix(&p.name, "*") {
+            t::drop_last(&p.name, 1)
+        } else {
+            &p.name
+        };
+        !body.is_empty()
+            && body
+                .bytes()
+                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+            && https_source(&p.source)
     })
 }
 
 /// The shape rules for every file in the bundle, plus the schema.
 pub fn validate(bundle: &ListsBundle) -> Result<(), ListsBundleError> {
     if bundle.schema != CURRENT_SCHEMA {
-        return Err(ListsBundleError::UnknownSchema { schema: bundle.schema });
+        return Err(ListsBundleError::UnknownSchema {
+            schema: bundle.schema,
+        });
     }
-    let bad = |f: &str| Err(ListsBundleError::BadShape { file: f.to_string() });
+    let bad = |f: &str| {
+        Err(ListsBundleError::BadShape {
+            file: f.to_string(),
+        })
+    };
     if bundle.version <= 0 {
         return bad("version");
     }
@@ -626,7 +730,10 @@ pub fn validate(bundle: &ListsBundle) -> Result<(), ListsBundleError> {
         ("confusables", valid_confusables(&f.confusables)),
         ("publicSuffixList", valid_psl(&f.public_suffix_list)),
         ("rdap", valid_rdap(&f.rdap)),
-        ("trackingParams", f.tracking_params.as_deref().is_none_or(valid_tracking)),
+        (
+            "trackingParams",
+            f.tracking_params.as_deref().is_none_or(valid_tracking),
+        ),
     ];
     match checks.iter().find(|c| !c.1) {
         Some((name, _)) => bad(name),

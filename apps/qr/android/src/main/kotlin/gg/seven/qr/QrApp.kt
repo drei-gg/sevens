@@ -5,15 +5,15 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.saveable.rememberSaveableStateHolder
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.kit.Gated
 import gg.seven.kit.LocalSevenStore
 import gg.seven.kit.SevenTopBar
@@ -31,7 +31,8 @@ fun QrApp(model: QrModel) {
     val saveable = rememberSaveableStateHolder()
     BackHandler(stack.isNotEmpty()) { nav.pop() }
     val top = stack.lastOrNull()
-    AnimatedContent(top, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "route") { route ->
+    AnimatedContent(top, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "route") {
+        route ->
         saveable.SaveableStateProvider(route?.toString() ?: "scan") {
             when (route) {
                 null -> ScanScreen(model, nav)
@@ -40,7 +41,8 @@ fun QrApp(model: QrModel) {
                 Route.Settings -> SettingsScreen(model, nav)
                 Route.NetworkContact -> NetworkContactScreen(nav)
                 Route.KnownAddresses -> KnownAddressesScreen(model, nav)
-                is Route.Make -> GatedScreen("Make", onBack = nav::pop) { MakeScreen(model, nav, route.prefill) }
+                is Route.Make ->
+                    GatedScreen("Make", onBack = nav::pop) { MakeScreen(model, nav, route.draft) }
             }
         }
     }
@@ -62,7 +64,10 @@ fun QrApp(model: QrModel) {
 private fun GatedScreen(feature: String, onBack: () -> Unit, content: @Composable () -> Unit) {
     val entitlement by LocalSevenStore.current.entitlement.collectAsStateWithLifecycle()
     if (entitlement.paidFeaturesAvailable) return content()
-    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = { SevenTopBar("Make a code", onBack = onBack) }) { padding ->
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = { SevenTopBar("Make a code", onBack = onBack) },
+    ) { padding ->
         Box(Modifier.padding(padding)) { Gated(feature) { content() } }
     }
 }

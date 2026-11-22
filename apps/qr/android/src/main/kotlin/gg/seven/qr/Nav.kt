@@ -20,12 +20,14 @@ sealed interface Route {
     data object KnownAddresses : Route
 
     /** Make, optionally pre-filled from a result's "Make a code". */
-    data class Make(val prefill: MakeRequest?) : Route
+    data class Make(val prefill: MakeRequest?) : Route {
+        val draft = MakeDraft(prefill)
+    }
 }
 
 /**
- * Where the app is: the stack over Scan, the result sheet and the pick list. Held by the
- * ViewModel, so a rotation or a theme change keeps the place.
+ * Where the app is: the stack over Scan, the result sheet and the pick list. Held by the ViewModel,
+ * so a rotation or a theme change keeps the place.
  */
 class QrNav {
     private val mutableStack = MutableStateFlow<List<Route>>(emptyList())

@@ -22,7 +22,10 @@ pub mod stext {
     /// Capped, with leading whitespace, newlines and a BOM removed.
     pub fn prepared(s: &str) -> String {
         let c = capped(s);
-        t::drop_while(&c, |g| t::ch_is_whitespace(g) || t::ch_is_newline(g) || t::ch_eq(g, '\u{FEFF}')).to_string()
+        t::drop_while(&c, |g| {
+            t::ch_is_whitespace(g) || t::ch_is_newline(g) || t::ch_eq(g, '\u{FEFF}')
+        })
+        .to_string()
     }
 
     pub fn trimmed(s: &str) -> &str {
@@ -31,7 +34,11 @@ pub mod stext {
 
     pub fn non_empty(s: Option<&str>) -> Option<String> {
         let tt = trimmed(s?);
-        if tt.is_empty() { None } else { Some(tt.to_string()) }
+        if tt.is_empty() {
+            None
+        } else {
+            Some(tt.to_string())
+        }
     }
 
     fn lower(c: char) -> char {
@@ -152,7 +159,9 @@ pub mod stext {
     pub fn keyed(body: &str) -> Vec<(String, String)> {
         let mut out = Vec::new();
         for piece in split_unescaped(body, ';') {
-            let Some(colon) = piece.find(':') else { continue };
+            let Some(colon) = piece.find(':') else {
+                continue;
+            };
             let key = t::upper(t::trim_ws(&piece[..colon]));
             if key.is_empty() {
                 continue;
@@ -180,12 +189,14 @@ pub mod stext {
         let mut bytes = Vec::with_capacity(u.len());
         let mut i = 0;
         while i < u.len() {
-            if u[i] == 0x25 && i + 2 < u.len()
-                && let (Some(h), Some(l)) = (hex_value(u[i + 1]), hex_value(u[i + 2])) {
-                    bytes.push(h << 4 | l);
-                    i += 3;
-                    continue;
-                }
+            if u[i] == 0x25
+                && i + 2 < u.len()
+                && let (Some(h), Some(l)) = (hex_value(u[i + 1]), hex_value(u[i + 2]))
+            {
+                bytes.push(h << 4 | l);
+                i += 3;
+                continue;
+            }
             bytes.push(u[i]);
             i += 1;
         }
@@ -197,7 +208,10 @@ pub mod stext {
         const DIGITS: &[u8] = b"0123456789ABCDEF";
         let mut out = String::new();
         for b in s.bytes() {
-            if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~') || keep.as_bytes().contains(&b) {
+            if b.is_ascii_alphanumeric()
+                || matches!(b, b'-' | b'.' | b'_' | b'~')
+                || keep.as_bytes().contains(&b)
+            {
                 out.push(b as char);
             } else {
                 out.push('%');
@@ -213,7 +227,10 @@ pub mod stext {
         let mut out = Vec::new();
         for part in t::split_ch(q, '&', true) {
             match t::find_ch(part, '=') {
-                Some(eq) => out.push((t::lower(&part[..eq]), percent_decode(&part[eq + t::char_len_at(part, eq)..]))),
+                Some(eq) => out.push((
+                    t::lower(&part[..eq]),
+                    percent_decode(&part[eq + t::char_len_at(part, eq)..]),
+                )),
                 None => out.push((t::lower(part), String::new())),
             }
         }
@@ -223,7 +240,10 @@ pub mod stext {
     /// Splits at the first occurrence of `sep` (scalar-based).
     pub fn split_first(s: &str, sep: char) -> (String, Option<String>) {
         match s.find(sep) {
-            Some(i) => (s[..i].to_string(), Some(s[i + sep.len_utf8()..].to_string())),
+            Some(i) => (
+                s[..i].to_string(),
+                Some(s[i + sep.len_utf8()..].to_string()),
+            ),
             None => (s.to_string(), None),
         }
     }
@@ -263,15 +283,24 @@ pub(crate) struct ContentLine {
 
 impl ContentLine {
     pub fn param(&self, key: &str) -> Option<&str> {
-        self.params.iter().find(|(k, _)| k == key).map(|(_, v)| v.as_str())
+        self.params
+            .iter()
+            .find(|(k, _)| k == key)
+            .map(|(_, v)| v.as_str())
     }
 
     fn is_quoted_printable(&self) -> bool {
-        self.params.iter().any(|(k, v)| k == "QUOTED-PRINTABLE" || (k == "ENCODING" && t::upper(v) == "QUOTED-PRINTABLE"))
+        self.params.iter().any(|(k, v)| {
+            k == "QUOTED-PRINTABLE" || (k == "ENCODING" && t::upper(v) == "QUOTED-PRINTABLE")
+        })
     }
 
     fn decoded(&self, raw: &str) -> String {
-        let s = if self.is_quoted_printable() { quoted_printable::decode(raw, self.param("CHARSET")) } else { raw.to_string() };
+        let s = if self.is_quoted_printable() {
+            quoted_printable::decode(raw, self.param("CHARSET"))
+        } else {
+            raw.to_string()
+        };
         normalize_newlines(&s)
     }
 
@@ -280,7 +309,10 @@ impl ContentLine {
     }
 
     pub fn components(&self, sep: char) -> Vec<String> {
-        split_unescaped(&self.raw_value, sep).iter().map(|c| unescape_text(&self.decoded(c))).collect()
+        split_unescaped(&self.raw_value, sep)
+            .iter()
+            .map(|c| unescape_text(&self.decoded(c)))
+            .collect()
     }
 }
 
@@ -293,7 +325,9 @@ pub(crate) mod content_lines {
         if !line.ends_with('=') {
             return false;
         }
-        let Some(colon) = t::find_ch(line, ':') else { return false };
+        let Some(colon) = t::find_ch(line, ':') else {
+            return false;
+        };
         t::contains(&t::upper(&line[..colon]), "QUOTED-PRINTABLE")
     }
 
@@ -368,7 +402,11 @@ pub(crate) mod content_lines {
             }
             params.push((key, val));
         }
-        Some(ContentLine { name, params, raw_value: sc[ci + 1..].iter().collect() })
+        Some(ContentLine {
+            name,
+            params,
+            raw_value: sc[ci + 1..].iter().collect(),
+        })
     }
 }
 
@@ -383,12 +421,14 @@ pub(crate) mod quoted_printable {
         let mut bytes = Vec::with_capacity(u.len());
         let mut i = 0;
         while i < u.len() {
-            if u[i] == 0x3D && i + 2 < u.len()
-                && let (Some(h), Some(l)) = (hex_value(u[i + 1]), hex_value(u[i + 2])) {
-                    bytes.push(h << 4 | l);
-                    i += 3;
-                    continue;
-                }
+            if u[i] == 0x3D
+                && i + 2 < u.len()
+                && let (Some(h), Some(l)) = (hex_value(u[i + 1]), hex_value(u[i + 2]))
+            {
+                bytes.push(h << 4 | l);
+                i += 3;
+                continue;
+            }
             bytes.push(u[i]);
             i += 1;
         }
@@ -398,7 +438,9 @@ pub(crate) mod quoted_printable {
     pub fn decode_bytes(bytes: &[u8], charset: Option<&str>) -> String {
         let cs = t::upper(charset.unwrap_or("")).replace('_', "-");
         match cs.as_str() {
-            "ISO-8859-1" | "ISO8859-1" | "LATIN1" | "LATIN-1" | "US-ASCII" | "ASCII" => bytes.iter().map(|&b| b as char).collect(),
+            "ISO-8859-1" | "ISO8859-1" | "LATIN1" | "LATIN-1" | "US-ASCII" | "ASCII" => {
+                bytes.iter().map(|&b| b as char).collect()
+            }
             "WINDOWS-1252" | "CP1252" | "WIN-1252" | "WINDOWS1252" => windows1252(bytes),
             "UTF-8" | "UTF8" => t::utf8_lossy(bytes),
             _ => match std::str::from_utf8(bytes) {
@@ -437,18 +479,29 @@ pub(crate) mod ics_date {
     }
 
     pub fn wall_as_gmt(y: i64, mo: i64, d: i64, h: i64, mi: i64, s: i64) -> SystemTime {
-        time::from_seconds((time::days_from_civil(y, mo, d) * 86400 + h * 3600 + mi * 60 + s) as f64)
+        time::from_seconds(
+            (time::days_from_civil(y, mo, d) * 86400 + h * 3600 + mi * 60 + s) as f64,
+        )
     }
 
     pub fn format(date: SystemTime, kind: &Kind) -> String {
         let raw = time::seconds(date);
-        let tt = if raw.is_finite() { raw.floor().clamp(-1e12, 1e12) as i64 } else { 0 };
+        let tt = if raw.is_finite() {
+            raw.floor().clamp(-1e12, 1e12) as i64
+        } else {
+            0
+        };
         let (y, mo, d, h, mi, s) = time::gmt_fields(tt);
         let day = format!("{}{}{}", time::pad(y, 4), time::pad(mo, 2), time::pad(d, 2));
         if *kind == Kind::AllDay {
             return day;
         }
-        let tm = format!("{day}T{}{}{}", time::pad(h, 2), time::pad(mi, 2), time::pad(s, 2));
+        let tm = format!(
+            "{day}T{}{}{}",
+            time::pad(h, 2),
+            time::pad(mi, 2),
+            time::pad(s, 2)
+        );
         if *kind == Kind::Utc { tm + "Z" } else { tm }
     }
 
@@ -493,7 +546,11 @@ pub(crate) mod ics_date {
         if h > 23 || mi > 59 {
             return None;
         }
-        let sec = if rest.len() == 6 { number(&rest[4..6])? } else { 0 };
+        let sec = if rest.len() == 6 {
+            number(&rest[4..6])?
+        } else {
+            0
+        };
         if sec > 60 {
             return None;
         }
@@ -501,16 +558,26 @@ pub(crate) mod ics_date {
             return Some((wall_as_gmt(y, mo, d, h, mi, sec), Kind::Utc));
         }
         if let Some(tzid) = tzid
-            && let Ok(tz) = jiff::tz::TimeZone::get(tzid) {
-                let dt = jiff::civil::DateTime::new(y as i16, mo as i8, d as i8, h as i8, mi as i8, sec.min(59) as i8, 0);
-                if let Ok(dt) = dt
-                    && let Ok(zoned) = tz.to_ambiguous_zoned(dt).compatible() {
-                        let extra = if sec == 60 { 1.0 } else { 0.0 };
-                        let at = time::from_seconds(zoned.timestamp().as_second() as f64 + extra);
-                        let id = tz.iana_name().unwrap_or(tzid).to_string();
-                        return Some((at, Kind::Zoned(id)));
-                    }
+            && let Ok(tz) = jiff::tz::TimeZone::get(tzid)
+        {
+            let dt = jiff::civil::DateTime::new(
+                y as i16,
+                mo as i8,
+                d as i8,
+                h as i8,
+                mi as i8,
+                sec.min(59) as i8,
+                0,
+            );
+            if let Ok(dt) = dt
+                && let Ok(zoned) = tz.to_ambiguous_zoned(dt).compatible()
+            {
+                let extra = if sec == 60 { 1.0 } else { 0.0 };
+                let at = time::from_seconds(zoned.timestamp().as_second() as f64 + extra);
+                let id = tz.iana_name().unwrap_or(tzid).to_string();
+                return Some((at, Kind::Zoned(id)));
             }
+        }
         Some((wall_as_gmt(y, mo, d, h, mi, sec), Kind::Floating))
     }
 
@@ -563,7 +630,8 @@ pub mod wifi {
     pub fn parse(text: &str) -> Option<WiFiInfo> {
         let p = prepared(text);
         let body = strip_prefix(&p, "WIFI:")?;
-        let (mut ssid, mut security, mut password, mut eap, mut identity) = (None, None, None, None, None);
+        let (mut ssid, mut security, mut password, mut eap, mut identity) =
+            (None, None, None, None, None);
         let mut hidden = false;
         for (key, raw) in keyed(body) {
             let value = literal(&raw);
@@ -589,15 +657,19 @@ pub mod wifi {
                         eap = non_empty(Some(&value))
                     }
                 }
-                "I"
-                    if identity.is_none() => {
-                        identity = non_empty(Some(&value))
-                    }
+                "I" if identity.is_none() => identity = non_empty(Some(&value)),
                 _ => {}
             }
         }
         let ssid = ssid.filter(|s| !s.is_empty())?;
-        Some(WiFiInfo { ssid, security, password, is_hidden: hidden, eap_method: eap, identity })
+        Some(WiFiInfo {
+            ssid,
+            security,
+            password,
+            is_hidden: hidden,
+            eap_method: eap,
+            identity,
+        })
     }
 
     /// A value wrapped in double quotes is literal text; otherwise unescape.
@@ -638,7 +710,10 @@ fn mecard(body: &str) -> Option<ContactInfo> {
                 if name.is_some() || info.family_name.is_some() {
                     continue;
                 }
-                let parts: Vec<String> = split_unescaped(&raw, ',').iter().map(|p| unescape_backslash(p)).collect();
+                let parts: Vec<String> = split_unescaped(&raw, ',')
+                    .iter()
+                    .map(|p| unescape_backslash(p))
+                    .collect();
                 if parts.len() >= 2 {
                     info.family_name = non_empty(Some(&parts[0]));
                     info.given_name = non_empty(Some(&parts[1]));
@@ -650,8 +725,10 @@ fn mecard(body: &str) -> Option<ContactInfo> {
             "EMAIL" => info.emails.extend(non_empty(Some(&value()))),
             "URL" => info.urls.extend(non_empty(Some(&value()))),
             "ADR" => {
-                let parts: Vec<String> =
-                    split_unescaped(&raw, ',').iter().filter_map(|p| non_empty(Some(&unescape_backslash(p)))).collect();
+                let parts: Vec<String> = split_unescaped(&raw, ',')
+                    .iter()
+                    .filter_map(|p| non_empty(Some(&unescape_backslash(p))))
+                    .collect();
                 if !parts.is_empty() {
                     info.addresses.push(parts.join("\n"));
                 }
@@ -671,10 +748,7 @@ fn mecard(body: &str) -> Option<ContactInfo> {
                     info.organization = non_empty(Some(&value()))
                 }
             }
-            "TITLE"
-                if info.title.is_none() => {
-                    info.title = non_empty(Some(&value()))
-                }
+            "TITLE" if info.title.is_none() => info.title = non_empty(Some(&value())),
             _ => {}
         }
     }
@@ -684,7 +758,11 @@ fn mecard(body: &str) -> Option<ContactInfo> {
 }
 
 fn joined_name(info: &ContactInfo) -> String {
-    [&info.given_name, &info.family_name].iter().filter_map(|v| v.as_deref()).collect::<Vec<_>>().join(" ")
+    [&info.given_name, &info.family_name]
+        .iter()
+        .filter_map(|v| v.as_deref())
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn vcard(text: &str) -> Option<ContactInfo> {
@@ -692,7 +770,9 @@ fn vcard(text: &str) -> Option<ContactInfo> {
     let mut info = ContactInfo::default();
     let mut fn_: Option<String> = None;
     for raw in content_lines::logical(text) {
-        let Some(line) = content_lines::parse(&raw) else { continue };
+        let Some(line) = content_lines::parse(&raw) else {
+            continue;
+        };
         let marker = t::upper(t::trim_ws(&line.raw_value));
         if line.name == "BEGIN" {
             if marker == "VCARD" {
@@ -736,13 +816,22 @@ fn vcard(text: &str) -> Option<ContactInfo> {
             }
             "TEL" => {
                 if let Some(v) = non_empty(Some(&line.text())) {
-                    info.phones.push(strip_prefix(&v, "tel:").map(|r| trimmed(r).to_string()).unwrap_or(v));
+                    info.phones.push(
+                        strip_prefix(&v, "tel:")
+                            .map(|r| trimmed(r).to_string())
+                            .unwrap_or(v),
+                    );
                 }
             }
             "EMAIL" => info.emails.extend(non_empty(Some(&line.text()))),
             "URL" => info.urls.extend(non_empty(Some(&line.text()))),
             "ADR" => {
-                let parts: Vec<String> = line.components(';').iter().take(7).filter_map(|p| non_empty(Some(p))).collect();
+                let parts: Vec<String> = line
+                    .components(';')
+                    .iter()
+                    .take(7)
+                    .filter_map(|p| non_empty(Some(p)))
+                    .collect();
                 if !parts.is_empty() {
                     info.addresses.push(parts.join("\n"));
                 }
@@ -752,10 +841,7 @@ fn vcard(text: &str) -> Option<ContactInfo> {
                     info.note = non_empty(Some(&line.text()))
                 }
             }
-            "BDAY"
-                if info.birthday.is_none() => {
-                    info.birthday = non_empty(Some(&line.text()))
-                }
+            "BDAY" if info.birthday.is_none() => info.birthday = non_empty(Some(&line.text())),
             _ => {}
         }
     }
@@ -777,16 +863,23 @@ pub mod event {
     /// BEGIN:VEVENT, or a VCALENDAR containing one (the first VEVENT).
     pub fn parse(text: &str) -> Option<EventInfo> {
         let p = prepared(text);
-        if strip_prefix(&p, "BEGIN:VEVENT").is_none() && strip_prefix(&p, "BEGIN:VCALENDAR").is_none() {
+        if strip_prefix(&p, "BEGIN:VEVENT").is_none()
+            && strip_prefix(&p, "BEGIN:VCALENDAR").is_none()
+        {
             return None;
         }
         let mut in_event = false;
         let mut depth = 0;
         let mut info = EventInfo::default();
-        let (mut start_line, mut end_line, mut duration): (Option<ContentLine>, Option<ContentLine>, Option<String>) =
-            (None, None, None);
+        let (mut start_line, mut end_line, mut duration): (
+            Option<ContentLine>,
+            Option<ContentLine>,
+            Option<String>,
+        ) = (None, None, None);
         for raw in content_lines::logical(&p) {
-            let Some(line) = content_lines::parse(&raw) else { continue };
+            let Some(line) = content_lines::parse(&raw) else {
+                continue;
+            };
             let marker = t::upper(t::trim_ws(&line.raw_value));
             if !in_event {
                 if line.name == "BEGIN" && marker == "VEVENT" {
@@ -839,10 +932,7 @@ pub mod event {
                         end_line = Some(line)
                     }
                 }
-                "DURATION"
-                    if duration.is_none() => {
-                        duration = Some(line.raw_value.clone())
-                    }
+                "DURATION" if duration.is_none() => duration = Some(line.raw_value.clone()),
                 _ => {}
             }
         }
@@ -850,18 +940,24 @@ pub mod event {
             return None;
         }
         if let Some(l) = &start_line
-            && let Some((date, kind)) = ics_date::parse(&l.raw_value, l.param("TZID")) {
-                info.start = Some(date);
-                match kind {
-                    ics_date::Kind::AllDay => info.is_all_day = true,
-                    ics_date::Kind::Floating => info.is_floating = true,
-                    ics_date::Kind::Zoned(id) => info.time_zone_id = Some(id),
-                    ics_date::Kind::Utc => {}
-                }
+            && let Some((date, kind)) = ics_date::parse(&l.raw_value, l.param("TZID"))
+        {
+            info.start = Some(date);
+            match kind {
+                ics_date::Kind::AllDay => info.is_all_day = true,
+                ics_date::Kind::Floating => info.is_floating = true,
+                ics_date::Kind::Zoned(id) => info.time_zone_id = Some(id),
+                ics_date::Kind::Utc => {}
             }
-        if let Some(e) = end_line.as_ref().and_then(|l| ics_date::parse(&l.raw_value, l.param("TZID"))) {
+        }
+        if let Some(e) = end_line
+            .as_ref()
+            .and_then(|l| ics_date::parse(&l.raw_value, l.param("TZID")))
+        {
             info.end = Some(e.0);
-        } else if let (Some(start), Some(d)) = (info.start, duration.as_deref().and_then(ics_date::duration)) {
+        } else if let (Some(start), Some(d)) =
+            (info.start, duration.as_deref().and_then(ics_date::duration))
+        {
             info.end = Some(time::from_seconds(time::seconds(start) + d));
         }
         if let Some(u) = &info.url {
@@ -879,7 +975,9 @@ pub mod phone {
     pub fn parse(text: &str) -> Option<PhoneInfo> {
         let p = prepared(text);
         let rest = strip_prefix(&p, "tel:")?;
-        Some(PhoneInfo { number: non_empty(Some(&percent_decode(rest)))? })
+        Some(PhoneInfo {
+            number: non_empty(Some(&percent_decode(rest)))?,
+        })
     }
 }
 
@@ -894,7 +992,11 @@ pub mod sms {
             // SMSTO:number:body. The body is raw text (not percent-decoded) and may contain colons.
             let (num, body) = split_first(rest, ':');
             let number = non_empty(Some(&percent_decode(&num)))?;
-            return Some(SmsInfo { number, body: body.filter(|b| !b.is_empty()), links: vec![] });
+            return Some(SmsInfo {
+                number,
+                body: body.filter(|b| !b.is_empty()),
+                links: vec![],
+            });
         }
         let rest = strip_prefix(&p, "sms:")?;
         let r = trimmed(rest);
@@ -902,9 +1004,17 @@ pub mod sms {
         let number = non_empty(Some(&percent_decode(&r[..cut])))?;
         let mut body = None;
         if cut < r.len() {
-            body = query_pairs(&r[cut + 1..]).into_iter().find(|(k, _)| k == "body").map(|(_, v)| v).filter(|v| !v.is_empty());
+            body = query_pairs(&r[cut + 1..])
+                .into_iter()
+                .find(|(k, _)| k == "body")
+                .map(|(_, v)| v)
+                .filter(|v| !v.is_empty());
         }
-        Some(SmsInfo { number, body, links: vec![] })
+        Some(SmsInfo {
+            number,
+            body,
+            links: vec![],
+        })
     }
 }
 
@@ -926,17 +1036,31 @@ pub mod email {
     }
 
     fn first_address(list: &str) -> Option<String> {
-        let first = t::split_ch(list, ',', true).first().map(|s| s.to_string()).unwrap_or_default();
+        let first = t::split_ch(list, ',', true)
+            .first()
+            .map(|s| s.to_string())
+            .unwrap_or_default();
         non_empty(Some(&percent_decode(&first)))
     }
 
     fn mailto(rest: &str) -> Option<EmailInfo> {
         let (path, query) = split_first(rest, '?');
         let pairs = query.map(|q| query_pairs(&q)).unwrap_or_default();
-        let get = |k: &str| pairs.iter().find(|(key, v)| key == k && !v.is_empty()).map(|(_, v)| v.clone());
-        let address = first_address(&path)
-            .or_else(|| get("to").and_then(|to| non_empty(t::split_ch(&to, ',', true).first().copied())))?;
-        Some(EmailInfo { address, subject: get("subject"), body: get("body"), links: vec![] })
+        let get = |k: &str| {
+            pairs
+                .iter()
+                .find(|(key, v)| key == k && !v.is_empty())
+                .map(|(_, v)| v.clone())
+        };
+        let address = first_address(&path).or_else(|| {
+            get("to").and_then(|to| non_empty(t::split_ch(&to, ',', true).first().copied()))
+        })?;
+        Some(EmailInfo {
+            address,
+            subject: get("subject"),
+            body: get("body"),
+            links: vec![],
+        })
     }
 
     fn matmsg(body: &str) -> Option<EmailInfo> {
@@ -954,14 +1078,16 @@ pub mod email {
                         sub = Some(v)
                     }
                 }
-                "BODY"
-                    if text.is_none() && !v.is_empty() => {
-                        text = Some(v)
-                    }
+                "BODY" if text.is_none() && !v.is_empty() => text = Some(v),
                 _ => {}
             }
         }
-        Some(EmailInfo { address: to?, subject: sub, body: text, links: vec![] })
+        Some(EmailInfo {
+            address: to?,
+            subject: sub,
+            body: text,
+            links: vec![],
+        })
     }
 }
 
@@ -976,7 +1102,10 @@ pub mod geo {
         let rest = strip_prefix(&p, "geo:")?;
         let (path, query) = split_first(trimmed(rest), '?');
         let coord_text = split_first(&path, ';').0;
-        let coords: Vec<String> = t::split_ch(&coord_text, ',', false).iter().map(|c| t::trim_ws(c).to_string()).collect();
+        let coords: Vec<String> = t::split_ch(&coord_text, ',', false)
+            .iter()
+            .map(|c| t::trim_ws(c).to_string())
+            .collect();
         if !(coords.len() == 2 || coords.len() == 3) || !coords.iter().all(|c| is_decimal(c)) {
             return None;
         }
@@ -985,11 +1114,20 @@ pub mod geo {
         if lat.abs() > 90.0 || lon.abs() > 180.0 {
             return None;
         }
-        let q = query.and_then(|q| query_pairs(&q).into_iter().find(|(k, v)| k == "q" && !v.is_empty()).map(|(_, v)| v));
+        let q = query.and_then(|q| {
+            query_pairs(&q)
+                .into_iter()
+                .find(|(k, v)| k == "q" && !v.is_empty())
+                .map(|(_, v)| v)
+        });
         Some(GeoInfo {
             latitude: coords[0].clone(),
             longitude: coords[1].clone(),
-            altitude: if coords.len() == 3 { Some(coords[2].clone()) } else { None },
+            altitude: if coords.len() == 3 {
+                Some(coords[2].clone())
+            } else {
+                None
+            },
             query: q,
         })
     }
@@ -1025,7 +1163,9 @@ pub fn encode(r: &MakeRequest) -> String {
         MakeRequest::Event { info } => v_event(info),
         MakeRequest::Email { info } => encode_email(info),
         MakeRequest::Sms { info } => encode_sms(info),
-        MakeRequest::Phone { number } => format!("TEL:{}", percent_encode(trimmed(number), NUMBER_KEEP)),
+        MakeRequest::Phone { number } => {
+            format!("TEL:{}", percent_encode(trimmed(number), NUMBER_KEEP))
+        }
         MakeRequest::Geo { info } => encode_geo(info),
     }
 }
@@ -1042,7 +1182,11 @@ const NUMBER_KEEP: &str = "+()*#,;=/ ";
 fn encode_wifi(w: &WiFiInfo) -> String {
     let mut s = String::from("WIFI:");
     if let Some(sec) = non_empty(w.security.as_deref()) {
-        let v = if t::upper(&sec) == "NOPASS" { "nopass".to_string() } else { escape_backslash(&sec, ";,:\"") };
+        let v = if t::upper(&sec) == "NOPASS" {
+            "nopass".to_string()
+        } else {
+            escape_backslash(&sec, ";,:\"")
+        };
         s += &format!("T:{v};");
     }
     s += &format!("S:{};", wifi_value(&w.ssid));
@@ -1063,8 +1207,13 @@ fn encode_wifi(w: &WiFiInfo) -> String {
 
 /// Escaped; an all-hex value is quoted so scanners don't read it as hex bytes.
 fn wifi_value(v: &str) -> String {
-    let hex = !v.is_empty() && v.len().is_multiple_of(2) && v.bytes().all(|b| hex_value(b).is_some());
-    if hex { format!("\"{v}\"") } else { escape_backslash(v, ";,:\"") }
+    let hex =
+        !v.is_empty() && v.len().is_multiple_of(2) && v.bytes().all(|b| hex_value(b).is_some());
+    if hex {
+        format!("\"{v}\"")
+    } else {
+        escape_backslash(v, ";,:\"")
+    }
 }
 
 fn encode_email(e: &EmailInfo) -> String {
@@ -1122,10 +1271,30 @@ fn v_card(c: &ContactInfo) -> String {
     if let Some(x) = non_empty(c.title.as_deref()) {
         lines.push(format!("TITLE:{}", esc(&x)));
     }
-    lines.extend(c.phones.iter().filter(|p| !p.is_empty()).map(|p| format!("TEL:{}", esc(p))));
-    lines.extend(c.emails.iter().filter(|p| !p.is_empty()).map(|p| format!("EMAIL:{}", esc(p))));
-    lines.extend(c.urls.iter().filter(|p| !p.is_empty()).map(|p| format!("URL:{}", esc(p))));
-    lines.extend(c.addresses.iter().filter(|p| !p.is_empty()).map(|p| format!("ADR:;;{};;;;", esc(p))));
+    lines.extend(
+        c.phones
+            .iter()
+            .filter(|p| !p.is_empty())
+            .map(|p| format!("TEL:{}", esc(p))),
+    );
+    lines.extend(
+        c.emails
+            .iter()
+            .filter(|p| !p.is_empty())
+            .map(|p| format!("EMAIL:{}", esc(p))),
+    );
+    lines.extend(
+        c.urls
+            .iter()
+            .filter(|p| !p.is_empty())
+            .map(|p| format!("URL:{}", esc(p))),
+    );
+    lines.extend(
+        c.addresses
+            .iter()
+            .filter(|p| !p.is_empty())
+            .map(|p| format!("ADR:;;{};;;;", esc(p))),
+    );
     if let Some(n) = non_empty(c.note.as_deref()) {
         lines.push(format!("NOTE:{}", esc(&n)));
     }
@@ -1133,7 +1302,11 @@ fn v_card(c: &ContactInfo) -> String {
         lines.push(format!("BDAY:{}", esc(&b)));
     }
     lines.push("END:VCARD".into());
-    lines.iter().map(|l| fold(l)).collect::<Vec<_>>().join("\r\n")
+    lines
+        .iter()
+        .map(|l| fold(l))
+        .collect::<Vec<_>>()
+        .join("\r\n")
 }
 
 /// A bare VEVENT. Absolute times are UTC, floating times have no `Z`, all-day times are
@@ -1145,9 +1318,19 @@ fn v_event(e: &EventInfo) -> String {
     if let Some(s) = non_empty(e.summary.as_deref()) {
         lines.push(format!("SUMMARY:{}", esc(&s)));
     }
-    let kind = if e.is_all_day { Kind::AllDay } else if e.is_floating { Kind::Floating } else { Kind::Utc };
+    let kind = if e.is_all_day {
+        Kind::AllDay
+    } else if e.is_floating {
+        Kind::Floating
+    } else {
+        Kind::Utc
+    };
     let stamp = |name: &str, d| {
-        let head = if kind == Kind::AllDay { format!("{name};VALUE=DATE:") } else { format!("{name}:") };
+        let head = if kind == Kind::AllDay {
+            format!("{name};VALUE=DATE:")
+        } else {
+            format!("{name}:")
+        };
         head + &ics_date::format(d, &kind)
     };
     if let Some(d) = e.start {
@@ -1166,12 +1349,23 @@ fn v_event(e: &EventInfo) -> String {
         lines.push(format!("URL:{}", esc(&v)));
     }
     lines.push("END:VEVENT".into());
-    lines.iter().map(|l| fold(l)).collect::<Vec<_>>().join("\r\n")
+    lines
+        .iter()
+        .map(|l| fold(l))
+        .collect::<Vec<_>>()
+        .join("\r\n")
 }
 
 /// Wall-clock time read as if it were GMT (what floating and all-day event times hold).
 #[uniffi::export]
-pub fn ics_wall_as_gmt(year: i64, month: i64, day: i64, hour: i64, minute: i64, second: i64) -> std::time::SystemTime {
+pub fn ics_wall_as_gmt(
+    year: i64,
+    month: i64,
+    day: i64,
+    hour: i64,
+    minute: i64,
+    second: i64,
+) -> std::time::SystemTime {
     ics_date::wall_as_gmt(year, month, day, hour, minute, second)
 }
 

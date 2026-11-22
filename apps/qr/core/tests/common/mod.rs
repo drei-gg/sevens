@@ -55,7 +55,11 @@ impl FixtureCase {
     }
 
     pub fn scanned_code(&self) -> ScannedCode {
-        let sym = self.symbology.as_deref().and_then(Symbology::from_raw).unwrap_or(Symbology::Qr);
+        let sym = self
+            .symbology
+            .as_deref()
+            .and_then(Symbology::from_raw)
+            .unwrap_or(Symbology::Qr);
         if let Some(input) = &self.input {
             return ScannedCode::text(input, sym);
         }
@@ -64,7 +68,11 @@ impl FixtureCase {
             .as_deref()
             .and_then(|b| base64::engine::general_purpose::STANDARD.decode(b).ok())
             .unwrap_or_default();
-        ScannedCode { text: String::from_utf8(bytes.clone()).ok(), bytes, symbology: sym }
+        ScannedCode {
+            text: String::from_utf8(bytes.clone()).ok(),
+            bytes,
+            symbology: sym,
+        }
     }
 }
 
@@ -99,16 +107,25 @@ pub fn mismatches(c: &FixtureCase, a: &Analysis) -> Vec<String> {
         out.push(format!("level {} ≠ {}", a.level.raw(), c.expect.level));
     }
     let all = a.all_signals();
-    let got: HashSet<&str> = all.iter().filter(|s| s.severity() != Severity::Info).map(|s| s.id.raw()).collect();
+    let got: HashSet<&str> = all
+        .iter()
+        .filter(|s| s.severity() != Severity::Info)
+        .map(|s| s.id.raw())
+        .collect();
     let want: HashSet<&str> = c.expect.signals.iter().map(String::as_str).collect();
     if got != want {
-        let (mut g, mut w): (Vec<_>, Vec<_>) = (got.into_iter().collect(), want.into_iter().collect());
+        let (mut g, mut w): (Vec<_>, Vec<_>) =
+            (got.into_iter().collect(), want.into_iter().collect());
         g.sort();
         w.sort();
         out.push(format!("signals {g:?} ≠ {w:?}"));
     }
     if let Some(info) = &c.expect.info {
-        let got: HashSet<&str> = all.iter().filter(|s| s.severity() == Severity::Info).map(|s| s.id.raw()).collect();
+        let got: HashSet<&str> = all
+            .iter()
+            .filter(|s| s.severity() == Severity::Info)
+            .map(|s| s.id.raw())
+            .collect();
         let want: HashSet<&str> = info.iter().map(String::as_str).collect();
         if got != want {
             out.push(format!("info {got:?} ≠ {want:?}"));

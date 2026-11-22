@@ -1,11 +1,14 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
+@file:OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalLayoutApi::class,
+)
 
 package gg.seven.qr
 
 import android.app.Activity
 import android.os.Build
 import android.provider.Settings
-import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -60,22 +63,27 @@ private sealed interface ResultPage {
 }
 
 /** At the largest text sizes nothing is pinned: every action stacks at the end instead. */
-@Composable
-private fun largeText() = LocalDensity.current.fontScale >= 1.5f
+@Composable private fun largeText() = LocalDensity.current.fontScale >= 1.5f
 
 /**
  * The sheet for one analysis. The caller presents it (from Scan, or History's Check again) and has
  * already recorded it; [onMake] opens Make with a prefill (the caller gates it).
  */
 @Composable
-fun ResultSheet(model: QrModel, initial: Analysis, onDismiss: () -> Unit, onMake: (MakeRequest) -> Unit) {
+fun ResultSheet(
+    model: QrModel,
+    initial: Analysis,
+    onDismiss: () -> Unit,
+    onMake: (MakeRequest) -> Unit,
+) {
     var analysis by remember(initial) { mutableStateOf(initial) }
     var generation by remember { mutableIntStateOf(0) }
     var dismissedOffer by remember(initial) { mutableStateOf(false) }
     var pages by remember(initial) { mutableStateOf<List<ResultPage>>(emptyList()) }
     val known by model.knownAddresses.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    val state = rememberBottomSheetState(SheetValue.Hidden, setOf(SheetValue.Hidden, SheetValue.Expanded))
+    val state =
+        rememberBottomSheetState(SheetValue.Hidden, setOf(SheetValue.Hidden, SheetValue.Expanded))
 
     /** The domain to ask about, or null: only for list-based warnings, once. */
     val offer = if (dismissedOffer) null else knownAddressesOffer(known, analysis)
@@ -94,9 +102,14 @@ fun ResultSheet(model: QrModel, initial: Analysis, onDismiss: () -> Unit, onMake
                 else -> "Result"
             }
         Column(Modifier.fillMaxSize()) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = Space.xs), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = Space.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 if (pages.isNotEmpty())
-                    IconButton(onClick = { pages = pages.dropLast(1) }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
+                    IconButton(onClick = { pages = pages.dropLast(1) }) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                    }
                 else Spacer(Modifier.width(Space.m))
                 Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                 IconButton(
@@ -106,7 +119,12 @@ fun ResultSheet(model: QrModel, initial: Analysis, onDismiss: () -> Unit, onMake
                     Icon(Icons.Rounded.Close, "Done")
                 }
             }
-            AnimatedContent(page, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "result-page", modifier = Modifier.weight(1f)) { shown ->
+            AnimatedContent(
+                page,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "result-page",
+                modifier = Modifier.weight(1f),
+            ) { shown ->
                 when (shown) {
                     null ->
                         key(generation) {
@@ -117,7 +135,8 @@ fun ResultSheet(model: QrModel, initial: Analysis, onDismiss: () -> Unit, onMake
                                     offer?.let { domain ->
                                         {
                                             KnownOffer(
-                                                question = ResultKnownText.question(analysis, domain),
+                                                question =
+                                                    ResultKnownText.question(analysis, domain),
                                                 domain = domain,
                                                 onKeep = { dismissedOffer = true },
                                                 onKnow = {
@@ -164,25 +183,42 @@ fun ResultContent(
     val view = LocalView.current
     val gate = LocalSevenGate.current
     val scope = rememberCoroutineScope()
-    val capabilities = remember { ResultCapabilities(wifiJoinAvailable = Build.VERSION.SDK_INT >= 30, canAddEvent = Handoffs.canAddEvent(context)) }
-    val actions = ResultActionPlan.actions(analysis.payload, capabilities, hasText = analysis.code.text != null)
+    val capabilities = remember {
+        ResultCapabilities(
+            wifiJoinAvailable = Build.VERSION.SDK_INT >= 30,
+            canAddEvent = Handoffs.canAddEvent(context),
+        )
+    }
+    val actions =
+        ResultActionPlan.actions(
+            analysis.payload,
+            capabilities,
+            hasText = analysis.code.text != null,
+        )
     val layout = ResultActionPlan.layout(actions, analysis.level)
     val pins = !largeText()
     var copied by remember { mutableStateOf<ResultAction?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     var pendingOpen by remember { mutableStateOf<Pair<android.net.Uri, Boolean>?>(null) }
     val wifi = (analysis.payload as? Payload.Wifi)?.info
-    val wifiPlan = wifi?.let { ResultActionPlan.wifiJoinPlan(it, capabilities) } ?: WiFiJoinPlan.JOIN
+    val wifiPlan =
+        wifi?.let { ResultActionPlan.wifiJoinPlan(it, capabilities) } ?: WiFiJoinPlan.JOIN
     val joinLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result
+            ->
             val ssid = wifi?.ssid.orEmpty()
             notice =
                 if (result.resultCode != Activity.RESULT_OK) "Not joined."
                 else if (Build.VERSION.SDK_INT >= 30) {
-                    val codes = result.data?.getIntegerArrayListExtra(Settings.EXTRA_WIFI_NETWORK_RESULT_LIST).orEmpty()
+                    val codes =
+                        result.data
+                            ?.getIntegerArrayListExtra(Settings.EXTRA_WIFI_NETWORK_RESULT_LIST)
+                            .orEmpty()
                     when (codes.firstOrNull()) {
-                        Settings.ADD_WIFI_RESULT_SUCCESS -> "Saved $ssid. Your phone joins it when it’s in range."
-                        Settings.ADD_WIFI_RESULT_ALREADY_EXISTS -> "$ssid is already saved on this phone."
+                        Settings.ADD_WIFI_RESULT_SUCCESS ->
+                            "Saved $ssid. Your phone joins it when it’s in range."
+                        Settings.ADD_WIFI_RESULT_ALREADY_EXISTS ->
+                            "$ssid is already saved on this phone."
                         else -> "Couldn’t join. Try Settings › Network & internet › Wi-Fi."
                     }
                 } else "Not joined."
@@ -191,11 +227,14 @@ fun ResultContent(
     fun open(external: Boolean) {
         val link = (analysis.payload as? Payload.Link)?.info ?: return
         val uri = Handoffs.openUri(link) ?: return
-        if (ResultActionPlan.needsOpenConfirmation(analysis.level)) pendingOpen = uri to external else Handoffs.open(context, uri, external)
+        if (ResultActionPlan.needsOpenConfirmation(analysis.level)) pendingOpen = uri to external
+        else Handoffs.open(context, uri, external)
     }
 
     fun copy(action: ResultAction) {
-        val text = if (action == ResultAction.COPY_PASSWORD) wifi?.password else ResultPayloadText.copyText(analysis)
+        val text =
+            if (action == ResultAction.COPY_PASSWORD) wifi?.password
+            else ResultPayloadText.copyText(analysis)
         if (text.isNullOrEmpty()) return
         Handoffs.copy(context, text, sensitive = action == ResultAction.COPY_PASSWORD)
         view.confirmHaptic()
@@ -211,27 +250,48 @@ fun ResultContent(
             ResultAction.OPEN -> open(external = false)
             ResultAction.PEEK -> gate.run("Peek") { onPeek(analysis) }
             ResultAction.MAKE_CODE -> ResultMakeMapping.request(analysis)?.let(onMake)
-            ResultAction.SHARE -> ResultPayloadText.shareText(analysis)?.let { Handoffs.share(context, it) }
-            ResultAction.COPY, ResultAction.COPY_DETAILS, ResultAction.COPY_PASSWORD -> copy(action)
+            ResultAction.SHARE ->
+                ResultPayloadText.shareText(analysis)?.let { Handoffs.share(context, it) }
+            ResultAction.COPY,
+            ResultAction.COPY_DETAILS,
+            ResultAction.COPY_PASSWORD -> copy(action)
             ResultAction.JOIN_WIFI ->
                 if (Build.VERSION.SDK_INT >= 30) {
                     val intent = wifi?.let(Handoffs::wifiIntent)
-                    if (intent == null) notice = "Couldn’t join. Try Settings › Network & internet › Wi-Fi."
-                    else runCatching { joinLauncher.launch(intent) }.onFailure { notice = "Couldn’t join. Try Settings › Network & internet › Wi-Fi." }
+                    if (intent == null)
+                        notice = "Couldn’t join. Try Settings › Network & internet › Wi-Fi."
+                    else
+                        runCatching { joinLauncher.launch(intent) }
+                            .onFailure {
+                                notice = "Couldn’t join. Try Settings › Network & internet › Wi-Fi."
+                            }
                 }
-            ResultAction.ADD_CONTACT -> (analysis.payload as? Payload.Contact)?.let { Handoffs.addContact(context, it.info) }
-            ResultAction.ADD_EVENT -> (analysis.payload as? Payload.Event)?.let { Handoffs.addEvent(context, it.info) }
-            ResultAction.CALL -> (analysis.payload as? Payload.Phone)?.let { Handoffs.call(context, it.info.number) }
-            ResultAction.MAIL -> (analysis.payload as? Payload.Email)?.let { Handoffs.mail(context, it.info) }
-            ResultAction.MAPS -> (analysis.payload as? Payload.Geo)?.let { Handoffs.maps(context, it.info) }
-            ResultAction.MESSAGE -> (analysis.payload as? Payload.Sms)?.let { Handoffs.message(context, it.info) }
-            ResultAction.OPEN_PAYMENT_IN -> if (ResultActionPlan.isUriShapedPayment(analysis.payload)) Handoffs.openPayment(context, analysis.code.text)
+            ResultAction.ADD_CONTACT ->
+                (analysis.payload as? Payload.Contact)?.let {
+                    Handoffs.addContact(context, it.info)
+                }
+            ResultAction.ADD_EVENT ->
+                (analysis.payload as? Payload.Event)?.let { Handoffs.addEvent(context, it.info) }
+            ResultAction.CALL ->
+                (analysis.payload as? Payload.Phone)?.let { Handoffs.call(context, it.info.number) }
+            ResultAction.MAIL ->
+                (analysis.payload as? Payload.Email)?.let { Handoffs.mail(context, it.info) }
+            ResultAction.MAPS ->
+                (analysis.payload as? Payload.Geo)?.let { Handoffs.maps(context, it.info) }
+            ResultAction.MESSAGE ->
+                (analysis.payload as? Payload.Sms)?.let { Handoffs.message(context, it.info) }
+            ResultAction.OPEN_PAYMENT_IN ->
+                if (ResultActionPlan.isUriShapedPayment(analysis.payload))
+                    Handoffs.openPayment(context, analysis.code.text)
         }
     }
 
     Column(Modifier.fillMaxSize()) {
         Column(
-            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = Space.m).padding(bottom = Space.m),
+            Modifier.weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Space.m)
+                .padding(bottom = Space.m),
             verticalArrangement = Arrangement.spacedBy(Space.l),
         ) {
             ReadableColumn {
@@ -245,17 +305,38 @@ fun ResultContent(
                 afterSignals?.invoke()
                 PayloadView(analysis.payload, wifiPlan)
                 if (pins && layout.chips.isNotEmpty())
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                        layout.chips.forEach { ActionButton(it, ActionRole.CHIP, copied == it, onExternal = { open(true) }, perform = perform) }
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(Space.s),
+                        verticalArrangement = Arrangement.spacedBy(Space.s),
+                    ) {
+                        layout.chips.forEach {
+                            ActionButton(
+                                it,
+                                ActionRole.CHIP,
+                                copied == it,
+                                onExternal = { open(true) },
+                                perform = perform,
+                            )
+                        }
                     }
                 EmbeddedList(analysis.embedded, onEmbedded)
                 notice?.let {
-                    Text(it, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        it,
+                        Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
                 }
                 if (!pins)
                     Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                         (listOfNotNull(layout.primary, layout.secondary) + layout.chips).forEach {
-                            ActionButton(it, ActionRole.STACKED, copied == it, onExternal = { open(true) }, perform = perform)
+                            ActionButton(
+                                it,
+                                ActionRole.STACKED,
+                                copied == it,
+                                onExternal = { open(true) },
+                                perform = perform,
+                            )
                         }
                     }
             }
@@ -263,13 +344,35 @@ fun ResultContent(
         if (pins && (layout.primary != null || layout.secondary != null))
             Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
                 Column(
-                    Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Space.m).padding(top = Space.ms, bottom = Space.s),
+                    Modifier.fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = Space.m)
+                        .padding(top = Space.ms, bottom = Space.s),
                     verticalArrangement = Arrangement.spacedBy(Space.s),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Column(Modifier.widthIn(max = 672.dp), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                        layout.primary?.let { ActionButton(it, if (quietPrimary) ActionRole.OUTLINED else ActionRole.FILLED, copied == it, onExternal = { open(true) }, perform = perform) }
-                        layout.secondary?.let { ActionButton(it, ActionRole.OUTLINED, copied == it, onExternal = { open(true) }, perform = perform) }
+                    Column(
+                        Modifier.widthIn(max = 672.dp),
+                        verticalArrangement = Arrangement.spacedBy(Space.s),
+                    ) {
+                        layout.primary?.let {
+                            ActionButton(
+                                it,
+                                if (quietPrimary) ActionRole.OUTLINED else ActionRole.FILLED,
+                                copied == it,
+                                onExternal = { open(true) },
+                                perform = perform,
+                            )
+                        }
+                        layout.secondary?.let {
+                            ActionButton(
+                                it,
+                                ActionRole.OUTLINED,
+                                copied == it,
+                                onExternal = { open(true) },
+                                perform = perform,
+                            )
+                        }
                     }
                 }
             }
@@ -277,7 +380,8 @@ fun ResultContent(
     }
 
     pendingOpen?.let { (uri, external) ->
-        val domain = (analysis.payload as? Payload.Link)?.info?.let(ResultLinkDisplay::headline).orEmpty()
+        val domain =
+            (analysis.payload as? Payload.Link)?.info?.let(ResultLinkDisplay::headline).orEmpty()
         AlertDialog(
             onDismissRequest = { pendingOpen = null },
             title = { Text("Open this link?") },
@@ -289,7 +393,10 @@ fun ResultContent(
                         pendingOpen = null
                         Handoffs.open(context, uri, external)
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
                 ) {
                     Text("Open $domain anyway")
                 }
@@ -298,7 +405,12 @@ fun ResultContent(
     }
 }
 
-enum class ActionRole { FILLED, OUTLINED, CHIP, STACKED }
+enum class ActionRole {
+    FILLED,
+    OUTLINED,
+    CHIP,
+    STACKED,
+}
 
 object ResultActionText {
     fun title(action: ResultAction): String =
@@ -333,15 +445,24 @@ object ResultActionText {
             ResultAction.MAIL -> Icons.Rounded.Email
             ResultAction.MAPS -> Icons.Rounded.Map
             ResultAction.OPEN_PAYMENT_IN -> Icons.AutoMirrored.Rounded.OpenInNew
-            ResultAction.COPY, ResultAction.COPY_DETAILS -> Icons.Rounded.ContentCopy
+            ResultAction.COPY,
+            ResultAction.COPY_DETAILS -> Icons.Rounded.ContentCopy
             ResultAction.SHARE -> Icons.Rounded.Share
             ResultAction.MAKE_CODE -> Icons.Rounded.QrCode2
         }
 }
 
-/** One action button. Open is a split button: the in-app browser, or the browser app from its menu. */
+/**
+ * One action button. Open is a split button: the in-app browser, or the browser app from its menu.
+ */
 @Composable
-private fun ActionButton(action: ResultAction, role: ActionRole, copied: Boolean, onExternal: () -> Unit, perform: (ResultAction) -> Unit) {
+private fun ActionButton(
+    action: ResultAction,
+    role: ActionRole,
+    copied: Boolean,
+    onExternal: () -> Unit,
+    perform: (ResultAction) -> Unit,
+) {
     val title = if (copied) "Copied" else ResultActionText.title(action)
     val icon = if (copied) Icons.Rounded.Check else ResultActionText.icon(action)
     val tag = Modifier.testTag("result.action.${action.name.lowercase()}")
@@ -352,31 +473,70 @@ private fun ActionButton(action: ResultAction, role: ActionRole, copied: Boolean
     }
     if (action == ResultAction.OPEN && role != ActionRole.CHIP) {
         var menu by remember { mutableStateOf(false) }
-        Row(tag.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs), verticalAlignment = Alignment.CenterVertically) {
-            val height = Modifier.heightIn(min = 56.dp)
-            if (role == ActionRole.FILLED) Button(onClick = { perform(action) }, modifier = height.weight(1f), content = label)
-            else OutlinedButton(onClick = { perform(action) }, modifier = height.weight(1f), content = label)
-            Box {
-                FilledTonalIconButton(onClick = { menu = true }, modifier = Modifier.size(56.dp)) {
-                    Icon(Icons.Rounded.MoreVert, "More ways to open")
-                }
-                DropdownMenu(menu, onDismissRequest = { menu = false }) {
-                    DropdownMenuItem(
-                        text = { Text("Open in browser") },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null) },
-                        onClick = {
-                            menu = false
-                            onExternal()
-                        },
-                    )
-                }
-            }
+        Box(tag.fillMaxWidth()) {
+            SplitButtonLayout(
+                modifier = Modifier.fillMaxWidth(),
+                leadingButton = {
+                    if (role == ActionRole.FILLED)
+                        SplitButtonDefaults.LeadingButton(
+                            onClick = { perform(action) },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                            content = label,
+                        )
+                    else
+                        SplitButtonDefaults.OutlinedLeadingButton(
+                            onClick = { perform(action) },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                            content = label,
+                        )
+                },
+                trailingButton = {
+                    Box {
+                        if (role == ActionRole.FILLED)
+                            SplitButtonDefaults.TrailingButton(
+                                onClick = { menu = !menu },
+                                modifier = Modifier.heightIn(min = 56.dp),
+                            ) {
+                                Icon(Icons.Rounded.ArrowDropDown, "More ways to open")
+                            }
+                        else
+                            SplitButtonDefaults.OutlinedTrailingButton(
+                                checked = menu,
+                                onCheckedChange = { menu = it },
+                                modifier = Modifier.heightIn(min = 56.dp),
+                            ) {
+                                Icon(Icons.Rounded.ArrowDropDown, "More ways to open")
+                            }
+                        DropdownMenu(menu, onDismissRequest = { menu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Open in browser") },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null) },
+                                onClick = {
+                                    menu = false
+                                    onExternal()
+                                },
+                            )
+                        }
+                    }
+                },
+            )
         }
         return
     }
     when (role) {
-        ActionRole.FILLED -> Button(onClick = { perform(action) }, modifier = tag.fillMaxWidth().heightIn(min = 56.dp), content = label)
-        ActionRole.OUTLINED, ActionRole.STACKED -> OutlinedButton(onClick = { perform(action) }, modifier = tag.fillMaxWidth().heightIn(min = 56.dp), content = label)
+        ActionRole.FILLED ->
+            Button(
+                onClick = { perform(action) },
+                modifier = tag.fillMaxWidth().heightIn(min = 56.dp),
+                content = label,
+            )
+        ActionRole.OUTLINED,
+        ActionRole.STACKED ->
+            OutlinedButton(
+                onClick = { perform(action) },
+                modifier = tag.fillMaxWidth().heightIn(min = 56.dp),
+                content = label,
+            )
         ActionRole.CHIP ->
             AssistChip(
                 onClick = { perform(action) },
@@ -391,12 +551,30 @@ private fun ActionButton(action: ResultAction, role: ActionRole, copied: Boolean
 @Composable
 fun SignalList(signals: List<gg.seven.qr.core.Signal>) {
     if (signals.isEmpty()) return
-    val rows = signals.map { SignalText.sentence(it) to (it.severity == Severity.INFO) }.distinctBy { it.first }
-    Column(Modifier.padding(horizontal = Space.xs), verticalArrangement = Arrangement.spacedBy(Space.s)) {
+    val rows =
+        signals
+            .map { SignalText.sentence(it) to (it.severity == Severity.INFO) }
+            .distinctBy { it.first }
+    Column(
+        Modifier.padding(horizontal = Space.xs),
+        verticalArrangement = Arrangement.spacedBy(Space.s),
+    ) {
         rows.forEach { (sentence, info) ->
-            Row(Modifier.semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                Icon(if (info) Icons.Rounded.Info else Icons.Rounded.ErrorOutline, null, Modifier.size(20.dp).padding(top = 2.dp), tint = QrColors.muted)
-                Text(sentence, style = MaterialTheme.typography.bodyLarge, color = if (info) QrColors.muted else MaterialTheme.colorScheme.onSurface)
+            Row(
+                Modifier.semantics(mergeDescendants = true) {},
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
+            ) {
+                Icon(
+                    if (info) Icons.Rounded.Info else Icons.Rounded.ErrorOutline,
+                    null,
+                    Modifier.size(20.dp).padding(top = 2.dp),
+                    tint = QrColors.muted,
+                )
+                Text(
+                    sentence,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (info) QrColors.muted else MaterialTheme.colorScheme.onSurface,
+                )
             }
         }
     }
@@ -410,7 +588,9 @@ private fun EmbeddedList(embedded: List<Analysis>, onOpen: (Analysis) -> Unit) {
         Caption("Links inside", Modifier.padding(start = Space.xs))
         Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
             embedded.forEachIndexed { index, item ->
-                val domain = (item.payload as? Payload.Link)?.info?.let(ResultLinkDisplay::headline) ?: item.code.text.orEmpty()
+                val domain =
+                    (item.payload as? Payload.Link)?.info?.let(ResultLinkDisplay::headline)
+                        ?: item.code.text.orEmpty()
                 SegmentedListItem(
                     onClick = { onOpen(item) },
                     shapes = ListItemDefaults.segmentedShapes(index, embedded.size),
@@ -424,23 +604,35 @@ private fun EmbeddedList(embedded: List<Analysis>, onOpen: (Analysis) -> Unit) {
     }
 }
 
-/** "I know this address" (SPEC §3): one question; Keep warning me is the default and recommended. */
+/**
+ * "I know this address" (SPEC §3): one question; Keep warning me is the default and recommended.
+ */
 @Composable
 private fun KnownOffer(question: String, domain: String, onKeep: () -> Unit, onKnow: () -> Unit) {
     QrCard(Modifier.testTag("result.known.offer")) {
         Text(question, style = MaterialTheme.typography.titleMedium)
         Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-            Button(onClick = onKeep, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("result.known.keep").semantics { }) {
+            Button(
+                onClick = onKeep,
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .heightIn(min = 56.dp)
+                        .testTag("result.known.keep")
+                        .semantics {},
+            ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Keep warning me")
                     Text("Recommended", style = MaterialTheme.typography.bodySmall)
                 }
             }
-            OutlinedButton(onClick = onKnow, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("result.known.know")) {
+            OutlinedButton(
+                onClick = onKnow,
+                modifier =
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("result.known.know"),
+            ) {
                 Text("I know this address")
             }
             Caption("Remembers $domain on this phone. Other checks still run.")
         }
     }
 }
-

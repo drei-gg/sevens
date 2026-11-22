@@ -4,12 +4,18 @@
 mod common;
 use common::*;
 use qr_core::data::{CryptoScheme, EmvNetwork};
-use qr_core::payments::{bech32, crc16_ccitt_false, crypto_address, crypto_uri, currency_alpha, emv, epc, iban, swiss, upi};
+use qr_core::payments::{
+    bech32, crc16_ccitt_false, crypto_address, crypto_uri, currency_alpha, emv, epc, iban, swiss,
+    upi,
+};
 use qr_core::*;
 use std::collections::HashMap;
 
 fn map(pairs: &[(&str, &str)]) -> HashMap<String, String> {
-    pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+    pairs
+        .iter()
+        .map(|(k, v)| (k.to_string(), v.to_string()))
+        .collect()
 }
 
 fn ex<'a>(p: &'a PaymentInfo, k: &str) -> Option<&'a str> {
@@ -31,7 +37,10 @@ fn empty_is_init() {
 #[test]
 fn published_sample() {
     let body = "00020101021229300012D156000000000510A93FO3230Q31280012D15600000001030812345678520441115802CN5914BEST TRANSPORT6007BEIJING64200002ZH0104最佳运输0202北京540523.7253031565502016233030412340603***0708A60086670902ME91320016A0112233449988770708123456786304";
-    assert_eq!(format!("{:04X}", crc16_ccitt_false(body.as_bytes())), "A13A");
+    assert_eq!(
+        format!("{:04X}", crc16_ccitt_false(body.as_bytes())),
+        "A13A"
+    );
 }
 
 // MARK: EMVCurrencyTests.swift
@@ -56,7 +65,15 @@ fn unknown_or_malformed() {
 // MARK: EMVFixtureTests.swift
 
 fn fixture_currencies() -> HashMap<String, String> {
-    map(&[("986", "BRL"), ("702", "SGD"), ("360", "IDR"), ("608", "PHP"), ("764", "THB"), ("458", "MYR"), ("704", "VND")])
+    map(&[
+        ("986", "BRL"),
+        ("702", "SGD"),
+        ("360", "IDR"),
+        ("608", "PHP"),
+        ("764", "THB"),
+        ("458", "MYR"),
+        ("704", "VND"),
+    ])
 }
 
 #[test]
@@ -64,30 +81,53 @@ fn file_is_well_formed() {
     let cases = load("payments-emv.json");
     assert!(cases.len() >= 20);
     assert!(cases.iter().all(|c| c.id.starts_with("emv-")));
-    assert_eq!(cases.iter().map(|c| &c.id).collect::<std::collections::HashSet<_>>().len(), cases.len());
+    assert_eq!(
+        cases
+            .iter()
+            .map(|c| &c.id)
+            .collect::<std::collections::HashSet<_>>()
+            .len(),
+        cases.len()
+    );
 }
 
 #[test]
 fn every_payment_case_parses() {
-    let cases: Vec<_> = load("payments-emv.json").into_iter().filter(|c| c.expect.kind == "payment").collect();
+    let cases: Vec<_> = load("payments-emv.json")
+        .into_iter()
+        .filter(|c| c.expect.kind == "payment")
+        .collect();
     assert!(!cases.is_empty());
     for c in cases {
-        let info = emv::parse(c.input.as_deref().unwrap(), &[], &fixture_currencies()).unwrap_or_else(|| panic!("{}", c.id));
+        let info = emv::parse(c.input.as_deref().unwrap(), &[], &fixture_currencies())
+            .unwrap_or_else(|| panic!("{}", c.id));
         let f = fields(&Payload::Payment { info: info.clone() });
         for (k, v) in c.expect.fields.iter().flatten() {
             assert_eq!(f.get(k), Some(v), "{} fields[{k}]", c.id);
         }
         let invalid = c.expect.signals.iter().any(|s| s == "paymentChecksumFail");
-        assert_eq!(info.checksum == PaymentChecksum::Invalid, invalid, "{}", c.id);
+        assert_eq!(
+            info.checksum == PaymentChecksum::Invalid,
+            invalid,
+            "{}",
+            c.id
+        );
         assert_eq!(c.expect.level, if invalid { 2 } else { 0 }, "{}", c.id);
     }
 }
 
 #[test]
 fn text_cases_have_no_crc_tail() {
-    for c in load("payments-emv.json").into_iter().filter(|c| c.expect.kind == "text") {
+    for c in load("payments-emv.json")
+        .into_iter()
+        .filter(|c| c.expect.kind == "text")
+    {
         let info = emv::parse(c.input.as_deref().unwrap(), &[], &HashMap::new());
-        assert!(info.is_none() || info.unwrap().checksum == PaymentChecksum::Absent, "{}", c.id);
+        assert!(
+            info.is_none() || info.unwrap().checksum == PaymentChecksum::Absent,
+            "{}",
+            c.id
+        );
     }
 }
 
@@ -102,13 +142,34 @@ fn nets() -> Vec<EmvNetwork> {
         source: src.into(),
     };
     vec![
-        n("br.gov.bcb.pix", "Pix", "BR", "unknown", "https://example.invalid/pix"),
-        n("SG.PAYNOW", "PayNow", "SG", "business", "https://example.invalid/paynow"),
+        n(
+            "br.gov.bcb.pix",
+            "Pix",
+            "BR",
+            "unknown",
+            "https://example.invalid/pix",
+        ),
+        n(
+            "SG.PAYNOW",
+            "PayNow",
+            "SG",
+            "business",
+            "https://example.invalid/paynow",
+        ),
     ]
 }
 
 fn ep(s: &str) -> Option<PaymentInfo> {
-    emv::parse(s, &nets(), &map(&[("608", "PHP"), ("986", "BRL"), ("702", "SGD"), ("764", "THB")]))
+    emv::parse(
+        s,
+        &nets(),
+        &map(&[
+            ("608", "PHP"),
+            ("986", "BRL"),
+            ("702", "SGD"),
+            ("764", "THB"),
+        ]),
+    )
 }
 
 fn tlv(t: &str, v: &str) -> String {
@@ -146,8 +207,14 @@ fn full_fields() {
         + &tlv("58", "SG")
         + &tlv("59", "Shop")
         + &tlv("60", "City")
-        + &tlv("62", &(tlv("05", "R1") + &tlv("08", "why") + &tlv("03", "x")))
-        + &tlv("64", &(tlv("00", "ZH") + &tlv("01", "店") + &tlv("02", "城")));
+        + &tlv(
+            "62",
+            &(tlv("05", "R1") + &tlv("08", "why") + &tlv("03", "x")),
+        )
+        + &tlv(
+            "64",
+            &(tlv("00", "ZH") + &tlv("01", "店") + &tlv("02", "城")),
+        );
     let i = ep(&with_crc(&body)).unwrap();
     assert_eq!(i.checksum, PaymentChecksum::Valid);
     assert_eq!(i.is_dynamic, Some(true));
@@ -156,12 +223,25 @@ fn full_fields() {
     assert_eq!(i.payee_account.as_deref(), Some("A1"));
     assert_eq!(i.currency.as_deref(), Some("SGD"));
     assert_eq!(i.amount.as_deref(), Some("1.20"));
-    assert_eq!((i.country.as_deref(), i.payee_name.as_deref(), i.city.as_deref()), (Some("SG"), Some("Shop"), Some("City")));
-    assert_eq!((i.reference.as_deref(), i.note.as_deref()), (Some("R1"), Some("why")));
+    assert_eq!(
+        (
+            i.country.as_deref(),
+            i.payee_name.as_deref(),
+            i.city.as_deref()
+        ),
+        (Some("SG"), Some("Shop"), Some("City"))
+    );
+    assert_eq!(
+        (i.reference.as_deref(), i.note.as_deref()),
+        (Some("R1"), Some("why"))
+    );
     assert_eq!(ex(&i, "mcc"), Some("5411"));
     assert_eq!(ex(&i, "additional.03"), Some("x"));
     assert_eq!(ex(&i, "alternateLanguage"), Some("ZH"));
-    assert_eq!((ex(&i, "alternateName"), ex(&i, "alternateCity")), (Some("店"), Some("城")));
+    assert_eq!(
+        (ex(&i, "alternateName"), ex(&i, "alternateCity")),
+        (Some("店"), Some("城"))
+    );
 }
 
 #[test]
@@ -187,7 +267,10 @@ fn unknown_network_keeps_id() {
 fn second_template_matches() {
     let a = tlv("00", "xx.other") + &tlv("01", "A");
     let b = tlv("00", "BR.GOV.BCB.PIX") + &tlv("01", "B");
-    let i = ep(&with_crc(&(tlv("00", "01") + &tlv("26", &a) + &tlv("27", &b)))).unwrap();
+    let i = ep(&with_crc(
+        &(tlv("00", "01") + &tlv("26", &a) + &tlv("27", &b)),
+    ))
+    .unwrap();
     assert_eq!(i.network.as_deref(), Some("Pix"));
     assert_eq!(i.payee_account.as_deref(), Some("B"));
     assert_eq!(ex(&i, "networkID"), None);
@@ -203,9 +286,19 @@ fn unknown_currency_kept() {
 #[test]
 fn is_dynamic_values() {
     for (v, expected) in [("11", false), ("12", true)] {
-        assert_eq!(ep(&with_crc(&(tlv("00", "01") + &tlv("01", v)))).unwrap().is_dynamic, Some(expected));
+        assert_eq!(
+            ep(&with_crc(&(tlv("00", "01") + &tlv("01", v))))
+                .unwrap()
+                .is_dynamic,
+            Some(expected)
+        );
     }
-    assert_eq!(ep(&with_crc(&(tlv("00", "01") + &tlv("01", "13")))).unwrap().is_dynamic, None);
+    assert_eq!(
+        ep(&with_crc(&(tlv("00", "01") + &tlv("01", "13"))))
+            .unwrap()
+            .is_dynamic,
+        None
+    );
 }
 
 #[test]
@@ -213,11 +306,24 @@ fn crc_cases() {
     let good = with_crc(&(tlv("00", "01") + &tlv("59", "Shop")));
     assert_eq!(ep(&good).unwrap().checksum, PaymentChecksum::Valid);
     let n = good.len();
-    assert_eq!(ep(&(good[..n - 4].to_string() + &good[n - 4..].to_lowercase())).unwrap().checksum, PaymentChecksum::Valid);
+    assert_eq!(
+        ep(&(good[..n - 4].to_string() + &good[n - 4..].to_lowercase()))
+            .unwrap()
+            .checksum,
+        PaymentChecksum::Valid
+    );
     let flipped = good[..n - 1].to_string() + if good.ends_with('0') { "1" } else { "0" };
     assert_eq!(ep(&flipped).unwrap().checksum, PaymentChecksum::Invalid);
-    assert_eq!(ep(&(good[..n - 4].to_string() + "ZZZZ")).unwrap().checksum, PaymentChecksum::Invalid);
-    assert_eq!(ep(&format!("000201{}", tlv("59", "Shop"))).unwrap().checksum, PaymentChecksum::Absent);
+    assert_eq!(
+        ep(&(good[..n - 4].to_string() + "ZZZZ")).unwrap().checksum,
+        PaymentChecksum::Invalid
+    );
+    assert_eq!(
+        ep(&format!("000201{}", tlv("59", "Shop")))
+            .unwrap()
+            .checksum,
+        PaymentChecksum::Absent
+    );
 }
 
 #[test]
@@ -242,7 +348,13 @@ fn truncated_keeps_what_parsed() {
 
 #[test]
 fn garbage_does_not_crash() {
-    for s in ["000201ab".to_string(), "0002015999".into(), "00020159".into(), format!("000201{}", "9".repeat(50)), format!("000201{}", "6304".repeat(300))] {
+    for s in [
+        "000201ab".to_string(),
+        "0002015999".into(),
+        "00020159".into(),
+        format!("000201{}", "9".repeat(50)),
+        format!("000201{}", "6304".repeat(300)),
+    ] {
         assert_eq!(ep(&s).map(|i| i.format), Some(PaymentFormat::Emv));
     }
 }
@@ -266,26 +378,52 @@ fn nested_template_does_not_recurse() {
 #[test]
 fn bip173_valid() {
     for s in [
-        "A12UEL5L", "a12uel5l", "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs",
-        "abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw", "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w", "?1ezyfcl",
+        "A12UEL5L",
+        "a12uel5l",
+        "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs",
+        "abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw",
+        "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w",
+        "?1ezyfcl",
     ] {
-        assert_eq!(bech32::decode(s, 90).map(|d| d.encoding), Some(bech32::Encoding::Bech32), "{s}");
+        assert_eq!(
+            bech32::decode(s, 90).map(|d| d.encoding),
+            Some(bech32::Encoding::Bech32),
+            "{s}"
+        );
     }
 }
 
 #[test]
 fn bip350_valid() {
     for s in [
-        "A1LQFN3A", "a1lqfn3a", "abcdef1l7aum6echk45nj3s0wdvt2fg8x9yrzpqzd3ryx",
-        "split1checkupstagehandshakeupstreamerranterredcaperredlc445v", "?1v759aa",
+        "A1LQFN3A",
+        "a1lqfn3a",
+        "abcdef1l7aum6echk45nj3s0wdvt2fg8x9yrzpqzd3ryx",
+        "split1checkupstagehandshakeupstreamerranterredcaperredlc445v",
+        "?1v759aa",
     ] {
-        assert_eq!(bech32::decode(s, 90).map(|d| d.encoding), Some(bech32::Encoding::Bech32m), "{s}");
+        assert_eq!(
+            bech32::decode(s, 90).map(|d| d.encoding),
+            Some(bech32::Encoding::Bech32m),
+            "{s}"
+        );
     }
 }
 
 #[test]
 fn invalid() {
-    for s in ["pzry9x0s0muk", "1pzry9x0s0muk", "x1b4n0q5v", "li1dgmt3", "A1G7SGD8", "10a06t8", "1qzzfhee", "M1VUXWEZ", "a12Uel5l", "a12uel5l "] {
+    for s in [
+        "pzry9x0s0muk",
+        "1pzry9x0s0muk",
+        "x1b4n0q5v",
+        "li1dgmt3",
+        "A1G7SGD8",
+        "10a06t8",
+        "1qzzfhee",
+        "M1VUXWEZ",
+        "a12Uel5l",
+        "a12uel5l ",
+    ] {
         assert!(bech32::decode(s, 90).is_none(), "{s}");
     }
 }
@@ -306,8 +444,14 @@ fn too_long() {
 
 fn schemes() -> Vec<CryptoScheme> {
     vec![
-        CryptoScheme { scheme: "litecoin".into(), name: "Litecoin".into() },
-        CryptoScheme { scheme: "dogecoin".into(), name: "Dogecoin".into() },
+        CryptoScheme {
+            scheme: "litecoin".into(),
+            name: "Litecoin".into(),
+        },
+        CryptoScheme {
+            scheme: "dogecoin".into(),
+            name: "Dogecoin".into(),
+        },
     ]
 }
 
@@ -317,7 +461,9 @@ fn cp(s: &str) -> Option<CryptoInfo> {
 
 #[test]
 fn bitcoin() {
-    let c = cp("Bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?amount=20.3&label=Luke%20Jr&message=a%26b").unwrap();
+    let c =
+        cp("Bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?amount=20.3&label=Luke%20Jr&message=a%26b")
+            .unwrap();
     assert_eq!(c.scheme.as_deref(), Some("bitcoin"));
     assert_eq!(c.network, "Bitcoin");
     assert_eq!(c.address, "175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W");
@@ -352,14 +498,32 @@ fn ethereum() {
 #[test]
 fn lightning_amount() {
     let cases: [(&str, Option<&str>); 13] = [
-        ("lnbc2500u1pxyz", Some("0.0025")), ("lnbc1m1p", Some("0.001")), ("lnbc20m1p", Some("0.02")), ("lnbc10n1p", Some("0.00000001")),
-        ("lnbc2500000p1p", Some("0.0000025")), ("lnbc15u1p", Some("0.000015")), ("lnbc3", Some("3")), ("lntb100u1p", Some("0.0001")),
-        ("lnbcrt50u1p", Some("0.00005")), ("lnbc1p", None), ("lnbc1pvjluez", None), ("lnurl1dp68gurn8ghj7", None), ("lnbc5x1p", None),
+        ("lnbc2500u1pxyz", Some("0.0025")),
+        ("lnbc1m1p", Some("0.001")),
+        ("lnbc20m1p", Some("0.02")),
+        ("lnbc10n1p", Some("0.00000001")),
+        ("lnbc2500000p1p", Some("0.0000025")),
+        ("lnbc15u1p", Some("0.000015")),
+        ("lnbc3", Some("3")),
+        ("lntb100u1p", Some("0.0001")),
+        ("lnbcrt50u1p", Some("0.00005")),
+        ("lnbc1p", None),
+        ("lnbc1pvjluez", None),
+        ("lnurl1dp68gurn8ghj7", None),
+        ("lnbc5x1p", None),
     ];
     for (invoice, amount) in cases {
-        let text = if invoice.contains('1') { invoice.to_string() } else { format!("{invoice}1p") };
+        let text = if invoice.contains('1') {
+            invoice.to_string()
+        } else {
+            format!("{invoice}1p")
+        };
         let c = cp(&format!("lightning:{text}"));
-        assert_eq!(c.as_ref().map(|c| c.network.as_str()), Some("Lightning"), "{invoice}");
+        assert_eq!(
+            c.as_ref().map(|c| c.network.as_str()),
+            Some("Lightning"),
+            "{invoice}"
+        );
         assert_eq!(c.as_ref().map(|c| c.is_lightning_invoice), Some(true));
         assert_eq!(c.and_then(|c| c.amount).as_deref(), amount, "{invoice}");
     }
@@ -385,22 +549,50 @@ fn rejected() {
 #[test]
 fn bare_addresses() {
     let net = |s: &str| crypto_address::detect(s).map(|c| c.network);
-    assert_eq!(net("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4").as_deref(), Some("Bitcoin"));
-    assert_eq!(net(" BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4\n").as_deref(), Some("Bitcoin"));
-    assert_eq!(net("tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7").as_deref(), Some("Bitcoin testnet"));
-    assert_eq!(net("bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0").as_deref(), Some("Bitcoin"));
-    assert_eq!(net("0x52908400098527886E0F7030069857D2E4169EE7").as_deref(), Some("Ethereum"));
-    assert_eq!(net("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2").as_deref(), Some("Bitcoin"));
-    assert_eq!(net("3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy").as_deref(), Some("Bitcoin"));
+    assert_eq!(
+        net("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4").as_deref(),
+        Some("Bitcoin")
+    );
+    assert_eq!(
+        net(" BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4\n").as_deref(),
+        Some("Bitcoin")
+    );
+    assert_eq!(
+        net("tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7").as_deref(),
+        Some("Bitcoin testnet")
+    );
+    assert_eq!(
+        net("bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0").as_deref(),
+        Some("Bitcoin")
+    );
+    assert_eq!(
+        net("0x52908400098527886E0F7030069857D2E4169EE7").as_deref(),
+        Some("Ethereum")
+    );
+    assert_eq!(
+        net("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2").as_deref(),
+        Some("Bitcoin")
+    );
+    assert_eq!(
+        net("3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy").as_deref(),
+        Some("Bitcoin")
+    );
 }
 
 #[test]
 fn bare_rejected() {
     for s in [
-        "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5", "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqh2y7hd",
-        "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sL5k7", "a12uel5l", "0x52908400098527886E0F7030069857D2E4169EE",
-        "0x52908400098527886E0F7030069857D2E4169EEZ", "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN0", "2BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2",
-        "1BvBMSEYstWetqTFn5", "hello world", "",
+        "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5",
+        "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqh2y7hd",
+        "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sL5k7",
+        "a12uel5l",
+        "0x52908400098527886E0F7030069857D2E4169EE",
+        "0x52908400098527886E0F7030069857D2E4169EEZ",
+        "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN0",
+        "2BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2",
+        "1BvBMSEYstWetqTFn5",
+        "hello world",
+        "",
     ] {
         assert!(crypto_address::detect(s).is_none(), "{s}");
     }
@@ -408,7 +600,13 @@ fn bare_rejected() {
 
 #[test]
 fn address_groups_of_four() {
-    assert_eq!(crypto_address::detect("0x52908400098527886E0F7030069857D2E4169EE7").unwrap().address_groups().len(), 11);
+    assert_eq!(
+        crypto_address::detect("0x52908400098527886E0F7030069857D2E4169EE7")
+            .unwrap()
+            .address_groups()
+            .len(),
+        11
+    );
 }
 
 // MARK: PaymentsEPCTests.swift
@@ -441,18 +639,29 @@ fn v001_with_bic_and_crlf() {
 
 #[test]
 fn bad_iban() {
-    assert_eq!(epc::parse(&FULL.replace("00\nEUR", "01\nEUR")).unwrap().checksum, PaymentChecksum::Invalid);
+    assert_eq!(
+        epc::parse(&FULL.replace("00\nEUR", "01\nEUR"))
+            .unwrap()
+            .checksum,
+        PaymentChecksum::Invalid
+    );
 }
 
 #[test]
 fn short_and_missing_amount() {
     let p = epc::parse("BCD\n002\n1\nSCT\n\nName\nDE89370400440532013000").unwrap();
-    assert_eq!((p.amount, p.currency, p.checksum), (None, None, PaymentChecksum::Valid));
+    assert_eq!(
+        (p.amount, p.currency, p.checksum),
+        (None, None, PaymentChecksum::Valid)
+    );
 }
 
 #[test]
 fn no_iban_is_absent() {
-    assert_eq!(epc::parse("BCD\n002\n1\nSCT").unwrap().checksum, PaymentChecksum::Absent);
+    assert_eq!(
+        epc::parse("BCD\n002\n1\nSCT").unwrap().checksum,
+        PaymentChecksum::Absent
+    );
 }
 
 #[test]
@@ -471,8 +680,14 @@ fn fixture_file_loads() {
 
 #[test]
 fn fixture_matches() {
-    let schemes = vec![CryptoScheme { scheme: "litecoin".into(), name: "Litecoin".into() }];
-    for c in load("payments-other.json").into_iter().filter(|c| ["payment", "crypto", "text"].contains(&c.expect.kind.as_str())) {
+    let schemes = vec![CryptoScheme {
+        scheme: "litecoin".into(),
+        name: "Litecoin".into(),
+    }];
+    for c in load("payments-other.json")
+        .into_iter()
+        .filter(|c| ["payment", "crypto", "text"].contains(&c.expect.kind.as_str()))
+    {
         let input = c.input.as_deref().unwrap();
         let id = &c.id;
         let f: Option<HashMap<String, String>> = if id.starts_with("upi-") {
@@ -482,7 +697,9 @@ fn fixture_matches() {
         } else if id.starts_with("swiss-") {
             swiss::parse(input).map(|i| fields(&Payload::Payment { info: i }))
         } else {
-            crypto_uri::parse(input, &schemes).or_else(|| crypto_address::detect(input)).map(|i| fields(&Payload::Crypto { info: i }))
+            crypto_uri::parse(input, &schemes)
+                .or_else(|| crypto_address::detect(input))
+                .map(|i| fields(&Payload::Crypto { info: i }))
         };
         if c.expect.kind == "text" {
             assert!(f.is_none(), "{id} must not parse");
@@ -494,7 +711,15 @@ fn fixture_matches() {
         }
         let invalid = got.get("checksum").map(String::as_str) == Some("invalid");
         assert_eq!(c.expect.level, if invalid { 2 } else { 0 }, "{id} level");
-        assert_eq!(c.expect.signals, if invalid { vec!["paymentChecksumFail".to_string()] } else { vec![] }, "{id}");
+        assert_eq!(
+            c.expect.signals,
+            if invalid {
+                vec!["paymentChecksumFail".to_string()]
+            } else {
+                vec![]
+            },
+            "{id}"
+        );
     }
 }
 
@@ -503,8 +728,14 @@ fn fixture_matches() {
 #[test]
 fn valid_ibans() {
     for s in [
-        "DE89370400440532013000", "DE89 3704 0044 0532 0130 00", "de89370400440532013000", "CH9300762011623852957",
-        "CH4431999123000889012", "NL91ABNA0417164300", "FR1420041010050500013M02606", "GB82WEST12345698765432",
+        "DE89370400440532013000",
+        "DE89 3704 0044 0532 0130 00",
+        "de89370400440532013000",
+        "CH9300762011623852957",
+        "CH4431999123000889012",
+        "NL91ABNA0417164300",
+        "FR1420041010050500013M02606",
+        "GB82WEST12345698765432",
     ] {
         assert!(iban::is_valid(s), "{s}");
     }
@@ -513,8 +744,14 @@ fn valid_ibans() {
 #[test]
 fn invalid_ibans() {
     for s in [
-        "", "DE89370400440532013001", "DE8937040044053201300", "1289370400440532013000", "DEAB370400440532013000",
-        "DE89-3704-0044-0532-0130-00", "DE89370400440532013000DE89370400440532013000", "DE89370400440532013000é",
+        "",
+        "DE89370400440532013001",
+        "DE8937040044053201300",
+        "1289370400440532013000",
+        "DEAB370400440532013000",
+        "DE89-3704-0044-0532-0130-00",
+        "DE89370400440532013000DE89370400440532013000",
+        "DE89370400440532013000é",
     ] {
         assert!(!iban::is_valid(s), "{s}");
     }
@@ -523,9 +760,36 @@ fn invalid_ibans() {
 // MARK: PaymentsSwissTests.swift
 
 fn bill(iban: &str, ref_type: &str, reference: &str) -> String {
-    let mut v: Vec<&str> = vec!["SPC", "0200", "1", iban, "S", "Robert Schneider AG", "Rue du Lac", "1268", "2501", "Biel", "CH"];
+    let mut v: Vec<&str> = vec![
+        "SPC",
+        "0200",
+        "1",
+        iban,
+        "S",
+        "Robert Schneider AG",
+        "Rue du Lac",
+        "1268",
+        "2501",
+        "Biel",
+        "CH",
+    ];
     v.extend(std::iter::repeat_n("", 7));
-    v.extend(["1949.75", "CHF", "S", "Pia Rutschmann", "Hauptstrasse", "1", "8001", "Zürich", "CH", ref_type, reference, "Invoice", "EPD", "Billing"]);
+    v.extend([
+        "1949.75",
+        "CHF",
+        "S",
+        "Pia Rutschmann",
+        "Hauptstrasse",
+        "1",
+        "8001",
+        "Zürich",
+        "CH",
+        ref_type,
+        reference,
+        "Invoice",
+        "EPD",
+        "Billing",
+    ]);
     v.join("\n")
 }
 
@@ -550,15 +814,38 @@ fn qrr_valid() {
 
 #[test]
 fn qrr_bad_check_digit() {
-    assert_eq!(swiss::parse(&bill(IBAN, "QRR", "210000000003139471430009018")).unwrap().checksum, PaymentChecksum::Invalid);
-    assert_eq!(swiss::parse(&bill(IBAN, "QRR", "2100")).unwrap().checksum, PaymentChecksum::Invalid);
+    assert_eq!(
+        swiss::parse(&bill(IBAN, "QRR", "210000000003139471430009018"))
+            .unwrap()
+            .checksum,
+        PaymentChecksum::Invalid
+    );
+    assert_eq!(
+        swiss::parse(&bill(IBAN, "QRR", "2100")).unwrap().checksum,
+        PaymentChecksum::Invalid
+    );
 }
 
 #[test]
 fn scor() {
-    assert_eq!(swiss::parse(&bill(IBAN, "SCOR", "RF18539007547034")).unwrap().checksum, PaymentChecksum::Valid);
-    assert_eq!(swiss::parse(&bill(IBAN, "SCOR", "RF19539007547034")).unwrap().checksum, PaymentChecksum::Invalid);
-    assert_eq!(swiss::parse(&bill(IBAN, "SCOR", "RF47 ABC1 23")).unwrap().checksum, PaymentChecksum::Valid);
+    assert_eq!(
+        swiss::parse(&bill(IBAN, "SCOR", "RF18539007547034"))
+            .unwrap()
+            .checksum,
+        PaymentChecksum::Valid
+    );
+    assert_eq!(
+        swiss::parse(&bill(IBAN, "SCOR", "RF19539007547034"))
+            .unwrap()
+            .checksum,
+        PaymentChecksum::Invalid
+    );
+    assert_eq!(
+        swiss::parse(&bill(IBAN, "SCOR", "RF47 ABC1 23"))
+            .unwrap()
+            .checksum,
+        PaymentChecksum::Valid
+    );
 }
 
 #[test]
@@ -571,14 +858,26 @@ fn non_reference() {
 
 #[test]
 fn swiss_bad_iban() {
-    assert_eq!(swiss::parse(&bill("CH4431999123000889013", "QRR", "210000000003139471430009017")).unwrap().checksum, PaymentChecksum::Invalid);
+    assert_eq!(
+        swiss::parse(&bill(
+            "CH4431999123000889013",
+            "QRR",
+            "210000000003139471430009017"
+        ))
+        .unwrap()
+        .checksum,
+        PaymentChecksum::Invalid
+    );
 }
 
 #[test]
 fn combined_address() {
     let p = swiss::parse("SPC\r\n0200\r\n1\r\nCH9300762011623852957\r\nK\r\nMuster GmbH\r\nHauptstrasse 5\r\n8000 Zürich\r\n\r\n\r\nCH").unwrap();
     assert_eq!(p.city, None);
-    assert_eq!(ex(&p, "creditorAddress"), Some("Hauptstrasse 5\n8000 Zürich"));
+    assert_eq!(
+        ex(&p, "creditorAddress"),
+        Some("Hauptstrasse 5\n8000 Zürich")
+    );
     assert_eq!(p.country.as_deref(), Some("CH"));
 }
 
@@ -588,12 +887,20 @@ fn truncated() {
     assert_eq!(p.payee_name.as_deref(), Some("Muster"));
     assert_eq!(p.amount, None);
     assert_eq!(p.checksum, PaymentChecksum::Valid);
-    assert_eq!(swiss::parse("SPC\n0200\n1").unwrap().checksum, PaymentChecksum::Absent);
+    assert_eq!(
+        swiss::parse("SPC\n0200\n1").unwrap().checksum,
+        PaymentChecksum::Absent
+    );
 }
 
 #[test]
 fn swiss_rejected() {
-    for s in ["SPC\n0100\n1\nCH93", "SPC\n0200\n2\nCH93", "XPC\n0200\n1", ""] {
+    for s in [
+        "SPC\n0100\n1\nCH93",
+        "SPC\n0200\n2\nCH93",
+        "XPC\n0200\n1",
+        "",
+    ] {
         assert!(swiss::parse(s).is_none(), "{s}");
     }
 }
@@ -602,7 +909,10 @@ fn swiss_rejected() {
 
 #[test]
 fn pay_with_amount() {
-    let p = upi::parse("upi://pay?pa=shop@okbank&pn=Corner%20Shop&am=250.00&cu=inr&tn=Order+1&tr=T1&mc=5411").unwrap();
+    let p = upi::parse(
+        "upi://pay?pa=shop@okbank&pn=Corner%20Shop&am=250.00&cu=inr&tn=Order+1&tr=T1&mc=5411",
+    )
+    .unwrap();
     assert_eq!(p.format, PaymentFormat::Upi);
     assert_eq!(p.payee_account.as_deref(), Some("shop@okbank"));
     assert_eq!(p.payee_name.as_deref(), Some("Corner Shop"));
@@ -633,12 +943,23 @@ fn mandate() {
 
 #[test]
 fn not_upi() {
-    for s in ["upi://collect?pa=x@y".to_string(), "https://pay".into(), "".into(), format!("upi://{}", "a".repeat(9000))] {
+    for s in [
+        "upi://collect?pa=x@y".to_string(),
+        "https://pay".into(),
+        "".into(),
+        format!("upi://{}", "a".repeat(9000)),
+    ] {
         assert!(upi::parse(&s).is_none());
     }
 }
 
 #[test]
 fn bad_percent_escape_stays_literal() {
-    assert_eq!(upi::parse("upi://pay?pa=a@b&pn=100%").unwrap().payee_name.as_deref(), Some("100%"));
+    assert_eq!(
+        upi::parse("upi://pay?pa=a@b&pn=100%")
+            .unwrap()
+            .payee_name
+            .as_deref(),
+        Some("100%")
+    );
 }

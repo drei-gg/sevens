@@ -13,6 +13,41 @@ final class SmokeTests: XCTestCase {
     }
 
     @MainActor
+    func testBatchReviewExportsAndKeepsInputs() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-qr.skipFirstLaunch", "-qr.entitlement", "unlocked", "-qr.resetHistory"]
+        app.launch()
+        let make = app.descendants(matching: .any)["scan.make"].firstMatch
+        XCTAssertTrue(make.waitForExistence(timeout: 20)); make.tap()
+        let batch = app.buttons["Batch codes"]
+        if !batch.isHittable { app.buttons["More"].tap() }
+        XCTAssertTrue(batch.waitForExistence(timeout: 5)); batch.tap()
+        let input = app.textViews["batch-input"]
+        XCTAssertTrue(input.waitForExistence(timeout: 5)); input.tap()
+        let payload = "https://example.com/?utm_source=labels\nDuplicate\nDuplicate\nFour\nFive\nSix\nSeven"
+        input.typeText(payload)
+        app.buttons["batch-review-export"].tap()
+        XCTAssertTrue(app.staticTexts["https://example.com/?utm_source=labels"].waitForExistence(timeout: 5))
+        attach(app, "batch-review")
+        app.swipeUp(); app.swipeUp()
+        app.buttons["batch-review-export"].tap()
+        let share = app.buttons["batch-share"]
+        XCTAssertTrue(share.waitForExistence(timeout: 20)); XCTAssertTrue(share.isHittable)
+        attach(app, "batch-ready")
+        share.tap()
+        let close = app.buttons["Close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 10)); close.tap()
+        XCTAssertTrue(share.waitForExistence(timeout: 10))
+        for _ in 0..<8 { if app.buttons["Edit inputs"].isHittable { break }; app.swipeDown() }
+        app.buttons["Edit inputs"].tap()
+        XCTAssertTrue(input.waitForExistence(timeout: 5))
+        XCTAssertEqual(input.value as? String, payload)
+        app.buttons["Close"].tap()
+        XCTAssertTrue(app.buttons["Discard"].waitForExistence(timeout: 5)); app.buttons["Discard"].tap()
+        XCTAssertTrue(app.textFields["make.field.link"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     func testScanVerdictMakeAndHistory() throws {
         let app = XCUIApplication()
         app.launchArguments = [

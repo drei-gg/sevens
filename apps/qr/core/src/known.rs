@@ -61,7 +61,13 @@ impl KnownAddresses {
             return;
         }
         self.entries.retain(|e| !t::str_eq(&e.domain, &key));
-        self.entries.insert(0, KnownAddressEntry { domain: key, added: at });
+        self.entries.insert(
+            0,
+            KnownAddressEntry {
+                domain: key,
+                added: at,
+            },
+        );
         self.entries.truncate(KNOWN_MAX_ENTRIES);
     }
 
@@ -73,7 +79,9 @@ impl KnownAddresses {
     /// The registrable domain to offer "I know this address" for: only for a link whose non-info
     /// signals are all list-based (at least one), not already known.
     pub fn offer(&self, analysis: &Analysis) -> Option<String> {
-        let Payload::Link { info } = &analysis.payload else { return None };
+        let Payload::Link { info } = &analysis.payload else {
+            return None;
+        };
         if info.is_ip_address {
             return None;
         }
@@ -81,7 +89,11 @@ impl KnownAddresses {
         if domain.is_empty() || self.contains(&domain) {
             return None;
         }
-        let own: Vec<&Signal> = analysis.signals.iter().filter(|s| s.severity() != Severity::Info).collect();
+        let own: Vec<&Signal> = analysis
+            .signals
+            .iter()
+            .filter(|s| s.severity() != Severity::Info)
+            .collect();
         if own.is_empty() || !own.iter().all(|s| LIST_BASED.contains(&s.id)) {
             return None;
         }
@@ -91,13 +103,25 @@ impl KnownAddresses {
     /// The analyzer's final step: when the payload is a link whose registrable domain is known,
     /// drop the list-based signals and add `knownByYou`. Anything else comes back unchanged.
     pub fn apply(&self, signals: &[Signal], payload: &Payload) -> Vec<Signal> {
-        let Payload::Link { info } = payload else { return signals.to_vec() };
-        let Some(domain) = info.registrable_domain.as_deref().filter(|d| !info.is_ip_address && self.contains(d)) else {
+        let Payload::Link { info } = payload else {
             return signals.to_vec();
         };
-        let mut kept: Vec<Signal> =
-            signals.iter().filter(|s| !LIST_BASED.contains(&s.id) && s.id != SignalId::KnownByYou).cloned().collect();
-        kept.push(Signal::with(SignalId::KnownByYou, &[("domain", &Self::normalized(domain))]));
+        let Some(domain) = info
+            .registrable_domain
+            .as_deref()
+            .filter(|d| !info.is_ip_address && self.contains(d))
+        else {
+            return signals.to_vec();
+        };
+        let mut kept: Vec<Signal> = signals
+            .iter()
+            .filter(|s| !LIST_BASED.contains(&s.id) && s.id != SignalId::KnownByYou)
+            .cloned()
+            .collect();
+        kept.push(Signal::with(
+            SignalId::KnownByYou,
+            &[("domain", &Self::normalized(domain))],
+        ));
         kept
     }
 
@@ -119,7 +143,11 @@ pub fn known_addresses_contains(known: KnownAddresses, domain: String) -> bool {
 }
 
 #[uniffi::export]
-pub fn known_addresses_add(known: KnownAddresses, domain: String, at: SystemTime) -> KnownAddresses {
+pub fn known_addresses_add(
+    known: KnownAddresses,
+    domain: String,
+    at: SystemTime,
+) -> KnownAddresses {
     let mut k = known;
     k.add(&domain, at);
     k
@@ -138,7 +166,11 @@ pub fn known_addresses_offer(known: KnownAddresses, analysis: Analysis) -> Optio
 }
 
 #[uniffi::export]
-pub fn known_addresses_apply(known: KnownAddresses, signals: Vec<Signal>, payload: Payload) -> Vec<Signal> {
+pub fn known_addresses_apply(
+    known: KnownAddresses,
+    signals: Vec<Signal>,
+    payload: Payload,
+) -> Vec<Signal> {
     known.apply(&signals, &payload)
 }
 
@@ -149,9 +181,13 @@ pub const KNOWN_FILE_NAME: &str = "known.v1.json";
 
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
 pub enum KnownAddressesDecoded {
-    Addresses { known: KnownAddresses },
+    Addresses {
+        known: KnownAddresses,
+    },
     /// Leave the file untouched; this version can't read it.
-    UnknownSchema { schema: i64 },
+    UnknownSchema {
+        schema: i64,
+    },
     Unreadable,
 }
 
@@ -176,8 +212,12 @@ pub(crate) fn schema_of(root: &Value) -> Option<i64> {
 }
 
 pub fn decode_known_file(bytes: &[u8]) -> KnownAddressesDecoded {
-    let Ok(root) = serde_json::from_slice::<Value>(bytes) else { return KnownAddressesDecoded::Unreadable };
-    let Some(schema) = schema_of(&root) else { return KnownAddressesDecoded::Unreadable };
+    let Ok(root) = serde_json::from_slice::<Value>(bytes) else {
+        return KnownAddressesDecoded::Unreadable;
+    };
+    let Some(schema) = schema_of(&root) else {
+        return KnownAddressesDecoded::Unreadable;
+    };
     if schema != KNOWN_SCHEMA {
         return KnownAddressesDecoded::UnknownSchema { schema };
     }
@@ -185,7 +225,9 @@ pub fn decode_known_file(bytes: &[u8]) -> KnownAddressesDecoded {
         return KnownAddressesDecoded::Unreadable;
     };
     let entries: Vec<KnownAddressEntry> = entries.iter().filter_map(entry_from).collect();
-    KnownAddressesDecoded::Addresses { known: KnownAddresses::from_entries(&entries) }
+    KnownAddressesDecoded::Addresses {
+        known: KnownAddresses::from_entries(&entries),
+    }
 }
 
 pub fn encode_known_file(known: &KnownAddresses) -> Vec<u8> {

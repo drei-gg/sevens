@@ -5,7 +5,16 @@ use common::*;
 use qr_core::*;
 use std::str::FromStr;
 
-fn item(payload: &str, kind: HistoryKind, ty: &str, level: Level, signals: &[&str], t: f64, note: Option<&str>, enc: PayloadEncoding) -> HistoryItem {
+fn item(
+    payload: &str,
+    kind: HistoryKind,
+    ty: &str,
+    level: Level,
+    signals: &[&str],
+    t: f64,
+    note: Option<&str>,
+    enc: PayloadEncoding,
+) -> HistoryItem {
     HistoryItem {
         id: Uuid::new_v4(),
         kind,
@@ -21,11 +30,29 @@ fn item(payload: &str, kind: HistoryKind, ty: &str, level: Level, signals: &[&st
 }
 
 fn simple(payload: &str, t: f64, note: Option<&str>) -> HistoryItem {
-    item(payload, HistoryKind::Scanned, "link", Level::Normal, &[], t, note, PayloadEncoding::Text)
+    item(
+        payload,
+        HistoryKind::Scanned,
+        "link",
+        Level::Normal,
+        &[],
+        t,
+        note,
+        PayloadEncoding::Text,
+    )
 }
 
 fn typed(payload: &str, ty: &str, t: f64, note: Option<&str>) -> HistoryItem {
-    item(payload, HistoryKind::Scanned, ty, Level::Normal, &[], t, note, PayloadEncoding::Text)
+    item(
+        payload,
+        HistoryKind::Scanned,
+        ty,
+        Level::Normal,
+        &[],
+        t,
+        note,
+        PayloadEncoding::Text,
+    )
 }
 
 fn decode(s: &str) -> HistoryDecoded {
@@ -38,11 +65,34 @@ fn decode(s: &str) -> HistoryDecoded {
 fn round_trip() {
     let items = vec![
         simple("https://example.com", 1_700_000_000.0, Some("n")),
-        item("héllo 🙂", HistoryKind::Made, "text", Level::Careful, &["ipHost"], 1_700_000_100.0, None, PayloadEncoding::Text),
-        item("AAEC", HistoryKind::Scanned, "link", Level::Normal, &[], 1_700_000_200.0, None, PayloadEncoding::Base64),
+        item(
+            "héllo 🙂",
+            HistoryKind::Made,
+            "text",
+            Level::Careful,
+            &["ipHost"],
+            1_700_000_100.0,
+            None,
+            PayloadEncoding::Text,
+        ),
+        item(
+            "AAEC",
+            HistoryKind::Scanned,
+            "link",
+            Level::Normal,
+            &[],
+            1_700_000_200.0,
+            None,
+            PayloadEncoding::Base64,
+        ),
     ];
     let data = encode_history(&items);
-    assert_eq!(decode_history(&data), HistoryDecoded::Items { items: items.clone() });
+    assert_eq!(
+        decode_history(&data),
+        HistoryDecoded::Items {
+            items: items.clone()
+        }
+    );
     let json = String::from_utf8(data.clone()).unwrap();
     assert!(json.contains("\"schema\":1"));
     assert!(json.contains("\"level\":0"));
@@ -52,28 +102,60 @@ fn round_trip() {
 
 #[test]
 fn empty_round_trip() {
-    assert_eq!(decode_history(&encode_history(&[])), HistoryDecoded::Items { items: vec![] });
+    assert_eq!(
+        decode_history(&encode_history(&[])),
+        HistoryDecoded::Items { items: vec![] }
+    );
 }
 
 #[test]
 fn unknown_schema_is_not_decoded_further() {
-    assert_eq!(decode(r#"{"schema":2,"items":"whatever shape"}"#), HistoryDecoded::UnknownSchema { schema: 2 });
-    assert_eq!(decode(r#"{"schema":0,"items":[]}"#), HistoryDecoded::UnknownSchema { schema: 0 });
+    assert_eq!(
+        decode(r#"{"schema":2,"items":"whatever shape"}"#),
+        HistoryDecoded::UnknownSchema { schema: 2 }
+    );
+    assert_eq!(
+        decode(r#"{"schema":0,"items":[]}"#),
+        HistoryDecoded::UnknownSchema { schema: 0 }
+    );
 }
 
 #[test]
 fn garbage_is_unreadable() {
-    for t in ["", "not json", "[]", "42", "null", "{}", r#"{"schema":"1","items":[]}"#, r#"{"schema":1}"#, r#"{"schema":1,"items":{}}"#, r#"{"schema":1.5,"items":[]}"#] {
+    for t in [
+        "",
+        "not json",
+        "[]",
+        "42",
+        "null",
+        "{}",
+        r#"{"schema":"1","items":[]}"#,
+        r#"{"schema":1}"#,
+        r#"{"schema":1,"items":{}}"#,
+        r#"{"schema":1.5,"items":[]}"#,
+    ] {
         assert_eq!(decode(t), HistoryDecoded::Unreadable, "{t}");
     }
 }
 
 #[test]
 fn one_corrupt_item_keeps_the_rest() {
-    let (g1, g2) = (simple("one", 1_700_000_000.0, None), simple("two", 1_700_000_500.0, None));
+    let (g1, g2) = (
+        simple("one", 1_700_000_000.0, None),
+        simple("two", 1_700_000_500.0, None),
+    );
     let file = String::from_utf8(encode_history(&[g1.clone(), g2.clone()])).unwrap();
-    let file = file.replacen("\"items\":[", r#""items":[{"id":"nope","kind":"scanned"},7,null,{"kind":"weird"},"#, 1);
-    assert_eq!(decode(&file), HistoryDecoded::Items { items: vec![g1, g2] });
+    let file = file.replacen(
+        "\"items\":[",
+        r#""items":[{"id":"nope","kind":"scanned"},7,null,{"kind":"weird"},"#,
+        1,
+    );
+    assert_eq!(
+        decode(&file),
+        HistoryDecoded::Items {
+            items: vec![g1, g2]
+        }
+    );
 }
 
 #[test]
@@ -81,7 +163,9 @@ fn fractional_second_dates_decode() {
     let json = r#"{"schema":1,"items":[{"id":"3F2504E0-4F89-11D3-9A0C-0305E82C3301","kind":"made","payload":"x",
 "payloadEncoding":"text","symbology":"qr","typeID":"text","level":1,"signalIDs":[],
 "date":"2023-11-14T22:13:20.250Z"}]}"#;
-    let HistoryDecoded::Items { items } = decode(json) else { panic!("did not decode") };
+    let HistoryDecoded::Items { items } = decode(json) else {
+        panic!("did not decode")
+    };
     assert_eq!(items.len(), 1);
     assert!((secs(items[0].date) - 1_700_000_000.25).abs() < 0.001);
     assert_eq!(items[0].note, None);
@@ -89,21 +173,43 @@ fn fractional_second_dates_decode() {
 
 #[test]
 fn unknown_signal_ids_survive() {
-    let items = vec![item("https://example.com", HistoryKind::Scanned, "link", Level::Normal, &["someFutureSignal"], 1_700_000_000.0, None, PayloadEncoding::Text)];
-    assert_eq!(decode_history(&encode_history(&items)), HistoryDecoded::Items { items });
+    let items = vec![item(
+        "https://example.com",
+        HistoryKind::Scanned,
+        "link",
+        Level::Normal,
+        &["someFutureSignal"],
+        1_700_000_000.0,
+        None,
+        PayloadEncoding::Text,
+    )];
+    assert_eq!(
+        decode_history(&encode_history(&items)),
+        HistoryDecoded::Items { items }
+    );
 }
 
 // MARK: HistorySearchTests
 
 fn abc() -> (HistoryItem, HistoryItem, HistoryItem) {
-    (typed("https://Example.com/Pay", "link", 100.0, Some("Lunch")), typed("WIFI:S:Café;;", "wifi", 300.0, None), typed("hello", "text", 200.0, Some("see Café menu")))
+    (
+        typed("https://Example.com/Pay", "link", 100.0, Some("Lunch")),
+        typed("WIFI:S:Café;;", "wifi", 300.0, None),
+        typed("hello", "text", 200.0, Some("see Café menu")),
+    )
 }
 
 #[test]
 fn empty_query_returns_all_newest_first() {
     let (a, b, c) = abc();
     let all = [a.clone(), b.clone(), c.clone()];
-    assert_eq!(search(&all, "").iter().map(|i| i.payload.clone()).collect::<Vec<_>>(), vec![b.payload, c.payload, a.payload]);
+    assert_eq!(
+        search(&all, "")
+            .iter()
+            .map(|i| i.payload.clone())
+            .collect::<Vec<_>>(),
+        vec![b.payload, c.payload, a.payload]
+    );
     assert_eq!(search(&all, "  \n ").len(), 3);
 }
 
@@ -157,7 +263,10 @@ fn csv_header_rows_and_crlf() {
         export_csv(&[i]),
         "date,kind,type,level,payload,note,signals,symbology,id\r\n2023-11-14T22:13:20Z,scanned,link,likelyScam,https://x.test,,ipHost plainHTTP,qr,3F2504E0-4F89-11D3-9A0C-0305E82C3301\r\n"
     );
-    assert_eq!(export_csv(&[]), "date,kind,type,level,payload,note,signals,symbology,id\r\n");
+    assert_eq!(
+        export_csv(&[]),
+        "date,kind,type,level,payload,note,signals,symbology,id\r\n"
+    );
 }
 
 #[test]
@@ -171,7 +280,10 @@ fn csv_quoting() {
 fn csv_formula_guard() {
     for payload in ["=1+1", "+1", "-2", "@SUM(A1)"] {
         let csv = export_csv(&[simple(payload, 1_700_000_000.0, Some(payload))]);
-        assert!(csv.contains(&format!(",'{payload},'{payload},")), "{payload}");
+        assert!(
+            csv.contains(&format!(",'{payload},'{payload},")),
+            "{payload}"
+        );
     }
 }
 
@@ -184,7 +296,16 @@ fn csv_formula_guard_then_quoting() {
 fn csv_unicode_and_base64_stay_as_stored() {
     let csv = export_csv(&[
         simple("日本語 🙂 é", 1_700_000_000.0, None),
-        item("AAEC/w==", HistoryKind::Scanned, "link", Level::Normal, &[], 1_700_000_000.0, None, PayloadEncoding::Base64),
+        item(
+            "AAEC/w==",
+            HistoryKind::Scanned,
+            "link",
+            Level::Normal,
+            &[],
+            1_700_000_000.0,
+            None,
+            PayloadEncoding::Base64,
+        ),
     ]);
     assert!(csv.contains(",日本語 🙂 é,"));
     assert!(csv.contains(",AAEC/w==,"));
@@ -197,15 +318,33 @@ fn init_from_analysis_text() {
     use SignalId::*;
     let embedded = Analysis {
         code: ScannedCode::text("https://b.test", Symbology::Qr),
-        payload: Payload::Text { info: TextInfo { text: "b".into(), is_truncated: false, links: vec![] } },
-        signals: [PlainHttp, IpHost, AssumedHttps].into_iter().map(Signal::new).collect(),
+        payload: Payload::Text {
+            info: TextInfo {
+                text: "b".into(),
+                is_truncated: false,
+                links: vec![],
+            },
+        },
+        signals: [PlainHttp, IpHost, AssumedHttps]
+            .into_iter()
+            .map(Signal::new)
+            .collect(),
         embedded: vec![],
         level: Level::Careful,
     };
     let top = Analysis {
         code: ScannedCode::text("see https://b.test", Symbology::Aztec),
-        payload: Payload::Text { info: TextInfo { text: "see".into(), is_truncated: false, links: vec![] } },
-        signals: [OpenWiFi, PeekIncomplete, PlainHttp].into_iter().map(Signal::new).collect(),
+        payload: Payload::Text {
+            info: TextInfo {
+                text: "see".into(),
+                is_truncated: false,
+                links: vec![],
+            },
+        },
+        signals: [OpenWiFi, PeekIncomplete, PlainHttp]
+            .into_iter()
+            .map(Signal::new)
+            .collect(),
         embedded: vec![embedded],
         level: Level::Careful,
     };
@@ -221,14 +360,21 @@ fn init_from_analysis_text() {
     assert_eq!(h.note, None);
     assert_eq!(h.signal_ids, vec!["openWiFi", "plainHTTP", "ipHost"]);
     assert_eq!(h.scanned_code(), top.code);
-    assert_ne!(HistoryItem::from_analysis(&top, HistoryKind::Made, date).id, h.id);
+    assert_ne!(
+        HistoryItem::from_analysis(&top, HistoryKind::Made, date).id,
+        h.id
+    );
 }
 
 #[test]
 fn init_from_analysis_binary() {
     let bytes = vec![0xFF, 0x00, 0xFE, 0x80];
     let a = Analysis {
-        code: ScannedCode { text: None, bytes: bytes.clone(), symbology: Symbology::Pdf417 },
+        code: ScannedCode {
+            text: None,
+            bytes: bytes.clone(),
+            symbology: Symbology::Pdf417,
+        },
         payload: Payload::Binary { byte_count: 4 },
         signals: vec![],
         embedded: vec![],
@@ -238,12 +384,28 @@ fn init_from_analysis_binary() {
     assert_eq!(h.payload_encoding, PayloadEncoding::Base64);
     assert_eq!(h.payload, "/wD+gA==");
     assert_eq!(h.type_id, "binary");
-    assert_eq!(h.scanned_code(), ScannedCode { text: None, bytes, symbology: Symbology::Pdf417 });
+    assert_eq!(
+        h.scanned_code(),
+        ScannedCode {
+            text: None,
+            bytes,
+            symbology: Symbology::Pdf417
+        }
+    );
 }
 
 #[test]
 fn scanned_code_from_base64() {
-    let mut h = item("aGkg8J+Zgg==", HistoryKind::Scanned, "link", Level::Normal, &[], 0.0, None, PayloadEncoding::Base64);
+    let mut h = item(
+        "aGkg8J+Zgg==",
+        HistoryKind::Scanned,
+        "link",
+        Level::Normal,
+        &[],
+        0.0,
+        None,
+        PayloadEncoding::Base64,
+    );
     assert_eq!(h.scanned_code().text.as_deref(), Some("hi 🙂"));
     assert_eq!(h.scanned_code().bytes, "hi 🙂".as_bytes());
     h.payload = "!!!not base64!!!".into();
@@ -266,10 +428,22 @@ fn add_contains_remove_are_case_and_dot_insensitive() {
     let mut k = KnownAddresses::default();
     k.add("Example.COM.", at(1.0));
     assert!(k.contains("example.com"));
-    assert_eq!(k.entries.iter().map(|e| e.domain.as_str()).collect::<Vec<_>>(), vec!["example.com"]);
+    assert_eq!(
+        k.entries
+            .iter()
+            .map(|e| e.domain.as_str())
+            .collect::<Vec<_>>(),
+        vec!["example.com"]
+    );
     k.add("other.org", at(2.0));
     k.add("example.com", at(3.0));
-    assert_eq!(k.entries.iter().map(|e| e.domain.as_str()).collect::<Vec<_>>(), vec!["example.com", "other.org"]);
+    assert_eq!(
+        k.entries
+            .iter()
+            .map(|e| e.domain.as_str())
+            .collect::<Vec<_>>(),
+        vec!["example.com", "other.org"]
+    );
     k.remove("EXAMPLE.com");
     assert!(!k.contains("example.com") && k.contains("other.org"));
     k.add("  ", at(4.0));
@@ -298,15 +472,26 @@ fn size_is_bounded() {
 fn offer_for_a_list_only_result() {
     let a = analyze("https://bit.ly/abc");
     assert!(a.signals.iter().any(|s| s.id == SignalId::Shortener));
-    assert_eq!(KnownAddresses::default().offer(&a).as_deref(), Some("bit.ly"));
+    assert_eq!(
+        KnownAddresses::default().offer(&a).as_deref(),
+        Some("bit.ly")
+    );
     assert_eq!(known(&["bit.ly"]).offer(&a), None);
-    let again = Analyzer::with_known(shared(), known(&["bit.ly"])).analyze(ScannedCode::text("https://bit.ly/abc", Symbology::Qr));
+    let again = Analyzer::with_known(shared(), known(&["bit.ly"]))
+        .analyze(ScannedCode::text("https://bit.ly/abc", Symbology::Qr));
     assert_eq!(known(&["bit.ly"]).offer(&again), None);
 }
 
 #[test]
 fn no_offer_with_a_strong_non_list_signal_or_clean_or_ip_or_other_payload() {
-    for t in ["https://paypal.com@bit.ly/x", "javascript:alert(1)", "https://www.google.com/", "http://192.168.1.1/", "hello there", "WIFI:T:nopass;S:Cafe;;"] {
+    for t in [
+        "https://paypal.com@bit.ly/x",
+        "javascript:alert(1)",
+        "https://www.google.com/",
+        "http://192.168.1.1/",
+        "hello there",
+        "WIFI:T:nopass;S:Cafe;;",
+    ] {
         assert_eq!(KnownAddresses::default().offer(&analyze(t)), None, "{t}");
     }
 }
@@ -322,15 +507,27 @@ fn no_offer_when_another_warning_is_present() {
 fn apply_drops_list_signals_and_keeps_the_rest() {
     use SignalId::*;
     let payload = analyze("http://bit.ly/abc").payload;
-    let signals: Vec<Signal> = [Shortener, PlainHttp, UnknownEnding].into_iter().map(Signal::new).collect();
-    assert_eq!(ids(&known(&["bit.ly"]).apply(&signals, &payload)), vec![PlainHttp, UnknownEnding, KnownByYou]);
+    let signals: Vec<Signal> = [Shortener, PlainHttp, UnknownEnding]
+        .into_iter()
+        .map(Signal::new)
+        .collect();
+    assert_eq!(
+        ids(&known(&["bit.ly"]).apply(&signals, &payload)),
+        vec![PlainHttp, UnknownEnding, KnownByYou]
+    );
     assert_eq!(KnownAddresses::default().apply(&signals, &payload), signals);
     assert_eq!(known(&["other.org"]).apply(&signals, &payload), signals);
 }
 
 #[test]
 fn apply_leaves_other_payloads_alone() {
-    let text = Payload::Text { info: TextInfo { text: "bit.ly".into(), is_truncated: false, links: vec![] } };
+    let text = Payload::Text {
+        info: TextInfo {
+            text: "bit.ly".into(),
+            is_truncated: false,
+            links: vec![],
+        },
+    };
     let signals = vec![Signal::new(SignalId::Shortener)];
     assert_eq!(known(&["bit.ly"]).apply(&signals, &text), signals);
 }
@@ -338,14 +535,39 @@ fn apply_leaves_other_payloads_alone() {
 #[test]
 fn file_round_trip_and_hostile_input() {
     let k = known(&["a.example", "b.example"]);
-    assert_eq!(decode_known_file(&encode_known_file(&k)), KnownAddressesDecoded::Addresses { known: k });
-    assert_eq!(decode_known_file(br#"{"schema":2,"entries":1}"#), KnownAddressesDecoded::UnknownSchema { schema: 2 });
-    for t in ["", "nope", "[]", "{}", r#"{"schema":1}"#, r#"{"schema":1,"entries":{}}"#] {
-        assert_eq!(decode_known_file(t.as_bytes()), KnownAddressesDecoded::Unreadable, "{t}");
+    assert_eq!(
+        decode_known_file(&encode_known_file(&k)),
+        KnownAddressesDecoded::Addresses { known: k }
+    );
+    assert_eq!(
+        decode_known_file(br#"{"schema":2,"entries":1}"#),
+        KnownAddressesDecoded::UnknownSchema { schema: 2 }
+    );
+    for t in [
+        "",
+        "nope",
+        "[]",
+        "{}",
+        r#"{"schema":1}"#,
+        r#"{"schema":1,"entries":{}}"#,
+    ] {
+        assert_eq!(
+            decode_known_file(t.as_bytes()),
+            KnownAddressesDecoded::Unreadable,
+            "{t}"
+        );
     }
     let lossy = br#"{"schema":1,"entries":[{"domain":"ok.example","added":"2024-01-01T00:00:00Z"},{"domain":5}]}"#;
-    let KnownAddressesDecoded::Addresses { known: got } = decode_known_file(lossy) else { panic!("no addresses") };
-    assert_eq!(got.entries.iter().map(|e| e.domain.as_str()).collect::<Vec<_>>(), vec!["ok.example"]);
+    let KnownAddressesDecoded::Addresses { known: got } = decode_known_file(lossy) else {
+        panic!("no addresses")
+    };
+    assert_eq!(
+        got.entries
+            .iter()
+            .map(|e| e.domain.as_str())
+            .collect::<Vec<_>>(),
+        vec!["ok.example"]
+    );
 }
 
 #[test]
@@ -353,9 +575,17 @@ fn history_export_carries_known_addresses_and_stays_readable() {
     let k = known(&["a.example"]);
     let i = simple("https://x.example", 1_700_000_000.0, None);
     let data = export_json(std::slice::from_ref(&i), Some(&k));
-    assert_eq!(decode_history(&data), HistoryDecoded::Items { items: vec![i.clone()] });
+    assert_eq!(
+        decode_history(&data),
+        HistoryDecoded::Items {
+            items: vec![i.clone()]
+        }
+    );
     assert_eq!(export_known_addresses(&data), k);
-    assert_eq!(export_json(std::slice::from_ref(&i), None), encode_history(std::slice::from_ref(&i)));
+    assert_eq!(
+        export_json(std::slice::from_ref(&i), None),
+        encode_history(std::slice::from_ref(&i))
+    );
     assert!(export_known_addresses(&encode_history(&[i])).is_empty());
     assert!(export_known_addresses(b"junk").is_empty());
 }

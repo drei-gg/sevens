@@ -26,8 +26,17 @@ fn res(payload: Payload, signals: Vec<Signal>) -> Classified {
 /// the checks that belong to the payload itself.
 pub fn classify(ctx: &CheckContext, code: &ScannedCode) -> Classified {
     let data = &ctx.data;
-    let binary = || res(Payload::Binary { byte_count: code.bytes.len() as i64 }, vec![]);
-    let Some(raw) = code.text.as_deref() else { return binary() };
+    let binary = || {
+        res(
+            Payload::Binary {
+                byte_count: code.bytes.len() as i64,
+            },
+            vec![],
+        )
+    };
+    let Some(raw) = code.text.as_deref() else {
+        return binary();
+    };
     let tt = t::trim_ws_nl(raw);
     if tt.is_empty() {
         return binary();
@@ -35,87 +44,119 @@ pub fn classify(ctx: &CheckContext, code: &ScannedCode) -> Classified {
     if raw.len() > MAX_BYTES {
         let cut = t::cut_utf8(raw, MAX_BYTES).to_string();
         let links = embedded_links::find(Some(&cut));
-        return res(Payload::Text { info: TextInfo { text: cut, is_truncated: true, links } }, vec![]);
+        return res(
+            Payload::Text {
+                info: TextInfo {
+                    text: cut,
+                    is_truncated: true,
+                    links,
+                },
+            },
+            vec![],
+        );
     }
     let head = t::lower(t::prefix(tt, 32));
     let hp = |p: &str| t::has_prefix(&head, p);
     let psl = &data.public_suffixes;
 
     if hp("wifi:")
-        && let Some(w) = structured::wifi::parse(tt) {
-            let s = checks::open_wifi(&w).into_iter().collect();
-            return res(Payload::Wifi { info: w }, s);
-        }
+        && let Some(w) = structured::wifi::parse(tt)
+    {
+        let s = checks::open_wifi(&w).into_iter().collect();
+        return res(Payload::Wifi { info: w }, s);
+    }
     if (hp("begin:vcard") || hp("mecard:"))
-        && let Some(mut c) = structured::contact::parse(tt) {
-            let urls: Vec<String> = c.urls.iter().map(|u| t::trim_ws(u).to_string()).filter(|u| !u.is_empty()).collect();
-            c.links = embedded_links::merge(&[urls, embedded_links::find(c.note.as_deref())]);
-            return res(Payload::Contact { info: c }, vec![]);
-        }
+        && let Some(mut c) = structured::contact::parse(tt)
+    {
+        let urls: Vec<String> = c
+            .urls
+            .iter()
+            .map(|u| t::trim_ws(u).to_string())
+            .filter(|u| !u.is_empty())
+            .collect();
+        c.links = embedded_links::merge(&[urls, embedded_links::find(c.note.as_deref())]);
+        return res(Payload::Contact { info: c }, vec![]);
+    }
     if (hp("begin:vevent") || (hp("begin:vcalendar") && t::contains(&t::lower(tt), "begin:vevent")))
-        && let Some(mut e) = structured::event::parse(tt) {
-            let url: Vec<String> = e.url.iter().filter(|u| !u.is_empty()).cloned().collect();
-            e.links = embedded_links::merge(&[
-                url,
-                embedded_links::find(e.description.as_deref()),
-                embedded_links::find(e.location.as_deref()),
-            ]);
-            return res(Payload::Event { info: e }, vec![]);
-        }
+        && let Some(mut e) = structured::event::parse(tt)
+    {
+        let url: Vec<String> = e.url.iter().filter(|u| !u.is_empty()).cloned().collect();
+        e.links = embedded_links::merge(&[
+            url,
+            embedded_links::find(e.description.as_deref()),
+            embedded_links::find(e.location.as_deref()),
+        ]);
+        return res(Payload::Event { info: e }, vec![]);
+    }
     if hp("000201") {
         let n = t::count(tt);
-        if n >= 8 && t::has_prefix(t::drop_first(tt, n - 8), "6304")
-            && let Some(p) = payments::emv::parse(tt, &data.payment_networks.emv, &data.currencies) {
-                return payment(p);
-            }
+        if n >= 8
+            && t::has_prefix(t::drop_first(tt, n - 8), "6304")
+            && let Some(p) = payments::emv::parse(tt, &data.payment_networks.emv, &data.currencies)
+        {
+            return payment(p);
+        }
     }
     let first_line: String = tt.chars().take_while(|&c| c != '\n' && c != '\r').collect();
     let first_line = t::trim_ws(&first_line);
     if t::str_eq(first_line, "BCD")
-        && let Some(p) = payments::epc::parse(tt) {
-            return payment(p);
-        }
+        && let Some(p) = payments::epc::parse(tt)
+    {
+        return payment(p);
+    }
     if t::str_eq(first_line, "SPC")
-        && let Some(p) = payments::swiss::parse(tt) {
-            return payment(p);
-        }
+        && let Some(p) = payments::swiss::parse(tt)
+    {
+        return payment(p);
+    }
     if hp("upi://")
-        && let Some(p) = payments::upi::parse(tt) {
-            return payment(p);
-        }
+        && let Some(p) = payments::upi::parse(tt)
+    {
+        return payment(p);
+    }
     let schemes = &data.payment_networks.crypto_schemes;
-    if schemes.iter().any(|s| hp(&format!("{}:", t::lower(&s.scheme))))
-        && let Some(c) = payments::crypto_uri::parse(tt, schemes) {
-            return res(Payload::Crypto { info: c }, vec![]);
-        }
+    if schemes
+        .iter()
+        .any(|s| hp(&format!("{}:", t::lower(&s.scheme))))
+        && let Some(c) = payments::crypto_uri::parse(tt, schemes)
+    {
+        return res(Payload::Crypto { info: c }, vec![]);
+    }
     if hp("tel:")
-        && let Some(p) = structured::phone::parse(tt) {
-            return res(Payload::Phone { info: p }, vec![]);
-        }
+        && let Some(p) = structured::phone::parse(tt)
+    {
+        return res(Payload::Phone { info: p }, vec![]);
+    }
     if (hp("sms:") || hp("smsto:"))
-        && let Some(mut s) = structured::sms::parse(tt) {
-            s.links = embedded_links::find(s.body.as_deref());
-            return res(Payload::Sms { info: s }, vec![]);
-        }
+        && let Some(mut s) = structured::sms::parse(tt)
+    {
+        s.links = embedded_links::find(s.body.as_deref());
+        return res(Payload::Sms { info: s }, vec![]);
+    }
     if (hp("mailto:") || hp("matmsg:"))
-        && let Some(mut m) = structured::email::parse(tt) {
-            m.links = embedded_links::find(m.body.as_deref());
-            return res(Payload::Email { info: m }, vec![]);
-        }
+        && let Some(mut m) = structured::email::parse(tt)
+    {
+        m.links = embedded_links::find(m.body.as_deref());
+        return res(Payload::Email { info: m }, vec![]);
+    }
     if hp("geo:")
-        && let Some(g) = structured::geo::parse(tt) {
-            return res(Payload::Geo { info: g }, vec![]);
-        }
+        && let Some(g) = structured::geo::parse(tt)
+    {
+        return res(Payload::Geo { info: g }, vec![]);
+    }
 
     let scheme = WebAddress::scheme_of(raw);
     if matches!(scheme.as_deref(), Some("http" | "https"))
-        && let Some(a) = WebAddress::parse(raw, psl) {
-            let s = checks::link_signals(&a, ctx);
-            return res(Payload::Link { info: a.link }, s);
-        }
+        && let Some(a) = WebAddress::parse(raw, psl)
+    {
+        let s = checks::link_signals(&a, ctx);
+        return res(Payload::Link { info: a.link }, s);
+    }
     if let Some(scheme) = scheme.as_deref().filter(|s| *s != "http" && *s != "https") {
         let cleaned = url_text::clean(raw);
-        let rest = url::split_scheme(&cleaned).map(|(_, r)| r.to_string()).unwrap_or_default();
+        let rest = url::split_scheme(&cleaned)
+            .map(|(_, r)| r.to_string())
+            .unwrap_or_default();
         if let Some(danger) = checks::dangerous_scheme(scheme) {
             let link = LinkInfo {
                 original: raw.to_string(),
@@ -136,9 +177,18 @@ pub fn classify(ctx: &CheckContext, code: &ScannedCode) -> Classified {
         // Text such as "Total: 5", "C:\temp" or a vCard/iCal block that didn't parse isn't an app
         // link: it needs a real scheme name and something right after the colon.
         let after_colon = tt.chars().skip_while(|&c| c != ':').nth(1);
-        if t::count(scheme) >= 2 && scheme != "begin" && !rest.is_empty() && after_colon.is_some_and(|c| !c.is_whitespace()) {
+        if t::count(scheme) >= 2
+            && scheme != "begin"
+            && !rest.is_empty()
+            && after_colon.is_some_and(|c| !c.is_whitespace())
+        {
             return res(
-                Payload::AppLink { info: AppLinkInfo { scheme: scheme.to_string(), original: raw.to_string() } },
+                Payload::AppLink {
+                    info: AppLinkInfo {
+                        scheme: scheme.to_string(),
+                        original: raw.to_string(),
+                    },
+                },
                 vec![checks::unknown_scheme(scheme)],
             );
         }
@@ -151,7 +201,16 @@ pub fn classify(ctx: &CheckContext, code: &ScannedCode) -> Classified {
         return res(Payload::Link { info: a.link }, s);
     }
     let links = embedded_links::find(Some(raw));
-    res(Payload::Text { info: TextInfo { text: raw.to_string(), is_truncated: false, links } }, vec![])
+    res(
+        Payload::Text {
+            info: TextInfo {
+                text: raw.to_string(),
+                is_truncated: false,
+                links,
+            },
+        },
+        vec![],
+    )
 }
 
 fn payment(p: PaymentInfo) -> Classified {
@@ -165,7 +224,11 @@ pub fn level_for(signals: &[Signal]) -> Level {
     if signals.iter().any(|s| s.severity() == Severity::Strong) {
         return Level::LikelyScam;
     }
-    match signals.iter().filter(|s| s.severity() == Severity::Warning).count() {
+    match signals
+        .iter()
+        .filter(|s| s.severity() == Severity::Warning)
+        .count()
+    {
         0 => Level::Normal,
         1 | 2 => Level::Careful,
         _ => Level::LikelyScam,
@@ -189,7 +252,11 @@ pub struct Analyzer {
 
 impl Analyzer {
     pub fn with_known(data: Arc<BundledData>, known: KnownAddresses) -> Self {
-        Analyzer { context: CheckContext::new(data.clone()), data, known }
+        Analyzer {
+            context: CheckContext::new(data.clone()),
+            data,
+            known,
+        }
     }
 
     pub fn context(&self) -> &CheckContext {
@@ -198,7 +265,11 @@ impl Analyzer {
 
     fn analyze_inner(&self, code: &ScannedCode, embedding: bool) -> Analysis {
         let result = classify(&self.context, code);
-        let own = if self.known.is_empty() { result.signals } else { self.known.apply(&result.signals, &result.payload) };
+        let own = if self.known.is_empty() {
+            result.signals
+        } else {
+            self.known.apply(&result.signals, &result.payload)
+        };
         let signals = in_stable_order(&own);
         let embedded: Vec<Analysis> = if embedding {
             embedded_links_of(&result.payload)
@@ -208,8 +279,17 @@ impl Analyzer {
         } else {
             vec![]
         };
-        let level = embedded.iter().map(|e| e.level).fold(level_for(&signals), Level::max);
-        Analysis { code: code.clone(), payload: result.payload, signals, embedded, level }
+        let level = embedded
+            .iter()
+            .map(|e| e.level)
+            .fold(level_for(&signals), Level::max);
+        Analysis {
+            code: code.clone(),
+            payload: result.payload,
+            signals,
+            embedded,
+            level,
+        }
     }
 }
 

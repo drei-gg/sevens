@@ -10,7 +10,11 @@ pub fn crc16_ccitt_false(bytes: &[u8]) -> u16 {
     for &b in bytes {
         crc ^= (b as u16) << 8;
         for _ in 0..8 {
-            crc = if crc & 0x8000 != 0 { (crc << 1) ^ 0x1021 } else { crc << 1 };
+            crc = if crc & 0x8000 != 0 {
+                (crc << 1) ^ 0x1021
+            } else {
+                crc << 1
+            };
         }
     }
     crc
@@ -22,7 +26,10 @@ pub fn crc16(bytes: Vec<u8>) -> u16 {
 }
 
 /// ISO 4217 numeric ("608") → alpha ("PHP") using the bundled table; None if unknown.
-pub fn currency_alpha(numeric: &str, table: &std::collections::HashMap<String, String>) -> Option<String> {
+pub fn currency_alpha(
+    numeric: &str,
+    table: &std::collections::HashMap<String, String>,
+) -> Option<String> {
     let d = numeric.as_bytes();
     if d.is_empty() || d.len() > 3 || !d.iter().all(u8::is_ascii_digit) {
         return None;
@@ -61,12 +68,14 @@ pub(crate) mod text {
         let mut out = Vec::with_capacity(b.len());
         let mut i = 0;
         while i < b.len() {
-            if b[i] == b'%' && i + 2 < b.len()
-                && let (Some(h), Some(l)) = (hex(b[i + 1]), hex(b[i + 2])) {
-                    out.push(h * 16 + l);
-                    i += 3;
-                    continue;
-                }
+            if b[i] == b'%'
+                && i + 2 < b.len()
+                && let (Some(h), Some(l)) = (hex(b[i + 1]), hex(b[i + 2]))
+            {
+                out.push(h * 16 + l);
+                i += 3;
+                continue;
+            }
             out.push(b[i]);
             i += 1;
         }
@@ -81,7 +90,8 @@ pub(crate) mod text {
                 Some(eq) => (&part[..eq], &part[eq + t::char_len_at(part, eq)..]),
                 None => (part, ""),
             };
-            out.entry(t::lower(&percent_decode(key))).or_insert_with(|| percent_decode(value));
+            out.entry(t::lower(&percent_decode(key)))
+                .or_insert_with(|| percent_decode(value));
         }
         out
     }
@@ -111,7 +121,11 @@ pub(crate) mod text {
     /// Trimmed, None when empty.
     pub fn non_empty(s: Option<&str>) -> Option<String> {
         let tt = t::trim_ws(s?);
-        if tt.is_empty() { None } else { Some(tt.to_string()) }
+        if tt.is_empty() {
+            None
+        } else {
+            Some(tt.to_string())
+        }
     }
 }
 
@@ -127,8 +141,12 @@ pub(crate) mod tlv {
     impl Unit {
         pub fn text(self, units: &[u16]) -> String {
             match self {
-                Unit::Utf8 => crate::text::utf8_lossy(&units.iter().map(|&u| u as u8).collect::<Vec<_>>()),
-                Unit::Utf16 => char::decode_utf16(units.iter().copied()).map(|r| r.unwrap_or('\u{FFFD}')).collect(),
+                Unit::Utf8 => {
+                    crate::text::utf8_lossy(&units.iter().map(|&u| u as u8).collect::<Vec<_>>())
+                }
+                Unit::Utf16 => char::decode_utf16(units.iter().copied())
+                    .map(|r| r.unwrap_or('\u{FFFD}'))
+                    .collect(),
             }
         }
     }
@@ -162,22 +180,40 @@ pub(crate) mod tlv {
         let n = units.len();
         while i < n {
             if i + 4 > n {
-                return Read { items, complete: false };
+                return Read {
+                    items,
+                    complete: false,
+                };
             }
-            let (Some(t0), Some(t1), Some(l0), Some(l1)) =
-                (digit(units[i]), digit(units[i + 1]), digit(units[i + 2]), digit(units[i + 3]))
-            else {
-                return Read { items, complete: false };
+            let (Some(t0), Some(t1), Some(l0), Some(l1)) = (
+                digit(units[i]),
+                digit(units[i + 1]),
+                digit(units[i + 2]),
+                digit(units[i + 3]),
+            ) else {
+                return Read {
+                    items,
+                    complete: false,
+                };
             };
             let length = l0 * 10 + l1;
             let start = i + 4;
             if start + length > n {
-                return Read { items, complete: false };
+                return Read {
+                    items,
+                    complete: false,
+                };
             }
-            items.push(Item { tag: format!("{t0}{t1}"), value: units[start..start + length].to_vec() });
+            items.push(Item {
+                tag: format!("{t0}{t1}"),
+                value: units[start..start + length].to_vec(),
+            });
             i = start + length;
         }
-        Read { items, complete: true }
+        Read {
+            items,
+            complete: true,
+        }
     }
 }
 
@@ -192,7 +228,11 @@ pub mod emv {
 
     /// An EMVCo merchant-presented payload, or None if it isn't one. `checksum` is `Invalid` on a
     /// CRC mismatch.
-    pub fn parse(text: &str, networks: &[EmvNetwork], currencies: &HashMap<String, String>) -> Option<PaymentInfo> {
+    pub fn parse(
+        text: &str,
+        networks: &[EmvNetwork],
+        currencies: &HashMap<String, String>,
+    ) -> Option<PaymentInfo> {
         let bytes = text.as_bytes();
         if !bytes.starts_with(b"000201") {
             return None;
@@ -225,7 +265,11 @@ pub mod emv {
             };
             value = value << 4 | d as u16;
         }
-        if super::crc16_ccitt_false(&bytes[..bytes.len() - 4]) == value { PaymentChecksum::Valid } else { PaymentChecksum::Invalid }
+        if super::crc16_ccitt_false(&bytes[..bytes.len() - 4]) == value {
+            PaymentChecksum::Valid
+        } else {
+            PaymentChecksum::Invalid
+        }
     }
 
     fn top_level(text: &str) -> (Vec<Item>, Unit) {
@@ -243,11 +287,26 @@ pub mod emv {
         (lenient, Unit::Utf8)
     }
 
-    fn apply(item: &Item, unit: Unit, info: &mut PaymentInfo, currencies: &HashMap<String, String>) {
+    fn apply(
+        item: &Item,
+        unit: Unit,
+        info: &mut PaymentInfo,
+        currencies: &HashMap<String, String>,
+    ) {
         let value = unit.text(&item.value);
-        let Some(tag) = t::parse_int(&item.tag) else { return };
+        let Some(tag) = t::parse_int(&item.tag) else {
+            return;
+        };
         match tag {
-            1 => info.is_dynamic = if value == "11" { Some(false) } else if value == "12" { Some(true) } else { None },
+            1 => {
+                info.is_dynamic = if value == "11" {
+                    Some(false)
+                } else if value == "12" {
+                    Some(true)
+                } else {
+                    None
+                }
+            }
             52 => {
                 info.extra.insert("mcc".into(), value);
             }
@@ -293,21 +352,30 @@ pub mod emv {
     fn apply_network(items: &[Item], unit: Unit, info: &mut PaymentInfo, networks: &[EmvNetwork]) {
         let mut first_id: Option<String> = None;
         for item in items {
-            let Some(tag) = t::parse_int(&item.tag) else { continue };
+            let Some(tag) = t::parse_int(&item.tag) else {
+                continue;
+            };
             if !(26..=51).contains(&tag) {
                 continue;
             }
             let subs = tlv::read(&item.value).items;
-            let Some(id_item) = subs.iter().find(|s| s.tag == "00") else { continue };
+            let Some(id_item) = subs.iter().find(|s| s.tag == "00") else {
+                continue;
+            };
             let id = unit.text(&id_item.value);
             if first_id.is_none() {
                 first_id = Some(id.clone());
             }
             let lowered = t::lower(&id);
-            let Some(net) = networks.iter().find(|n| t::lower(&n.id) == lowered) else { continue };
+            let Some(net) = networks.iter().find(|n| t::lower(&n.id) == lowered) else {
+                continue;
+            };
             info.network = Some(net.name.clone());
             info.party = PaymentParty::from_raw(&net.party).unwrap_or(PaymentParty::Unknown);
-            let account = subs.iter().find(|s| s.tag == "01").or_else(|| subs.iter().find(|s| s.tag == "02"));
+            let account = subs
+                .iter()
+                .find(|s| s.tag == "01")
+                .or_else(|| subs.iter().find(|s| s.tag == "02"));
             info.payee_account = account.map(|a| unit.text(&a.value));
             return;
         }
@@ -325,7 +393,11 @@ pub mod iban {
     /// Spaces removed and uppercased; None unless 15–34 letters/digits shaped as two country
     /// letters, two check digits, then a basic part.
     pub fn normalized(iban: &str) -> Option<String> {
-        let s = t::upper(&t::graphemes(iban).filter(|g| !t::ch_eq(g, ' ')).collect::<String>());
+        let s = t::upper(
+            &t::graphemes(iban)
+                .filter(|g| !t::ch_eq(g, ' '))
+                .collect::<String>(),
+        );
         let u = s.as_bytes();
         if !(15..=34).contains(&u.len()) {
             return None;
@@ -346,7 +418,9 @@ pub mod iban {
 
     /// ISO 13616 mod-97, digit by digit. Length and shape only.
     pub fn is_valid(iban: &str) -> bool {
-        let Some(s) = normalized(iban) else { return false };
+        let Some(s) = normalized(iban) else {
+            return false;
+        };
         let b = s.as_bytes();
         let mut v = b[4..].to_vec();
         v.extend_from_slice(&b[..4]);
@@ -374,7 +448,11 @@ pub fn iban_is_valid(iban: String) -> bool {
 
 /// Spaces dropped and uppercased (what EPC and Swiss parsing store).
 fn compact_upper(s: &str) -> String {
-    t::upper(&t::graphemes(s).filter(|g| !t::ch_eq(g, ' ')).collect::<String>())
+    t::upper(
+        &t::graphemes(s)
+            .filter(|g| !t::ch_eq(g, ' '))
+            .collect::<String>(),
+    )
 }
 
 // MARK: EPC
@@ -390,14 +468,21 @@ pub mod epc {
             return None;
         }
         let l = lines(text);
-        let line = |i: usize| if i < l.len() { non_empty(Some(&l[i])) } else { None };
+        let line = |i: usize| {
+            if i < l.len() {
+                non_empty(Some(&l[i]))
+            } else {
+                None
+            }
+        };
         if line(0).as_deref() != Some("BCD") {
             return None;
         }
         if let Some(id) = line(3)
-            && id != "SCT" {
-                return None;
-            }
+            && id != "SCT"
+        {
+            return None;
+        }
         let mut info = PaymentInfo::new(PaymentFormat::Epc);
         if let Some(v) = line(4) {
             info.extra.insert("bic".into(), v);
@@ -405,12 +490,18 @@ pub mod epc {
         info.payee_name = line(5);
         if let Some(raw) = line(6) {
             let iban = super::compact_upper(&raw);
-            info.checksum = if super::iban::is_valid(&iban) { PaymentChecksum::Valid } else { PaymentChecksum::Invalid };
+            info.checksum = if super::iban::is_valid(&iban) {
+                PaymentChecksum::Valid
+            } else {
+                PaymentChecksum::Invalid
+            };
             info.payee_account = Some(iban);
         }
         if let Some(v) = line(7) {
             let letters = t::prefix(&v, 3);
-            if t::count(letters) == 3 && t::graphemes(letters).all(|g| t::ch_is_ascii(g) && t::ch_is_letter(g)) {
+            if t::count(letters) == 3
+                && t::graphemes(letters).all(|g| t::ch_is_ascii(g) && t::ch_is_letter(g))
+            {
                 info.currency = Some(t::upper(letters));
                 info.amount = non_empty(Some(t::drop_first(&v, 3)));
             } else {
@@ -443,18 +534,28 @@ pub mod swiss {
             return None;
         }
         let l = lines(text);
-        let line = |i: usize| if i < l.len() { non_empty(Some(&l[i])) } else { None };
+        let line = |i: usize| {
+            if i < l.len() {
+                non_empty(Some(&l[i]))
+            } else {
+                None
+            }
+        };
         if line(0).as_deref() != Some("SPC") {
             return None;
         }
         let version = line(1)?;
-        if version.len() != 4 || !t::has_prefix(&version, "02") || !version.bytes().all(|b| b.is_ascii_digit()) {
+        if version.len() != 4
+            || !t::has_prefix(&version, "02")
+            || !version.bytes().all(|b| b.is_ascii_digit())
+        {
             return None;
         }
         if let Some(coding) = line(2)
-            && coding != "1" {
-                return None;
-            }
+            && coding != "1"
+        {
+            return None;
+        }
         let mut info = PaymentInfo::new(PaymentFormat::Swiss);
         let mut results = Vec::new();
         if let Some(raw) = line(3) {
@@ -465,7 +566,8 @@ pub mod swiss {
         info.payee_name = line(5);
         let address: Vec<String> = (6..=9).filter_map(line).collect();
         if !address.is_empty() {
-            info.extra.insert("creditorAddress".into(), address.join("\n"));
+            info.extra
+                .insert("creditorAddress".into(), address.join("\n"));
         }
         if line(4).as_deref() == Some("S") {
             info.city = line(9);
@@ -524,7 +626,9 @@ pub mod swiss {
         if !(5..=25).contains(&u.len())
             || !s.starts_with("RF")
             || !u[2..4].iter().all(u8::is_ascii_digit)
-            || !u.iter().all(|b| b.is_ascii_digit() || b.is_ascii_uppercase())
+            || !u
+                .iter()
+                .all(|b| b.is_ascii_digit() || b.is_ascii_uppercase())
         {
             return false;
         }
@@ -552,7 +656,10 @@ pub mod upi {
             return None;
         }
         let rest = t::drop_first(tt, 6);
-        let host_end = t::find(rest, |g| t::ch_eq(g, '?') || t::ch_eq(g, '/') || t::ch_eq(g, '#')).unwrap_or(rest.len());
+        let host_end = t::find(rest, |g| {
+            t::ch_eq(g, '?') || t::ch_eq(g, '/') || t::ch_eq(g, '#')
+        })
+        .unwrap_or(rest.len());
         let kind = t::lower(&rest[..host_end]);
         if kind != "pay" && kind != "mandate" {
             return None;
@@ -645,7 +752,10 @@ pub mod bech32 {
             return None;
         }
         let hrp = &lower[..sep];
-        let data: Vec<u8> = lower[sep + 1..].iter().map(|c| CHARSET.iter().position(|x| x == c).map(|i| i as u8)).collect::<Option<_>>()?;
+        let data: Vec<u8> = lower[sep + 1..]
+            .iter()
+            .map(|c| CHARSET.iter().position(|x| x == c).map(|i| i as u8))
+            .collect::<Option<_>>()?;
         let mut expand: Vec<u8> = hrp.iter().map(|b| b >> 5).collect();
         expand.push(0);
         expand.extend(hrp.iter().map(|b| b & 31));
@@ -655,7 +765,11 @@ pub mod bech32 {
             0x2bc830a3 => Encoding::Bech32m,
             _ => return None,
         };
-        Some(Decoded { hrp: String::from_utf8_lossy(hrp).into_owned(), data: data[..data.len() - 6].to_vec(), encoding })
+        Some(Decoded {
+            hrp: String::from_utf8_lossy(hrp).into_owned(),
+            data: data[..data.len() - 6].to_vec(),
+            encoding,
+        })
     }
 }
 
@@ -698,7 +812,10 @@ pub mod crypto_address {
         if u.len() == 42 && tt.starts_with("0x") && u[2..].iter().all(u8::is_ascii_hexdigit) {
             return Some(CryptoInfo::bare("Ethereum", tt));
         }
-        if (26..=35).contains(&u.len()) && (u[0] == b'1' || u[0] == b'3') && u.iter().all(|&b| is_base58(b)) {
+        if (26..=35).contains(&u.len())
+            && (u[0] == b'1' || u[0] == b'3')
+            && u.iter().all(|&b| is_base58(b))
+        {
             return Some(CryptoInfo::bare("Bitcoin", tt));
         }
         None
@@ -755,7 +872,12 @@ pub mod crypto_uri {
         }
     }
 
-    fn generic(scheme: &str, network: &str, address: &str, params: &HashMap<String, String>) -> CryptoInfo {
+    fn generic(
+        scheme: &str,
+        network: &str,
+        address: &str,
+        params: &HashMap<String, String>,
+    ) -> CryptoInfo {
         let get = |k: &str| non_empty(params.get(k).map(String::as_str));
         CryptoInfo {
             scheme: Some(scheme.into()),
@@ -818,7 +940,9 @@ pub mod crypto_uri {
             return None;
         }
         hrp = t::drop_first(hrp, 2);
-        let net = ["bcrt", "tbs", "bc", "tb"].into_iter().find(|n| t::has_prefix(hrp, n))?;
+        let net = ["bcrt", "tbs", "bc", "tb"]
+            .into_iter()
+            .find(|n| t::has_prefix(hrp, n))?;
         hrp = t::drop_first(hrp, net.len());
         // Swift compares Characters here (`$0 >= "0" && $0 <= "9"`): a digit carrying a combining
         // mark still counts, so the arithmetic below runs on characters, not bytes.
@@ -855,7 +979,11 @@ pub mod crypto_uri {
             frac.pop();
         }
         let (whole, frac) = (whole.concat(), frac.concat());
-        Some(if frac.is_empty() { whole } else { format!("{whole}.{frac}") })
+        Some(if frac.is_empty() {
+            whole
+        } else {
+            format!("{whole}.{frac}")
+        })
     }
 }
 
@@ -885,7 +1013,10 @@ pub fn upi_parse(text: String) -> Option<PaymentInfo> {
 }
 
 #[uniffi::export]
-pub fn crypto_uri_parse(text: String, schemes: Vec<crate::data::CryptoScheme>) -> Option<CryptoInfo> {
+pub fn crypto_uri_parse(
+    text: String,
+    schemes: Vec<crate::data::CryptoScheme>,
+) -> Option<CryptoInfo> {
     crypto_uri::parse(&text, &schemes)
 }
 

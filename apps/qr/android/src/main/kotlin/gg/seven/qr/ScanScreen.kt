@@ -1,4 +1,4 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 
 package gg.seven.qr
 
@@ -207,7 +207,7 @@ fun ScanScreen(model: QrModel, nav: QrNav) {
 /** One short line under the frame: what to do, or "Tap a code" when several are in view. */
 @Composable
 private fun Hint(text: String, announce: Boolean) {
-    Surface(shape = PillShape, color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f)) {
+    Surface(shape = PillShape, color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f), contentColor = MaterialTheme.colorScheme.onSurface) {
         AnimatedContent(text, transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(200)) }, label = "hint") { shown ->
             Text(
                 shown,
@@ -223,7 +223,7 @@ private fun Hint(text: String, announce: Boolean) {
 private fun StatusLine(message: String?, working: Boolean) {
     when {
         message != null ->
-            Surface(shape = PillShape, color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f)) {
+            Surface(shape = PillShape, color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f), contentColor = MaterialTheme.colorScheme.onSurface) {
                 Text(
                     message,
                     Modifier.padding(horizontal = Space.m, vertical = Space.s).semantics { liveRegion = LiveRegionMode.Polite },
@@ -232,7 +232,7 @@ private fun StatusLine(message: String?, working: Boolean) {
                 )
             }
         working ->
-            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f)) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f), contentColor = MaterialTheme.colorScheme.onSurface) {
                 LoadingIndicatorBox()
             }
     }
@@ -247,38 +247,27 @@ private fun LoadingIndicatorBox() {
 /** Photo and Paste flank the torch, the one control people reach for while aiming, on one platter. */
 @Composable
 private fun Controls(showTorch: Boolean, torchOn: Boolean, onTorch: () -> Unit, onPhoto: () -> Unit, onPaste: () -> Unit) {
-    Surface(
-        Modifier.widthIn(max = 480.dp).fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f),
-    ) {
-        Row(
-            Modifier.padding(Space.ms),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Space.m, Alignment.CenterHorizontally),
+    HorizontalFloatingToolbar(expanded = true) {
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+            tooltip = { PlainTooltip { Text("Scan a photo") } }, state = rememberTooltipState(),
         ) {
-            OutlinedButton(onClick = onPhoto, modifier = Modifier.weight(1f).testTag("scan.photo")) {
-                Icon(Icons.Rounded.Image, null, Modifier.size(ButtonDefaults.IconSize))
-                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                Text("Photo", maxLines = 1)
+            IconButton(onClick = onPhoto, modifier = Modifier.testTag("scan.photo")) {
+                Icon(Icons.Rounded.Image, "Scan a photo")
             }
-            if (showTorch)
-                FilledIconToggleButton(
-                    checked = torchOn,
-                    onCheckedChange = { onTorch() },
-                    modifier = Modifier.size(72.dp).semantics { stateDescription = if (torchOn) "On" else "Off" },
-                    colors =
-                        IconButtonDefaults.filledIconToggleButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                        ),
-                ) {
-                    Icon(if (torchOn) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff, "Torch", Modifier.size(32.dp))
-                }
-            OutlinedButton(onClick = onPaste, modifier = Modifier.weight(1f).testTag("scan.paste")) {
-                Icon(Icons.Rounded.ContentPaste, null, Modifier.size(ButtonDefaults.IconSize))
-                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                Text("Paste", maxLines = 1)
+        }
+        if (showTorch) FilledIconToggleButton(
+            checked = torchOn, onCheckedChange = { onTorch() },
+            modifier = Modifier.size(56.dp).semantics { stateDescription = if (torchOn) "On" else "Off" },
+        ) {
+            Icon(if (torchOn) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff, "Torch")
+        }
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+            tooltip = { PlainTooltip { Text("Scan clipboard") } }, state = rememberTooltipState(),
+        ) {
+            IconButton(onClick = onPaste, modifier = Modifier.testTag("scan.paste")) {
+                Icon(Icons.Rounded.ContentPaste, "Scan clipboard")
             }
         }
     }

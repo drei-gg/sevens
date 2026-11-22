@@ -81,14 +81,26 @@ pub fn gmt_fields(t: i64) -> (i64, i64, i64, i64, i64, i64) {
 
 pub fn pad(n: i64, w: usize) -> String {
     let s = n.to_string();
-    if s.len() >= w { s } else { "0".repeat(w - s.len()) + &s }
+    if s.len() >= w {
+        s
+    } else {
+        "0".repeat(w - s.len()) + &s
+    }
 }
 
 /// `2026-11-10T12:00:00Z`: ISO 8601 in GMT, whole seconds (rounded down), as
 /// `ISO8601DateFormatter` with `.withInternetDateTime` writes it.
 pub fn iso8601(t: SystemTime) -> String {
     let (y, mo, d, h, mi, s) = gmt_fields(floor_seconds(t));
-    format!("{}-{}-{}T{}:{}:{}Z", pad(y, 4), pad(mo, 2), pad(d, 2), pad(h, 2), pad(mi, 2), pad(s, 2))
+    format!(
+        "{}-{}-{}T{}:{}:{}Z",
+        pad(y, 4),
+        pad(mo, 2),
+        pad(d, 2),
+        pad(h, 2),
+        pad(mi, 2),
+        pad(s, 2)
+    )
 }
 
 /// Reads what `ISO8601DateFormatter` reads with `.withInternetDateTime` (and, when
@@ -111,7 +123,12 @@ pub fn parse_internet_date(text: &str, fractional: bool) -> Option<SystemTime> {
         }
         Some(v)
     };
-    if b[4] != b'-' || b[7] != b'-' || !(b[10] == b'T' || b[10] == b't') || b[13] != b':' || b[16] != b':' {
+    if b[4] != b'-'
+        || b[7] != b'-'
+        || !(b[10] == b'T' || b[10] == b't')
+        || b[13] != b':'
+        || b[16] != b':'
+    {
         return None;
     }
     let (y, mo, d) = (num(0, 4)?, num(5, 2)?, num(8, 2)?);

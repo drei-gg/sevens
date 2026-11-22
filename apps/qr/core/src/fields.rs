@@ -34,11 +34,22 @@ impl F {
 /// "2026-11-10" (all-day), "2026-11-10T09:00:00" (floating), "2026-11-10T01:00:00Z" (absolute).
 pub(crate) fn event_date_text(date: SystemTime, all_day: bool, floating: bool) -> String {
     let (y, mo, d, h, mi, s) = time::gmt_fields(time::floor_seconds(date));
-    let day = format!("{}-{}-{}", time::pad(y, 4), time::pad(mo, 2), time::pad(d, 2));
+    let day = format!(
+        "{}-{}-{}",
+        time::pad(y, 4),
+        time::pad(mo, 2),
+        time::pad(d, 2)
+    );
     if all_day {
         return day;
     }
-    let t = format!("{}T{}:{}:{}", day, time::pad(h, 2), time::pad(mi, 2), time::pad(s, 2));
+    let t = format!(
+        "{}T{}:{}:{}",
+        day,
+        time::pad(h, 2),
+        time::pad(mi, 2),
+        time::pad(s, 2)
+    );
     if floating { t } else { t + "Z" }
 }
 
@@ -125,8 +136,16 @@ pub fn contact_fields(i: &ContactInfo) -> HashMap<String, String> {
 pub fn event_fields(i: &EventInfo) -> HashMap<String, String> {
     let mut f = F::new();
     f.o("summary", &i.summary);
-    f.o("start", &i.start.map(|d| event_date_text(d, i.is_all_day, i.is_floating)));
-    f.o("end", &i.end.map(|d| event_date_text(d, i.is_all_day, i.is_floating)));
+    f.o(
+        "start",
+        &i.start
+            .map(|d| event_date_text(d, i.is_all_day, i.is_floating)),
+    );
+    f.o(
+        "end",
+        &i.end
+            .map(|d| event_date_text(d, i.is_all_day, i.is_floating)),
+    );
     f.b("allDay", i.is_all_day);
     f.b("floating", i.is_floating);
     f.o("timeZone", &i.time_zone_id);
@@ -140,9 +159,10 @@ pub fn event_fields(i: &EventInfo) -> HashMap<String, String> {
 pub fn fields(p: &Payload) -> HashMap<String, String> {
     match p {
         Payload::Link { info } => link_fields(info),
-        Payload::AppLink { info } => {
-            HashMap::from([("scheme".into(), info.scheme.clone()), ("original".into(), info.original.clone())])
-        }
+        Payload::AppLink { info } => HashMap::from([
+            ("scheme".into(), info.scheme.clone()),
+            ("original".into(), info.original.clone()),
+        ]),
         Payload::Payment { info } => payment_fields(info),
         Payload::Crypto { info } => crypto_fields(info),
         Payload::Wifi { info } => wifi_fields(info),
@@ -176,7 +196,9 @@ pub fn fields(p: &Payload) -> HashMap<String, String> {
             f.b("truncated", info.is_truncated);
             f.0
         }
-        Payload::Binary { byte_count } => HashMap::from([("byteCount".into(), byte_count.to_string())]),
+        Payload::Binary { byte_count } => {
+            HashMap::from([("byteCount".into(), byte_count.to_string())])
+        }
     }
 }
 

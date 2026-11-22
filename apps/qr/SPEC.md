@@ -245,7 +245,7 @@ Anything saved to History during the trial stays readable, searchable and export
 - String Catalogs from day one. English at launch, with translations added by community pull requests.
 
 ## 15. Not in v1
-Product barcode lookup, link "reputation" from third-party services, iPad layout, sync, widgets, Apple Watch, logos inside generated codes, and batch generation.
+Product barcode lookup, link "reputation" from third-party services, iPad layout, sync, widgets, Apple Watch, and logos inside generated codes. Batch generation is implemented on both phones: enter up to 100 nonblank lines, review their exact contents, select A4/Letter and a 2×3/3×4/4×6 grid, then prepare and explicitly save/share a numbered multipage PDF. Duplicates, order, whitespace and URL parameters are preserved; batch inputs are not added to History. Invalid input or an unencodable line stops the entire export.
 
 ## 16. Test fixtures
 `apps/qr/Kit/Tests/QRCoreTests/Fixtures/` holds a payload and its expected result for each signal in §4 and each format in §5:

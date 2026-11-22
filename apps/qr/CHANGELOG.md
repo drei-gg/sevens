@@ -1,5 +1,9 @@
 # Changelog
 
+## 18 November 2026 — feature continuation, not released
+
+- Added reviewed batch QR creation on iOS and Android, with numbered multipage label PDFs, paper/grid choices and exact-input preservation. Generated PDFs are decoded back in native platform tests.
+
 ## One core for both phones (15 November 2026, not released)
 
 - The scam checks, payment and contact decoding, Peek's page reading, Make's link tidying, the History and known-address files and the scam lists' rules now come from one shared core, so the iPhone and Android apps reach the same verdict on the same code. Saved History, known addresses and downloaded lists open unchanged.

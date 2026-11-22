@@ -36,8 +36,10 @@ impl Parts {
         if t::first(body).is_some_and(|g| t::ch_eq(g, '/') || t::ch_eq(g, '\\')) {
             return None;
         }
-        let end =
-            t::find(body, |g| t::ch_eq(g, '/') || t::ch_eq(g, '\\') || t::ch_eq(g, '?') || t::ch_eq(g, '#')).unwrap_or(body.len());
+        let end = t::find(body, |g| {
+            t::ch_eq(g, '/') || t::ch_eq(g, '\\') || t::ch_eq(g, '?') || t::ch_eq(g, '#')
+        })
+        .unwrap_or(body.len());
         let authority = &body[..end];
         let mut host_port = authority;
         let mut user = "";
@@ -75,8 +77,14 @@ impl Parts {
         if !t::graphemes(digits).all(|g| t::ch_is_ascii(g) && t::ch_is_number(g)) {
             return false;
         }
-        let Some(v) = t::parse_int(digits) else { return false };
-        v == if t::lower(&self.scheme) == "https" { 443 } else { 80 }
+        let Some(v) = t::parse_int(digits) else {
+            return false;
+        };
+        v == if t::lower(&self.scheme) == "https" {
+            443
+        } else {
+            80
+        }
     }
 
     fn joined(&self, scheme: &str, host: &str, port: &str, rest: &str) -> String {
@@ -86,8 +94,14 @@ impl Parts {
 
 /// Drops `:443` on https and `:80` on http, and a lone trailing `/` when nothing follows it.
 pub fn trimmed(link: &str) -> String {
-    let Some(p) = Parts::new(link) else { return link.to_string() };
-    let port = if p.has_default_port() { "" } else { p.port.as_str() };
+    let Some(p) = Parts::new(link) else {
+        return link.to_string();
+    };
+    let port = if p.has_default_port() {
+        ""
+    } else {
+        p.port.as_str()
+    };
     let rest = if p.rest == "/" { "" } else { p.rest.as_str() };
     p.joined(&p.scheme, &p.host, port, rest)
 }
@@ -95,7 +109,12 @@ pub fn trimmed(link: &str) -> String {
 /// The scheme and the host (ASCII form) in capitals; the rest byte for byte.
 pub fn capitalized(link: &str) -> Option<String> {
     let p = Parts::new(link)?;
-    Some(p.joined(&t::upper(&p.scheme), &t::upper(&p.host_ascii), &p.port, &p.rest))
+    Some(p.joined(
+        &t::upper(&p.scheme),
+        &t::upper(&p.host_ascii),
+        &p.port,
+        &p.rest,
+    ))
 }
 
 /// `trimmed` then `capitalized`. Parses to the same normalized link as the input.
@@ -121,7 +140,10 @@ fn query(link: &str) -> Option<Query> {
     }
     Some(Query {
         before: p.joined(&p.scheme, &p.host, &p.port, &rest[..mark]),
-        params: t::split_ch(query_text, '&', false).into_iter().map(String::from).collect(),
+        params: t::split_ch(query_text, '&', false)
+            .into_iter()
+            .map(String::from)
+            .collect(),
         fragment: rest[hash..].to_string(),
     })
 }
@@ -134,21 +156,37 @@ fn name_of(param: &str) -> Option<&str> {
 /// The query parameters (names as written) that match `list`, in order of appearance.
 pub fn tracking_parameters(link: &str, list: &[TrackingParam]) -> Vec<String> {
     let Some(q) = query(link) else { return vec![] };
-    q.params.iter().filter_map(|p| name_of(p).filter(|n| list.iter().any(|tp| tp.matches(n))).map(String::from)).collect()
+    q.params
+        .iter()
+        .filter_map(|p| {
+            name_of(p)
+                .filter(|n| list.iter().any(|tp| tp.matches(n)))
+                .map(String::from)
+        })
+        .collect()
 }
 
 /// The link without those parameters (and without a `?` left empty), or None when it carries none.
 pub fn removing_tracking(link: &str, list: &[TrackingParam]) -> Option<String> {
     let q = query(link)?;
-    let kept: Vec<&String> =
-        q.params.iter().filter(|p| name_of(p).is_none_or(|n| !list.iter().any(|tp| tp.matches(n)))).collect();
+    let kept: Vec<&String> = q
+        .params
+        .iter()
+        .filter(|p| name_of(p).is_none_or(|n| !list.iter().any(|tp| tp.matches(n))))
+        .collect();
     if kept.len() >= q.params.len() {
         return None;
     }
     let new_query = if kept.is_empty() {
         String::new()
     } else {
-        format!("?{}", kept.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("&"))
+        format!(
+            "?{}",
+            kept.iter()
+                .map(|s| s.as_str())
+                .collect::<Vec<_>>()
+                .join("&")
+        )
     };
     Some(q.before + &new_query + &q.fragment)
 }

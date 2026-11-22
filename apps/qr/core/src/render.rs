@@ -15,20 +15,36 @@ impl BitMatrix {
     /// `bits.len()` must be `width * height`; otherwise the matrix is empty.
     pub fn new(width: i64, height: i64, bits: Vec<bool>) -> Self {
         if width > 0 && height > 0 && bits.len() as i64 == width * height {
-            BitMatrix { width, height, bits }
+            BitMatrix {
+                width,
+                height,
+                bits,
+            }
         } else {
-            BitMatrix { width: 0, height: 0, bits: vec![] }
+            BitMatrix {
+                width: 0,
+                height: 0,
+                bits: vec![],
+            }
         }
     }
 
     /// All light.
     pub fn light(width: i64, height: i64) -> Self {
-        Self::new(width, height, vec![false; (width.max(0) * height.max(0)) as usize])
+        Self::new(
+            width,
+            height,
+            vec![false; (width.max(0) * height.max(0)) as usize],
+        )
     }
 
     /// Out of range reads as light.
     pub fn get(&self, x: i64, y: i64) -> bool {
-        x >= 0 && y >= 0 && x < self.width && y < self.height && self.bits[(y * self.width + x) as usize]
+        x >= 0
+            && y >= 0
+            && x < self.width
+            && y < self.height
+            && self.bits[(y * self.width + x) as usize]
     }
 }
 
@@ -47,13 +63,32 @@ pub struct RgbColor {
 }
 
 impl RgbColor {
-    pub const BLACK: RgbColor = RgbColor { red: 0.0, green: 0.0, blue: 0.0 };
-    pub const WHITE: RgbColor = RgbColor { red: 1.0, green: 1.0, blue: 1.0 };
+    pub const BLACK: RgbColor = RgbColor {
+        red: 0.0,
+        green: 0.0,
+        blue: 0.0,
+    };
+    pub const WHITE: RgbColor = RgbColor {
+        red: 1.0,
+        green: 1.0,
+        blue: 1.0,
+    };
 
     /// "#rrggbb", lowercase. Components clamped to 0…1 and rounded (NaN reads as 0).
     pub fn hex(&self) -> String {
-        let byte = |v: f64| if v.is_nan() { 0 } else { (v.clamp(0.0, 1.0) * 255.0).round() as u8 };
-        format!("#{:02x}{:02x}{:02x}", byte(self.red), byte(self.green), byte(self.blue))
+        let byte = |v: f64| {
+            if v.is_nan() {
+                0
+            } else {
+                (v.clamp(0.0, 1.0) * 255.0).round() as u8
+            }
+        };
+        format!(
+            "#{:02x}{:02x}{:02x}",
+            byte(self.red),
+            byte(self.green),
+            byte(self.blue)
+        )
     }
 }
 
@@ -74,7 +109,11 @@ pub enum ContrastWarning {
 pub fn luminance(c: RgbColor) -> f64 {
     let lin = |v: f64| {
         let x = if v.is_nan() { 0.0 } else { v.clamp(0.0, 1.0) };
-        if x <= 0.04045 { x / 12.92 } else { ((x + 0.055) / 1.055).powf(2.4) }
+        if x <= 0.04045 {
+            x / 12.92
+        } else {
+            ((x + 0.055) / 1.055).powf(2.4)
+        }
     };
     0.2126 * lin(c.red) + 0.7152 * lin(c.green) + 0.0722 * lin(c.blue)
 }
@@ -120,7 +159,10 @@ pub fn quiet_zone_modules(symbology: Symbology) -> QuietZoneModules {
         Code128 | Code39 | Code93 | Ean13 | Ean8 | Upce | Itf14 | Codabar | Gs1DataBar => (10, 0),
         Other => (4, 4),
     };
-    QuietZoneModules { horizontal, vertical }
+    QuietZoneModules {
+        horizontal,
+        vertical,
+    }
 }
 
 /// Pads with light modules. Negative values count as 0. An empty matrix stays empty.
@@ -145,14 +187,22 @@ pub fn quiet_zone_add(matrix: BitMatrix, horizontal: i64, vertical: i64) -> BitM
 /// One `<path>` of horizontal runs, crisp edges, colours as hex. `module_size` under 1 counts as 1;
 /// `background` None leaves it transparent. Deterministic; ends with a newline.
 #[uniffi::export]
-pub fn svg(matrix: BitMatrix, module_size: i64, foreground: RgbColor, background: Option<RgbColor>) -> String {
+pub fn svg(
+    matrix: BitMatrix,
+    module_size: i64,
+    foreground: RgbColor,
+    background: Option<RgbColor>,
+) -> String {
     let s = module_size.max(1);
     let (w, h) = (matrix.width * s, matrix.height * s);
     let mut out = format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {w} {h}\" width=\"{w}\" height=\"{h}\" shape-rendering=\"crispEdges\">\n"
     );
     if let Some(bg) = background {
-        out += &format!("<rect width=\"100%\" height=\"100%\" fill=\"{}\"/>\n", bg.hex());
+        out += &format!(
+            "<rect width=\"100%\" height=\"100%\" fill=\"{}\"/>\n",
+            bg.hex()
+        );
     }
     let mut d = String::new();
     for y in 0..matrix.height {
@@ -193,13 +243,21 @@ pub struct PageSize {
 #[uniffi::export]
 pub fn paper_size_points(paper: PaperSize) -> PageSize {
     match paper {
-        PaperSize::A4 => PageSize { width: 595.28, height: 841.89 },
-        PaperSize::Letter => PageSize { width: 612.0, height: 792.0 },
+        PaperSize::A4 => PageSize {
+            width: 595.28,
+            height: 841.89,
+        },
+        PaperSize::Letter => PageSize {
+            width: 612.0,
+            height: 792.0,
+        },
     }
 }
 
 /// Regions CLDR lists as US Letter.
-const LETTER_REGIONS: &[&str] = &["BZ", "CA", "CL", "CO", "CR", "GT", "MX", "NI", "PA", "PH", "PR", "SV", "US", "VE"];
+const LETTER_REGIONS: &[&str] = &[
+    "BZ", "CA", "CL", "CO", "CR", "GT", "MX", "NI", "PA", "PH", "PR", "SV", "US", "VE",
+];
 
 /// US Letter for regions that use it, A4 otherwise and for None or unknown codes.
 #[uniffi::export]

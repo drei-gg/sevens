@@ -18,13 +18,18 @@ use std::time::SystemTime;
 // MARK: charset
 
 const CP1252_HIGH: [u32; 32] = [
-    0x20AC, 0x81, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021, 0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0x8D, 0x017D, 0x8F,
-    0x90, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014, 0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x9D, 0x017E, 0x0178,
+    0x20AC, 0x81, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021, 0x02C6, 0x2030, 0x0160, 0x2039,
+    0x0152, 0x8D, 0x017D, 0x8F, 0x90, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
+    0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x9D, 0x017E, 0x0178,
 ];
 
 /// One windows-1252 byte as a scalar.
 pub fn cp1252(b: u8) -> char {
-    let v = if (0x80..=0x9F).contains(&b) { CP1252_HIGH[(b - 0x80) as usize] } else { b as u32 };
+    let v = if (0x80..=0x9F).contains(&b) {
+        CP1252_HIGH[(b - 0x80) as usize]
+    } else {
+        b as u32
+    };
     char::from_u32(v).unwrap_or('\u{FFFD}')
 }
 
@@ -41,7 +46,10 @@ pub fn find_bytes(needle: &[u8], hay: &[u8], from: usize) -> Option<usize> {
     if needle.is_empty() || hay.len() < needle.len() || from > hay.len() - needle.len() {
         return None;
     }
-    hay[from..].windows(needle.len()).position(|w| w == needle).map(|p| p + from)
+    hay[from..]
+        .windows(needle.len())
+        .position(|w| w == needle)
+        .map(|p| p + from)
 }
 
 pub mod charset {
@@ -66,9 +74,15 @@ pub mod charset {
             Encoding::Windows1252 => body.iter().map(|&b| cp1252(b)).collect(),
             Encoding::Utf16Le | Encoding::Utf16Be => {
                 let units = body.as_chunks::<2>().0.iter().map(|p| {
-                    if encoding == Encoding::Utf16Be { (p[0] as u16) << 8 | p[1] as u16 } else { (p[1] as u16) << 8 | p[0] as u16 }
+                    if encoding == Encoding::Utf16Be {
+                        (p[0] as u16) << 8 | p[1] as u16
+                    } else {
+                        (p[1] as u16) << 8 | p[0] as u16
+                    }
                 });
-                char::decode_utf16(units).map(|r| r.unwrap_or('\u{FFFD}')).collect()
+                char::decode_utf16(units)
+                    .map(|r| r.unwrap_or('\u{FFFD}'))
+                    .collect()
             }
         }
     }
@@ -77,8 +91,10 @@ pub mod charset {
         match t::lower(raw).as_str() {
             "utf-8" | "utf8" | "unicode-1-1-utf-8" => Encoding::Utf8,
             // The HTML standard decodes these as windows-1252.
-            "iso-8859-1" | "iso8859-1" | "iso_8859-1" | "latin1" | "latin-1" | "l1" | "us-ascii" | "ascii" | "windows-1252"
-            | "cp1252" | "x-cp1252" => Encoding::Windows1252,
+            "iso-8859-1" | "iso8859-1" | "iso_8859-1" | "latin1" | "latin-1" | "l1"
+            | "us-ascii" | "ascii" | "windows-1252" | "cp1252" | "x-cp1252" => {
+                Encoding::Windows1252
+            }
             "utf-16" | "utf-16le" | "ucs-2" => Encoding::Utf16Le,
             "utf-16be" => Encoding::Utf16Be,
             _ => Encoding::Utf8,
@@ -93,10 +109,17 @@ pub mod charset {
     /// `<meta charset=…>` or `<meta http-equiv=Content-Type content="…charset=…">` in the first 1024
     /// bytes.
     pub fn meta(bytes: &[u8]) -> Option<String> {
-        let head: Vec<u8> = bytes.iter().take(1024).map(u8::to_ascii_lowercase).collect();
+        let head: Vec<u8> = bytes
+            .iter()
+            .take(1024)
+            .map(u8::to_ascii_lowercase)
+            .collect();
         let mut i = 0;
         while let Some(at) = find_bytes(b"<meta", &head, i) {
-            let end = head[at..].iter().position(|&b| b == b'>').map_or(head.len(), |p| p + at);
+            let end = head[at..]
+                .iter()
+                .position(|&b| b == b'>')
+                .map_or(head.len(), |p| p + at);
             if let Some(tk) = token_after(b"charset", &head[at..end]) {
                 return Some(tk);
             }
@@ -122,7 +145,12 @@ pub mod charset {
             i += 1;
         }
         let start = i;
-        while i < hay.len() && (hay[i].is_ascii_lowercase() || hay[i].is_ascii_digit() || hay[i] == b'-' || hay[i] == b'_') {
+        while i < hay.len()
+            && (hay[i].is_ascii_lowercase()
+                || hay[i].is_ascii_digit()
+                || hay[i] == b'-'
+                || hay[i] == b'_')
+        {
             i += 1;
         }
         (i > start).then(|| String::from_utf8_lossy(&hay[start..i]).into_owned())
@@ -144,12 +172,13 @@ pub mod entities {
         let mut i = 0;
         while i < b.len() {
             if b[i] == b'&'
-                && let Some((c, next)) = reference(b, i) {
-                    let mut buf = [0u8; 4];
-                    out.extend_from_slice(c.encode_utf8(&mut buf).as_bytes());
-                    i = next;
-                    continue;
-                }
+                && let Some((c, next)) = reference(b, i)
+            {
+                let mut buf = [0u8; 4];
+                out.extend_from_slice(c.encode_utf8(&mut buf).as_bytes());
+                i = next;
+                continue;
+            }
             out.push(b[i]);
             i += 1;
         }
@@ -181,7 +210,8 @@ pub mod entities {
                 } else {
                     None
                 };
-                v.filter(|&v| v <= u32::MAX as u64).and_then(|v| char::from_u32(v as u32))?
+                v.filter(|&v| v <= u32::MAX as u64)
+                    .and_then(|v| char::from_u32(v as u32))?
             }
         };
         Some((c, end + 1))
@@ -195,7 +225,15 @@ pub mod entities {
 /// `document.`, `top.`, `self.`, `parent.` in front, dot or bracket access, optional spaces.
 pub mod script_redirect {
     const WORD: &[u8] = b"location";
-    const ROOTS: &[&[u8]] = &[b"window", b"document", b"top", b"self", b"parent", b"frames", b"globalthis"];
+    const ROOTS: &[&[u8]] = &[
+        b"window",
+        b"document",
+        b"top",
+        b"self",
+        b"parent",
+        b"frames",
+        b"globalthis",
+    ];
     const MAX_SKIP: usize = 64;
 
     fn is_ident(c: u8) -> bool {
@@ -373,7 +411,13 @@ fn html_whitespace(c: char) -> bool {
 
 impl<'a> Scanner<'a> {
     fn new(b: &'a [u8]) -> Self {
-        Scanner { b, lower: b.iter().map(u8::to_ascii_lowercase).collect(), result: HtmlSniff::default(), visible: 0, last_was_space: true }
+        Scanner {
+            b,
+            lower: b.iter().map(u8::to_ascii_lowercase).collect(),
+            result: HtmlSniff::default(),
+            visible: 0,
+            last_was_space: true,
+        }
     }
 
     fn scan(mut self) -> HtmlSniff {
@@ -392,7 +436,10 @@ impl<'a> Scanner<'a> {
                 continue;
             }
             if i + 1 < n && (b[i + 1] == b'!' || b[i + 1] == b'?') {
-                i = b[i..].iter().position(|&c| c == b'>').map_or(n, |p| p + i + 1);
+                i = b[i..]
+                    .iter()
+                    .position(|&c| c == b'>')
+                    .map_or(n, |p| p + i + 1);
                 continue;
             }
             let closing = i + 1 < n && b[i + 1] == b'/';
@@ -407,7 +454,9 @@ impl<'a> Scanner<'a> {
                 name_end += 1;
             }
             let name = String::from_utf8_lossy(&self.lower[name_start..name_end]).into_owned();
-            let Some((attrs, tag_end)) = self.parse_attributes(name_end) else { break }; // cut mid-tag
+            let Some((attrs, tag_end)) = self.parse_attributes(name_end) else {
+                break;
+            }; // cut mid-tag
             i = tag_end;
             if closing {
                 continue;
@@ -416,7 +465,10 @@ impl<'a> Scanner<'a> {
                 "title" => i = self.read_title(i),
                 "script" => i = self.read_script(&attrs, i),
                 "style" => i = find_bytes(b"</style", &self.lower, i).unwrap_or(n),
-                "form" => self.result.form_actions.push(attrs.get("action").map(|a| entities::decode(a.as_bytes()))),
+                "form" => self
+                    .result
+                    .form_actions
+                    .push(attrs.get("action").map(|a| entities::decode(a.as_bytes()))),
                 "input" => self.result.inputs.push(HtmlInput {
                     input_type: attrs.get("type").cloned(),
                     name: attrs.get("name").cloned(),
@@ -505,7 +557,10 @@ impl<'a> Scanner<'a> {
         self.result.script_count += 1;
         let close = find_bytes(b"</script", &self.lower, i);
         let end = close.unwrap_or(self.b.len());
-        if !attrs.contains_key("src") && !self.result.script_redirect && script_redirect::contains(&self.lower[i..end]) {
+        if !attrs.contains_key("src")
+            && !self.result.script_redirect
+            && script_redirect::contains(&self.lower[i..end])
+        {
             self.result.script_redirect = true;
         }
         end
@@ -515,10 +570,17 @@ impl<'a> Scanner<'a> {
         if self.result.meta_refresh_url.is_some() {
             return;
         }
-        if attrs.get("http-equiv").map(|v| t::lower(t::trim_ws(v))).as_deref() != Some("refresh") {
+        if attrs
+            .get("http-equiv")
+            .map(|v| t::lower(t::trim_ws(v)))
+            .as_deref()
+            != Some("refresh")
+        {
             return;
         }
-        let Some(content) = attrs.get("content") else { return };
+        let Some(content) = attrs.get("content") else {
+            return;
+        };
         self.result.meta_refresh_url = refresh_url(&entities::decode(content.as_bytes()));
     }
 
@@ -559,7 +621,9 @@ pub fn refresh_url(content: &str) -> Option<String> {
     let sep = t::find(content, |g| t::ch_eq(g, ';') || t::ch_eq(g, ','))?;
     let mut rest = t::trim_ws_nl(&content[sep + t::char_len_at(content, sep)..]).to_string();
     if t::has_prefix(&t::lower(&rest), "url") {
-        let after = t::drop_while(t::drop_first(&rest, 3), |g| t::ch_eq(g, ' ') || t::ch_eq(g, '\t'));
+        let after = t::drop_while(t::drop_first(&rest, 3), |g| {
+            t::ch_eq(g, ' ') || t::ch_eq(g, '\t')
+        });
         if t::first(after).is_some_and(|g| t::ch_eq(g, '=')) {
             rest = t::trim_ws_nl(t::drop_first(after, 1)).to_string();
         }
@@ -597,10 +661,22 @@ pub fn iso8601_lite(text: &str) -> Option<SystemTime> {
         }
         Some(v)
     };
-    if b[4] != b'-' || b[7] != b'-' || !matches!(b[10], b'T' | b't' | b' ') || b[13] != b':' || b[16] != b':' {
+    if b[4] != b'-'
+        || b[7] != b'-'
+        || !matches!(b[10], b'T' | b't' | b' ')
+        || b[13] != b':'
+        || b[16] != b':'
+    {
         return None;
     }
-    let (y, mo, d, h, mi, s) = (num(0, 4)?, num(5, 2)?, num(8, 2)?, num(11, 2)?, num(14, 2)?, num(17, 2)?);
+    let (y, mo, d, h, mi, s) = (
+        num(0, 4)?,
+        num(5, 2)?,
+        num(8, 2)?,
+        num(11, 2)?,
+        num(14, 2)?,
+        num(17, 2)?,
+    );
     if !(1..=12).contains(&mo) || !(1..=31).contains(&d) || h >= 24 || mi >= 60 || s > 60 {
         return None;
     }
@@ -648,7 +724,8 @@ pub fn iso8601_lite(text: &str) -> Option<SystemTime> {
     if i != b.len() || d > time::days_in(y, mo) {
         return None;
     }
-    let seconds = (time::days_from_civil(y, mo, d) * 86_400) as f64 + (h * 3600 + mi * 60 + s - offset) as f64;
+    let seconds = (time::days_from_civil(y, mo, d) * 86_400) as f64
+        + (h * 3600 + mi * 60 + s - offset) as f64;
     Some(time::from_seconds(seconds + fraction))
 }
 
@@ -666,14 +743,24 @@ impl RdapBootstrap {
         if json.len() > 4_000_000 {
             return Self::default();
         }
-        let Ok(root) = serde_json::from_slice::<Value>(json) else { return Self::default() };
-        let Some(list) = root.as_object().and_then(|o| o.get("services")).and_then(Value::as_array) else {
+        let Ok(root) = serde_json::from_slice::<Value>(json) else {
+            return Self::default();
+        };
+        let Some(list) = root
+            .as_object()
+            .and_then(|o| o.get("services"))
+            .and_then(Value::as_array)
+        else {
             return Self::default();
         };
         let mut b = Self::default();
         for entry in list {
-            let Some(pair) = entry.as_array().filter(|p| p.len() >= 2) else { continue };
-            let (Some(tlds), Some(urls)) = (pair[0].as_array(), pair[1].as_array()) else { continue };
+            let Some(pair) = entry.as_array().filter(|p| p.len() >= 2) else {
+                continue;
+            };
+            let (Some(tlds), Some(urls)) = (pair[0].as_array(), pair[1].as_array()) else {
+                continue;
+            };
             let tlds: Vec<&str> = tlds.iter().filter_map(Value::as_str).collect();
             let urls: Vec<&str> = urls.iter().filter_map(Value::as_str).collect();
             b.add(&tlds, &urls);
@@ -693,8 +780,13 @@ impl RdapBootstrap {
 
     fn add(&mut self, tlds: &[&str], urls: &[&str]) {
         let strings: Vec<&str> = urls.iter().map(|u| t::trim_ws(u)).collect();
-        let pick = strings.iter().find(|s| t::has_prefix(&t::lower(s), "https://")).or_else(|| strings.iter().find(|s| !s.is_empty()));
-        let Some(pick) = pick.filter(|p| !p.is_empty()) else { return };
+        let pick = strings
+            .iter()
+            .find(|s| t::has_prefix(&t::lower(s), "https://"))
+            .or_else(|| strings.iter().find(|s| !s.is_empty()));
+        let Some(pick) = pick.filter(|p| !p.is_empty()) else {
+            return;
+        };
         let mut base = pick.to_string();
         if !t::has_suffix(&base, "/") {
             base.push('/');
@@ -717,7 +809,9 @@ impl RdapBootstrap {
         let domain = t::lower(ascii_domain);
         if domain.is_empty()
             || domain.len() > 253
-            || !domain.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-' || b == b'.')
+            || !domain
+                .bytes()
+                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-' || b == b'.')
         {
             return None;
         }
@@ -737,11 +831,19 @@ pub fn rdap_registration_date_of(json: &[u8]) -> Option<SystemTime> {
     let root: Value = serde_json::from_slice(json).ok()?;
     let events = root.as_object()?.get("events")?.as_array()?;
     for event in events.iter().filter_map(Value::as_object) {
-        let Some(action) = event.get("eventAction").and_then(Value::as_str) else { continue };
+        let Some(action) = event.get("eventAction").and_then(Value::as_str) else {
+            continue;
+        };
         if t::lower(t::trim_ws(action)) != "registration" {
             continue;
         }
-        let Some(date) = event.get("eventDate").and_then(Value::as_str).and_then(iso8601_lite) else { continue };
+        let Some(date) = event
+            .get("eventDate")
+            .and_then(Value::as_str)
+            .and_then(iso8601_lite)
+        else {
+            continue;
+        };
         return Some(date);
     }
     None
@@ -768,7 +870,18 @@ pub fn domain_age_days(registered_at: SystemTime, now: SystemTime) -> i64 {
 
 // MARK: report
 
-pub const DOWNLOAD_EXTENSIONS: &[&str] = &["apk", "ipa", "mobileconfig", "exe", "msi", "dmg", "pkg", "zip", "scr", "bat"];
+pub const DOWNLOAD_EXTENSIONS: &[&str] = &[
+    "apk",
+    "ipa",
+    "mobileconfig",
+    "exe",
+    "msi",
+    "dmg",
+    "pkg",
+    "zip",
+    "scr",
+    "bat",
+];
 
 /// Hops + page → signals (SPEC §6).
 #[derive(uniffi::Object)]
@@ -779,19 +892,34 @@ pub struct PeekAnalyzer {
 
 impl PeekAnalyzer {
     pub fn with_data(data: Arc<BundledData>) -> Self {
-        PeekAnalyzer { analyzer: Analyzer::with_known(data.clone(), KnownAddresses::default()), data }
+        PeekAnalyzer {
+            analyzer: Analyzer::with_known(data.clone(), KnownAddresses::default()),
+            data,
+        }
     }
 
     fn page_signals(&self, s: &HtmlSniff, final_link: &LinkInfo) -> Vec<Signal> {
         let mut out = Vec::new();
         if let Some(kind) = checks::asks_for_secret(&s.inputs) {
-            match checks::secret_form_brand_mismatch(s.title.as_deref(), final_link, &self.analyzer.context().brands) {
-                Some(brand) => out.push(Signal::with(SignalId::SecretFormBrandMismatch, &[("brand", &brand), ("kind", kind)])),
+            match checks::secret_form_brand_mismatch(
+                s.title.as_deref(),
+                final_link,
+                &self.analyzer.context().brands,
+            ) {
+                Some(brand) => out.push(Signal::with(
+                    SignalId::SecretFormBrandMismatch,
+                    &[("brand", &brand), ("kind", kind)],
+                )),
                 None => out.push(Signal::with(SignalId::AsksForSecret, &[("kind", kind)])),
             }
         }
-        if let Some(host) = checks::form_posts_elsewhere(&s.form_actions, final_link, &self.data.public_suffixes) {
-            out.push(Signal::with(SignalId::FormPostsElsewhere, &[("host", &host)]));
+        if let Some(host) =
+            checks::form_posts_elsewhere(&s.form_actions, final_link, &self.data.public_suffixes)
+        {
+            out.push(Signal::with(
+                SignalId::FormPostsElsewhere,
+                &[("host", &host)],
+            ));
         }
         if s.meta_refresh_url.as_deref().is_some_and(|u| !u.is_empty()) {
             out.push(Signal::with(SignalId::ScriptRedirect, &[("via", "meta")]));
@@ -809,7 +937,10 @@ impl PeekAnalyzer {
             return None;
         }
         let ct = c.content_type.as_deref().map(t::lower).unwrap_or_default();
-        let first = c.body.iter().find(|&&b| !matches!(b, b' ' | b'\t' | b'\n' | b'\r'));
+        let first = c
+            .body
+            .iter()
+            .find(|&&b| !matches!(b, b' ' | b'\t' | b'\n' | b'\r'));
         if !t::contains(&ct, "html") && first != Some(&b'<') {
             return None;
         }
@@ -818,12 +949,19 @@ impl PeekAnalyzer {
 
     fn downloads(c: &PeekCapture, final_link: &LinkInfo) -> bool {
         if let Some(d) = &c.content_disposition
-            && t::has_prefix(t::trim_ws(&t::lower(d)), "attachment") {
-                return true;
-            }
-        let path = t::prefix_while(&final_link.path_and_query, |g| !t::ch_eq(g, '?') && !t::ch_eq(g, '#'));
-        let Some(name) = t::split_ch(path, '/', true).last().copied() else { return false };
-        let Some(dot) = t::rfind_ch(name, '.') else { return false };
+            && t::has_prefix(t::trim_ws(&t::lower(d)), "attachment")
+        {
+            return true;
+        }
+        let path = t::prefix_while(&final_link.path_and_query, |g| {
+            !t::ch_eq(g, '?') && !t::ch_eq(g, '#')
+        });
+        let Some(name) = t::split_ch(path, '/', true).last().copied() else {
+            return false;
+        };
+        let Some(dot) = t::rfind_ch(name, '.') else {
+            return false;
+        };
         DOWNLOAD_EXTENSIONS.contains(&t::lower(&name[dot + t::char_len_at(name, dot)..]).as_str())
     }
 }
@@ -837,26 +975,47 @@ impl PeekAnalyzer {
 
     /// `age_days` None means the age is unknown (no RDAP service, 404, no registration event,
     /// timeout).
-    pub fn report(&self, original: Analysis, capture: PeekCapture, age_days: Option<i64>) -> PeekReport {
+    pub fn report(
+        &self,
+        original: Analysis,
+        capture: PeekCapture,
+        age_days: Option<i64>,
+    ) -> PeekReport {
         let psl = &self.data.public_suffixes;
         let symbology = original.code.symbology;
-        let hop_analyses: Vec<Analysis> =
-            capture.hops.iter().map(|h| self.analyzer.analyze(ScannedCode::text(&h.url, symbology))).collect();
-        let final_link =
-            capture.hops.iter().rev().find(|h| h.status.is_some()).and_then(|h| WebAddress::parse(&h.url, psl)).map(|a| a.link);
+        let hop_analyses: Vec<Analysis> = capture
+            .hops
+            .iter()
+            .map(|h| self.analyzer.analyze(ScannedCode::text(&h.url, symbology)))
+            .collect();
+        let final_link = capture
+            .hops
+            .iter()
+            .rev()
+            .find(|h| h.status.is_some())
+            .and_then(|h| WebAddress::parse(&h.url, psl))
+            .map(|a| a.link);
 
         let mut signals = Vec::new();
         match capture.stopped_because {
             StopReason::TooManyRedirects => signals.push(Signal::new(SignalId::TooManyRedirects)),
             StopReason::HttpTarget => {
-                let host = capture.hops.last().and_then(|h| WebAddress::parse(&h.url, psl)).map(|a| a.link.host_unicode);
+                let host = capture
+                    .hops
+                    .last()
+                    .and_then(|h| WebAddress::parse(&h.url, psl))
+                    .map(|a| a.link.host_unicode);
                 signals.push(match host {
                     Some(h) => Signal::with(SignalId::RedirectsToHttp, &[("host", &h)]),
                     None => Signal::new(SignalId::RedirectsToHttp),
                 });
             }
             StopReason::NonWebTarget => {
-                let scheme = capture.hops.last().and_then(|h| WebAddress::scheme_of(&h.url)).unwrap_or_default();
+                let scheme = capture
+                    .hops
+                    .last()
+                    .and_then(|h| WebAddress::scheme_of(&h.url))
+                    .unwrap_or_default();
                 signals.push(if scheme.is_empty() {
                     Signal::new(SignalId::RedirectLeavesWeb)
                 } else {
@@ -864,7 +1023,9 @@ impl PeekAnalyzer {
                 });
             }
             StopReason::TlsFailure => signals.push(Signal::new(SignalId::TlsProblem)),
-            StopReason::Timeout | StopReason::NetworkError => signals.push(Signal::new(SignalId::PeekIncomplete)),
+            StopReason::Timeout | StopReason::NetworkError => {
+                signals.push(Signal::new(SignalId::PeekIncomplete))
+            }
             StopReason::Finished => {}
         }
 
@@ -878,19 +1039,40 @@ impl PeekAnalyzer {
                 signals.extend(self.page_signals(&s, fl));
             }
             if fl.suffix_is_private {
-                signals.push(Signal::with(SignalId::SharedHostingDomain, &[("suffix", fl.public_suffix.as_deref().unwrap_or(""))]));
+                signals.push(Signal::with(
+                    SignalId::SharedHostingDomain,
+                    &[("suffix", fl.public_suffix.as_deref().unwrap_or(""))],
+                ));
             }
             match age_days {
                 None => signals.push(Signal::new(SignalId::AgeUnknown)),
-                Some(d) if d < 30 => signals.push(Signal::with(SignalId::DomainVeryNew, &[("days", &d.to_string())])),
-                Some(d) if d < 183 => signals.push(Signal::with(SignalId::DomainNew, &[("days", &d.to_string())])),
+                Some(d) if d < 30 => signals.push(Signal::with(
+                    SignalId::DomainVeryNew,
+                    &[("days", &d.to_string())],
+                )),
+                Some(d) if d < 183 => signals.push(Signal::with(
+                    SignalId::DomainNew,
+                    &[("days", &d.to_string())],
+                )),
                 _ => {}
             }
         }
 
         let mut seen = HashSet::new();
-        let ordered: Vec<Signal> = in_stable_order(&signals).into_iter().filter(|s| seen.insert(s.id)).collect();
-        let level = hop_analyses.iter().map(|a| a.level).fold(original.level.max(level_for(&ordered)), Level::max);
-        PeekReport { final_link, hop_analyses, title, signals: ordered, level }
+        let ordered: Vec<Signal> = in_stable_order(&signals)
+            .into_iter()
+            .filter(|s| seen.insert(s.id))
+            .collect();
+        let level = hop_analyses
+            .iter()
+            .map(|a| a.level)
+            .fold(original.level.max(level_for(&ordered)), Level::max);
+        PeekReport {
+            final_link,
+            hop_analyses,
+            title,
+            signals: ordered,
+            level,
+        }
     }
 }

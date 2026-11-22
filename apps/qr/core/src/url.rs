@@ -39,7 +39,11 @@ pub mod punycode {
         if input.is_empty() || input.len() > 4096 {
             return None;
         }
-        let mut output: String = input.iter().filter(|&&c| c < 128).map(|&c| c as u8 as char).collect();
+        let mut output: String = input
+            .iter()
+            .filter(|&&c| c < 128)
+            .map(|&c| c as u8 as char)
+            .collect();
         let b = output.chars().count() as i64;
         let mut h = b;
         if b > 0 {
@@ -59,7 +63,13 @@ pub mod punycode {
                     let mut q = delta;
                     let mut k = BASE;
                     loop {
-                        let tt = if k <= bias { T_MIN } else if k >= bias + T_MAX { T_MAX } else { k - bias };
+                        let tt = if k <= bias {
+                            T_MIN
+                        } else if k >= bias + T_MAX {
+                            T_MAX
+                        } else {
+                            k - bias
+                        };
                         if q < tt {
                             break;
                         }
@@ -109,7 +119,13 @@ pub mod punycode {
                     _ => return None,
                 };
                 i = i.checked_add(d.checked_mul(w)?)?;
-                let tt = if k <= bias { T_MIN } else if k >= bias + T_MAX { T_MAX } else { k - bias };
+                let tt = if k <= bias {
+                    T_MIN
+                } else if k >= bias + T_MAX {
+                    T_MAX
+                } else {
+                    k - bias
+                };
                 if d < tt {
                     break;
                 }
@@ -132,7 +148,10 @@ pub mod punycode {
         if output.is_empty() {
             return None;
         }
-        output.into_iter().map(|v| char::from_u32(v as u32)).collect()
+        output
+            .into_iter()
+            .map(|v| char::from_u32(v as u32))
+            .collect()
     }
 }
 
@@ -171,7 +190,10 @@ struct Rule {
 impl PublicSuffixList {
     /// Parses the `.dat` text. An empty string gives a list where only the default rule applies.
     pub fn new(text: &str) -> Self {
-        let mut list = PublicSuffixList { max_labels: 1, ..Default::default() };
+        let mut list = PublicSuffixList {
+            max_labels: 1,
+            ..Default::default()
+        };
         let mut is_private = false;
         for raw_line in text.split(['\n', '\r']).filter(|l| !l.is_empty()) {
             if t::has_prefix(raw_line, "//") {
@@ -182,7 +204,12 @@ impl PublicSuffixList {
                 }
                 continue;
             }
-            let Some(token) = t::split(raw_line, |g| g == " " || g == "\t", true).into_iter().next() else { continue };
+            let Some(token) = t::split(raw_line, |g| g == " " || g == "\t", true)
+                .into_iter()
+                .next()
+            else {
+                continue;
+            };
             let mut rule = t::lower(token);
             let is_exception = t::has_prefix(&rule, "!");
             if is_exception {
@@ -192,7 +219,9 @@ impl PublicSuffixList {
             if is_wildcard {
                 rule = t::drop_first(&rule, 2).to_string();
             }
-            let Some(ascii) = Self::to_ascii(&rule) else { continue };
+            let Some(ascii) = Self::to_ascii(&rule) else {
+                continue;
+            };
             let store = |d: &mut HashMap<String, bool>| {
                 // A rule listed in both sections counts as ICANN.
                 let v = *d.get(&ascii).unwrap_or(&is_private) && is_private;
@@ -236,18 +265,36 @@ impl PublicSuffixList {
         };
         for k in (1..=limit).rev() {
             if let Some(flag) = usable(self.exceptions.get(&key(k))) {
-                return Rule { length: k - 1, explicit: true, is_private: flag };
+                return Rule {
+                    length: k - 1,
+                    explicit: true,
+                    is_private: flag,
+                };
             }
         }
-        let mut best = Rule { length: 1, explicit: false, is_private: false };
+        let mut best = Rule {
+            length: 1,
+            explicit: false,
+            is_private: false,
+        };
         for k in 1..=limit {
             if let Some(flag) = usable(self.rules.get(&key(k))) {
-                best = Rule { length: k, explicit: true, is_private: flag };
+                best = Rule {
+                    length: k,
+                    explicit: true,
+                    is_private: flag,
+                };
             }
-            if k >= 2 && k <= n
-                && let Some(flag) = usable(self.wildcards.get(&key(k - 1))) {
-                    best = Rule { length: k, explicit: true, is_private: flag };
-                }
+            if k >= 2
+                && k <= n
+                && let Some(flag) = usable(self.wildcards.get(&key(k - 1)))
+            {
+                best = Rule {
+                    length: k,
+                    explicit: true,
+                    is_private: flag,
+                };
+            }
         }
         best
     }
@@ -268,7 +315,11 @@ impl PublicSuffixList {
             let n = labels.len();
             let len = r.length.min(n);
             let suffix = labels[n - len..].join(".");
-            let domain = if n > len { Some(labels[n - len - 1..].join(".")) } else { None };
+            let domain = if n > len {
+                Some(labels[n - len - 1..].join("."))
+            } else {
+                None
+            };
             (suffix, domain)
         };
         let all = self.prevailing(&labels, false);
@@ -296,7 +347,11 @@ pub mod url_text {
     /// remove tab, CR and LF anywhere.
     pub fn clean(text: &str) -> String {
         let capped = t::cut_utf8(text, MAX_BYTES);
-        capped.trim_matches(|c: char| (c as u32) <= 0x20).chars().filter(|&c| c != '\t' && c != '\r' && c != '\n').collect()
+        capped
+            .trim_matches(|c: char| (c as u32) <= 0x20)
+            .chars()
+            .filter(|&c| c != '\t' && c != '\r' && c != '\n')
+            .collect()
     }
 
     pub fn is_label_scalar(c: char) -> bool {
@@ -352,7 +407,11 @@ pub mod url_text {
             }
         }
         let joined = out.join("/");
-        if t::has_prefix(&joined, "/") { joined } else { format!("/{joined}") }
+        if t::has_prefix(&joined, "/") {
+            joined
+        } else {
+            format!("/{joined}")
+        }
     }
 }
 
@@ -391,19 +450,23 @@ pub mod host {
         let mut out = Vec::with_capacity(bytes.len());
         let mut i = 0;
         while i < bytes.len() {
-            if bytes[i] == b'%' && i + 2 < bytes.len()
-                && let (Some(h), Some(l)) = (hex(bytes[i + 1]), hex(bytes[i + 2])) {
-                    out.push(h << 4 | l);
-                    i += 3;
-                    continue;
-                }
+            if bytes[i] == b'%'
+                && i + 2 < bytes.len()
+                && let (Some(h), Some(l)) = (hex(bytes[i + 1]), hex(bytes[i + 2]))
+            {
+                out.push(h << 4 | l);
+                i += 3;
+                continue;
+            }
             out.push(bytes[i]);
             i += 1;
         }
         String::from_utf8(out).ok()
     }
 
-    const FORBIDDEN: &[char] = &[' ', '#', '/', ':', '<', '>', '?', '@', '[', '\\', ']', '^', '|', '%'];
+    const FORBIDDEN: &[char] = &[
+        ' ', '#', '/', ':', '<', '>', '?', '@', '[', '\\', ']', '^', '|', '%',
+    ];
 
     /// `raw` is the host as written, between userinfo and port (brackets included for IPv6).
     pub fn parse(raw: &str) -> Option<ParsedHost> {
@@ -412,20 +475,43 @@ pub mod host {
                 return None;
             }
             let inner = t::lower(t::drop_last(t::drop_first(raw, 1), 1));
-            let ok_chars = inner.chars().all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c) || c == ':' || c == '.');
-            if !ok_chars || !inner.contains(':') || t::count(&inner) > 45 || inner.split("::").count() > 2 {
+            let ok_chars = inner
+                .chars()
+                .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c) || c == ':' || c == '.');
+            if !ok_chars
+                || !inner.contains(':')
+                || t::count(&inner) > 45
+                || inner.split("::").count() > 2
+            {
                 return None;
             }
             let h = format!("[{inner}]");
-            return Some(ParsedHost { ascii: h.clone(), unicode: h, kind: HostKind::Ipv6, malformed: false });
+            return Some(ParsedHost {
+                ascii: h.clone(),
+                unicode: h,
+                kind: HostKind::Ipv6,
+                malformed: false,
+            });
         }
         let mut host = percent_decode(raw)?;
         // Browsers fold compatibility forms before looking the host up, so we check the folded
         // form. Folding can create characters a host can't hold, so the forbidden-character test
         // runs afterwards.
         host = t::nfkc(&host);
-        host = host.chars().map(|c| if matches!(c as u32, 0x3002 | 0xFF0E | 0xFF61) { '.' } else { c }).collect();
-        if host.chars().any(|c| FORBIDDEN.contains(&c) || (c as u32) <= 0x20 || c as u32 == 0x7F) {
+        host = host
+            .chars()
+            .map(|c| {
+                if matches!(c as u32, 0x3002 | 0xFF0E | 0xFF61) {
+                    '.'
+                } else {
+                    c
+                }
+            })
+            .collect();
+        if host
+            .chars()
+            .any(|c| FORBIDDEN.contains(&c) || (c as u32) <= 0x20 || c as u32 == 0x7F)
+        {
             return None;
         }
         host = t::nfkc(&t::lower(&host));
@@ -437,10 +523,16 @@ pub mod host {
         }
         let labels = t::split_ch(&host, '.', false);
         if let Some(last) = labels.last()
-            && is_numeric_label(last) {
-                let v4 = parse_ipv4(&labels)?;
-                return Some(ParsedHost { ascii: v4.clone(), unicode: v4, kind: HostKind::Ipv4, malformed: false });
-            }
+            && is_numeric_label(last)
+        {
+            let v4 = parse_ipv4(&labels)?;
+            return Some(ParsedHost {
+                ascii: v4.clone(),
+                unicode: v4,
+                kind: HostKind::Ipv4,
+                malformed: false,
+            });
+        }
         let mut ascii = Vec::new();
         let mut unicode = Vec::new();
         let mut malformed = false;
@@ -467,7 +559,12 @@ pub mod host {
                 malformed = true;
             }
         }
-        Some(ParsedHost { ascii: ascii.join("."), unicode: unicode.join("."), kind: HostKind::Domain, malformed })
+        Some(ParsedHost {
+            ascii: ascii.join("."),
+            unicode: unicode.join("."),
+            kind: HostKind::Domain,
+            malformed,
+        })
     }
 
     /// Unicode form of an ASCII host or part of one; labels that don't decode stay as they are.
@@ -476,9 +573,10 @@ pub mod host {
             .into_iter()
             .map(|label| {
                 if t::has_prefix(label, "xn--")
-                    && let Some(d) = punycode::decode(t::drop_first(label, 4)) {
-                        return d;
-                    }
+                    && let Some(d) = punycode::decode(t::drop_first(label, 4))
+                {
+                    return d;
+                }
                 label.to_string()
             })
             .collect::<Vec<_>>()
@@ -493,7 +591,9 @@ pub mod host {
             return true;
         }
         let l = t::lower(s);
-        t::has_prefix(&l, "0x") && t::graphemes(t::drop_first(&l, 2)).all(|g| g.len() == 1 && g.as_bytes()[0].is_ascii_hexdigit())
+        t::has_prefix(&l, "0x")
+            && t::graphemes(t::drop_first(&l, 2))
+                .all(|g| g.len() == 1 && g.as_bytes()[0].is_ascii_hexdigit())
     }
 
     fn parse_ipv4_part(s: &str) -> Option<u64> {
@@ -523,7 +623,10 @@ pub mod host {
         if !(1..=4).contains(&parts.len()) {
             return None;
         }
-        let nums: Vec<u64> = parts.iter().map(|p| parse_ipv4_part(p)).collect::<Option<_>>()?;
+        let nums: Vec<u64> = parts
+            .iter()
+            .map(|p| parse_ipv4_part(p))
+            .collect::<Option<_>>()?;
         if nums[..nums.len() - 1].iter().any(|&v| v > 255) {
             return None;
         }
@@ -536,7 +639,13 @@ pub mod host {
         for (i, v) in nums[..nums.len() - 1].iter().enumerate() {
             ip += v << (8 * (3 - i as u64));
         }
-        Some(format!("{}.{}.{}.{}", (ip >> 24) & 255, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255))
+        Some(format!(
+            "{}.{}.{}.{}",
+            (ip >> 24) & 255,
+            (ip >> 16) & 255,
+            (ip >> 8) & 255,
+            ip & 255
+        ))
     }
 }
 
@@ -571,7 +680,8 @@ impl WebAddress {
     pub fn parse_schemeless(text: &str, psl: &PublicSuffixList) -> Option<WebAddress> {
         let c = url_text::clean(text);
         if c.is_empty()
-            || c.chars().any(|s| s.is_whitespace() || (s as u32) < 0x20 || s as u32 == 0x7F)
+            || c.chars()
+                .any(|s| s.is_whitespace() || (s as u32) < 0x20 || s as u32 == 0x7F)
             || t::find_ch(&c, '@').is_some()
             || t::has_prefix(&c, "/")
             || t::has_prefix(&c, ".")
@@ -579,13 +689,22 @@ impl WebAddress {
         {
             return None;
         }
-        let host_part = t::prefix_while(&c, |g| !(t::ch_eq(g, '/') || t::ch_eq(g, '?') || t::ch_eq(g, '#')));
+        let host_part = t::prefix_while(&c, |g| {
+            !(t::ch_eq(g, '/') || t::ch_eq(g, '?') || t::ch_eq(g, '#'))
+        });
         let labels = t::split_ch(host_part, '.', false);
-        if labels.len() < 2 || !labels.iter().all(|l| !l.is_empty() && l.chars().all(url_text::is_label_scalar)) {
+        if labels.len() < 2
+            || !labels
+                .iter()
+                .all(|l| !l.is_empty() && l.chars().all(url_text::is_label_scalar))
+        {
             return None;
         }
         let mut address = build(&format!("https://{c}"), text, psl, true)?;
-        if address.host_kind != HostKind::Domain || !address.suffix_is_known || address.link.registrable_domain.is_none() {
+        if address.host_kind != HostKind::Domain
+            || !address.suffix_is_known
+            || address.link.registrable_domain.is_none()
+        {
             return None;
         }
         address.assumed_https = true;
@@ -637,7 +756,12 @@ impl WebAddress {
             };
             (dir + &ref_path, ref_rest)
         };
-        let absolute = format!("{}{}{}", authority, url_text::remove_dot_segments(&path), rest);
+        let absolute = format!(
+            "{}{}{}",
+            authority,
+            url_text::remove_dot_segments(&path),
+            rest
+        );
         build(&absolute, &absolute, psl, false)
     }
 }
@@ -650,10 +774,16 @@ pub(crate) fn split_scheme(cleaned: &str) -> Option<(String, &str)> {
     if !(f.is_ascii() && f.is_alphabetic()) {
         return None;
     }
-    if !name.chars().all(|c| c.is_ascii() && (c.is_alphabetic() || c.is_ascii_digit() || c == '+' || c == '-' || c == '.')) {
+    if !name.chars().all(|c| {
+        c.is_ascii()
+            && (c.is_alphabetic() || c.is_ascii_digit() || c == '+' || c == '-' || c == '.')
+    }) {
         return None;
     }
-    Some((t::lower(name), &cleaned[colon + t::char_len_at(cleaned, colon)..]))
+    Some((
+        t::lower(name),
+        &cleaned[colon + t::char_len_at(cleaned, colon)..],
+    ))
 }
 
 fn parse_port(s: &str) -> Option<Option<i64>> {
@@ -670,14 +800,21 @@ fn parse_port(s: &str) -> Option<Option<i64>> {
     Some(Some(v))
 }
 
-pub(crate) fn build(cleaned: &str, original: &str, psl: &PublicSuffixList, assumed_https: bool) -> Option<WebAddress> {
+pub(crate) fn build(
+    cleaned: &str,
+    original: &str,
+    psl: &PublicSuffixList,
+    assumed_https: bool,
+) -> Option<WebAddress> {
     let (scheme, after_colon) = split_scheme(cleaned)?;
     if scheme != "http" && scheme != "https" {
         return None;
     }
     let body = t::drop_while(after_colon, |g| t::ch_eq(g, '/') || t::ch_eq(g, '\\'));
-    let authority_end =
-        t::find(body, |g| t::ch_eq(g, '/') || t::ch_eq(g, '\\') || t::ch_eq(g, '?') || t::ch_eq(g, '#')).unwrap_or(body.len());
+    let authority_end = t::find(body, |g| {
+        t::ch_eq(g, '/') || t::ch_eq(g, '\\') || t::ch_eq(g, '?') || t::ch_eq(g, '#')
+    })
+    .unwrap_or(body.len());
     let authority = &body[..authority_end];
     let mut remainder = body[authority_end..].to_string();
 
@@ -685,7 +822,11 @@ pub(crate) fn build(cleaned: &str, original: &str, psl: &PublicSuffixList, assum
     let mut host_port = authority;
     if let Some(at) = t::rfind_ch(authority, '@') {
         let u = &authority[..at];
-        userinfo = if u.is_empty() { None } else { Some(u.to_string()) };
+        userinfo = if u.is_empty() {
+            None
+        } else {
+            Some(u.to_string())
+        };
         host_port = &authority[at + t::char_len_at(authority, at)..];
     }
     let mut raw_host = host_port;
@@ -755,20 +896,31 @@ pub(crate) fn build(cleaned: &str, original: &str, psl: &PublicSuffixList, assum
         is_ip_address: host.kind != HostKind::Domain,
         normalized,
     };
-    Some(WebAddress { link, host_kind: host.kind, has_malformed_label: host.malformed, suffix_is_known: known, assumed_https })
+    Some(WebAddress {
+        link,
+        host_kind: host.kind,
+        has_malformed_label: host.malformed,
+        suffix_is_known: known,
+        assumed_https,
+    })
 }
 
 /// Host labels and the parts of them the checks look at (QRCore `CheckContext.swift`).
 impl LinkInfo {
     /// Host labels, Unicode form.
     pub fn unicode_labels(&self) -> Vec<String> {
-        t::split_ch(&self.host_unicode, '.', true).into_iter().map(String::from).collect()
+        t::split_ch(&self.host_unicode, '.', true)
+            .into_iter()
+            .map(String::from)
+            .collect()
     }
 
     /// Labels left of the public suffix, including the registrable domain's first label.
     pub fn labels_left_of_suffix(&self) -> Vec<String> {
         let all = self.unicode_labels();
-        let Some(suffix) = &self.public_suffix else { return all };
+        let Some(suffix) = &self.public_suffix else {
+            return all;
+        };
         let n = t::split_ch(suffix, '.', true).len();
         let keep = all.len().saturating_sub(n);
         all[..keep].to_vec()
@@ -776,7 +928,9 @@ impl LinkInfo {
 
     /// Labels left of the registrable domain.
     pub fn subdomain_labels(&self) -> Vec<String> {
-        let Some(reg) = &self.registrable_domain else { return vec![] };
+        let Some(reg) = &self.registrable_domain else {
+            return vec![];
+        };
         let n = t::split_ch(reg, '.', true).len();
         let all = self.unicode_labels();
         let keep = all.len().saturating_sub(n);

@@ -107,17 +107,26 @@ pub fn contains(s: &str, needle: &str) -> bool {
     if pat.len() > hay.len() {
         return false;
     }
-    (0..=hay.len() - pat.len()).any(|i| pat.iter().enumerate().all(|(k, p)| graphemes_eq(hay[i + k], p)))
+    (0..=hay.len() - pat.len()).any(|i| {
+        pat.iter()
+            .enumerate()
+            .all(|(k, p)| graphemes_eq(hay[i + k], p))
+    })
 }
 
 /// Byte offset of the first character matching `pred`.
 pub fn find(s: &str, mut pred: impl FnMut(&str) -> bool) -> Option<usize> {
-    s.grapheme_indices(true).find(|(_, g)| pred(g)).map(|(i, _)| i)
+    s.grapheme_indices(true)
+        .find(|(_, g)| pred(g))
+        .map(|(i, _)| i)
 }
 
 /// Byte offset of the last character matching `pred`.
 pub fn rfind(s: &str, mut pred: impl FnMut(&str) -> bool) -> Option<usize> {
-    s.grapheme_indices(true).rev().find(|(_, g)| pred(g)).map(|(i, _)| i)
+    s.grapheme_indices(true)
+        .rev()
+        .find(|(_, g)| pred(g))
+        .map(|(i, _)| i)
 }
 
 /// Byte offset of the first character equal to `c`.
@@ -177,7 +186,9 @@ pub fn replace_ch(s: &str, from: char, to: &str) -> String {
     if s.is_ascii() && from.is_ascii() && !s.contains('\r') {
         return s.replace(from, to);
     }
-    graphemes(s).map(|g| if ch_eq(g, from) { to } else { g }).collect()
+    graphemes(s)
+        .map(|g| if ch_eq(g, from) { to } else { g })
+        .collect()
 }
 
 /// The first `n` characters (Swift `prefix(n)`).
@@ -255,7 +266,11 @@ pub fn is_ws(c: char) -> bool {
 
 /// Foundation `CharacterSet.whitespacesAndNewlines`.
 pub fn is_ws_nl(c: char) -> bool {
-    is_ws(c) || matches!(c, '\n' | '\u{0B}' | '\u{0C}' | '\r' | '\u{85}' | '\u{2028}' | '\u{2029}')
+    is_ws(c)
+        || matches!(
+            c,
+            '\n' | '\u{0B}' | '\u{0C}' | '\r' | '\u{85}' | '\u{2028}' | '\u{2029}'
+        )
 }
 
 /// `trimmingCharacters(in: .whitespaces)`.
@@ -275,8 +290,46 @@ pub fn has_numeric_type(c: char) -> bool {
 
 fn is_cjk_numeral(c: char) -> bool {
     // Unihan numeric values (kPrimaryNumeric and friends) that ICU reports as Numeric_Type=Numeric.
-    matches!(c, '〇' | '一' | '二' | '三' | '四' | '五' | '六' | '七' | '八' | '九' | '十' | '百' | '千' | '万' | '億' | '兆'
-        | '零' | '壹' | '貳' | '參' | '肆' | '伍' | '陸' | '柒' | '捌' | '玖' | '拾' | '佰' | '仟' | '萬' | '弐' | '参' | '廿' | '卅' | '卌' | '两' | '兩' | '亿')
+    matches!(
+        c,
+        '〇' | '一'
+            | '二'
+            | '三'
+            | '四'
+            | '五'
+            | '六'
+            | '七'
+            | '八'
+            | '九'
+            | '十'
+            | '百'
+            | '千'
+            | '万'
+            | '億'
+            | '兆'
+            | '零'
+            | '壹'
+            | '貳'
+            | '參'
+            | '肆'
+            | '伍'
+            | '陸'
+            | '柒'
+            | '捌'
+            | '玖'
+            | '拾'
+            | '佰'
+            | '仟'
+            | '萬'
+            | '弐'
+            | '参'
+            | '廿'
+            | '卅'
+            | '卌'
+            | '两'
+            | '兩'
+            | '亿'
+    )
 }
 
 /// `numericType == .decimal` (general category Nd).
@@ -310,7 +363,10 @@ pub fn ch_is_whitespace(g: &str) -> bool {
 
 /// `Character.isNewline`.
 pub fn ch_is_newline(g: &str) -> bool {
-    matches!(first_scalar(g), '\n' | '\u{0B}' | '\u{0C}' | '\r' | '\u{85}' | '\u{2028}' | '\u{2029}')
+    matches!(
+        first_scalar(g),
+        '\n' | '\u{0B}' | '\u{0C}' | '\r' | '\u{85}' | '\u{2028}' | '\u{2029}'
+    )
 }
 
 /// Swift `FixedWidthInteger(_:radix:)` for unsigned values: an optional `+` or `-` (only `-0`
@@ -349,7 +405,11 @@ pub fn parse_int(s: &str) -> Option<i64> {
     for b in digits.bytes() {
         let d = (b - b'0') as i64;
         v = v.checked_mul(10)?;
-        v = if neg { v.checked_sub(d)? } else { v.checked_add(d)? };
+        v = if neg {
+            v.checked_sub(d)?
+        } else {
+            v.checked_add(d)?
+        };
     }
     Some(v)
 }
@@ -384,7 +444,10 @@ mod tests {
     fn swift_character_semantics() {
         assert!(!ch_eq("@\u{301}", '@'));
         assert!(ch_eq("\u{37E}", ';'));
-        assert_eq!(split_ch("a.\u{301}b.c", '.', false), vec!["a.\u{301}b", "c"]);
+        assert_eq!(
+            split_ch("a.\u{301}b.c", '.', false),
+            vec!["a.\u{301}b", "c"]
+        );
         assert!(has_prefix("e\u{301}x", "\u{e9}"));
         assert!(!has_prefix("e\u{301}x", "e"));
         assert_eq!(count("a\r\nb"), 3);

@@ -116,15 +116,27 @@ impl HistoryItem {
         match self.payload_encoding {
             PayloadEncoding::Text => ScannedCode::text(&self.payload, self.symbology),
             PayloadEncoding::Base64 => match base64_engine().decode(&self.payload) {
-                Ok(bytes) => ScannedCode { text: String::from_utf8(bytes.clone()).ok(), bytes, symbology: self.symbology },
-                Err(_) => ScannedCode { text: None, bytes: vec![], symbology: self.symbology },
+                Ok(bytes) => ScannedCode {
+                    text: String::from_utf8(bytes.clone()).ok(),
+                    bytes,
+                    symbology: self.symbology,
+                },
+                Err(_) => ScannedCode {
+                    text: None,
+                    bytes: vec![],
+                    symbology: self.symbology,
+                },
             },
         }
     }
 }
 
 #[uniffi::export]
-pub fn history_item_from_analysis(analysis: Analysis, kind: HistoryKind, date: SystemTime) -> HistoryItem {
+pub fn history_item_from_analysis(
+    analysis: Analysis,
+    kind: HistoryKind,
+    date: SystemTime,
+) -> HistoryItem {
     HistoryItem::from_analysis(&analysis, kind, date)
 }
 
@@ -140,9 +152,13 @@ pub const HISTORY_FILE_NAME: &str = "history.v1.json";
 
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
 pub enum HistoryDecoded {
-    Items { items: Vec<HistoryItem> },
+    Items {
+        items: Vec<HistoryItem>,
+    },
     /// Leave the file untouched; show an empty history and say this version can't read it.
-    UnknownSchema { schema: i64 },
+    UnknownSchema {
+        schema: i64,
+    },
     /// Not JSON or not our shape. Treated like UnknownSchema (never overwritten).
     Unreadable,
 }
@@ -164,7 +180,11 @@ fn parse_uuid(s: &str) -> Option<Uuid> {
 
 fn item_from(v: &Value) -> Option<HistoryItem> {
     let s = |k: &str| json::field(v, k).and_then(json::string);
-    let signal_ids = json::field(v, "signalIDs")?.as_array()?.iter().map(json::string).collect::<Option<Vec<_>>>()?;
+    let signal_ids = json::field(v, "signalIDs")?
+        .as_array()?
+        .iter()
+        .map(json::string)
+        .collect::<Option<Vec<_>>>()?;
     Some(HistoryItem {
         id: parse_uuid(&s("id")?)?,
         kind: HistoryKind::from_raw(&s("kind")?)?,
@@ -199,13 +219,21 @@ fn item_value(i: &HistoryItem) -> Value {
 
 /// `{ "schema": 1, "items": [...] }`; one unreadable item is dropped, the rest kept.
 pub fn decode_history(bytes: &[u8]) -> HistoryDecoded {
-    let Ok(root) = serde_json::from_slice::<Value>(bytes) else { return HistoryDecoded::Unreadable };
-    let Some(schema) = known::schema_of(&root) else { return HistoryDecoded::Unreadable };
+    let Ok(root) = serde_json::from_slice::<Value>(bytes) else {
+        return HistoryDecoded::Unreadable;
+    };
+    let Some(schema) = known::schema_of(&root) else {
+        return HistoryDecoded::Unreadable;
+    };
     if schema != HISTORY_SCHEMA {
         return HistoryDecoded::UnknownSchema { schema };
     }
-    let Some(items) = json::field(&root, "items").and_then(Value::as_array) else { return HistoryDecoded::Unreadable };
-    HistoryDecoded::Items { items: items.iter().filter_map(item_from).collect() }
+    let Some(items) = json::field(&root, "items").and_then(Value::as_array) else {
+        return HistoryDecoded::Unreadable;
+    };
+    HistoryDecoded::Items {
+        items: items.iter().filter_map(item_from).collect(),
+    }
 }
 
 /// Byte for byte as the iOS app writes it: sorted keys, ISO 8601 dates in whole seconds.
@@ -226,7 +254,10 @@ pub fn history_file_encode(items: Vec<HistoryItem>) -> Vec<u8> {
 
 /// Case- and diacritic-insensitive folding for search.
 fn fold(s: &str) -> String {
-    let stripped: String = s.nfd().filter(|&c| t::general_category(c) != G::NonspacingMark).collect();
+    let stripped: String = s
+        .nfd()
+        .filter(|&c| t::general_category(c) != G::NonspacingMark)
+        .collect();
     t::lower(&stripped)
 }
 
@@ -242,7 +273,9 @@ pub fn search(items: &[HistoryItem], query: &str) -> Vec<HistoryItem> {
     ordered
         .into_iter()
         .filter(|i| {
-            fold(&i.payload).contains(&n) || fold(&i.type_id).contains(&n) || i.note.as_deref().is_some_and(|x| fold(x).contains(&n))
+            fold(&i.payload).contains(&n)
+                || fold(&i.type_id).contains(&n)
+                || i.note.as_deref().is_some_and(|x| fold(x).contains(&n))
         })
         .collect()
 }
@@ -256,7 +289,9 @@ pub fn history_search(items: Vec<HistoryItem>, query: String) -> Vec<HistoryItem
 
 /// The file's own shape; with `known`, the same envelope plus a top-level `knownAddresses` array.
 pub fn export_json(items: &[HistoryItem], known: Option<&KnownAddresses>) -> Vec<u8> {
-    let Some(known) = known else { return encode_history(items) };
+    let Some(known) = known else {
+        return encode_history(items);
+    };
     let items: Vec<Value> = items.iter().map(item_value).collect();
     let entries: Vec<Value> = known.entries.iter().map(entry_value).collect();
     json::to_bytes(&json!({ "schema": HISTORY_SCHEMA, "items": items, "knownAddresses": entries }))
@@ -264,7 +299,9 @@ pub fn export_json(items: &[HistoryItem], known: Option<&KnownAddresses>) -> Vec
 
 /// The addresses an export carries; empty for an export without them.
 pub fn export_known_addresses(bytes: &[u8]) -> KnownAddresses {
-    let Ok(root) = serde_json::from_slice::<Value>(bytes) else { return KnownAddresses::default() };
+    let Ok(root) = serde_json::from_slice::<Value>(bytes) else {
+        return KnownAddresses::default();
+    };
     if !root.is_object() {
         return KnownAddresses::default();
     }

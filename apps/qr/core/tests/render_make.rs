@@ -13,7 +13,14 @@ use serde::Deserialize;
 fn matrix(rows: &str) -> BitMatrix {
     let lines: Vec<&str> = rows.split('/').collect();
     let w = lines.first().map_or(0, |l| l.len()) as i64;
-    BitMatrix::new(w, lines.len() as i64, lines.iter().flat_map(|l| l.chars().map(|c| c == '#')).collect())
+    BitMatrix::new(
+        w,
+        lines.len() as i64,
+        lines
+            .iter()
+            .flat_map(|l| l.chars().map(|c| c == '#'))
+            .collect(),
+    )
 }
 
 fn three_by_three() -> BitMatrix {
@@ -52,8 +59,16 @@ fn golden_files() {
             "qr21" => qr_like(),
             _ => barcode(),
         };
-        assert_eq!(svg(m.clone(), scale, BLACK, None), fixture_text(&format!("render/{name}.svg")), "{name}");
-        assert_eq!(svg(m, scale, BLACK, Some(WHITE)), fixture_text(&format!("render/{name}-bg.svg")), "{name}-bg");
+        assert_eq!(
+            svg(m.clone(), scale, BLACK, None),
+            fixture_text(&format!("render/{name}.svg")),
+            "{name}"
+        );
+        assert_eq!(
+            svg(m, scale, BLACK, Some(WHITE)),
+            fixture_text(&format!("render/{name}-bg.svg")),
+            "{name}-bg"
+        );
     }
 }
 
@@ -70,12 +85,24 @@ fn all_light_matrix_has_no_path() {
 
 #[test]
 fn module_size_below_one_counts_as_one() {
-    assert_eq!(svg(three_by_three(), 0, BLACK, None), svg(three_by_three(), 1, BLACK, None));
+    assert_eq!(
+        svg(three_by_three(), 0, BLACK, None),
+        svg(three_by_three(), 1, BLACK, None)
+    );
 }
 
 #[test]
 fn exactly_one_path_and_hex_colors() {
-    let s = svg(qr_like(), 3, RgbColor { red: 1.0, green: 0.0, blue: 0.0 }, Some(WHITE));
+    let s = svg(
+        qr_like(),
+        3,
+        RgbColor {
+            red: 1.0,
+            green: 0.0,
+            blue: 0.0,
+        },
+        Some(WHITE),
+    );
     assert_eq!(s.matches("<path").count(), 1);
     assert!(s.contains("fill=\"#ff0000\""));
     assert!(s.contains("viewBox=\"0 0 63 63\""));
@@ -83,12 +110,22 @@ fn exactly_one_path_and_hex_colors() {
 
 #[test]
 fn deterministic() {
-    assert_eq!(svg(qr_like(), 2, BLACK, None), svg(qr_like(), 2, BLACK, None));
+    assert_eq!(
+        svg(qr_like(), 2, BLACK, None),
+        svg(qr_like(), 2, BLACK, None)
+    );
 }
 
 #[test]
 fn hex_clamps_and_rounds() {
-    let c = |r: f64, g: f64, b: f64| RgbColor { red: r, green: g, blue: b }.hex();
+    let c = |r: f64, g: f64, b: f64| {
+        RgbColor {
+            red: r,
+            green: g,
+            blue: b,
+        }
+        .hex()
+    };
     assert_eq!(BLACK.hex(), "#000000");
     assert_eq!(WHITE.hex(), "#ffffff");
     assert_eq!(c(-1.0, 2.0, 0.5), "#00ff80");
@@ -105,7 +142,11 @@ fn extremes() {
 
 #[test]
 fn known_grey() {
-    let g = RgbColor { red: 0x77 as f64 / 255.0, green: 0x77 as f64 / 255.0, blue: 0x77 as f64 / 255.0 };
+    let g = RgbColor {
+        red: 0x77 as f64 / 255.0,
+        green: 0x77 as f64 / 255.0,
+        blue: 0x77 as f64 / 255.0,
+    };
     assert!((contrast_ratio(g, WHITE) - 4.48).abs() < 0.01);
 }
 
@@ -116,19 +157,36 @@ fn black_on_white_is_fine() {
 
 #[test]
 fn low_contrast_warns() {
-    let w = contrast_warnings(RgbColor { red: 0.6, green: 0.6, blue: 0.6 }, WHITE);
+    let w = contrast_warnings(
+        RgbColor {
+            red: 0.6,
+            green: 0.6,
+            blue: 0.6,
+        },
+        WHITE,
+    );
     assert_eq!(w.len(), 1);
     assert!(matches!(w[0], ContrastWarning::LowContrast { ratio } if ratio < 4.0));
 }
 
 #[test]
 fn inverted_warns_alone() {
-    assert_eq!(contrast_warnings(WHITE, BLACK), vec![ContrastWarning::Inverted]);
+    assert_eq!(
+        contrast_warnings(WHITE, BLACK),
+        vec![ContrastWarning::Inverted]
+    );
 }
 
 #[test]
 fn both_apply_low_contrast_first() {
-    let w = contrast_warnings(WHITE, RgbColor { red: 0.9, green: 0.9, blue: 0.9 });
+    let w = contrast_warnings(
+        WHITE,
+        RgbColor {
+            red: 0.9,
+            green: 0.9,
+            blue: 0.9,
+        },
+    );
     assert_eq!(w.len(), 2);
     assert!(matches!(w[0], ContrastWarning::LowContrast { .. }));
     assert_eq!(w[1], ContrastWarning::Inverted);
@@ -184,25 +242,65 @@ fn zero_and_negative_and_empty() {
 
 #[test]
 fn paper_sizes() {
-    assert_eq!(paper_size_points(PaperSize::A4), PageSize { width: 595.28, height: 841.89 });
-    assert_eq!(paper_size_points(PaperSize::Letter), PageSize { width: 612.0, height: 792.0 });
+    assert_eq!(
+        paper_size_points(PaperSize::A4),
+        PageSize {
+            width: 595.28,
+            height: 841.89
+        }
+    );
+    assert_eq!(
+        paper_size_points(PaperSize::Letter),
+        PageSize {
+            width: 612.0,
+            height: 792.0
+        }
+    );
 }
 
 #[test]
 fn regions() {
-    for r in ["US", "CA", "MX", "PH", "CL", "CO", "VE", "CR", "GT", "PA", "PR", "SV", "NI", "BZ", "us"] {
-        assert_eq!(paper_size_for_region(Some(r.into())), PaperSize::Letter, "{r}");
+    for r in [
+        "US", "CA", "MX", "PH", "CL", "CO", "VE", "CR", "GT", "PA", "PR", "SV", "NI", "BZ", "us",
+    ] {
+        assert_eq!(
+            paper_size_for_region(Some(r.into())),
+            PaperSize::Letter,
+            "{r}"
+        );
     }
-    for r in [Some("GB"), Some("DE"), Some("FR"), Some("JP"), Some("AU"), Some("ZZ"), Some(""), None] {
-        assert_eq!(paper_size_for_region(r.map(String::from)), PaperSize::A4, "{r:?}");
+    for r in [
+        Some("GB"),
+        Some("DE"),
+        Some("FR"),
+        Some("JP"),
+        Some("AU"),
+        Some("ZZ"),
+        Some(""),
+        None,
+    ] {
+        assert_eq!(
+            paper_size_for_region(r.map(String::from)),
+            PaperSize::A4,
+            "{r:?}"
+        );
     }
 }
 
 #[test]
 fn grid_dimensions() {
-    assert_eq!((SheetGrid::Grid2x3.columns(), SheetGrid::Grid2x3.rows()), (2, 3));
-    assert_eq!((SheetGrid::Grid3x4.columns(), SheetGrid::Grid3x4.rows()), (3, 4));
-    assert_eq!((SheetGrid::Grid4x6.columns(), SheetGrid::Grid4x6.rows()), (4, 6));
+    assert_eq!(
+        (SheetGrid::Grid2x3.columns(), SheetGrid::Grid2x3.rows()),
+        (2, 3)
+    );
+    assert_eq!(
+        (SheetGrid::Grid3x4.columns(), SheetGrid::Grid3x4.rows()),
+        (3, 4)
+    );
+    assert_eq!(
+        (SheetGrid::Grid4x6.columns(), SheetGrid::Grid4x6.rows()),
+        (4, 6)
+    );
 }
 
 #[test]
@@ -215,7 +313,9 @@ fn layout_invariants() {
             assert_eq!(cells.len() as i64, grid.columns() * grid.rows());
             let first = cells[0];
             for c in &cells {
-                assert!((c.width - first.width).abs() < eps && (c.height - first.height).abs() < eps);
+                assert!(
+                    (c.width - first.width).abs() < eps && (c.height - first.height).abs() < eps
+                );
                 assert!(c.width > 0.0 && c.height > 0.0);
                 assert!(c.x >= 36.0 - eps && c.y >= 36.0 - eps);
                 assert!(c.x + c.width <= page.width - 36.0 + eps);
@@ -224,7 +324,10 @@ fn layout_invariants() {
             for i in 0..cells.len() {
                 for j in i + 1..cells.len() {
                     let (a, b) = (cells[i], cells[j]);
-                    let overlap = a.x < b.x + b.width - eps && b.x < a.x + a.width - eps && a.y < b.y + b.height - eps && b.y < a.y + a.height - eps;
+                    let overlap = a.x < b.x + b.width - eps
+                        && b.x < a.x + a.width - eps
+                        && a.y < b.y + b.height - eps
+                        && b.y < a.y + a.height - eps;
                     assert!(!overlap);
                 }
             }
@@ -259,14 +362,26 @@ fn cases() -> Vec<Case> {
 }
 
 fn list() -> Vec<TrackingParam> {
-    ["utm_*", "fbclid", "gclid"].iter().map(|n| TrackingParam { name: n.to_string(), source: "x".into() }).collect()
+    ["utm_*", "fbclid", "gclid"]
+        .iter()
+        .map(|n| TrackingParam {
+            name: n.to_string(),
+            source: "x".into(),
+        })
+        .collect()
 }
 
 #[test]
 fn fixtures_load() {
     let c = cases();
     assert!(c.len() >= 25);
-    assert_eq!(c.iter().map(|x| &x.id).collect::<std::collections::HashSet<_>>().len(), c.len());
+    assert_eq!(
+        c.iter()
+            .map(|x| &x.id)
+            .collect::<std::collections::HashSet<_>>()
+            .len(),
+        c.len()
+    );
 }
 
 #[test]
@@ -285,7 +400,10 @@ fn compacted_parses_to_the_same_link() {
         let after = WebAddress::parse(c.compacted.as_deref().unwrap(), psl).unwrap();
         assert_eq!(after.link.normalized, before.link.normalized, "{}", c.id);
         assert_eq!(after.link.host_ascii, before.link.host_ascii);
-        assert_eq!(after.link.registrable_domain, before.link.registrable_domain);
+        assert_eq!(
+            after.link.registrable_domain,
+            before.link.registrable_domain
+        );
     }
 }
 
@@ -301,8 +419,19 @@ fn compacting_twice_changes_nothing() {
 #[test]
 fn hostile_input_never_traps() {
     let mut odd: Vec<String> = [
-        "", "http://", "https://[", "https://[::1", "https://a:b:c/", "https:////x", "https:\\\\x\\y", "https://@", "https://:443",
-        "http://x:99999", "https://example.com:443:443", "\u{0}https://x.y", "HTTPS://\u{FFFD}.com",
+        "",
+        "http://",
+        "https://[",
+        "https://[::1",
+        "https://a:b:c/",
+        "https:////x",
+        "https:\\\\x\\y",
+        "https://@",
+        "https://:443",
+        "http://x:99999",
+        "https://example.com:443:443",
+        "\u{0}https://x.y",
+        "HTTPS://\u{FFFD}.com",
     ]
     .iter()
     .map(|s| s.to_string())
@@ -320,26 +449,42 @@ fn hostile_input_never_traps() {
 #[test]
 fn finds_tracking_parameters_in_order() {
     let link = "https://example.com/p?id=7&UTM_Source=a&fbclid=1&utm_x&keep=Yes&gclid=z";
-    assert_eq!(tracking_parameters(link, &list()), vec!["UTM_Source", "fbclid", "utm_x", "gclid"]);
+    assert_eq!(
+        tracking_parameters(link, &list()),
+        vec!["UTM_Source", "fbclid", "utm_x", "gclid"]
+    );
 }
 
 #[test]
 fn removal_keeps_the_rest_verbatim() {
     let link = "https://example.com/Path?id=7&utm_source=a&Keep=Yes%20No&fbclid=1#Frag";
-    assert_eq!(removing_tracking(link, &list()).as_deref(), Some("https://example.com/Path?id=7&Keep=Yes%20No#Frag"));
+    assert_eq!(
+        removing_tracking(link, &list()).as_deref(),
+        Some("https://example.com/Path?id=7&Keep=Yes%20No#Frag")
+    );
 }
 
 #[test]
 fn empty_query_mark_goes() {
-    assert_eq!(removing_tracking("https://example.com/a?utm_source=x&gclid=y", &list()).as_deref(), Some("https://example.com/a"));
-    assert_eq!(removing_tracking("https://example.com/?fbclid=1#top", &list()).as_deref(), Some("https://example.com/#top"));
+    assert_eq!(
+        removing_tracking("https://example.com/a?utm_source=x&gclid=y", &list()).as_deref(),
+        Some("https://example.com/a")
+    );
+    assert_eq!(
+        removing_tracking("https://example.com/?fbclid=1#top", &list()).as_deref(),
+        Some("https://example.com/#top")
+    );
 }
 
 #[test]
 fn nil_when_there_is_nothing_to_remove() {
     for s in [
-        "https://example.com/a?x=1", "https://example.com/a", "https://example.com/a#utm_source=1", "https://example.com/a?",
-        "mailto:a@b.c?utm_source=1", "https://example.com/a?utmx=1&xutm_source=2",
+        "https://example.com/a?x=1",
+        "https://example.com/a",
+        "https://example.com/a#utm_source=1",
+        "https://example.com/a?",
+        "mailto:a@b.c?utm_source=1",
+        "https://example.com/a?utmx=1&xutm_source=2",
     ] {
         assert_eq!(removing_tracking(s, &list()), None, "{s}");
         assert!(tracking_parameters(s, &list()).is_empty(), "{s}");
@@ -356,5 +501,8 @@ fn userinfo_and_port_survive_removal() {
 
 #[test]
 fn empty_list_finds_nothing() {
-    assert_eq!(removing_tracking("https://example.com/?utm_source=1", &[]), None);
+    assert_eq!(
+        removing_tracking("https://example.com/?utm_source=1", &[]),
+        None
+    );
 }

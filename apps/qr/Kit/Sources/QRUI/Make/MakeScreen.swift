@@ -14,6 +14,7 @@ public struct MakeScreen: View {
     @State private var model: MakeScreenModel
     @State private var showExport = false
     @State private var keyboardUp = false
+    @State private var showBatch = false
 
     /// The Make screen; `prefill` comes from a result's "Make code" action. Callers wrap it in
     /// `.gated(feature:)` (paid). Pushed inside a NavigationStack.
@@ -53,6 +54,9 @@ public struct MakeScreen: View {
         .navigationTitle(Text(verbatim: String(localized: "make.title", defaultValue: "Make a code", bundle: .module)))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .secondaryAction) {
+                Button("Batch codes") { showBatch = true }
+            }
             ToolbarItem(placement: .confirmationAction) {
                 Button {
                     Task {
@@ -79,6 +83,7 @@ public struct MakeScreen: View {
                 .presentationDetents(typeSize.isAccessibilitySize ? [.large] : [.medium, .large])
             }
         }
+        .sheet(isPresented: $showBatch) { BatchMakeScreen() }
     }
 
     // MARK: Sections

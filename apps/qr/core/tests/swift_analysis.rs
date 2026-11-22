@@ -39,8 +39,14 @@ fn every_case_matches_swift() {
         let code = match c["input"].as_str() {
             Some(t) => ScannedCode::text(t, sym),
             None => {
-                let bytes = base64::engine::general_purpose::STANDARD.decode(c["inputBase64"].as_str().unwrap()).unwrap_or_default();
-                ScannedCode { text: String::from_utf8(bytes.clone()).ok(), bytes, symbology: sym }
+                let bytes = base64::engine::general_purpose::STANDARD
+                    .decode(c["inputBase64"].as_str().unwrap())
+                    .unwrap_or_default();
+                ScannedCode {
+                    text: String::from_utf8(bytes.clone()).ok(),
+                    bytes,
+                    symbology: sym,
+                }
             }
         };
         let a = match c["known"].as_array() {
@@ -55,7 +61,10 @@ fn every_case_matches_swift() {
         };
         let got = ana(&a);
         if got != c["analysis"] {
-            bad.push(format!("{}:\n  swift {}\n  rust  {}", c["id"], c["analysis"], got));
+            bad.push(format!(
+                "{}:\n  swift {}\n  rust  {}",
+                c["id"], c["analysis"], got
+            ));
         }
     }
     assert!(bad.is_empty(), "{} differ:\n{}", bad.len(), bad.join("\n"));
@@ -69,17 +78,31 @@ fn every_peek_pair_matches_swift() {
     for e in d["peek"].as_array().unwrap() {
         let path = e["path"].as_str().unwrap();
         let pair: Value = serde_json::from_slice(&fixture_bytes(path)).unwrap();
-        let html = std::fs::read(fixtures_dir().join(path.replace(".json", ".html"))).unwrap_or_default();
+        let html =
+            std::fs::read(fixtures_dir().join(path.replace(".json", ".html"))).unwrap_or_default();
         let s = |v: &Value| v.as_str().map(String::from);
         let capture = PeekCapture {
-            hops: pair["hops"].as_array().unwrap().iter().map(|h| PeekHop { url: s(&h["url"]).unwrap(), status: h["status"].as_i64() }).collect(),
-            stopped_because: StopReason::from_raw(pair["stoppedBecause"].as_str().unwrap()).unwrap_or(StopReason::Finished),
+            hops: pair["hops"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|h| PeekHop {
+                    url: s(&h["url"]).unwrap(),
+                    status: h["status"].as_i64(),
+                })
+                .collect(),
+            stopped_because: StopReason::from_raw(pair["stoppedBecause"].as_str().unwrap())
+                .unwrap_or(StopReason::Finished),
             content_type: s(&pair["contentType"]),
             content_disposition: s(&pair["contentDisposition"]),
             body: html.clone(),
             tls_version: None,
         };
-        let r = peek.report(analyze(pair["original"].as_str().unwrap()), capture, pair["ageDays"].as_i64());
+        let r = peek.report(
+            analyze(pair["original"].as_str().unwrap()),
+            capture,
+            pair["ageDays"].as_i64(),
+        );
         let sn = qr_core::peek::sniff(&html, pair["contentType"].as_str());
         let mut got = json!({
             "path": path,

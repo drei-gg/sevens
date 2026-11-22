@@ -84,7 +84,11 @@ pub fn field<'a>(v: &'a Value, key: &str) -> Option<&'a Value> {
 }
 
 /// An optional field: missing or null is None; the wrong type fails the whole value (Err).
-pub fn optional<T>(v: &Value, key: &str, read: impl Fn(&Value) -> Option<T>) -> Result<Option<T>, ()> {
+pub fn optional<T>(
+    v: &Value,
+    key: &str,
+    read: impl Fn(&Value) -> Option<T>,
+) -> Result<Option<T>, ()> {
     match v.as_object().and_then(|o| o.get(key)) {
         None | Some(Value::Null) => Ok(None),
         Some(x) => read(x).map(Some).ok_or(()),

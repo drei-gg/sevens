@@ -8,6 +8,22 @@ public enum PDFRenderer {
     static let singleCaptionSize: CGFloat = 12
     static let sheetCaptionSize: CGFloat = 8
 
+    /// Distinct codes in review order, continued across pages with matching numbered captions.
+    public static func batch(matrices: [BitMatrix], grid: SheetGrid, paper: PaperSize) -> Data {
+        precondition(!matrices.isEmpty)
+        let page = CGRect(x: 0, y: 0, width: paper.size.width, height: paper.size.height)
+        let cells = SheetLayout.cells(grid: grid, paper: paper)
+        return UIGraphicsPDFRenderer(bounds: page).pdfData { ctx in
+            for (index, matrix) in matrices.enumerated() {
+                if index % cells.count == 0 { ctx.beginPage() }
+                let cell = cells[index % cells.count]
+                draw(matrix: matrix, in: CGRect(x: cell.x, y: cell.y, width: cell.width, height: cell.height),
+                     caption: String(index + 1), captionSize: sheetCaptionSize,
+                     foreground: .black, background: .white, context: ctx.cgContext)
+            }
+        }
+    }
+
     /// One code centered on the page inside the 36 pt margin, caption (if any) under it.
     public static func single(matrix: BitMatrix, caption: String?, foreground: RGBColor = .black,
                               background: RGBColor = .white, paper: PaperSize) -> Data {
