@@ -266,6 +266,9 @@ fun ResultContent(
                                 notice = "Couldn’t join. Try Settings › Network & internet › Wi-Fi."
                             }
                 }
+            ResultAction.WIFI_SETTINGS ->
+                if (!Handoffs.wifiSettings(context))
+                    notice = "Couldn’t open Wi-Fi settings. Open them from your phone’s Settings."
             ResultAction.ADD_CONTACT ->
                 (analysis.payload as? Payload.Contact)?.let {
                     Handoffs.addContact(context, it.info)
@@ -419,6 +422,7 @@ object ResultActionText {
             ResultAction.PEEK -> "Peek"
             ResultAction.JOIN_WIFI -> "Join Wi-Fi"
             ResultAction.COPY_PASSWORD -> "Copy password"
+            ResultAction.WIFI_SETTINGS -> "Wi-Fi settings"
             ResultAction.ADD_CONTACT -> "Add to Contacts"
             ResultAction.ADD_EVENT -> "Add to Calendar"
             ResultAction.CALL -> "Call"
@@ -438,6 +442,7 @@ object ResultActionText {
             ResultAction.PEEK -> Icons.Rounded.Visibility
             ResultAction.JOIN_WIFI -> Icons.Rounded.Wifi
             ResultAction.COPY_PASSWORD -> Icons.Rounded.Key
+            ResultAction.WIFI_SETTINGS -> Icons.Rounded.Settings
             ResultAction.ADD_CONTACT -> Icons.Rounded.PersonAdd
             ResultAction.ADD_EVENT -> Icons.Rounded.EventAvailable
             ResultAction.CALL -> Icons.Rounded.Phone

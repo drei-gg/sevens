@@ -199,3 +199,79 @@ object SignalText {
         return if (days == 1) "1 day" else "$days days"
     }
 }
+
+/**
+ * What's new (SPEC §11, iOS SettingsInfo.changelog): `CHANGELOG.md`, copied into the assets at build
+ * time from apps/qr. Null when it isn't bundled, empty or over 512 KB, which hides the row.
+ */
+object Changelog {
+    const val ASSET = "CHANGELOG.md"
+    private const val MAX_BYTES = 512 * 1024
+
+    fun load(context: android.content.Context): String? =
+        runCatching {
+                context.assets.open(ASSET).use { input ->
+                    val bytes = java.io.ByteArrayOutputStream()
+                    val chunk = ByteArray(8 * 1024)
+                    while (bytes.size() <= MAX_BYTES) {
+                        val n = input.read(chunk)
+                        if (n < 0) break
+                        bytes.write(chunk, 0, n)
+                    }
+                    if (bytes.size() > MAX_BYTES) null else bytes.toString("UTF-8")
+                }
+            }
+            .getOrNull()
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+
+    sealed interface Block {
+        val text: String
+
+        data class Heading(override val text: String) : Block
+
+        data class Paragraph(override val text: String) : Block
+
+        data class Bullet(override val text: String) : Block
+    }
+
+    /**
+     * The changelog's own Markdown, read as plain blocks: `##` lines are headings, `-` or `*` lines
+     * bullets (wrapped lines join them), the rest paragraphs. The top `# Changelog` title is left out:
+     * the screen is already called What's new.
+     */
+    fun blocks(text: String): List<Block> {
+        val out = mutableListOf<Block>()
+        var open: StringBuilder? = null
+        var bullet = false
+        fun close() {
+            val body = open?.toString()?.trim()
+            if (!body.isNullOrEmpty()) out += if (bullet) Block.Bullet(body) else Block.Paragraph(body)
+            open = null
+        }
+        for (raw in text.lines()) {
+            val line = raw.trim()
+            when {
+                line.isEmpty() -> close()
+                line.startsWith("#") -> {
+                    close()
+                    val level = line.takeWhile { it == '#' }.length
+                    val title = line.drop(level).trim()
+                    if (level > 1 && title.isNotEmpty()) out += Block.Heading(title)
+                }
+                line.startsWith("- ") || line.startsWith("* ") -> {
+                    close()
+                    open = StringBuilder(line.drop(2).trim())
+                    bullet = true
+                }
+                open != null -> open!!.append(' ').append(line)
+                else -> {
+                    open = StringBuilder(line)
+                    bullet = false
+                }
+            }
+        }
+        close()
+        return out
+    }
+}

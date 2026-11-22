@@ -19,6 +19,9 @@ sealed interface Route {
 
     data object KnownAddresses : Route
 
+    /** The bundled CHANGELOG.md (SPEC §11), from About. */
+    data object WhatsNew : Route
+
     /** Make, optionally pre-filled from a result's "Make a code". */
     data class Make(val prefill: MakeRequest?) : Route {
         val draft = MakeDraft(prefill)

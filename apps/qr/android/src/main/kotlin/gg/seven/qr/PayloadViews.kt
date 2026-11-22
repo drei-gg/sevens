@@ -206,9 +206,11 @@ private fun WiFiView(info: WiFiInfo, plan: WiFiJoinPlan) {
             else ResultField("Password", "The code doesn’t include one")
         }
         when (plan) {
-            WiFiJoinPlan.SETTINGS_ONLY -> Caption("Join this one in Settings.")
-            WiFiJoinPlan.COPY_AND_SETTINGS -> Caption("Join in Settings › Network & internet › Wi-Fi.")
-            WiFiJoinPlan.CANNOT_JOIN -> Caption("The code has no password for this network. Join in Settings › Network & internet › Wi-Fi.")
+            // Wi-Fi settings, the action below, opens the panel where these are joined.
+            WiFiJoinPlan.SETTINGS_ONLY -> Caption("Join this one in Wi-Fi settings.")
+            WiFiJoinPlan.COPY_AND_SETTINGS ->
+                Caption(if (ResultActionPlan.hasPassword(info)) "Copy the password, then join in Wi-Fi settings." else "Join in Wi-Fi settings.")
+            WiFiJoinPlan.CANNOT_JOIN -> Caption("The code has no password for this network. Join in Wi-Fi settings.")
             WiFiJoinPlan.JOIN -> Unit
         }
     }

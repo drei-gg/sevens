@@ -36,6 +36,35 @@ configure<com.android.build.api.dsl.ApplicationExtension> {
     testOptions { unitTests.isReturnDefaultValues = true }
 }
 
+// What's new (SPEC §11): apps/qr/CHANGELOG.md, the one changelog both phones ship, copied into
+// generated assets at build time so it is never duplicated by hand (iOS bundles the same file).
+abstract class QrChangelogAssets : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val changelog: RegularFileProperty
+
+    @get:OutputDirectory abstract val output: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        val dir = output.get().asFile
+        dir.deleteRecursively()
+        dir.mkdirs()
+        changelog.get().asFile.copyTo(dir.resolve("CHANGELOG.md"))
+    }
+}
+
+val qrChangelogAssets =
+    tasks.register<QrChangelogAssets>("qrChangelogAssets") {
+        changelog.set(rootDir.parentFile.resolve("apps/qr/CHANGELOG.md"))
+    }
+
+configure<com.android.build.api.variant.ApplicationAndroidComponentsExtension> {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(qrChangelogAssets, QrChangelogAssets::output)
+    }
+}
+
 dependencies {
     // Camera: CameraX preview, analysis and torch (the DataScannerViewController counterpart).
     "implementation"("androidx.camera:camera-core:1.6.2")

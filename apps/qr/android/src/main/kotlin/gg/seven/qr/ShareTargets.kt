@@ -3,8 +3,6 @@
 package gg.seven.qr
 
 import android.app.Application
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -25,6 +23,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -36,7 +35,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -326,6 +324,11 @@ private fun MakeShareScreen(model: ShareModel, source: ShareMakeSource?, onDone:
     val entitlement by model.store.entitlement.collectAsStateWithLifecycle()
     var phase by remember { mutableStateOf<MakePhase>(MakePhase.Loading) }
     var copied by remember { mutableStateOf(false) }
+    var saved by remember { mutableStateOf<Boolean?>(null) }
+    val saveFile = rememberSaveFile { ok ->
+        saved = ok
+        if (ok) view.confirmHaptic()
+    }
     LaunchedEffect(purchase.loaded, entitlement) {
         if (!purchase.loaded) return@LaunchedEffect
         if (!entitlement.paidFeaturesAvailable) {
@@ -370,22 +373,32 @@ private fun MakeShareScreen(model: ShareModel, source: ShareMakeSource?, onDone:
                     )
                     ReadableColumn {
                         Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                            if (saved == false) Text("The image couldn’t be saved there. Try again.", color = MaterialTheme.colorScheme.error)
                             Button(
                                 onClick = {
-                                    val file = FileShare.write(context, "QR code.png", p.png)
-                                    FileShare.share(context, file, "image/png", "QR code")
+                                    saved = null
+                                    saveFile.save(FileShare.write(context, "QR code.png", p.png))
                                 },
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("share.make.save"),
                             ) {
-                                Icon(Icons.Rounded.Download, null, Modifier.size(ButtonDefaults.IconSize))
+                                Icon(if (saved == true) Icons.Rounded.Check else Icons.Rounded.Download, null, Modifier.size(ButtonDefaults.IconSize))
                                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                                Text("Save image")
+                                Text(if (saved == true) "Saved" else "Save image")
                             }
                             OutlinedButton(
                                 onClick = {
                                     val file = FileShare.write(context, "QR code.png", p.png)
-                                    val uri = FileProvider.getUriForFile(context, context.packageName + ".files", file)
-                                    context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newUri(context.contentResolver, "QR code", uri))
+                                    FileShare.share(context, file, "image/png", "QR code")
+                                },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("share.make.share"),
+                            ) {
+                                Icon(Icons.Rounded.Share, null, Modifier.size(ButtonDefaults.IconSize))
+                                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                                Text("Share")
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    FileShare.copyImage(context, FileShare.writeClipboard(context, "QR code.png", p.png))
                                     view.confirmHaptic()
                                     copied = true
                                 },

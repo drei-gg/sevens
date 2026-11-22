@@ -187,11 +187,23 @@ object Handoffs {
         if (!info.isOpen) {
             val password = info.password?.takeIf { it.isNotEmpty() } ?: return null
             if (info.security?.uppercase() == "WEP") return null
-            runCatching { builder.setWpa2Passphrase(password) }.getOrElse { return null }
+            runCatching {
+                    when (ResultActionPlan.wifiPassphrase(info.security)) {
+                        WiFiPassphrase.WPA3 -> builder.setWpa3Passphrase(password)
+                        WiFiPassphrase.WPA2 -> builder.setWpa2Passphrase(password)
+                    }
+                }
+                .getOrElse { return null }
         }
         val suggestion = runCatching { builder.build() }.getOrElse { return null }
         return Intent(Settings.ACTION_WIFI_ADD_NETWORKS).putParcelableArrayListExtra(Settings.EXTRA_WIFI_NETWORK_LIST, arrayListOf(suggestion))
     }
 
-    fun wifiSettings(context: Context) = start(context, Intent(Settings.ACTION_WIFI_SETTINGS))
+    /**
+     * Where to join by hand: the Wi-Fi panel over the app on Android 10+, the Wi-Fi settings screen
+     * before (or when a device has no panel).
+     */
+    fun wifiSettings(context: Context): Boolean =
+        (Build.VERSION.SDK_INT >= 29 && start(context, Intent(Settings.Panel.ACTION_WIFI))) ||
+            start(context, Intent(Settings.ACTION_WIFI_SETTINGS))
 }

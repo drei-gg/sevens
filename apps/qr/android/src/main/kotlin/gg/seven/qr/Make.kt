@@ -6,8 +6,6 @@
 
 package gg.seven.qr
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -41,7 +39,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
@@ -1010,8 +1007,9 @@ private fun ColorDialog(
 }
 
 /**
- * PNG, SVG or PDF of the code on screen, handed to the share sheet (Files and the gallery live
- * there; no storage permission). The caller has already checked the gate.
+ * PNG, SVG or PDF of the code on screen: saved where the person picks (the system's Create
+ * document screen, no storage permission) or handed to the share sheet. The caller has already
+ * checked the gate.
  */
 @Composable
 private fun ExportSheet(
@@ -1030,6 +1028,8 @@ private fun ExportSheet(
     var failed by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var copied by remember { mutableStateOf(false) }
+    var saved by remember { mutableStateOf(false) }
+    var saveFailed by remember { mutableStateOf(false) }
     val stamp = remember { LocalDateTime.now() }
     val fileName =
         MakeExportOptions.fileName(
@@ -1039,6 +1039,36 @@ private fun ExportSheet(
             options.format,
             options.pdfLayout == PdfLayout.SHEET,
         )
+    val saveFile = rememberSaveFile { ok ->
+        saveFailed = !ok
+        if (ok) {
+            onUse()
+            view.confirmHaptic()
+            saved = true
+            scope.launch {
+                delay(2_000)
+                saved = false
+            }
+        }
+    }
+
+    /** Writes the chosen format to the export folder; null (and the message) when it can't. */
+    suspend fun prepare(): java.io.File? {
+        busy = true
+        failed = false
+        saveFailed = false
+        val file =
+            withContext(Dispatchers.Default) {
+                runCatching {
+                        val bytes = MakeExportWriter.data(options, matrix, foreground, background)
+                        if (bytes.isEmpty()) null else FileShare.write(context, fileName, bytes)
+                    }
+                    .getOrNull()
+            }
+        busy = false
+        if (file == null) failed = true
+        return file
+    }
     val state =
         rememberBottomSheetState(SheetValue.Hidden, setOf(SheetValue.Hidden, SheetValue.Expanded))
     ModalBottomSheet(
@@ -1145,42 +1175,45 @@ private fun ExportSheet(
             }
             if (failed)
                 InlineMessage("The file couldn’t be created. Try a smaller size.", isError = true)
+            if (saveFailed)
+                InlineMessage("The file couldn’t be saved there. Try again.", isError = true)
+            // Save (the system's Create document screen) leads; Share hands the same file to apps.
             Button(
                 onClick = {
-                    busy = true
-                    failed = false
                     scope.launch {
-                        val file =
-                            withContext(Dispatchers.Default) {
-                                runCatching {
-                                        val bytes =
-                                            MakeExportWriter.data(
-                                                options,
-                                                matrix,
-                                                foreground,
-                                                background,
-                                            )
-                                        if (bytes.isEmpty()) null
-                                        else FileShare.write(context, fileName, bytes)
-                                    }
-                                    .getOrNull()
-                            }
-                        busy = false
-                        if (file == null) failed = true
-                        else {
-                            onUse()
-                            FileShare.share(context, file, options.format.mime, fileName)
-                        }
+                        val file = prepare() ?: return@launch
+                        saveFile.save(file)
+                    }
+                },
+                enabled = !busy,
+                modifier =
+                    Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("make.export.save"),
+            ) {
+                if (busy) LoadingIndicator(Modifier.size(24.dp))
+                else
+                    Icon(
+                        if (saved) Icons.Rounded.Check else Icons.Rounded.Download,
+                        null,
+                        Modifier.size(ButtonDefaults.IconSize),
+                    )
+                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                Text(if (saved) "Saved" else "Save file")
+            }
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        val file = prepare() ?: return@launch
+                        onUse()
+                        FileShare.share(context, file, options.format.mime, fileName)
                     }
                 },
                 enabled = !busy,
                 modifier =
                     Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("make.export.share"),
             ) {
-                if (busy) LoadingIndicator(Modifier.size(24.dp))
-                else Icon(Icons.Rounded.Share, null, Modifier.size(ButtonDefaults.IconSize))
+                Icon(Icons.Rounded.Share, null, Modifier.size(ButtonDefaults.IconSize))
                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                Text("Share or save file")
+                Text("Share")
             }
             OutlinedButton(
                 onClick = {
@@ -1200,10 +1233,11 @@ private fun ExportSheet(
                                 MakeExportFormat.PNG,
                                 false,
                             )
+                        // Its own folder: a later export's sweep must not break the paste.
                         val file =
                             withContext(Dispatchers.Default) {
                                 runCatching {
-                                        FileShare.write(
+                                        FileShare.writeClipboard(
                                             context,
                                             name,
                                             MakeExportWriter.data(
@@ -1216,17 +1250,7 @@ private fun ExportSheet(
                                     }
                                     .getOrNull()
                             } ?: return@launch
-                        val uri =
-                            FileProvider.getUriForFile(
-                                context,
-                                context.packageName + ".files",
-                                file,
-                            )
-                        context
-                            .getSystemService(ClipboardManager::class.java)
-                            ?.setPrimaryClip(
-                                ClipData.newUri(context.contentResolver, "QR code", uri)
-                            )
+                        FileShare.copyImage(context, file)
                         view.confirmHaptic()
                         onUse()
                         copied = true

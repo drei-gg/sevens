@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import gg.seven.kit.DropdownField
 import gg.seven.kit.FullScreenForm
@@ -25,9 +26,15 @@ class BatchDraft {
     var items by mutableStateOf<List<String>?>(null)
     var issue by mutableStateOf<String?>(null)
     var prepared by mutableStateOf<File?>(null)
+    /** When [prepared] was made: the saved copy's suggested name carries it. */
+    var preparedAt by mutableStateOf<java.time.LocalDateTime?>(null)
     var grid by mutableStateOf(SheetGrid.GRID2X3)
     var paper by mutableStateOf(paperSizeForRegion(java.util.Locale.getDefault().country))
 }
+
+/** `qr-batch-20261122-1405.pdf`: what Save PDF suggests. Fixed calendar and digits. */
+internal fun batchFileName(at: java.time.LocalDateTime): String =
+    "qr-batch-" + java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmm", java.util.Locale.ROOT).format(at) + ".pdf"
 
 internal fun batchPdf(items: List<String>, grid: SheetGrid, paper: PaperSize): ByteArray {
     val matrices =
@@ -50,6 +57,11 @@ fun BatchMakeForm(draft: BatchDraft, close: () -> Unit) {
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     val items = draft.items
+    var saved by remember { mutableStateOf(false) }
+    val saveFile = rememberSaveFile { ok ->
+        saved = ok
+        draft.issue = if (ok) null else "The PDF couldn’t be saved there. Your file and inputs are still here."
+    }
     fun share(file: File) {
         try {
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file)
@@ -86,6 +98,7 @@ fun BatchMakeForm(draft: BatchDraft, close: () -> Unit) {
                     try {
                         val grid = draft.grid
                         val paper = draft.paper
+                        draft.preparedAt = java.time.LocalDateTime.now()
                         draft.prepared =
                             withContext(Dispatchers.IO) {
                                 val bytes = batchPdf(items, grid, paper)
@@ -148,12 +161,26 @@ fun BatchMakeForm(draft: BatchDraft, close: () -> Unit) {
                     draft.grid = it
                 }
             } else Text("${draft.paper.title} · ${draft.grid.title}")
-            draft.prepared?.let { Text("PDF ready", style = MaterialTheme.typography.titleMedium) }
+            draft.prepared?.let { file ->
+                Text(if (saved) "PDF saved" else "PDF ready", style = MaterialTheme.typography.titleMedium)
+                // Share PDF stays in the fixed action slot; Save puts a copy where the person picks.
+                Button(
+                    onClick = {
+                        saved = false
+                        saveFile.save(file, batchFileName(draft.preparedAt ?: java.time.LocalDateTime.now()))
+                    },
+                    enabled = !busy,
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("batch-save"),
+                ) {
+                    Text("Save PDF")
+                }
+            }
 
             OutlinedButton(
                 onClick = {
                     draft.items = null
                     draft.prepared = null
+                    saved = false
                     draft.issue = null
                 },
                 enabled = !busy,

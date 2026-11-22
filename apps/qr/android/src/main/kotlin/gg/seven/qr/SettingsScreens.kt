@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -19,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -89,7 +91,7 @@ fun SettingsScreen(model: QrModel, nav: QrNav) {
                 }
                 ListsSection()
                 SevenAbout(coreVersion = remember { coreVersion() })
-                AboutLinks()
+                AboutLinks(nav)
             }
         }
     }
@@ -163,14 +165,18 @@ private fun ListsSection() {
     }
 }
 
-/** The licence, support and notices rows iOS has beside SevenKit's About. */
+/**
+ * The rows iOS has beside SevenKit's About: What's new, the licence and support, each shown when the
+ * build has it, and the DENSO WAVE trademark line, which always shows.
+ */
 @Composable
-private fun AboutLinks() {
+private fun AboutLinks(nav: QrNav) {
     val context = LocalContext.current
     val repository = BuildConfig.REPOSITORY_URL.takeIf { it.startsWith("https://") }
     val support = BuildConfig.SUPPORT_EMAIL.takeIf { it.contains('@') }
-    if (repository == null && support == null) return
+    val hasChangelog = remember { Changelog.load(context) != null }
     Section(footer = "QR Code is a registered trademark of DENSO WAVE INCORPORATED.") {
+        if (hasChangelog) item("What’s new", onClick = { nav.push(Route.WhatsNew) })
         repository?.let { url ->
             item("Source code (GPL-3.0)", icon = Icons.Rounded.Language, onClick = { Handoffs.open(context, url.toUri(), external = true) })
         }
@@ -180,6 +186,41 @@ private fun AboutLinks() {
                     context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.fromParts("mailto", address, null)).putExtra(Intent.EXTRA_SUBJECT, "QR Code Kit support"))
                 }
             })
+        }
+    }
+}
+
+/** The bundled changelog, newest first, as headings, paragraphs and bullets. */
+@Composable
+fun WhatsNewScreen(nav: QrNav) {
+    val context = LocalContext.current
+    val blocks = remember { Changelog.load(context)?.let(Changelog::blocks).orEmpty() }
+    PushedScreen("What’s new", nav::pop) { padding ->
+        SelectionContainer(Modifier.padding(padding).fillMaxSize()) {
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.m).navigationBarsPadding().padding(bottom = Space.xl).testTag("settings.whatsNew"),
+            ) {
+                ReadableColumn {
+                    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                        blocks.forEachIndexed { index, block ->
+                            when (block) {
+                                is Changelog.Block.Heading ->
+                                    Text(
+                                        block.text,
+                                        Modifier.padding(top = if (index == 0) 0.dp else Space.m).semantics { heading() },
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+                                is Changelog.Block.Paragraph -> Text(block.text, style = MaterialTheme.typography.bodyLarge)
+                                is Changelog.Block.Bullet ->
+                                    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                                        Text("•", style = MaterialTheme.typography.bodyLarge)
+                                        Text(block.text, style = MaterialTheme.typography.bodyLarge)
+                                    }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -222,7 +263,7 @@ fun NetworkContactScreen(nav: QrNav) {
     }
 }
 
-/** "Addresses you know" (SPEC §4.4): remove one with Undo, or Forget all with a confirmation. */
+/** "Addresses you know" (SPEC §4.4): swipe or tap to remove one with Undo, or Forget all with a confirmation. */
 @Composable
 fun KnownAddressesScreen(model: QrModel, nav: QrNav) {
     val known by model.knownAddresses.collectAsStateWithLifecycle()
@@ -242,23 +283,26 @@ fun KnownAddressesScreen(model: QrModel, nav: QrNav) {
                 verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
             ) {
                 itemsIndexed(known.entries, key = { _, e -> e.domain }) { index, entry ->
-                    SegmentedListItem(
-                        shapes = ListItemDefaults.segmentedShapes(index, known.entries.size),
-                        supportingContent = { Text("Added " + format.format(entry.added.atZone(ZoneId.systemDefault()))) },
-                        trailingContent = {
-                            IconButton(onClick = {
-                                scope.launch {
-                                    if (model.forgetAddress(entry.domain)) {
-                                        val outcome = snackbar.showSnackbar("Removed ${entry.domain}", actionLabel = "Undo")
-                                        if (outcome == SnackbarResult.ActionPerformed) model.knowAddress(entry.domain)
-                                    }
-                                }
-                            }) {
-                                Icon(Icons.Rounded.Delete, "Remove ${entry.domain}")
+                    val shapes = ListItemDefaults.segmentedShapes(index, known.entries.size)
+                    fun remove() {
+                        scope.launch {
+                            if (model.forgetAddress(entry.domain)) {
+                                val outcome = snackbar.showSnackbar("Removed ${entry.domain}", actionLabel = "Undo")
+                                if (outcome == SnackbarResult.ActionPerformed) model.knowAddress(entry.domain)
                             }
-                        },
-                    ) {
-                        Text(entry.domain)
+                        }
+                    }
+                    // Swipe toward the start removes it, with the same Undo as the trash button.
+                    SwipeToDeleteRow("Remove ${entry.domain}", shapes.shape, enabled = true, onDelete = ::remove, modifier = Modifier.animateItem()) {
+                        SegmentedListItem(
+                            shapes = shapes,
+                            supportingContent = { Text("Added " + format.format(entry.added.atZone(ZoneId.systemDefault()))) },
+                            trailingContent = {
+                                IconButton(onClick = ::remove) { Icon(Icons.Rounded.Delete, "Remove ${entry.domain}") }
+                            },
+                        ) {
+                            Text(entry.domain)
+                        }
                     }
                 }
                 item {

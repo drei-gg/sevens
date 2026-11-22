@@ -28,7 +28,7 @@ import java.util.Locale
  */
 
 /** Every action a result can offer (SPEC §3). */
-enum class ResultAction { OPEN, PEEK, JOIN_WIFI, COPY_PASSWORD, ADD_CONTACT, ADD_EVENT, CALL, MESSAGE, MAIL, MAPS, OPEN_PAYMENT_IN, COPY, COPY_DETAILS, SHARE, MAKE_CODE }
+enum class ResultAction { OPEN, PEEK, JOIN_WIFI, COPY_PASSWORD, WIFI_SETTINGS, ADD_CONTACT, ADD_EVENT, CALL, MESSAGE, MAIL, MAPS, OPEN_PAYMENT_IN, COPY, COPY_DETAILS, SHARE, MAKE_CODE }
 
 /** What this device and build can do. Read once per sheet; tests pass their own. */
 data class ResultCapabilities(
@@ -37,6 +37,9 @@ data class ResultCapabilities(
     /** A calendar app takes new events. */
     val canAddEvent: Boolean = true,
 )
+
+/** The passphrase kind a Wi-Fi network suggestion is built with. */
+enum class WiFiPassphrase { WPA2, WPA3 }
 
 /** How the Wi-Fi card behaves (C8, enterprise rule). */
 enum class WiFiJoinPlan { JOIN, SETTINGS_ONLY, COPY_AND_SETTINGS, CANNOT_JOIN }
@@ -95,8 +98,11 @@ object ResultActionPlan {
                 list += ResultAction.COPY
             }
             is Payload.Wifi -> {
-                if (wifiJoinPlan(payload.info, capabilities) == WiFiJoinPlan.JOIN) list += ResultAction.JOIN_WIFI
+                val plan = wifiJoinPlan(payload.info, capabilities)
+                if (plan == WiFiJoinPlan.JOIN) list += ResultAction.JOIN_WIFI
                 if (hasPassword(payload.info)) list += ResultAction.COPY_PASSWORD
+                // Plans the system sheet can't take still get a way there: the Wi-Fi panel.
+                if (plan != WiFiJoinPlan.JOIN) list += ResultAction.WIFI_SETTINGS
             }
             is Payload.Contact -> list += listOf(ResultAction.ADD_CONTACT, ResultAction.COPY, ResultAction.SHARE)
             is Payload.Event -> {
@@ -127,6 +133,18 @@ object ResultActionPlan {
         }
 
     fun hasPassword(info: WiFiInfo) = !info.password.isNullOrEmpty()
+
+    /**
+     * Which passphrase a network suggestion takes, from the code's `T` value as the core parsed it:
+     * `SAE` (what Android's own Wi-Fi sharing writes for WPA3-only networks) or a WPA3-only value is
+     * WPA3; WPA, WPA2 and WPA2/WPA3 transition networks take WPA2, which transition networks accept.
+     * Only asked for networks that need a password and aren't enterprise or WEP.
+     */
+    fun wifiPassphrase(security: String?): WiFiPassphrase {
+        val s = security.orEmpty().uppercase()
+        val wpa3Only = s.contains("SAE") || (s.contains("WPA3") && !s.contains("WPA2") && !s.contains("WPA/"))
+        return if (wpa3Only) WiFiPassphrase.WPA3 else WiFiPassphrase.WPA2
+    }
 
     /** D8: a likely scam asks first, naming the registrable domain. */
     fun needsOpenConfirmation(level: Level) = level == Level.LIKELY_SCAM

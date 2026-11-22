@@ -20,6 +20,8 @@ import androidx.camera.view.transform.OutputTransform
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,21 +29,27 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import gg.seven.qr.core.ScannedCode
 import java.util.concurrent.Executors
+import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 
 /*
  * The live camera scanner (SPEC §2), the counterpart of iOS ScannerView and its coordinator:
  * CameraX preview and analysis, zxing-cpp reading every frame, ScanDebouncer deciding what is
- * delivered. Several codes in view are outlined and the person taps one. Pinch to zoom is
- * CameraX's own gesture on the preview.
+ * delivered. Several codes in view are outlined and the person taps one; each outline is also a
+ * TalkBack node naming the code. Pinch to zoom is CameraX's own gesture on the preview.
  */
 
 enum class ScannerAvailability { AVAILABLE, UNSUPPORTED, DENIED, NOT_ASKED }
@@ -71,6 +79,7 @@ fun CameraScanner(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val controller = remember {
         LifecycleCameraController(context).apply {
@@ -234,6 +243,28 @@ fun CameraScanner(
                     drawPath(path, Color.Black.copy(alpha = 0.45f), style = Stroke(width = 7.dp.toPx(), join = StrokeJoin.Round))
                     drawPath(path, Color.White, style = Stroke(width = 4.dp.toPx(), join = StrokeJoin.Round))
                     drawPath(path, Color.White.copy(alpha = 0.18f))
+                }
+            }
+        // The outlines are pixels; give each code a node TalkBack can reach and activate (a double tap
+        // picks it, as a tap on the outline does). Semantics only: sighted taps and pinches still
+        // reach the preview underneath.
+        if (outlines.size > 1)
+            outlines.forEach { located ->
+                key(located.code.key) {
+                    val box = located.bounds
+                    val label = CodeInViewLabel.of(located.code)
+                    Box(
+                        Modifier.offset { IntOffset(box.left.roundToInt(), box.top.roundToInt()) }
+                            .size(with(density) { box.width().toDp() }, with(density) { box.height().toDp() })
+                            .semantics {
+                                contentDescription = label
+                                role = Role.Button
+                                onClick("Pick this code") {
+                                    finish(debouncer.tap(located.code))
+                                    true
+                                }
+                            }
+                    )
                 }
             }
     }

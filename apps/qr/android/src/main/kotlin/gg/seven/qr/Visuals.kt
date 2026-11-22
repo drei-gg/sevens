@@ -1,6 +1,7 @@
 package gg.seven.qr
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -19,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -29,6 +32,7 @@ import gg.seven.kit.Space
 import gg.seven.kit.numeric
 import gg.seven.qr.core.Level
 import gg.seven.qr.core.Signal
+import kotlinx.coroutines.launch
 
 /*
  * QR's own visuals, the counterparts of QRUI/Shared/Visuals.swift and the verdict views. Status
@@ -241,4 +245,58 @@ val PillShape = RoundedCornerShape(50)
 /** "Task finished" (polish guide §3.8): CONFIRM on Android 11+, a plain tap before. */
 fun android.view.View.confirmHaptic() {
     performHapticFeedback(if (android.os.Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.CONFIRM else android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+}
+
+/**
+ * A list row that swipes toward the start to delete or remove it (M3 swipe to dismiss), revealing
+ * the destructive colour and a trash icon behind it. The row also carries [label] as an
+ * accessibility action, so the delete never depends on the gesture. [onDelete] owns Undo; the row
+ * snaps back, so it reappears if the deletion didn't happen or is undone in place.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SwipeToDeleteRow(
+    label: String,
+    shape: androidx.compose.ui.graphics.Shape,
+    enabled: Boolean,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val state = rememberSwipeToDismissBoxState()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    SwipeToDismissBox(
+        state = state,
+        modifier =
+            modifier.semantics {
+                if (enabled)
+                    customActions =
+                        listOf(
+                            androidx.compose.ui.semantics.CustomAccessibilityAction(label) {
+                                onDelete()
+                                true
+                            }
+                        )
+            },
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = enabled,
+        gesturesEnabled = enabled,
+        onDismiss = {
+            onDelete()
+            scope.launch { state.snapTo(SwipeToDismissBoxValue.Settled) }
+        },
+        backgroundContent = {
+            Box(
+                Modifier.fillMaxSize()
+                    .clip(shape)
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = Space.l),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Icon(Icons.Rounded.Delete, null, tint = MaterialTheme.colorScheme.onErrorContainer)
+            }
+        },
+    ) {
+        content()
+    }
 }

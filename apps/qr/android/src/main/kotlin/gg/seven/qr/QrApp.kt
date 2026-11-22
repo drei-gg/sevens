@@ -41,6 +41,7 @@ fun QrApp(model: QrModel) {
                 Route.Settings -> SettingsScreen(model, nav)
                 Route.NetworkContact -> NetworkContactScreen(nav)
                 Route.KnownAddresses -> KnownAddressesScreen(model, nav)
+                Route.WhatsNew -> WhatsNewScreen(nav)
                 is Route.Make ->
                     GatedScreen("Make", onBack = nav::pop) { MakeScreen(model, nav, route.draft) }
             }

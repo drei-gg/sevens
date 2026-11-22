@@ -1,3 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Only the export folders in the cache: History exports and made codes, deleted after sharing. -->
-<paths><cache-path name="exports" path="exports/" /></paths>
+<!-- Only the cache's export and clipboard folders: History exports and made codes (swept on the
+     next export), and the one image Copy image last put on the clipboard. -->
+<paths>
+    <cache-path name="exports" path="exports/" />
+    <cache-path name="clipboard" path="clipboard/" />
+</paths>

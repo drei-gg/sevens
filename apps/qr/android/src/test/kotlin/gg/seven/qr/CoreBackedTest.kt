@@ -112,4 +112,21 @@ class CoreBackedTest {
     }
 
     private fun analyzeOffline(text: String) = gg.seven.qr.core.Analyzer(gg.seven.qr.core.bundledDataLoad(null), gg.seven.qr.core.KnownAddresses()).use { it.analyze(scannedCodeFromText(text, Symbology.QR)) }
+
+    @Test
+    fun wifiTheSystemSheetCantTakeOffersWifiSettings() {
+        val wpa = Payload.Wifi(WiFiInfo("Cafe", "WPA", "hunter22", false, null, null))
+        val older = ResultActionPlan.actions(wpa, ResultCapabilities(wifiJoinAvailable = false))
+        assertEquals(listOf(ResultAction.COPY_PASSWORD, ResultAction.WIFI_SETTINGS, ResultAction.MAKE_CODE), older)
+        val layout = ResultActionPlan.layout(older, Level.NORMAL)
+        assertEquals(ResultAction.COPY_PASSWORD, layout.primary)
+        assertEquals(ResultAction.WIFI_SETTINGS, layout.secondary)
+        val enterprise = Payload.Wifi(WiFiInfo("Office", "WPA2-EAP", null, false, "PEAP", null))
+        assertEquals(WiFiJoinPlan.SETTINGS_ONLY, ResultActionPlan.wifiJoinPlan(enterprise.info, ResultCapabilities(wifiJoinAvailable = true)))
+        assertTrue(ResultAction.WIFI_SETTINGS in ResultActionPlan.actions(enterprise, ResultCapabilities(wifiJoinAvailable = true)))
+        val noPassword = Payload.Wifi(WiFiInfo("Cafe", "WPA", null, false, null, null))
+        assertEquals(listOf(ResultAction.WIFI_SETTINGS), ResultActionPlan.actions(noPassword, ResultCapabilities(wifiJoinAvailable = true), hasText = false))
+        val joinable = ResultActionPlan.actions(wpa, ResultCapabilities(wifiJoinAvailable = true))
+        assertTrue(ResultAction.WIFI_SETTINGS !in joinable)
+    }
 }

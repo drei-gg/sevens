@@ -60,8 +60,8 @@ import kotlinx.coroutines.launch
 
 /*
  * History (SPEC §10). Free to read: search, notes, export and delete work in every state; only
- * saving new scans needs the trial or the unlock. Android manners: long-press to select, delete
- * with Undo in a snackbar, export from the top bar's menu.
+ * saving new scans needs the trial or the unlock. Android manners: long-press to select, swipe a
+ * row to delete it, delete with Undo in a snackbar, save or share an export from the top bar's menu.
  */
 
 private val rowDate = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
@@ -113,19 +113,20 @@ fun HistoryScreen(model: QrModel, nav: QrNav) {
         }
     }
 
-    fun export(json: Boolean) {
+    val saveFile = rememberSaveFile { ok ->
+        if (ok) scope.launch { snackbar.showSnackbar("Saved") } else exportFailed = true
+    }
+
+    /** JSON or CSV in the export folder, then saved where the person picks or shared. */
+    fun export(json: Boolean, save: Boolean) {
         scope.launch {
             runCatching {
                     val bytes =
                         if (json) model.exportHistoryJson()
                         else model.exportHistoryCsv().toByteArray()
                     val file = FileShare.write(context, HistoryExportFiles.fileName(json), bytes)
-                    FileShare.share(
-                        context,
-                        file,
-                        if (json) "application/json" else "text/csv",
-                        file.name,
-                    )
+                    if (save) saveFile.save(file)
+                    else FileShare.share(context, file, FileShare.mimeType(file.name), file.name)
                 }
                 .onFailure { exportFailed = true }
         }
@@ -200,20 +201,29 @@ fun HistoryScreen(model: QrModel, nav: QrNav) {
                                     exportMenu,
                                     onDismissRequest = { exportMenu = false },
                                 ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Export as JSON") },
-                                        onClick = {
-                                            exportMenu = false
-                                            export(json = true)
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Export as CSV") },
-                                        onClick = {
-                                            exportMenu = false
-                                            export(json = false)
-                                        },
-                                    )
+                                    listOf(true to "JSON", false to "CSV").forEach { (json, name) ->
+                                        DropdownMenuItem(
+                                            text = { Text("Save as $name") },
+                                            leadingIcon = { Icon(Icons.Rounded.Download, null) },
+                                            onClick = {
+                                                exportMenu = false
+                                                export(json, save = true)
+                                            },
+                                            modifier = Modifier.testTag("history.export.save.$name"),
+                                        )
+                                    }
+                                    HorizontalDivider()
+                                    listOf(true to "JSON", false to "CSV").forEach { (json, name) ->
+                                        DropdownMenuItem(
+                                            text = { Text("Share as $name") },
+                                            leadingIcon = { Icon(Icons.Rounded.Share, null) },
+                                            onClick = {
+                                                exportMenu = false
+                                                export(json, save = false)
+                                            },
+                                            modifier = Modifier.testTag("history.export.share.$name"),
+                                        )
+                                    }
                                 }
                             }
                     },
@@ -278,22 +288,36 @@ fun HistoryScreen(model: QrModel, nav: QrNav) {
                         val count = shown.size
                         itemsIndexed(shown, key = { _, it -> it.id.toString() }) { index, item ->
                             val id = item.id.toString()
-                            HistoryRow(
-                                item,
-                                shapes = ListItemDefaults.segmentedShapes(index, count),
-                                selected = id in selection,
-                                selecting = selecting,
-                                onClick = {
-                                    if (selecting)
-                                        selection =
-                                            if (id in selection) selection - id else selection + id
-                                    else nav.push(Route.HistoryDetail(item.id))
-                                },
-                                onLongClick = {
-                                    view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                                    selection = selection + id
-                                },
-                            )
+                            val shapes = ListItemDefaults.segmentedShapes(index, count)
+                            // Swipe toward the start deletes one row, with the same Undo as
+                            // multi-select; selecting turns the gesture off.
+                            SwipeToDeleteRow(
+                                "Delete",
+                                shapes.shape,
+                                enabled = !selecting,
+                                onDelete = { delete(setOf(item.id)) },
+                                modifier = Modifier.animateItem(),
+                            ) {
+                                HistoryRow(
+                                    item,
+                                    shapes = shapes,
+                                    selected = id in selection,
+                                    selecting = selecting,
+                                    onClick = {
+                                        if (selecting)
+                                            selection =
+                                                if (id in selection) selection - id
+                                                else selection + id
+                                        else nav.push(Route.HistoryDetail(item.id))
+                                    },
+                                    onLongClick = {
+                                        view.performHapticFeedback(
+                                            HapticFeedbackConstants.LONG_PRESS
+                                        )
+                                        selection = selection + id
+                                    },
+                                )
+                            }
                         }
                     }
                 }

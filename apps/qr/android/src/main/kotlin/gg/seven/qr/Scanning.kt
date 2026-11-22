@@ -198,6 +198,26 @@ class ScanDebouncer(private val dwellMillis: Long = 400, private val repeatSuppr
     }
 }
 
+/**
+ * What TalkBack says for one code in view when several are: its type and the start of what it
+ * holds, so the person can pick one without seeing the outlines ("QR code: https://example.com…").
+ */
+object CodeInViewLabel {
+    const val PREVIEW_LENGTH = 40
+
+    fun of(code: ScannedCode): String {
+        val type = HistoryLabels.symbology(code.symbology)
+        val text = code.text?.replace(Regex("\\s+"), " ")?.trim()
+        val preview =
+            when {
+                text.isNullOrEmpty() -> "Data that isn’t text"
+                text.length > PREVIEW_LENGTH -> QrText.prefix(text, PREVIEW_LENGTH) + "…"
+                else -> text
+            }
+        return "$type: $preview"
+    }
+}
+
 /** A code with where it sits in the picture (any coordinate space the caller chooses). */
 data class Located(val code: ScannedCode, val corners: List<PointF>) {
     val bounds: RectF
