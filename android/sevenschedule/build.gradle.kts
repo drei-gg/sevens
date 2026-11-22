@@ -10,7 +10,7 @@ android {
     namespace = "gg.seven.kit.schedule"
     compileSdk = 37
     defaultConfig {
-        minSdk = 26
+        minSdk = 30
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {

@@ -6,7 +6,7 @@ plugins {
 android {
     namespace = "gg.seven.billing"
     compileSdk = 37
-    defaultConfig { minSdk = 26 }
+    defaultConfig { minSdk = 30 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

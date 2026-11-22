@@ -1,6 +1,6 @@
 # Vault for Android
 
-The iOS app's screens and behaviour on Android 8+ (API 26), Material 3 Expressive, on the shared base (`android/README.md`). Encryption is **format version 2**, implemented once in the Rust core with age; its specification is the "Format version 2" section of [`../core/README.md`](../core/README.md). This app adds no cipher, KDF or key handling of its own beyond Keystore custody for biometric unlock.
+The iOS app's screens and behaviour on Android 11+ (API 30), Material 3 Expressive, on the shared base (`android/README.md`). Encryption is **format version 2**, implemented once in the Rust core with age; its specification is the "Format version 2" section of [`../core/README.md`](../core/README.md). This app adds no cipher, KDF or key handling of its own beyond Keystore custody for biometric unlock.
 
 ```sh
 export JAVA_HOME=$(mise where java@temurin-21) ANDROID_SERIAL=emulator-5564

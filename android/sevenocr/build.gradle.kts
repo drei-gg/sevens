@@ -10,7 +10,7 @@ android {
     namespace = "gg.seven.ocr"
     compileSdk = 37
     defaultConfig {
-        minSdk = 26
+        minSdk = 30
         consumerProguardFiles("consumer-rules.pro")
     }
     compileOptions {

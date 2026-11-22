@@ -14,6 +14,8 @@ data class PurchaseState(
     val busy: Boolean = false,
     /** The source has answered once (owned or not), so launch decisions can be made. */
     val loaded: Boolean = false,
+    /** A build from the public source: everything unlocked, nothing to buy (owned is true). */
+    val sourceBuild: Boolean = false,
 )
 
 interface PurchaseSource {
@@ -32,6 +34,30 @@ class LocalPurchaseSource : PurchaseSource {
             PurchaseState(
                 message = "Purchases are available in the Google Play edition.",
                 loaded = true,
+            )
+        )
+
+    override fun refresh() = Unit
+
+    override fun purchase(activity: Activity) = Unit
+
+    override fun close() = Unit
+}
+
+/**
+ * The generic build, compiled from the public GPL source (and the one F-Droid would ship): every
+ * feature unlocked, no trial, nothing for sale. Paying on Google Play is convenience and support.
+ */
+class SourceBuildPurchaseSource : PurchaseSource {
+    override val state =
+        MutableStateFlow(
+            PurchaseState(
+                owned = true,
+                loaded = true,
+                sourceBuild = true,
+                message =
+                    "Built from the public source, so everything is unlocked. The Google Play " +
+                        "edition is the same app; buying it there pays for its upkeep.",
             )
         )
 
@@ -72,6 +98,7 @@ class AccessStore(context: Context, private val personalUnlock: Boolean) {
     fun label(purchase: PurchaseState, now: Long) =
         when {
             personalUnlock -> "Personal build · unlocked"
+            purchase.sourceBuild -> "Built from source · everything unlocked"
             purchase.owned -> "Unlocked · paid once"
             remaining(now) > 0 ->
                 "Free trial · ${(remaining(now) + 86_399_999) / 86_400_000} days left"

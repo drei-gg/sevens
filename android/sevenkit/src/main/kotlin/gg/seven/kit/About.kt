@@ -62,13 +62,18 @@ fun SevenAbout(coreVersion: String? = null, modifier: Modifier = Modifier) {
     val purchase by store.purchase.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var notices by rememberSaveable { mutableStateOf(false) }
-    val status = entitlement.statusLine(System.currentTimeMillis(), content.notStartedStatus)
+    val status =
+        if (purchase.sourceBuild) "Built from source: everything is unlocked."
+        else entitlement.statusLine(System.currentTimeMillis(), content.notStartedStatus)
     val version = remember {
         val info = context.packageManager.getPackageInfo(context.packageName, 0)
         "${info.versionName} (${PackageInfoCompat.getLongVersionCode(info)})"
     }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(Space.l)) {
-        Section(title = "Trial and unlock", footer = purchase.message) {
+        Section(
+            title = if (purchase.sourceBuild) "Edition" else "Trial and unlock",
+            footer = purchase.message,
+        ) {
             item(content.unlock.appName, supporting = status)
             if (entitlement != Entitlement.Unlocked) {
                 action(purchase.unlockTitle()) { gate.offer() }

@@ -1,6 +1,6 @@
 # Android baseline
 
-Native Kotlin / Compose, Android 8+ (API 26), compile API 37 / target API 36. JDK 21 and Android SDK 37 are required. The checked-in Gradle 9.9.1 wrapper verifies its distribution checksum. Plugin/library versions are pinned; resolved dependency locks are checked in. Run from the repository root, or open `android/` in Android Studio.
+Native Kotlin / Compose, Android 11+ (API 30), compile API 37 / target API 36. JDK 21 and Android SDK 37 are required. The checked-in Gradle 9.9.1 wrapper verifies its distribution checksum. Plugin/library versions are pinned; resolved dependency locks are checked in. Run from the repository root, or open `android/` in Android Studio.
 
 ## Porting contract
 
@@ -16,8 +16,8 @@ The [Android interaction guidelines](UI_GUIDELINES.md) consolidate Material 3 Ex
 
 | Distribution | Identity / icon | Access | Artifact / signing |
 | --- | --- | --- | --- |
-| `genericDebug` | `org.example.sevens.fast.debug`, Fast Tracker, neutral hourglass | Local 7-day trial, no purchase provider | Debug APK |
-| `genericRelease` | `org.example.sevens.fast`, neutral | Same; no unlock override | Optimized unsigned APK |
+| `genericDebug` | `org.example.sevens.fast.debug`, Fast Tracker, neutral hourglass | Built from source: everything unlocked, no trial, nothing for sale (`SourceBuildPurchaseSource`) | Debug APK |
+| `genericRelease` | `org.example.sevens.fast`, neutral | Same: unlocked, the build F-Droid would ship | Optimized unsigned APK |
 | `personalDebug` | private base (or `gg.drei.sevens.fast`) + `.personal.debug`, private icon/name | Trial, or explicit build-time personal unlock | Debug APK |
 | `personalRelease` | private base (or fallback) + `.personal`, private icon/name | Same explicit unlock choice | Optimized, development-signed APK |
 | `storeRelease` | Actual Play package/name/private icon | Local 7-day trial + verified Play non-consumable | Optimized signed AAB |

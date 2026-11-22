@@ -51,7 +51,7 @@ class SevenAppPlugin : Plugin<Project> {
             configure<ApplicationExtension> {
                 compileSdk = 37
                 defaultConfig {
-                    minSdk = 26
+                    minSdk = 30
                     targetSdk = 36
                     versionCode = code
                     versionName = version
