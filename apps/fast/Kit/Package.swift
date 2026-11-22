@@ -24,7 +24,7 @@ targets += [
     .target(name: "FastCore", dependencies: ["FastWire", "fast_coreFFI"], swiftSettings: strict),
     .testTarget(name: "FastCoreTests", dependencies: ["FastCore"], swiftSettings: strict),
     .target(name: "FastSurfaces", swiftSettings: strict),
-    .target(name: "FastUI", dependencies: ["FastCore", "FastSurfaces", .product(name: "SevenKit", package: "SevenKit"), .product(name: "SevenCompanion", package: "SevenKit")],
+    .target(name: "FastUI", dependencies: ["FastCore", "FastSurfaces", .product(name: "SevenKit", package: "SevenKit"), .product(name: "SevenCompanion", package: "SevenKit"), .product(name: "SevenSchedule", package: "SevenKit")],
             resources: [.process("Resources")], swiftSettings: strict),
     .testTarget(name: "FastUITests", dependencies: ["FastUI"], swiftSettings: strict),
 ]
