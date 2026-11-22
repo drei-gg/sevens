@@ -63,6 +63,8 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
     val busy = MutableStateFlow(false)
     val progress = MutableStateFlow("")
     val error = MutableStateFlow<String?>(null)
+    /** Worth knowing after a successful save, such as pages placed in a new document. */
+    val notice = MutableStateFlow<String?>(null)
     val loaded = MutableStateFlow(false)
     val appearance = MutableStateFlow(prefs.getString(APPEARANCE, "system") ?: "system")
     val order =
@@ -102,7 +104,26 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Camera pages (or ML Kit's), normalized off the main thread, then saved and recognized. */
+    /** Whether [document] can take more pages; at the limit, explains it instead. */
+    fun canAddPages(document: ScanDocument): Boolean {
+        if (appendPageAllowance(document.pages.size.toULong()) > 0u) return true
+        error.value =
+            "This document already has 50 pages, the most one document can hold. Scan or import into a new document instead."
+        return false
+    }
+
+    /** How many pages a capture into [appendTo] (or a new document) may take. */
+    fun capturePageLimit(appendTo: UUID?): Int {
+        val existing = appendTo?.let { id -> _documents.value.firstOrNull { it.id == id } }
+        val allowance =
+            existing?.let { appendPageAllowance(it.pages.size.toULong()).toInt() } ?: 0
+        return allowance.takeIf { it > 0 } ?: scanLimits().maxPages.toInt()
+    }
+
+    /**
+     * Camera pages (or ML Kit's), normalized off the main thread, then saved and recognized. Pages
+     * beyond the document's limit become new documents rather than discarding the capture.
+     */
     fun capture(
         sources: List<Uri>,
         appendTo: UUID? = null,
@@ -116,16 +137,14 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
                 addPages(
                     "Preparing pages…",
                     appendTo,
+                    split = true,
                     onSaved = {
                         committed = true
                         onSaved()
                     },
                 ) { staging ->
-                    val limits = scanLimits()
-                    if (sources.isEmpty() || sources.size > limits.maxPages)
-                        throw ScanException.TooLarge()
+                    if (sources.isEmpty()) throw ScanException.TooLarge()
                     val resolver = getApplication<Application>().contentResolver
-                    var total = 0L
                     sources.map { uri ->
                         val bitmap =
                             Processing.decode(
@@ -138,8 +157,6 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
                         val out = File(staging, "${UUID.randomUUID()}.jpg")
                         Processing.normalize(bitmap, out)
                         bitmap.recycle()
-                        total += out.length()
-                        if (total > limits.maxDocumentImageBytes) throw ScanException.TooLarge()
                         out
                     }
                 }
@@ -160,6 +177,7 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
     private suspend fun addPages(
         message: String,
         appendTo: UUID?,
+        split: Boolean = false,
         onSaved: () -> Unit = {},
         prepare: suspend (File) -> List<File>,
     ) {
@@ -178,26 +196,59 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
         try {
             val pages = withContext(Dispatchers.Default) { prepare(staging) }
             progress.value = "Saving document…"
-            val saved =
+            val title = "Scan " + titleStamp(System.currentTimeMillis())
+            val (plan, saved) =
                 repository.io {
-                    if (appendTo != null) append(appendTo, pages)
-                    else
-                        create(
-                            "Scan " + titleStamp(System.currentTimeMillis()),
-                            pages,
-                            List(pages.size) { "" },
-                        )
+                    if (!split)
+                        null to
+                            listOf(
+                                if (appendTo != null) append(appendTo, pages)
+                                else create(title, pages, List(pages.size) { "" })
+                            )
+                    else {
+                        val existing = appendTo?.let { load(it).pages.size.toULong() }
+                        val plan = capturePlan(existing, pages.size.toULong())
+                        var rest = pages
+                        plan to
+                            buildList {
+                                val first = plan.append.toInt()
+                                if (appendTo != null && first > 0) {
+                                    add(append(appendTo, rest.take(first)))
+                                    rest = rest.drop(first)
+                                }
+                                for (count in plan.newDocuments.map { it.toInt() }) {
+                                    add(create(title, rest.take(count), List(count) { "" }))
+                                    rest = rest.drop(count)
+                                }
+                            }
+                    }
                 }
             reload()
             onSaved()
+            notice.value = plan?.let { overflowNotice(it, appendTo != null) }
             progress.value = "Scan saved. Recognizing text…"
-            recognizeNow(saved, onlyEmpty = true)
+            for (document in saved) recognizeNow(document, onlyEmpty = true)
         } catch (e: Exception) {
             error.value = describe(e)
         } finally {
             withContext(Dispatchers.IO) { staging.deleteRecursively() }
             busy.value = false
             progress.value = ""
+        }
+    }
+
+    private fun overflowNotice(plan: CapturePlan, appended: Boolean): String? {
+        val resources = getApplication<Application>().resources
+        val documents = plan.newDocuments.size
+        return when {
+            appended && documents == 1 -> {
+                val moved = plan.newDocuments.sumOf { it.toInt() }
+                resources.getQuantityString(R.plurals.overflow, moved, moved)
+            }
+            appended && documents > 1 ->
+                resources.getQuantityString(R.plurals.overflow_documents, documents, documents)
+            documents > 1 -> resources.getQuantityString(R.plurals.split, documents, documents)
+            else -> null
         }
     }
 

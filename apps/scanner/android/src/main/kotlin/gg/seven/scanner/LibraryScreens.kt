@@ -10,7 +10,6 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,10 +23,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.onLongClick
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -84,20 +82,14 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
                     var menu by remember { mutableStateOf(false) }
                     val index = deleted.indexOf(document)
                     Box {
+                        // Tap or long-press opens the row's actions (Restore, Delete permanently).
                         SegmentedListItem(
-                            onClick = {},
+                            onClick = { menu = true },
+                            onLongClick = { menu = true },
+                            onLongClickLabel = "Options",
+                            enabled = !working,
                             shapes = ListItemDefaults.segmentedShapes(index, deleted.size),
-                            modifier =
-                                Modifier.combinedClickable(
-                                        onLongClickLabel = "Options",
-                                        onLongClick = { menu = true },
-                                    ) {}
-                                    .semantics {
-                                        onLongClick("Options") {
-                                            menu = true
-                                            true
-                                        }
-                                    },
+                            modifier = Modifier.testTag("trash.row"),
                             leadingContent = {
                                 PageThumbnail(
                                     document.pages.firstOrNull()?.let {
@@ -214,6 +206,7 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
 fun BackupScreen(model: ScannerModel) {
     val nav = LocalNav.current
     val context = LocalContext.current
+    val resources = LocalResources.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     val documents by model.documents.collectAsStateWithLifecycle()
@@ -278,7 +271,7 @@ fun BackupScreen(model: ScannerModel) {
                         }
                     }
                 model.reload()
-                report("Restored ${documentCount(count)} as copies.", false)
+                report("Restored ${documentCount(resources, count)} as copies.", false)
             } catch (e: Exception) {
                 report(
                     "This backup could not be restored. Your existing documents are unchanged. " +
@@ -444,6 +437,11 @@ fun SettingsScreen(model: ScannerModel) {
                     supporting =
                         "Scans and text recognition are processed on your phone. Files you export or back up go only where you choose. No Scanner account or servers.",
                     icon = Icons.Outlined.Lock,
+                )
+                item(
+                    "Camera scanning",
+                    supporting = SCANNER_ENGINE_NOTE,
+                    icon = Icons.Outlined.CameraAlt,
                 )
                 item(
                     "Searchable text",

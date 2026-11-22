@@ -68,6 +68,7 @@ pub fn annotation_from_display(
     settings: PageSettings,
     style: AnnotationStyle,
 ) -> Result<PageAnnotation, ScanError> {
+    let bounds = snapped(bounds);
     bounds.validate()?;
     settings.validate()?;
     let crop = page_crop_rotated(
@@ -88,9 +89,30 @@ pub fn annotation_from_display(
         bottom: crop.top + bounds.bottom * height,
     };
     Ok(PageAnnotation {
-        bounds: page_crop_rotated(rotated, (4 - settings.quarter_turns) as u32)?,
+        bounds: page_crop_rotated(snapped(rotated), (4 - settings.quarter_turns) as u32)?,
         style,
     })
+}
+
+/// Native drags and percentage entry reach a crop's edge through float arithmetic, which can land a
+/// rounding error past 0 or 1. Snap those to the edge; anything further out stays invalid.
+fn snapped(bounds: PageCrop) -> PageCrop {
+    const EDGE: f64 = 1e-9;
+    let snap = |v: f64| {
+        if v < 0.0 && v > -EDGE {
+            0.0
+        } else if v > 1.0 && v < 1.0 + EDGE {
+            1.0
+        } else {
+            v
+        }
+    };
+    PageCrop {
+        left: snap(bounds.left),
+        top: snap(bounds.top),
+        right: snap(bounds.right),
+        bottom: snap(bounds.bottom),
+    }
 }
 
 /// Merge only marks; preserve text/metadata changes, but reject changed geometry or annotations.

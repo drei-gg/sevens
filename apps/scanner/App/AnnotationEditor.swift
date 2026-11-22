@@ -4,7 +4,7 @@ import SevenKit
 
 extension AnnotationStyle {
     static var choices: [AnnotationStyle] { [.highlight, .redOutline, .blueOutline] }
-    var title: String { switch self { case .highlight: "Highlight"; case .redOutline: "Red box"; case .blueOutline: "Blue box" } }
+    var title: String { switch self { case .highlight: sc("Highlight"); case .redOutline: sc("Red box"); case .blueOutline: sc("Blue box") } }
     var ink: Color { switch self {
     case .highlight: Color(red: 1, green: 208.0/255, blue: 0).opacity(82.0/255)
     case .redOutline: Color(red: 200.0/255, green: 35.0/255, blue: 35.0/255)
@@ -83,7 +83,7 @@ struct AnnotationEditor: View {
             }
             .alert("Marks not saved", isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })) {
                 Button("Keep editing", role: .cancel) { failure = nil }
-            } message: { Text(failure ?? "Your earlier marks are kept.") }
+            } message: { Text(failure ?? sc("Your earlier marks are kept.")) }
             .confirmationDialog("Discard annotation changes?", isPresented: $discard) { Button("Discard", role: .destructive) { dismiss() } }
             .sheet(isPresented: $exact) { AnnotationBounds { add($0); exact = false } }
             .task {
@@ -103,10 +103,10 @@ struct AnnotationEditor: View {
     }
     private func addInk(_ stroke: PageInk) -> Bool {
         do { try inkValidate(ink: ink + [stroke]); change(marks, ink: ink + [stroke]); return true }
-        catch { failure = "This stroke exceeds the page's ink limit. Your previous marks are kept. Undo or clear ink to make room."; return false }
+        catch { failure = String(localized: "This stroke exceeds the page’s ink limit. Your previous marks are kept. Undo or clear ink to make room."); return false }
     }
     private func add(_ bounds: PageCrop) {
-        guard marks.count < 100 else { failure = "This page already has 100 marks. Undo or remove a mark first."; return }
+        guard marks.count < 100 else { failure = String(localized: "This page already has 100 marks. Undo or remove a mark first."); return }
         do { change(marks + [try annotationFromDisplay(bounds: bounds, settings: original.settings, style: style)]) }
         catch { failure = error.localizedDescription }
     }
@@ -117,7 +117,7 @@ struct AnnotationEditor: View {
             await model.reload()
             guard let page = updated.pages.first(where: { $0.id == original.id }) else { throw ScanError.MissingPage }
             saved(page); dismiss()
-        } catch { failure = error.localizedDescription + " Your marks are kept here. If the page changed, close and reopen this editor." }
+        } catch { failure = error.localizedDescription + " " + String(localized: "Your marks are kept here. If the page changed, close and reopen this editor.") }
     }
 }
 
@@ -162,7 +162,7 @@ private struct AnnotationCanvas: View {
                 InkCanvas(ink: ink, settings: settings, enabled: inkMode, color: inkColor, width: inkWidth, inking: $inking, add: addInk, failure: inkFailure)
                     .allowsHitTesting(inkMode)
             }.frame(width: width, height: height).contentShape(Rectangle())
-                .accessibilityLabel("Page annotation canvas. Use Add with bounds as an alternative to dragging.")
+                .accessibilityLabel(Text("Page annotation canvas. Use Add with bounds as an alternative to dragging."))
                 .accessibilityIdentifier("annotations-canvas")
                 .position(x: proxy.size.width/2, y: proxy.size.height/2)
         }
@@ -202,6 +202,6 @@ private struct AnnotationBounds: View {
         }
     }
     private func edge(_ title: String, _ binding: Binding<String>) -> some View {
-        LabeledContent(title) { TextField("Percent", text: binding).keyboardType(.decimalPad).multilineTextAlignment(.trailing).accessibilityLabel(title + " percent").accessibilityIdentifier("annotations-" + title) }
+        LabeledContent(sc(title)) { TextField("Percent", text: binding).keyboardType(.decimalPad).multilineTextAlignment(.trailing).accessibilityLabel(String(localized: "\(sc(title)) percent")).accessibilityIdentifier("annotations-" + title) }
     }
 }

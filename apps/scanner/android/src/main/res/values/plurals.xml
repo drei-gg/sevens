@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="pages">
+        <item quantity="one">%d page</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
+    <plurals name="documents">
+        <item quantity="one">%d document</item>
+        <item quantity="other">%d documents</item>
+    </plurals>
+    <plurals name="annotate">
+        <item quantity="one">Annotate · %d mark</item>
+        <item quantity="other">Annotate · %d marks</item>
+    </plurals>
+    <plurals name="unreadable">
+        <item quantity="one">%d document folder could not be read. Its files have been preserved. Backup is paused until it can be recovered.</item>
+        <item quantity="other">%d document folders could not be read. Their files have been preserved. Backup is paused until they can be recovered.</item>
+    </plurals>
+    <plurals name="overflow">
+        <item quantity="one">This document holds 50 pages at most, so the last %d page you scanned was saved as a new document.</item>
+        <item quantity="other">This document holds 50 pages at most, so the last %d pages you scanned were saved as a new document.</item>
+    </plurals>
+    <plurals name="overflow_documents">
+        <item quantity="one">This document holds 50 pages at most, so the pages that didn’t fit were saved as %d new document.</item>
+        <item quantity="other">This document holds 50 pages at most, so the pages that didn’t fit were saved as %d new documents.</item>
+    </plurals>
+    <plurals name="split">
+        <item quantity="one">Documents hold 50 pages at most, so this scan was saved as %d document.</item>
+        <item quantity="other">Documents hold 50 pages at most, so this scan was saved as %d documents.</item>
+    </plurals>
+</resources>

@@ -18,10 +18,15 @@ import gg.seven.scanner.core.scanLimits
  * Personal and store: Google's ML Kit document scanner (Google Play services, a documented
  * platform exception like Play Billing), VisionKit's closest counterpart: edge detection,
  * perspective correction and cleanup, all on the device. Where Play services or the scanner
- * module is unavailable, the open-source CameraX capture takes over.
+ * module is unavailable, the open-source CameraX capture takes over. [pageLimit] is how many pages
+ * the target document can still take, so a capture never outgrows it.
  */
 @Composable
-fun rememberPlatformScanner(onPages: (List<Uri>) -> Unit, onCamera: () -> Unit): () -> Unit {
+fun rememberPlatformScanner(
+    pageLimit: () -> Int,
+    onPages: (List<Uri>) -> Unit,
+    onCamera: () -> Unit,
+): () -> Unit {
     val activity = LocalActivity.current
     val pages = rememberUpdatedState(onPages)
     val camera = rememberUpdatedState(onCamera)
@@ -35,7 +40,7 @@ fun rememberPlatformScanner(onPages: (List<Uri>) -> Unit, onCamera: () -> Unit):
         val options =
             GmsDocumentScannerOptions.Builder()
                 .setGalleryImportAllowed(false)
-                .setPageLimit(scanLimits().maxPages.toInt())
+                .setPageLimit(pageLimit().coerceIn(1, scanLimits().maxPages.toInt()))
                 .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
                 .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
                 .build()
@@ -63,5 +68,6 @@ fun rememberPlatformScanner(onPages: (List<Uri>) -> Unit, onCamera: () -> Unit):
     }
 }
 
-/** Which scanner this build uses, for the privacy note in Settings. */
-const val SCANNER_ENGINE = "ML Kit"
+/** Which scanner this build uses, for the privacy note in Settings (THIRD-PARTY.md states the same). */
+const val SCANNER_ENGINE_NOTE =
+    "Pages are captured with Google’s ML Kit document scanner, which runs on this phone inside Google Play services. Play services may download the scanner module; Scanner itself sends nothing. Until the module is available, the built-in camera capture is used. Text recognition uses Tesseract on this phone."

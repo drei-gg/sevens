@@ -217,8 +217,16 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                                         AddPagesTile(
                                             enabled = !busy,
                                             camera = camera,
-                                            onScan = { gate.run("Scan documents", adders.scan) },
-                                            onImport = { gate.run("Scan documents", adders.import) },
+                                            onScan = {
+                                                gate.run("Scan documents") {
+                                                    if (model.canAddPages(document)) adders.scan()
+                                                }
+                                            },
+                                            onImport = {
+                                                gate.run("Scan documents") {
+                                                    if (model.canAddPages(document)) adders.import()
+                                                }
+                                            },
                                         )
                                     else {
                                         val index = document.pages.indexOf(page)
@@ -261,7 +269,13 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                         each,
                         enabled = allText.isNotEmpty(),
                     ) {
-                        shareText(context, allText)
+                        shareText(
+                            context,
+                            allText,
+                            pdfExportPlan(document, document.pages.map { it.id })
+                                .filename
+                                .removeSuffix(".pdf") + ".txt",
+                        )
                     }
                 }
                 if (large)

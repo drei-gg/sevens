@@ -1,5 +1,6 @@
 package gg.seven.scanner
 
+import android.content.res.Resources
 import android.util.LruCache
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
@@ -23,6 +24,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -58,9 +60,16 @@ object ScannerMetrics {
     val contentWidth = 672.dp
 }
 
-fun pageCount(count: Int) = if (count == 1) "1 page" else "$count pages"
+fun pageCount(resources: Resources, count: Int): String =
+    resources.getQuantityString(R.plurals.pages, count, count)
 
-fun documentCount(count: Int) = if (count == 1) "1 document" else "$count documents"
+@Composable fun pageCount(count: Int): String = pluralStringResource(R.plurals.pages, count, count)
+
+fun documentCount(resources: Resources, count: Int): String =
+    resources.getQuantityString(R.plurals.documents, count, count)
+
+@Composable
+fun documentCount(count: Int): String = pluralStringResource(R.plurals.documents, count, count)
 
 /** "Nov 16, 2026". */
 fun day(millis: Long): String =
@@ -242,10 +251,10 @@ fun DocumentCard(document: ScanDocument, firstPage: File?, modifier: Modifier = 
 }
 
 /** The words TalkBack reads for a card: name, then pages, date and favorite. */
-fun cardDescription(document: ScanDocument): String =
+fun cardDescription(document: ScanDocument, pages: String): String =
     listOfNotNull(
             document.title,
-            pageCount(document.pages.size),
+            pages,
             day(document.createdMillis),
             if (document.favorite == true) "Favorite" else null,
         )

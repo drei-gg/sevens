@@ -12,10 +12,23 @@ import java.io.File
  * place the person picks (iOS SevenFileExportPicker, here the system's create-document picker).
  */
 
-fun shareText(context: Context, text: String) {
-    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
-    context.startActivity(Intent.createChooser(send, null))
+/**
+ * Shares recognized text. Long text goes as a UTF-8 file instead of an Intent extra, which the
+ * Binder transaction limit (about 1 MB for the whole transaction) would otherwise reject.
+ */
+fun shareText(context: Context, text: String, filename: String = "Recognized text.txt") {
+    if (text.toByteArray(Charsets.UTF_8).size <= SHARE_TEXT_INLINE_BYTES) {
+        val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+        context.startActivity(Intent.createChooser(send, null))
+        return
+    }
+    val file = Processing.exportFile(context, filename)
+    file.writeText(text, Charsets.UTF_8)
+    shareFile(context, file, "text/plain")
 }
+
+/** Text up to this size travels inline; larger text is shared as a file. */
+const val SHARE_TEXT_INLINE_BYTES = 100_000
 
 /** Shares an app-owned export through the app's file provider, readable by the chosen app only. */
 fun shareFile(context: Context, file: File, mime: String) {

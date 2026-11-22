@@ -54,6 +54,7 @@ struct PageEditor: View {
     @State private var editText = false
     @State private var editCrop = false
     @State private var annotate = false
+    @State private var leaving = false
     init(document: ScanDocument, page: ScanPage, url: URL, number: Int) {
         self.document = document; self.page = page; self.url = url; self.number = number
         _settings = State(initialValue: page.settings)
@@ -81,7 +82,7 @@ struct PageEditor: View {
             }
             Section {
                 Button(settings.crop == nil ? "Crop page" : "Adjust crop") { editCrop = true }.accessibilityIdentifier("page.crop")
-                Button("Annotate · \(currentPage.annotations.count + currentPage.ink.count) \(currentPage.annotations.count + currentPage.ink.count == 1 ? "mark" : "marks")") { Task { await openAnnotationEditor() } }.disabled(settings != page.settings).accessibilityIdentifier("page.annotate")
+                Button(scCount(currentPage.annotations.count + currentPage.ink.count, key: "annotate")) { Task { await openAnnotationEditor() } }.disabled(settings != page.settings).accessibilityIdentifier("page.annotate")
                 if settings != page.settings { Text("Save image adjustments before annotating.").textRole(.caption) }
                 Toggle("Grayscale", isOn: $settings.grayscale).accessibilityIdentifier("page.grayscale")
                 AdjustmentSlider(title: "Brightness", value: $settings.brightness, range: -0.5...0.5,
@@ -107,7 +108,23 @@ struct PageEditor: View {
         }
         .sevenScreenBackground()
         .navigationTitle(Text("Page \(number)")).navigationBarTitleDisplayMode(.inline).disabled(working)
-        .toolbar { Button("Save page") { Task { await save() } }.accessibilityIdentifier("page.save").disabled(settings == page.settings) }
+        // Unsaved adjustments: a back button that asks first, and no swipe back past it.
+        .navigationBarBackButtonHidden(settings != page.settings)
+        .toolbar {
+            if settings != page.settings {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { leaving = true } label: { Label("Back", systemImage: "chevron.backward").labelStyle(.titleAndIcon) }
+                        .accessibilityIdentifier("page.back")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Save page") { Task { await save() } }.accessibilityIdentifier("page.save").disabled(settings == page.settings)
+            }
+        }
+        .confirmationDialog("Discard page adjustments?", isPresented: $leaving, titleVisibility: .visible) {
+            Button("Discard adjustments", role: .destructive) { dismiss() }
+            Button("Keep editing", role: .cancel) {}
+        }
         .sensoryFeedback(.selection, trigger: settings.quarterTurns)
         .sheet(isPresented: $editCrop) { PageCropEditor(url: url, settings: settings) { settings.crop = $0 } }
         .sheet(isPresented: $annotate) {
@@ -165,7 +182,7 @@ private struct TextCorrectionScreen: View {
         NavigationStack {
             Form {
                 Section {
-                    TextEditor(text: $text).frame(minHeight: 240).accessibilityLabel("Recognized text")
+                    TextEditor(text: $text).frame(minHeight: 240).accessibilityLabel(Text("Recognized text"))
                         .accessibilityIdentifier("page.correctedText")
                 } footer: {
                     Text("Correct the saved text used by search and text sharing. The image stays unchanged. Searchable PDFs recognize the image again; they do not use these corrections.")
@@ -195,7 +212,7 @@ private struct TextCorrectionScreen: View {
             let updated = try await model.repository.updatePageText(documentID: documentID, expected: original, text: text)
             await model.reload()
             if let page = updated.pages.first(where: { $0.id == original.id }) { saved(page) }
-        } catch { failure = error.localizedDescription + " Your text is kept here. If the page changed, close and reopen this editor." }
+        } catch { failure = error.localizedDescription + " " + String(localized: "Your text is kept here. If the page changed, close and reopen this editor.") }
     }
 }
 

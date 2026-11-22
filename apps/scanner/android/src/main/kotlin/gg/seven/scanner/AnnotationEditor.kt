@@ -67,7 +67,8 @@ class AnnotationDraft(val documentID: UUID, val original: ScanPage) {
         ink = value.ink
     }
 
-    fun change(next: List<PageAnnotation>, nextInk: List<PageInk> = ink) {
+    /** Validates in the core first; a rejected change leaves the draft and history as they were. */
+    private fun commit(next: List<PageAnnotation>, nextInk: List<PageInk>) {
         annotationsValidate(next)
         inkValidate(nextInk)
         undo.add(snapshot())
@@ -76,6 +77,16 @@ class AnnotationDraft(val documentID: UUID, val original: ScanPage) {
         marks = next
         ink = nextInk
     }
+
+    /** Applies an edit, or explains why the core refused it. Never throws into a gesture. */
+    fun change(next: List<PageAnnotation>, nextInk: List<PageInk> = ink): Boolean =
+        try {
+            commit(next, nextInk)
+            true
+        } catch (e: Exception) {
+            failure = describe(e)
+            false
+        }
 
     fun undo() {
         if (canUndo) {
@@ -93,19 +104,24 @@ class AnnotationDraft(val documentID: UUID, val original: ScanPage) {
 
     fun addInk(stroke: PageInk) {
         try {
-            change(marks, ink + stroke)
+            commit(marks, ink + stroke)
         } catch (_: Exception) {
             failure =
-                "This stroke exceeds the page's ink limit. Your previous marks are kept. Undo or clear ink to make room."
+                "This stroke exceeds the page’s ink limit. Your previous marks are kept. Undo or clear ink to make room."
         }
     }
 
+    /** A rectangle drawn or entered against the displayed page, from a drag end or exact bounds. */
     fun add(bounds: PageCrop) {
         if (marks.size >= 100) {
             failure = "This page already has 100 marks. Undo or remove a mark first."
             return
         }
-        change(marks + annotationFromDisplay(bounds, original.settings, style))
+        try {
+            commit(marks + annotationFromDisplay(bounds, original.settings, style), ink)
+        } catch (e: Exception) {
+            failure = describe(e)
+        }
     }
 }
 

@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -264,7 +265,7 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
                 modifier = Modifier.fillMaxWidth().testTag("page.annotate"),
             ) {
                 val count = page.annotations.size + page.ink.size
-                Text("Annotate · $count ${if (count == 1) "mark" else "marks"}")
+                Text(pluralStringResource(R.plurals.annotate, count, count))
             }
             if (settings != page.settings)
                 Text(
@@ -335,7 +336,22 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
             }
             ContentCard("Recognized text") {
                 OutlinedButton(
-                    onClick = { model.textCorrection.value = TextCorrectionDraft(page) },
+                    // The latest saved page, not this screen's copy: recognition may have finished.
+                    onClick = {
+                        scope.launch {
+                            try {
+                                val latest =
+                                    model.repository
+                                        .io { load(documentId) }
+                                        .pages
+                                        .firstOrNull { it.id == pageId }
+                                        ?: throw gg.seven.scanner.core.ScanException.MissingPage()
+                                model.textCorrection.value = TextCorrectionDraft(latest)
+                            } catch (e: Exception) {
+                                failure = describe(e)
+                            }
+                        }
+                    },
                     enabled = !working && settings == page.settings,
                     modifier = Modifier.testTag("page.editText"),
                 ) {

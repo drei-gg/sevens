@@ -124,3 +124,74 @@ fn invalid_and_oversized_annotations_fail_before_publication() {
     );
     assert!(annotations_decode("[".repeat(100001)).is_err());
 }
+#[test]
+fn display_edges_survive_float_rounding_at_every_crop_and_rotation() {
+    // Dragging to a crop's far edge must never fail validation on a value just past 1.0 or 0.0.
+    let steps = [0.0, 0.1, 0.2, 0.3, 0.33, 0.45, 0.6, 0.7];
+    let mut checked = 0;
+    for turns in 0..4 {
+        for &l in &steps {
+            for &t in &steps {
+                for &w in &[0.3, 0.55, 0.7, 0.9] {
+                    let (r, b) = (l + w, t + w);
+                    if r > 1.0 || b > 1.0 {
+                        continue;
+                    }
+                    let settings = PageSettings {
+                        quarter_turns: turns,
+                        crop: Some(rect(l, t, r, b)),
+                        ..page_settings_default()
+                    };
+                    let mark =
+                        annotation_from_display(rect(0.0, 0.0, 1.0, 1.0), settings, AnnotationStyle::Highlight)
+                            .unwrap();
+                    for v in [mark.bounds.left, mark.bounds.top, mark.bounds.right, mark.bounds.bottom] {
+                        assert!((0.0..=1.0).contains(&v));
+                    }
+                    annotations_validate(&[mark]).unwrap();
+                    checked += 1;
+                }
+            }
+        }
+    }
+    assert!(checked > 100);
+}
+#[test]
+fn capture_plan_appends_what_fits_and_never_drops_pages() {
+    assert_eq!(append_page_allowance(0), 50);
+    assert_eq!(append_page_allowance(48), 2);
+    assert_eq!(append_page_allowance(50), 0);
+    assert_eq!(append_page_allowance(70), 0);
+    let plan = capture_plan(Some(45), 12);
+    assert_eq!((plan.append, plan.new_documents.clone()), (5, vec![7]));
+    let plan = capture_plan(Some(50), 3);
+    assert_eq!((plan.append, plan.new_documents.clone()), (0, vec![3]));
+    let plan = capture_plan(None, 120);
+    assert_eq!((plan.append, plan.new_documents.clone()), (0, vec![50, 50, 20]));
+    let plan = capture_plan(Some(10), 4);
+    assert_eq!((plan.append, plan.new_documents.clone()), (4, vec![]));
+    assert_eq!(capture_plan(None, 0).new_documents, Vec::<u64>::new());
+    for existing in [None, Some(0), Some(30), Some(50)] {
+        for captured in 0..130 {
+            let plan = capture_plan(existing, captured);
+            assert_eq!(plan.append + plan.new_documents.iter().sum::<u64>(), captured);
+            assert!(plan.new_documents.iter().all(|n| (1..=50).contains(n)));
+        }
+    }
+}
+#[test]
+fn rounding_just_past_an_edge_snaps_but_real_overflow_is_rejected() {
+    for turns in 0..4 {
+        let settings = PageSettings {
+            quarter_turns: turns,
+            crop: Some(rect(0.1, 0.2, 0.9, 0.95)),
+            ..page_settings_default()
+        };
+        let edge = rect(-1e-12, -4e-16, 1.0 + 1e-12, 1.0 + 2e-16);
+        let mark = annotation_from_display(edge, settings, AnnotationStyle::RedOutline).unwrap();
+        annotations_validate(&[mark]).unwrap();
+        let whole = annotation_from_display(rect(0.0, 0.0, 1.0, 1.0), settings, AnnotationStyle::RedOutline).unwrap();
+        assert_eq!(mark, whole);
+        assert!(annotation_from_display(rect(0.0, 0.0, 1.001, 1.0), settings, AnnotationStyle::RedOutline).is_err());
+    }
+}

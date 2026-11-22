@@ -47,4 +47,11 @@ dependencies {
     "personalImplementation"("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
     "storeImplementation"("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
     "testImplementation"("junit:junit:4.13.2")
+    "testImplementation"("net.java.dev.jna:jna:5.17.0")
+}
+
+// JVM tests that call the core load the crate's host build, as :scanner-core's own tests do.
+tasks.withType<Test>().configureEach {
+    systemProperty("jna.library.path", rootDir.parentFile.resolve("apps/scanner/core/target/debug").absolutePath)
+    dependsOn(":scanner-core:test")
 }

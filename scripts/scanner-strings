@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Update Scanner's English catalog from sc() and native SwiftUI literal copy. Keep plural variants."""
+import json, re
+from pathlib import Path
+root = Path(__file__).resolve().parent.parent
+app = root/'apps/scanner/App'
+path = app/'Localizable.xcstrings'
+catalog = json.loads(path.read_text()) if path.exists() else {'sourceLanguage':'en','strings':{},'version':'1.0'}
+# SwiftUI extracts native literals at compile time. This also catalogs app-local composition strings.
+pattern = re.compile(r'(?<![A-Za-z])(?:sc|String\(localized:|Text|Label|Button|Section|NavigationLink|Toggle|Picker|TextField|LabeledContent|ProgressView|DisclosureGroup|ContentUnavailableView|GatedButton\(feature:|\.unlockSheet\(isPresented: \$\w+, feature:|(?:StatTile|CardLinkRow|ActionTileLabel|ChipLabel|AdjustmentSlider)\(title:|\.navigationTitle|\.accessibilityLabel|\.accessibilityValue|\.accessibilityHint|\.alert|\.confirmationDialog)\(?\s*"((?:[^"\\]|\\.)*)"')
+skipped = set()
+def add(value, comment='Scanner interface copy. Keep it plain and specific.'):
+    catalog['strings'][value] = {'comment':comment,'extractionState':'manual','localizations':{'en':{'stringUnit':{'state':'translated','value':value}}}}
+for source in sorted(app.glob('*.swift')):
+    if source.name in ('ProcessingAudit.swift','AnnotationAudit.swift'): continue  # Debug-only audits
+    for match in pattern.finditer(source.read_text()):
+        for raw in filter(None, match.groups()):
+            if '\\(' in raw: skipped.add(raw); continue  # interpolated keys are listed below with their format specifiers
+            value = raw.replace('\\n','\n').replace('\\"','"')
+            if value.strip(): add(value)
+# Literal ternary branches and runtime-chosen labels that do not appear as a call's first literal.
+for value in ["Left","Top","Right","Bottom","Prepare PDF","Preparing PDF…","Export backup","Remove from Favorites","Add to Favorites","Clear selection","Select all",
+              "Working…","Import images or PDF","Adjust crop","Crop page","Newest first","Oldest first","By name","Recent",
+              "Scans you save appear here, newest first. Tap Scan to start.","Documents you import appear here, newest first.",
+              "Enter valid bounds to preview the crop.","The page as it will look with these bounds.","Favorite","No recognized text"]:
+    catalog['strings'].setdefault(value,{'extractionState':'manual','localizations':{'en':{'stringUnit':{'state':'translated','value':value}}}})
+# Interpolated SwiftUI and String(localized:) keys, with the specifiers the compiler generates.
+for value in ["Page %lld","%lld of 100 marks","%lld of 100 ink strokes","Restored %@ as copies.","Scan %@","%@ percent",
+              "%@ · %@","%lld of %@","%lld","^[%lld page](inflect: true)","^[%lld document](inflect: true)"]:
+    catalog['strings'].setdefault(value,{'extractionState':'manual','localizations':{'en':{'stringUnit':{'state':'translated','value':value}}}})
+plurals = {
+ 'unreadable':('%lld document folder could not be read. Its files have been preserved. Backup is paused until it can be recovered.',
+               '%lld document folders could not be read. Their files have been preserved. Backup is paused until they can be recovered.'),
+ 'annotate':('Annotate · %lld mark','Annotate · %lld marks'),
+ 'overflow':('This document holds 50 pages at most, so the last %lld page you scanned was saved as a new document.',
+             'This document holds 50 pages at most, so the last %lld pages you scanned were saved as a new document.'),
+ 'overflowDocuments':('This document holds 50 pages at most, so the pages that didn’t fit were saved as %lld new document.',
+                      'This document holds 50 pages at most, so the pages that didn’t fit were saved as %lld new documents.'),
+ 'split':('Documents hold 50 pages at most, so this scan was saved as %lld document.',
+          'Documents hold 50 pages at most, so this scan was saved as %lld documents.')}
+for key,(one,other) in plurals.items():
+ catalog['strings']['scanner.count.'+key]={'comment':'Scanner count. %lld is the number.','extractionState':'manual','localizations':{'en':{'variations':{'plural':{n:{'stringUnit':{'state':'translated','value':v}} for n,v in [('one',one),('other',other)]}}}}}
+path.write_text(json.dumps(catalog,ensure_ascii=False,indent=2,sort_keys=True)+'\n')
+print(f"Scanner catalog: {len(catalog['strings'])} entries")
+for raw in sorted(skipped): print("  interpolated (listed by hand):", raw)

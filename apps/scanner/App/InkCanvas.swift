@@ -4,7 +4,7 @@ import ScannerCore
 
 extension InkColor {
     static var choices: [InkColor] { [.black, .red, .blue] }
-    var title: String { switch self { case .black: "Black"; case .red: "Red"; case .blue: "Blue" } }
+    var title: String { switch self { case .black: sc("Black"); case .red: sc("Red"); case .blue: sc("Blue") } }
     var uiColor: UIColor { switch self {
     case .black: UIColor(red: 23.0/255, green: 23.0/255, blue: 23.0/255, alpha: 1)
     case .red: UIColor(red: 200.0/255, green: 35.0/255, blue: 35.0/255, alpha: 1)
@@ -60,7 +60,7 @@ final class InkSurface: UIView, PKCanvasViewDelegate {
         canvas.backgroundColor = .clear; canvas.isOpaque = false; canvas.isScrollEnabled = false
         canvas.drawingPolicy = .anyInput; canvas.delegate = self
         canvas.accessibilityIdentifier = "ink-canvas"
-        canvas.accessibilityLabel = "Ink canvas. Draw a stroke; use Undo or Clear ink to remove it."
+        canvas.accessibilityLabel = sc("Ink canvas. Draw a stroke; use Undo or Clear ink to remove it.")
         addSubview(canvas)
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -104,7 +104,7 @@ final class InkSurface: UIView, PKCanvasViewDelegate {
             }
             // Core rejects a too-long stroke as a whole, retaining all earlier ink.
             do { let mark = try inkFromDisplay(points: points, width: strokeWidth, displayWidth: bounds.width, displayHeight: bounds.height, settings: c.settings, color: strokeColor); if c.add(mark) { displayInk.append(mark) } }
-            catch { c.failure("This stroke could not be added. Your earlier marks are kept; try a shorter stroke.") }
+            catch { c.failure(sc("This stroke could not be added. Your earlier marks are kept; try a shorter stroke.")) }
         }
         canvas.drawing = PKDrawing()
         setNeedsDisplay()

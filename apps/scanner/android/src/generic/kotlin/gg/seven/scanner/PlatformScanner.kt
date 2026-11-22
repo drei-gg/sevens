@@ -9,10 +9,15 @@ import androidx.compose.runtime.rememberUpdatedState
  * Google's ML Kit document scanner when Play services has it (src/gms).
  */
 @Composable
-fun rememberPlatformScanner(onPages: (List<Uri>) -> Unit, onCamera: () -> Unit): () -> Unit {
+fun rememberPlatformScanner(
+    pageLimit: () -> Int,
+    onPages: (List<Uri>) -> Unit,
+    onCamera: () -> Unit,
+): () -> Unit {
     val camera = rememberUpdatedState(onCamera)
     return { camera.value() }
 }
 
-/** Which scanner this build uses, for the privacy note in Settings. */
-const val SCANNER_ENGINE = "CameraX"
+/** Which scanner this build uses, for the privacy note in Settings (THIRD-PARTY.md states the same). */
+const val SCANNER_ENGINE_NOTE =
+    "Pages are captured with the built-in camera capture (CameraX) on this phone, without Google Play services. Text recognition uses Tesseract on this phone."

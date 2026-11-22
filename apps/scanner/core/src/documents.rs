@@ -322,6 +322,35 @@ pub fn check_append_images(
     Ok(())
 }
 
+/// How many more pages a document holding `existing_page_count` pages can take.
+#[uniffi::export]
+pub fn append_page_allowance(existing_page_count: u64) -> u64 {
+    (MAX_PAGES as u64).saturating_sub(existing_page_count)
+}
+
+/// Where a camera capture's pages go, in capture order: the first `append` pages join the existing
+/// document, and each following batch becomes a new document of at most 50 pages. Every captured
+/// page has a place, so a capture is never discarded for exceeding the page limit.
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct CapturePlan {
+    pub append: u64,
+    pub new_documents: Vec<u64>,
+}
+
+/// `existing_page_count` is the target document's current page count, or `None` for a new document.
+#[uniffi::export]
+pub fn capture_plan(existing_page_count: Option<u64>, captured: u64) -> CapturePlan {
+    let append = existing_page_count.map_or(0, |n| append_page_allowance(n).min(captured));
+    let mut rest = captured - append;
+    let mut new_documents = Vec::new();
+    while rest > 0 {
+        let batch = rest.min(MAX_PAGES as u64);
+        new_documents.push(batch);
+        rest -= batch;
+    }
+    CapturePlan { append, new_documents }
+}
+
 /// `updatePage`: settings are checked first; the page's OCR text is cleared, because it was read
 /// from the image as it looked before.
 #[uniffi::export]

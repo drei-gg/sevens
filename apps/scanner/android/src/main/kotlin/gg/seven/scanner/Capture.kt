@@ -62,6 +62,7 @@ fun CameraCapture(
     onImport: (() -> Unit)?,
     busy: Boolean = false,
     progress: String = "",
+    limit: Int = scanLimits().maxPages.toInt(),
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -69,6 +70,8 @@ fun CameraCapture(
         File(context.cacheDir, "ScannerCapture/${UUID.randomUUID()}").absolutePath
     }
     val folder = remember(folderPath) { File(folderPath).apply { mkdirs() } }
+    // An empty draft folder is not worth keeping once the screen goes (it is recreated on return).
+    DisposableEffect(folderPath) { onDispose { if (folder.list().isNullOrEmpty()) folder.delete() } }
     var granted by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -103,7 +106,6 @@ fun CameraCapture(
     var taking by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
     var discard by remember { mutableStateOf(false) }
-    val limit = scanLimits().maxPages.toInt()
     fun close() {
         folder.deleteRecursively()
         onClose()
@@ -273,10 +275,7 @@ fun CameraCapture(
                     }
                 onImport?.let {
                     OutlinedButton(
-                        onClick = {
-                            close()
-                            it()
-                        },
+                        onClick = it,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     ) {
                         Text("Import instead")

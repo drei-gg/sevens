@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onLongClick
@@ -153,16 +154,28 @@ fun ScannerApp(model: ScannerModel = viewModel()) {
     val appScope = rememberCoroutineScope()
     val nav = remember(keys, snackbar) { ScannerNav(keys, snackbar, appScope) }
     val error by model.error.collectAsStateWithLifecycle()
+    val notice by model.notice.collectAsStateWithLifecycle()
     BackHandler(nav.depth > 1 && nav.top !is Route.Capture) { nav.pop() }
     CompositionLocalProvider(LocalNav provides nav) {
         when (val route = nav.top) {
             Route.Library -> LibraryScreen(model)
             is Route.Document -> DocumentScreen(model, route.id)
             is Route.Page -> PageEditor(model, route.document, route.page)
-            is Route.Capture ->
+            is Route.Capture -> {
+                // Without camera access, import from the same place, into the same document.
+                val importer =
+                    rememberLauncherForActivityResult(
+                        ActivityResultContracts.OpenMultipleDocuments()
+                    ) { uris: List<Uri> ->
+                        if (uris.isNotEmpty()) {
+                            model.importFiles(uris, route.appendTo)
+                            nav.pop()
+                        }
+                    }
                 CameraCapture(
                     busy = model.busy.collectAsStateWithLifecycle().value,
                     progress = model.progress.collectAsStateWithLifecycle().value,
+                    limit = model.capturePageLimit(route.appendTo),
                     onSave = { uris, cleanUp ->
                         model.capture(
                             uris,
@@ -173,12 +186,28 @@ fun ScannerApp(model: ScannerModel = viewModel()) {
                         )
                     },
                     onClose = nav::pop,
-                    onImport = null,
+                    onImport = { importer.launch(arrayOf("image/*", "application/pdf")) },
                 )
+            }
             Route.Deleted -> RecentlyDeletedScreen(model)
             Route.Backup -> BackupScreen(model)
             Route.Settings -> SettingsScreen(model)
         }
+    }
+    notice?.takeIf { error == null }?.let {
+        AlertDialog(
+            onDismissRequest = { model.notice.value = null },
+            title = { Text("Scan saved") },
+            text = { Text(it) },
+            confirmButton = {
+                TextButton(
+                    onClick = { model.notice.value = null },
+                    modifier = Modifier.testTag("scanner.notice.ok"),
+                ) {
+                    Text("OK")
+                }
+            },
+        )
     }
     error?.let {
         AlertDialog(
@@ -236,6 +265,7 @@ fun rememberAdders(model: ScannerModel, appendTo: UUID?): Adders {
         }
     val scan =
         rememberPlatformScanner(
+            pageLimit = { model.capturePageLimit(appendTo) },
             onPages = { uris ->
                 model.capture(uris, appendTo) {
                     uris
@@ -400,7 +430,7 @@ fun LibraryScreen(model: ScannerModel) {
                 item(span = full) {
                     ContentCard("Some folders could not be read") {
                         StatusLine(
-                            "$unreadable document folders could not be read. Their files have been preserved. Backup is paused until they can be recovered.",
+                            pluralStringResource(R.plurals.unreadable, unreadable, unreadable),
                             tint = MaterialTheme.colorScheme.error,
                         )
                     }
@@ -496,6 +526,7 @@ fun LibraryScreen(model: ScannerModel) {
                     }
                 items(visible, key = { it.id }) { document ->
                     var menu by remember { mutableStateOf(false) }
+                    val pages = pageCount(document.pages.size)
                     Box {
                         DocumentCard(
                             document,
@@ -510,7 +541,7 @@ fun LibraryScreen(model: ScannerModel) {
                                     nav.push(Route.Document(document.id))
                                 }
                                 .semantics(mergeDescendants = true) {
-                                    contentDescription = cardDescription(document)
+                                    contentDescription = cardDescription(document, pages)
                                     onLongClick("Options") {
                                         menu = true
                                         true

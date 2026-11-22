@@ -57,7 +57,7 @@ struct ScannerLibrary: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Tokens.Space.l) {
                     if model.unreadableCount > 0 {
-                        StatusLine(text: String(localized: "\(model.unreadableCount) document folders could not be read. Their files have been preserved. Backup is paused until they can be recovered."))
+                        StatusLine(text: scCount(model.unreadableCount, key: "unreadable"))
                             .padding(Tokens.Space.m).sevenCard()
                     }
                     if model.busy {
@@ -130,6 +130,7 @@ struct ScannerLibrary: View {
             if let document = trashing { Button("Move to Recently Deleted", role: .destructive) { Task { _ = await model.delete(document); trashing = nil } } }
         }
         .alert("Could not complete", isPresented: Binding(get: { model.error != nil }, set: { shown in if !shown { model.error = nil } })) { Button("OK", role: .cancel) { model.error = nil } } message: { Text(model.error ?? "") }
+        .alert("Scan saved", isPresented: Binding(get: { model.notice != nil && model.error == nil }, set: { shown in if !shown { model.notice = nil } })) { Button("OK", role: .cancel) { model.notice = nil } } message: { Text(model.notice ?? "") }
     }
 
     /// "Recent · 6 documents", and an All/Favorites switch once something is starred.
@@ -260,8 +261,10 @@ struct DocumentDetail: View {
     @State private var arranging = false
     @State private var removing: ScanPage?
     @State private var unlock = false
+    @State private var leaving = false
     private var allText: String { document.pages.map(\.text).filter { !$0.isEmpty }.joined(separator: "\n\n") }
     private var edited: Bool { title != document.title || note != (document.note ?? "") }
+    private var savable: Bool { edited && !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     private var columns: [GridItem] {
         let count = textSize.isAccessibilitySize ? 1 : 2
         return Array(repeating: GridItem(.flexible(), spacing: Tokens.Space.m, alignment: .top), count: count)
@@ -294,14 +297,14 @@ struct DocumentDetail: View {
                 GroupBox {
                     VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                         Text("Name").textRole(.caption)
-                        TextField("Name", text: $title).textRole(.body).submitLabel(.done).onSubmit { if edited { saveMetadata() } }
+                        TextField("Name", text: $title).textRole(.body).submitLabel(.done).onSubmit { if savable { saveMetadata() } }
                             .accessibilityIdentifier("scanner.title")
                     }
                     VStack(alignment: .leading, spacing: Tokens.Space.xs) {
                         Text("Notes").textRole(.caption)
                         TextField("Optional notes", text: $note, axis: .vertical).textRole(.body).lineLimit(3...8).accessibilityIdentifier("scanner.note")
                     }
-                    Button("Save details") { saveMetadata() }.disabled(!edited).accessibilityIdentifier("scanner.saveDetails")
+                    Button("Save details") { saveMetadata() }.disabled(!savable).accessibilityIdentifier("scanner.saveDetails")
                 } label: { Text("Details") }
                 Button("Delete document", role: .destructive) { deleting = true }
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -313,7 +316,15 @@ struct DocumentDetail: View {
         .sevenScreenBackground()
         .disabled(working)
         .navigationTitle(document.title).navigationBarTitleDisplayMode(.inline)
+        // Unsaved name or notes: a back button that asks first, and no swipe back past it.
+        .navigationBarBackButtonHidden(edited)
         .toolbar {
+            if edited {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { leaving = true } label: { Label("Documents", systemImage: "chevron.backward").labelStyle(.titleAndIcon) }
+                        .accessibilityIdentifier("scanner.back")
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button { toggleFavorite() } label: {
                     Label(document.favorite == true ? "Remove from Favorites" : "Add to Favorites", systemImage: document.favorite == true ? "star.fill" : "star")
@@ -333,6 +344,10 @@ struct DocumentDetail: View {
         .task(id: document.pages.map(\.id)) {
             do { let data = try await model.repository.pageURLs(document); urls = Dictionary(uniqueKeysWithValues: zip(document.pages.map(\.id), data)) }
             catch { model.error = error.localizedDescription }
+        }
+        .confirmationDialog("Discard changes to the name and notes?", isPresented: $leaving, titleVisibility: .visible) {
+            Button("Discard changes", role: .destructive) { dismiss() }
+            Button("Keep editing", role: .cancel) {}
         }
         .confirmationDialog("Move this document to Recently Deleted?", isPresented: $deleting, titleVisibility: .visible) { Button("Move to Recently Deleted", role: .destructive) { Task { if await model.delete(document) { dismiss() } } } }
         .confirmationDialog("Remove this page? Its image is deleted when the document is saved.", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }), titleVisibility: .visible) {
@@ -377,9 +392,9 @@ struct DocumentDetail: View {
     private var addTile: some View {
         Menu {
             if VNDocumentCameraViewController.isSupported {
-                Button("Scan more pages", systemImage: "doc.viewfinder") { if store.paidFeaturesAvailable { camera = true } else { unlock = true } }
+                Button("Scan more pages", systemImage: "doc.viewfinder") { if !store.paidFeaturesAvailable { unlock = true } else if model.canAddPages(to: document) { camera = true } }
             }
-            Button("Append images or PDF", systemImage: "square.and.arrow.down.on.square") { if store.paidFeaturesAvailable { importing = true } else { unlock = true } }
+            Button("Append images or PDF", systemImage: "square.and.arrow.down.on.square") { if !store.paidFeaturesAvailable { unlock = true } else if model.canAddPages(to: document) { importing = true } }
         } label: {
             VStack(spacing: Tokens.Space.xs) {
                 RoundedRectangle(cornerRadius: ScannerMetrics.thumbnailRadius, style: .continuous)

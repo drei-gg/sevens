@@ -16,7 +16,7 @@ struct DocumentCamera: UIViewControllerRepresentable {
         func documentCameraViewControllerDidCancel(_ controller: VNDocumentCameraViewController) { parent.dismiss() }
         func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFailWithError error: any Error) { parent.fail(error.localizedDescription); parent.dismiss() }
         func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFinishWith scan: VNDocumentCameraScan) {
-            guard scan.pageCount <= 50 else { parent.fail(String(localized: "Choose up to 50 pages per document.")); parent.dismiss(); return }
+            // No page limit here: the model places pages beyond a document's limit in new documents.
             parent.finish((0..<scan.pageCount).map { scan.imageOfPage(at: $0) }); parent.dismiss()
         }
     }

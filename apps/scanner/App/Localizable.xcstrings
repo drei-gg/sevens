@@ -1,1 +1,2532 @@
-{"sourceLanguage":"en","strings":{},"version":"1.0"}
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ percent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ percent"
+          }
+        }
+      }
+    },
+    "%@ · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@"
+          }
+        }
+      }
+    },
+    "%lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        }
+      }
+    },
+    "%lld of %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %@"
+          }
+        }
+      }
+    },
+    "%lld of 100 ink strokes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of 100 ink strokes"
+          }
+        }
+      }
+    },
+    "%lld of 100 marks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of 100 marks"
+          }
+        }
+      }
+    },
+    "A4": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A4"
+          }
+        }
+      }
+    },
+    "Add mark": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add mark"
+          }
+        }
+      }
+    },
+    "Add pages": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add pages"
+          }
+        }
+      }
+    },
+    "Add restored copies": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add restored copies"
+          }
+        }
+      }
+    },
+    "Add sample document": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add sample document"
+          }
+        }
+      }
+    },
+    "Add to Favorites": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to Favorites"
+          }
+        }
+      }
+    },
+    "Add with bounds": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add with bounds"
+          }
+        }
+      }
+    },
+    "Adjust": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust"
+          }
+        }
+      }
+    },
+    "Adjust crop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust crop"
+          }
+        }
+      }
+    },
+    "Adjust with handles": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust with handles"
+          }
+        }
+      }
+    },
+    "All": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
+          }
+        }
+      }
+    },
+    "Annotate": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annotate"
+          }
+        }
+      }
+    },
+    "Appearance": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        }
+      }
+    },
+    "Append images or PDF": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Append images or PDF"
+          }
+        }
+      }
+    },
+    "Arrange": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrange"
+          }
+        }
+      }
+    },
+    "Arrange pages": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrange pages"
+          }
+        }
+      }
+    },
+    "Back": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        }
+      }
+    },
+    "Backup & restore": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup & restore"
+          }
+        }
+      }
+    },
+    "Backup could not be completed. Your library is unchanged.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup could not be completed. Your library is unchanged."
+          }
+        }
+      }
+    },
+    "Black": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Black"
+          }
+        }
+      }
+    },
+    "Blue": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blue"
+          }
+        }
+      }
+    },
+    "Blue box": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blue box"
+          }
+        }
+      }
+    },
+    "Bold": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bold"
+          }
+        }
+      }
+    },
+    "Bottom": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bottom"
+          }
+        }
+      }
+    },
+    "Bounds": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bounds"
+          }
+        }
+      }
+    },
+    "Bounds (%)": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bounds (%)"
+          }
+        }
+      }
+    },
+    "Brightness": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brightness"
+          }
+        }
+      }
+    },
+    "By name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By name"
+          }
+        }
+      }
+    },
+    "Camera scanning is unavailable here. You can import documents instead.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera scanning is unavailable here. You can import documents instead."
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Cancel crop": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel crop"
+          }
+        }
+      }
+    },
+    "Choose Ink to draw, or Rectangle for a highlight or box. Visual marks keep the original and searchable text; they do not redact information.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Ink to draw, or Rectangle for a highlight or box. Visual marks keep the original and searchable text; they do not redact information."
+          }
+        }
+      }
+    },
+    "Clear all marks": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear all marks"
+          }
+        }
+      }
+    },
+    "Clear ink": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear ink"
+          }
+        }
+      }
+    },
+    "Clear selection": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear selection"
+          }
+        }
+      }
+    },
+    "Close": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "Contrast": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contrast"
+          }
+        }
+      }
+    },
+    "Correct the saved text used by search and text sharing. The image stays unchanged. Searchable PDFs recognize the image again; they do not use these corrections.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Correct the saved text used by search and text sharing. The image stays unchanged. Searchable PDFs recognize the image again; they do not use these corrections."
+          }
+        }
+      }
+    },
+    "Could not complete": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not complete"
+          }
+        }
+      }
+    },
+    "Crop page": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crop page"
+          }
+        }
+      }
+    },
+    "Crop preview": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crop preview"
+          }
+        }
+      }
+    },
+    "Dark": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
+          }
+        }
+      }
+    },
+    "Delete document": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete document"
+          }
+        }
+      }
+    },
+    "Delete permanently": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete permanently"
+          }
+        }
+      }
+    },
+    "Deleted documents stay on this iPhone until you restore or permanently delete them. They are not a backup; export important copies to Files.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted documents stay on this iPhone until you restore or permanently delete them. They are not a backup; export important copies to Files."
+          }
+        }
+      }
+    },
+    "Details": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
+          }
+        }
+      }
+    },
+    "Discard": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard"
+          }
+        }
+      }
+    },
+    "Discard adjustments": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard adjustments"
+          }
+        }
+      }
+    },
+    "Discard annotation changes?": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard annotation changes?"
+          }
+        }
+      }
+    },
+    "Discard changes": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard changes"
+          }
+        }
+      }
+    },
+    "Discard changes to the name and notes?": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard changes to the name and notes?"
+          }
+        }
+      }
+    },
+    "Discard crop changes?": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard crop changes?"
+          }
+        }
+      }
+    },
+    "Discard page adjustments?": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard page adjustments?"
+          }
+        }
+      }
+    },
+    "Discard text changes?": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard text changes?"
+          }
+        }
+      }
+    },
+    "Documents": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documents"
+          }
+        }
+      }
+    },
+    "Documents you delete wait here until you restore them or delete them permanently.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documents you delete wait here until you restore them or delete them permanently."
+          }
+        }
+      }
+    },
+    "Documents you import appear here, newest first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documents you import appear here, newest first."
+          }
+        }
+      }
+    },
+    "Done": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "Drag to reorder. Removed pages are deleted when you tap Save. Keep at least one page, or delete the document.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag to reorder. Removed pages are deleted when you tap Save. Keep at least one page, or delete the document."
+          }
+        }
+      }
+    },
+    "Draw with a finger or Apple Pencil. Undo removes the last change; ink does not erase or redact the page.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draw with a finger or Apple Pencil. Undo removes the last change; ink does not erase or redact the page."
+          }
+        }
+      }
+    },
+    "Edit text": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit text"
+          }
+        }
+      }
+    },
+    "Enter bounds from 0 to 100 with right greater than left and bottom greater than top.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter bounds from 0 to 100 with right greater than left and bottom greater than top."
+          }
+        }
+      }
+    },
+    "Enter valid bounds between 0 and 100.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter valid bounds between 0 and 100."
+          }
+        }
+      }
+    },
+    "Enter valid bounds to preview the crop.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter valid bounds to preview the crop."
+          }
+        }
+      }
+    },
+    "Export PDF": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export PDF"
+          }
+        }
+      }
+    },
+    "Export backup": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export backup"
+          }
+        }
+      }
+    },
+    "Favorite": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorite"
+          }
+        }
+      }
+    },
+    "Favorites": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorites"
+          }
+        }
+      }
+    },
+    "Fine": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fine"
+          }
+        }
+      }
+    },
+    "Grayscale": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grayscale"
+          }
+        }
+      }
+    },
+    "Highlight": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highlight"
+          }
+        }
+      }
+    },
+    "Import": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import"
+          }
+        }
+      }
+    },
+    "Import documents": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import documents"
+          }
+        }
+      }
+    },
+    "Import images or PDF": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import images or PDF"
+          }
+        }
+      }
+    },
+    "Importing pages…": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importing pages…"
+          }
+        }
+      }
+    },
+    "Ink": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ink"
+          }
+        }
+      }
+    },
+    "Ink canvas. Draw a stroke; use Undo or Clear ink to remove it.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ink canvas. Draw a stroke; use Undo or Clear ink to remove it."
+          }
+        }
+      }
+    },
+    "Ink color": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ink color"
+          }
+        }
+      }
+    },
+    "Keep at least one page, or delete the document.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep at least one page, or delete the document."
+          }
+        }
+      }
+    },
+    "Keep editing": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep editing"
+          }
+        }
+      }
+    },
+    "Left": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left"
+          }
+        }
+      }
+    },
+    "Light": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        }
+      }
+    },
+    "Loading page": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading page"
+          }
+        }
+      }
+    },
+    "Mark": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark"
+          }
+        }
+      }
+    },
+    "Marks follow the original page through crop and rotation. Cropping hides marks outside the visible area; resetting the crop brings them back.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marks follow the original page through crop and rotation. Cropping hides marks outside the visible area; resetting the crop brings them back."
+          }
+        }
+      }
+    },
+    "Marks not saved": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marks not saved"
+          }
+        }
+      }
+    },
+    "Medium": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medium"
+          }
+        }
+      }
+    },
+    "Move this document to Recently Deleted?": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move this document to Recently Deleted?"
+          }
+        }
+      }
+    },
+    "Move to Recently Deleted": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to Recently Deleted"
+          }
+        }
+      }
+    },
+    "Name": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "Newest first": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Newest first"
+          }
+        }
+      }
+    },
+    "No automatic uploads or Scanner account. Cloud storage, if you choose it, is provided by your Files provider.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No automatic uploads or Scanner account. Cloud storage, if you choose it, is provided by your Files provider."
+          }
+        }
+      }
+    },
+    "No documents yet": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No documents yet"
+          }
+        }
+      }
+    },
+    "No favorites": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No favorites"
+          }
+        }
+      }
+    },
+    "No recognized text": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No recognized text"
+          }
+        }
+      }
+    },
+    "No recognized text yet.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No recognized text yet."
+          }
+        }
+      }
+    },
+    "Notes": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        }
+      }
+    },
+    "Nothing in Recently Deleted": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing in Recently Deleted"
+          }
+        }
+      }
+    },
+    "OK": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Oldest first": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oldest first"
+          }
+        }
+      }
+    },
+    "One portable file holds your documents, original pages, adjustments, notes and Recently Deleted. Save it on this iPhone, an external drive, or a provider you choose in Files.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One portable file holds your documents, original pages, adjustments, notes and Recently Deleted. Save it on this iPhone, an external drive, or a provider you choose in Files."
+          }
+        }
+      }
+    },
+    "Opens the document.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the document."
+          }
+        }
+      }
+    },
+    "Opens the page to rotate or adjust it.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the page to rotate or adjust it."
+          }
+        }
+      }
+    },
+    "Optional notes": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional notes"
+          }
+        }
+      }
+    },
+    "PDF": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF"
+          }
+        }
+      }
+    },
+    "PDF preview": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF preview"
+          }
+        }
+      }
+    },
+    "PDF ready": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF ready"
+          }
+        }
+      }
+    },
+    "Page %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page %lld"
+          }
+        }
+      }
+    },
+    "Page annotation canvas. Use Add with bounds as an alternative to dragging.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page annotation canvas. Use Add with bounds as an alternative to dragging."
+          }
+        }
+      }
+    },
+    "Page unavailable": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page unavailable"
+          }
+        }
+      }
+    },
+    "Pages": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pages"
+          }
+        }
+      }
+    },
+    "Paper size": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paper size"
+          }
+        }
+      }
+    },
+    "Percent": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Percent"
+          }
+        }
+      }
+    },
+    "Percent of the displayed page, from its top-left corner. Right must exceed left; bottom must exceed top.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Percent of the displayed page, from its top-left corner. Right must exceed left; bottom must exceed top."
+          }
+        }
+      }
+    },
+    "Permanently delete this document? This cannot be undone.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently delete this document? This cannot be undone."
+          }
+        }
+      }
+    },
+    "Prepare PDF": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare PDF"
+          }
+        }
+      }
+    },
+    "Preparing PDF…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing PDF…"
+          }
+        }
+      }
+    },
+    "Preparing pages…": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing pages…"
+          }
+        }
+      }
+    },
+    "Preview": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview"
+          }
+        }
+      }
+    },
+    "Privacy": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy"
+          }
+        }
+      }
+    },
+    "Quality": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quality"
+          }
+        }
+      }
+    },
+    "Recent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent"
+          }
+        }
+      }
+    },
+    "Recently Deleted": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recently Deleted"
+          }
+        }
+      }
+    },
+    "Recognize text again": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognize text again"
+          }
+        }
+      }
+    },
+    "Recognized text": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognized text"
+          }
+        }
+      }
+    },
+    "Rectangle": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rectangle"
+          }
+        }
+      }
+    },
+    "Red": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Red"
+          }
+        }
+      }
+    },
+    "Red box": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Red box"
+          }
+        }
+      }
+    },
+    "Redo": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redo"
+          }
+        }
+      }
+    },
+    "Remove from Favorites": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from Favorites"
+          }
+        }
+      }
+    },
+    "Remove last mark": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove last mark"
+          }
+        }
+      }
+    },
+    "Remove last stroke": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove last stroke"
+          }
+        }
+      }
+    },
+    "Remove page": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove page"
+          }
+        }
+      }
+    },
+    "Remove this page? Its image is deleted when the document is saved.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove this page? Its image is deleted when the document is saved."
+          }
+        }
+      }
+    },
+    "Reset to original": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset to original"
+          }
+        }
+      }
+    },
+    "Restore": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        }
+      }
+    },
+    "Restore adds copies and never overwrites your current documents. Recently Deleted items remain deleted. Each backup supports up to 1 GB and 1,000 documents.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore adds copies and never overwrites your current documents. Recently Deleted items remain deleted. Each backup supports up to 1 GB and 1,000 documents."
+          }
+        }
+      }
+    },
+    "Restore copies from this backup?": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore copies from this backup?"
+          }
+        }
+      }
+    },
+    "Restore from backup": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore from backup"
+          }
+        }
+      }
+    },
+    "Restored %@ as copies.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restored %@ as copies."
+          }
+        }
+      }
+    },
+    "Right": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right"
+          }
+        }
+      }
+    },
+    "Rotate left": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotate left"
+          }
+        }
+      }
+    },
+    "Rotate right": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotate right"
+          }
+        }
+      }
+    },
+    "Run processing audit": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run processing audit"
+          }
+        }
+      }
+    },
+    "Save": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "Save details": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save details"
+          }
+        }
+      }
+    },
+    "Save image adjustments before annotating.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save image adjustments before annotating."
+          }
+        }
+      }
+    },
+    "Save image adjustments before editing text.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save image adjustments before editing text."
+          }
+        }
+      }
+    },
+    "Save page": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save page"
+          }
+        }
+      }
+    },
+    "Save to Files": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save to Files"
+          }
+        }
+      }
+    },
+    "Saving document…": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving document…"
+          }
+        }
+      }
+    },
+    "Scan": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan"
+          }
+        }
+      }
+    },
+    "Scan %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan %@"
+          }
+        }
+      }
+    },
+    "Scan documents": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan documents"
+          }
+        }
+      }
+    },
+    "Scan more pages": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan more pages"
+          }
+        }
+      }
+    },
+    "Scan saved": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan saved"
+          }
+        }
+      }
+    },
+    "Scan saved. Recognizing text…": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan saved. Recognizing text…"
+          }
+        }
+      }
+    },
+    "Scans and text recognition are processed on your iPhone. Files you export or back up go only where you choose. No Scanner account or servers.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scans and text recognition are processed on your iPhone. Files you export or back up go only where you choose. No Scanner account or servers."
+          }
+        }
+      }
+    },
+    "Scans you save appear here, newest first. Tap Scan to start.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scans you save appear here, newest first. Tap Scan to start."
+          }
+        }
+      }
+    },
+    "Searchable PDF exports include recognized text. Review important text for recognition errors.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Searchable PDF exports include recognized text. Review important text for recognition errors."
+          }
+        }
+      }
+    },
+    "Searchable text": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Searchable text"
+          }
+        }
+      }
+    },
+    "Select all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select all"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "Share PDF": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share PDF"
+          }
+        }
+      }
+    },
+    "Share text": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share text"
+          }
+        }
+      }
+    },
+    "Show": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show"
+          }
+        }
+      }
+    },
+    "Smaller file": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smaller file"
+          }
+        }
+      }
+    },
+    "Sort": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sort"
+          }
+        }
+      }
+    },
+    "Standard": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        }
+      }
+    },
+    "Star a document to keep it here.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Star a document to keep it here."
+          }
+        }
+      }
+    },
+    "Start a trial or unlock to scan or import pages. Your saved documents remain available.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a trial or unlock to scan or import pages. Your saved documents remain available."
+          }
+        }
+      }
+    },
+    "System": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        }
+      }
+    },
+    "Text recognition runs on your device. Check important text for recognition errors. Smaller files reduce image detail in this export; your saved pages stay unchanged.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text recognition runs on your device. Check important text for recognition errors. Smaller files reduce image detail in this export; your saved pages stay unchanged."
+          }
+        }
+      }
+    },
+    "The page as it will look with these bounds.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The page as it will look with these bounds."
+          }
+        }
+      }
+    },
+    "Theme": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Theme"
+          }
+        }
+      }
+    },
+    "This backup could not be restored. Your existing documents are unchanged.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This backup could not be restored. Your existing documents are unchanged."
+          }
+        }
+      }
+    },
+    "This document already has 50 pages, the most one document can hold. Scan or import into a new document instead.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This document already has 50 pages, the most one document can hold. Scan or import into a new document instead."
+          }
+        }
+      }
+    },
+    "This page already has 100 marks. Undo or remove a mark first.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This page already has 100 marks. Undo or remove a mark first."
+          }
+        }
+      }
+    },
+    "This stroke could not be added. Your earlier marks are kept; try a shorter stroke.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This stroke could not be added. Your earlier marks are kept; try a shorter stroke."
+          }
+        }
+      }
+    },
+    "This stroke exceeds the page’s ink limit. Your previous marks are kept. Undo or clear ink to make room.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This stroke exceeds the page’s ink limit. Your previous marks are kept. Undo or clear ink to make room."
+          }
+        }
+      }
+    },
+    "Tool": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tool"
+          }
+        }
+      }
+    },
+    "Top": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Top"
+          }
+        }
+      }
+    },
+    "US Letter": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "US Letter"
+          }
+        }
+      }
+    },
+    "Undo": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
+          }
+        }
+      }
+    },
+    "Use bounds": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use bounds"
+          }
+        }
+      }
+    },
+    "Use crop": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use crop"
+          }
+        }
+      }
+    },
+    "Use full page": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use full page"
+          }
+        }
+      }
+    },
+    "Width": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Width"
+          }
+        }
+      }
+    },
+    "Working…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Working…"
+          }
+        }
+      }
+    },
+    "Your earlier marks are kept.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your earlier marks are kept."
+          }
+        }
+      }
+    },
+    "Your marks are kept here. If the page changed, close and reopen this editor.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your marks are kept here. If the page changed, close and reopen this editor."
+          }
+        }
+      }
+    },
+    "Your original stays intact. Save the page to update recognition and exports.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your original stays intact. Save the page to update recognition and exports."
+          }
+        }
+      }
+    },
+    "Your original stays untouched. Save to apply these settings to previews, recognition and exports.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your original stays untouched. Save to apply these settings to previews, recognition and exports."
+          }
+        }
+      }
+    },
+    "Your scan is saved. Text recognition could not finish. You can retry from the document.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your scan is saved. Text recognition could not finish. You can retry from the document."
+          }
+        }
+      }
+    },
+    "Your text is kept here. If the page changed, close and reopen this editor.": {
+      "comment": "Scanner interface copy. Keep it plain and specific.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your text is kept here. If the page changed, close and reopen this editor."
+          }
+        }
+      }
+    },
+    "^[%lld document](inflect: true)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "^[%lld document](inflect: true)"
+          }
+        }
+      }
+    },
+    "^[%lld page](inflect: true)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "^[%lld page](inflect: true)"
+          }
+        }
+      }
+    },
+    "scanner.count.annotate": {
+      "comment": "Scanner count. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Annotate · %lld mark"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Annotate · %lld marks"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "scanner.count.overflow": {
+      "comment": "Scanner count. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "This document holds 50 pages at most, so the last %lld page you scanned was saved as a new document."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "This document holds 50 pages at most, so the last %lld pages you scanned were saved as a new document."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "scanner.count.overflowDocuments": {
+      "comment": "Scanner count. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "This document holds 50 pages at most, so the pages that didn’t fit were saved as %lld new document."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "This document holds 50 pages at most, so the pages that didn’t fit were saved as %lld new documents."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "scanner.count.split": {
+      "comment": "Scanner count. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Documents hold 50 pages at most, so this scan was saved as %lld document."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Documents hold 50 pages at most, so this scan was saved as %lld documents."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "scanner.count.unreadable": {
+      "comment": "Scanner count. %lld is the number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld document folder could not be read. Its files have been preserved. Backup is paused until it can be recovered."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld document folders could not be read. Their files have been preserved. Backup is paused until they can be recovered."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

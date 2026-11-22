@@ -25,7 +25,7 @@ internal val ScannerContent =
                                 "This adds a dedicated searchable library, recognized text and page management. Try everything for 7 days, then a one-time purchase. Nothing renews.",
                         ),
                         BeforeYouBuyContent.Paragraph(
-                            "Your saved documents remain readable, editable and exportable after the trial.",
+                            "Your saved documents remain readable, editable, deletable and exportable after the trial. Backup and restore are included, with no additional fee.",
                         ),
                     ),
                 lookAroundLabel = "Look around first",
@@ -35,9 +35,8 @@ internal val ScannerContent =
                 appName = "Document Scanner",
                 features =
                     listOf(
-                        "Scan and import documents",
-                        "A private searchable library",
-                        "Page management and PDF export",
+                        "Scan and import new documents",
+                        "Add scanned or imported pages to saved documents",
                     ),
             ),
         trialEnded =
@@ -45,10 +44,12 @@ internal val ScannerContent =
                 stillFree =
                     listOf(
                         "Read, edit, delete and export saved documents",
+                        "Back up and restore your library",
                     ),
                 unlockKeeps =
                     listOf(
                         "Scan and import new documents",
+                        "Add scanned or imported pages to saved documents",
                     ),
             ),
     )

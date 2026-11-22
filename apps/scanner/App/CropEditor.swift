@@ -46,6 +46,10 @@ struct PageCropEditor: View {
                     var preview = settings
                     let _ = preview.crop = original
                     PageImage(url: url, settings: preview, showsLoading: true).frame(height: 260).frame(maxWidth: .infinity)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text("Crop preview"))
+                        .accessibilityValue(Text(original == nil ? "Enter valid bounds to preview the crop." : "The page as it will look with these bounds."))
+                        .accessibilityAddTraits(.isImage)
                     Button("Adjust with handles") { handles = true }.disabled(image == nil)
                         .accessibilityIdentifier("page.cropHandles")
                 } footer: { Text("Your original stays intact. Save the page to update recognition and exports.") }
@@ -83,9 +87,9 @@ struct PageCropEditor: View {
         }.interactiveDismissDisabled(dirty)
     }
     private func edge(_ title: String, text: Binding<String>) -> some View {
-        LabeledContent(title) {
+        LabeledContent(sc(title)) {
             TextField("Percent", text: text).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
-                .accessibilityLabel(title + " percent").accessibilityIdentifier("page.crop" + title)
+                .accessibilityLabel(String(localized: "\(sc(title)) percent")).accessibilityIdentifier("page.crop" + title)
         }
     }
     private func set(_ crop: PageCrop) {
@@ -103,13 +107,13 @@ private struct NativePageCrop: UIViewControllerRepresentable {
         controller.rotateButtonsHidden = true
         controller.rotateClockwiseButtonHidden = true
         controller.aspectRatioPickerButtonHidden = true
-        controller.doneButtonTitle = "Use bounds"
+        controller.doneButtonTitle = sc("Use bounds")
         controller.loadViewIfNeeded()
         // iOS 26 uses icon-only crop toolbars; give the checkmark an actionable VoiceOver label.
-        controller.toolbar.doneIconButton.accessibilityLabel = "Use bounds"
+        controller.toolbar.doneIconButton.accessibilityLabel = sc("Use bounds")
         controller.toolbar.doneIconButton.accessibilityIdentifier = "page.cropUseBounds"
         controller.toolbar.doneTextButton?.accessibilityIdentifier = "page.cropUseBounds"
-        controller.toolbar.cancelIconButton.accessibilityLabel = "Cancel crop"
+        controller.toolbar.cancelIconButton.accessibilityLabel = sc("Cancel crop")
         controller.imageCropFrame = CGRect(x: initial.left * image.size.width, y: initial.top * image.size.height,
             width: (initial.right - initial.left) * image.size.width, height: (initial.bottom - initial.top) * image.size.height)
         controller.onDidFinishCancelled = { _ in cancel() }

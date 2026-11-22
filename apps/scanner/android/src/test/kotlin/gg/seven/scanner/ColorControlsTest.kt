@@ -26,11 +26,4 @@ class ColorControlsTest {
         assertEquals(r, g, 0.001f)
         assertEquals(r, b, 0.001f)
     }
-
-    @Test
-    fun counts() {
-        assertEquals("1 page", pageCount(1))
-        assertEquals("2 pages", pageCount(2))
-        assertEquals("1 document", documentCount(1))
-    }
 }

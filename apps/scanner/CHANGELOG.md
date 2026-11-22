@@ -1,5 +1,12 @@
 # Changelog
 
+## Fixes — not released
+
+- Scanning more pages than a document can hold no longer loses the scan: the pages that fit are added and the rest are saved as a new document. Android’s scanners stop at the pages the document can still take.
+- iPhone asks before discarding an unsaved name, notes or page adjustments, and Save details needs a name.
+- Android’s annotation editor reports a rejected mark instead of closing; the text editor opens the latest saved page; long recognized text is shared as a file; Recently Deleted rows open their actions; the camera screen’s Import instead works; Settings names the scanner each edition uses.
+- Counts read correctly in the singular, and the trial and unlock screens say what stays free: reading, editing, deleting, exporting and backup.
+
 ## 18 November 2026 — feature continuation, not released
 
 - Added finger/stylus ink on both phones using stable Jetpack Ink and system PencilKit, with labelled color/width choices, shared undo/redo, whole-stroke removal, native failure feedback and retained drafts. Version-4 portable geometry follows crop/rotation into thumbnails and both PDF modes; originals and OCR remain separate. Creation clipping prevents off-canvas input appearing after uncrop. Text labels, pressure/textured brushes and partial erasing remain separate work.

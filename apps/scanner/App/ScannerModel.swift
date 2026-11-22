@@ -11,6 +11,8 @@ import ScannerCore
     var progress = ""
     var busy = false
     var error: String?
+    /// Something worth knowing after a successful save, such as pages placed in a new document.
+    var notice: String?
     var started = false
     init() {
         let config = SevenConfig(bundle: .main) ?? SevenConfig(trialProductID: "scanner.trial7", unlockProductID: "scanner.unlock")
@@ -53,18 +55,37 @@ import ScannerCore
         guard store.paidFeaturesAvailable else { error = String(localized: "Start a trial or unlock to scan or import pages. Your saved documents remain available."); return }
         busy = true; progress = String(localized: "Preparing pages…"); defer { busy = false; progress = "" }
         do {
-            guard !images.isEmpty, images.count <= scanLimits().maxPages else { throw ScanError.TooLarge }
+            guard !images.isEmpty else { throw ScanError.TooLarge }
             // Normalizing up to 50 camera pages is heavy; keep it off the main actor so the UI stays responsive.
             let pages = CapturedPages(images: images)
             let data = try await Task.detached(priority: .userInitiated) { () throws -> [Data] in
-                var data: [Data] = []; var total = 0
-                for image in pages.images {
-                    let bytes = try autoreleasepool { try DocumentProcessing.normalized(image) }
-                    total += bytes.count; guard total <= scanLimits().maxDocumentImageBytes else { throw ScanError.TooLarge }; data.append(bytes)
-                }
-                return data
+                try pages.images.map { image in try autoreleasepool { try DocumentProcessing.normalized(image) } }
             }.value
-            try await persist(data, appendTo: appendTo)
+            // VisionKit has no page limit, so a capture can outgrow the document. Pages that don't fit
+            // become new documents rather than being discarded with the rest of the capture.
+            var existing: UInt64?
+            if let appendTo { existing = UInt64(try await repository.load(appendTo).pages.count) }
+            let plan = capturePlan(existingPageCount: existing, captured: UInt64(data.count))
+            progress = String(localized: "Saving document…")
+            var rest = data[...]
+            var saved: [ScanDocument] = []
+            if let appendTo, plan.append > 0 {
+                saved.append(try await repository.append(documentID: appendTo, images: Array(rest.prefix(Int(plan.append)))))
+                rest = rest.dropFirst(Int(plan.append))
+            }
+            for count in plan.newDocuments.map({ Int($0) }) {
+                saved.append(try await repository.create(title: newTitle(), images: Array(rest.prefix(count)), text: Array(repeating: "", count: count)))
+                rest = rest.dropFirst(count)
+            }
+            await reload()
+            if appendTo != nil, !plan.newDocuments.isEmpty {
+                let moved = Int(plan.newDocuments.reduce(0, +))
+                notice = plan.newDocuments.count == 1 ? scCount(moved, key: "overflow") : scCount(plan.newDocuments.count, key: "overflowDocuments")
+            } else if plan.newDocuments.count > 1 {
+                notice = scCount(plan.newDocuments.count, key: "split")
+            }
+            progress = String(localized: "Scan saved. Recognizing text…")
+            for document in saved { await recognize(document, onlyEmpty: true) }
         } catch { self.error = error.localizedDescription }
     }
     func importFiles(_ urls: [URL], appendTo: UUID? = nil) async {
@@ -80,9 +101,18 @@ import ScannerCore
         progress = String(localized: "Saving document…")
         let saved: ScanDocument
         if let appendTo { saved = try await repository.append(documentID: appendTo, images: data) }
-        else { saved = try await repository.create(title: String(localized: "Scan") + " " + Date().formatted(date: .abbreviated, time: .shortened), images: data, text: Array(repeating: "", count: data.count)) }
+        else { saved = try await repository.create(title: newTitle(), images: data, text: Array(repeating: "", count: data.count)) }
         await reload(); progress = String(localized: "Scan saved. Recognizing text…")
         await recognize(saved, onlyEmpty: true)
+    }
+    private func newTitle() -> String { String(localized: "Scan \(Date().formatted(date: .abbreviated, time: .shortened))") }
+    /// How many more pages a document can take; adding to a full document explains the limit instead.
+    func canAddPages(to document: ScanDocument) -> Bool {
+        guard appendPageAllowance(existingPageCount: UInt64(document.pages.count)) > 0 else {
+            error = String(localized: "This document already has 50 pages, the most one document can hold. Scan or import into a new document instead.")
+            return false
+        }
+        return true
     }
     func recognize(_ document: ScanDocument, onlyEmpty: Bool = false) async {
         do {
@@ -183,10 +213,10 @@ import ScannerCore
 struct CapturedPages: @unchecked Sendable { let images: [UIImage] }
 
 enum ScannerGate {
-    static let unlock = UnlockContent(appName: "Document Scanner", features: ["Scan and import documents", "A private searchable library", "Page management and PDF export"])
+    static let unlock = UnlockContent(appName: "Document Scanner", features: ["Scan and import new documents", "Add scanned or imported pages to saved documents"])
     static let before = BeforeYouBuyContent(title: "Your iPhone already scans documents.", paragraphs: [
         .init("Notes and Files can scan paper into PDFs. If that covers your needs, keep your money."),
         .init("This adds a dedicated searchable library, recognized text and page management. Try everything for 7 days, then {price}, once. Nothing renews.", withoutPrice: "This adds a dedicated searchable library, recognized text and page management. Try everything for 7 days, then a one-time purchase. Nothing renews."),
-        .init("Your saved documents remain readable, editable and exportable after the trial.")], justScanLabel: "Look around first")
-    static let expired = TrialEndedContent(stillFree: ["Read, edit, delete and export saved documents"], unlockKeeps: ["Scan and import new documents"])
+        .init("Your saved documents remain readable, editable, deletable and exportable after the trial. Backup and restore are included, with no additional fee.")], justScanLabel: "Look around first")
+    static let expired = TrialEndedContent(stillFree: ["Read, edit, delete and export saved documents", "Back up and restore your library"], unlockKeeps: ["Scan and import new documents", "Add scanned or imported pages to saved documents"])
 }
