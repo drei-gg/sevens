@@ -13,7 +13,7 @@ import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import gg.seven.fast.FastApplication
-import gg.seven.fast.ReminderScheduler
+import gg.seven.fast.FastReminders
 import gg.seven.fast.core.CompanionAction
 import gg.seven.fast.core.CompanionFailure
 import gg.seven.fast.core.CompanionRequest
@@ -161,13 +161,12 @@ internal object WearBridge {
             apply = { request ->
                 val now = Instant.now()
                 val permitted = canCreate(app)
-                val saved =
-                    app.repository.update {
-                        watchApply(it, request, permitted, ZoneId.systemDefault().id, now)
-                    }
-                // Records are saved; reminders and the timer surfaces follow, as after a phone
-                // edit.
-                runCatching { ReminderScheduler.reconcile(app, saved) }
+                app.repository.update {
+                    watchApply(it, request, permitted, ZoneId.systemDefault().id, now)
+                }
+                // Records are saved; reminders and the timer surfaces follow from the saved
+                // archive, as after a phone edit.
+                runCatching { FastReminders.reconcile(app) }
             },
             snapshot = { current(app) },
         )
