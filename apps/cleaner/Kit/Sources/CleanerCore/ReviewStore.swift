@@ -18,6 +18,11 @@ public actor ReviewStore {
         let state = reviewStateRecord(state: try read(), entry: HistoryEntry(message), processedSource: processedSource)
         try write(state); return state
     }
+    public func recordCopy(source: CleanupItem, outputID: String) throws -> ReviewState {
+        let state = try reviewStateRecordCopy(state: read(), source: source, outputId: outputID,
+            entry: HistoryEntry("Saved a compressed copy of \(source.name). Original retained."))
+        try write(state); return state
+    }
     private func write(_ state: ReviewState) throws {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try reviewStateEncode(state: state).write(to: url, options: .atomic)

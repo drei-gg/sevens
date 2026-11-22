@@ -38,7 +38,12 @@ pub enum ReviewDecision {
 /// `ReviewDecision.allCases`, in declaration order.
 #[uniffi::export]
 pub fn review_decision_all_cases() -> Vec<ReviewDecision> {
-    vec![ReviewDecision::Undecided, ReviewDecision::Keep, ReviewDecision::Later, ReviewDecision::Remove]
+    vec![
+        ReviewDecision::Undecided,
+        ReviewDecision::Keep,
+        ReviewDecision::Later,
+        ReviewDecision::Remove,
+    ]
 }
 
 /// A photo, video or file. `bytes` is `None` when the size is unknown, never zero.
@@ -107,7 +112,10 @@ pub fn matching_exact(items: &[CleanupItem]) -> Vec<MatchGroup> {
     let mut groups: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for item in items {
         if let Some(fingerprint) = &item.fingerprint {
-            groups.entry(format!("{}:{}", item.kind.raw(), fingerprint)).or_default().push(item.id.clone());
+            groups
+                .entry(format!("{}:{}", item.kind.raw(), fingerprint))
+                .or_default()
+                .push(item.id.clone());
         }
     }
     let mut result: Vec<MatchGroup> = groups
@@ -115,18 +123,33 @@ pub fn matching_exact(items: &[CleanupItem]) -> Vec<MatchGroup> {
         .filter(|(_, members)| members.len() > 1)
         .map(|(id, mut members)| {
             members.sort_by(|a, b| swift_cmp(a, b));
-            MatchGroup { id, kind: MatchKind::IdenticalResources, members, reason: IDENTICAL_REASON.to_string() }
+            MatchGroup {
+                id,
+                kind: MatchKind::IdenticalResources,
+                members,
+                reason: IDENTICAL_REASON.to_string(),
+            }
         })
         .collect();
     result.sort_by(|a, b| swift_cmp(&a.id, &b.id));
     result
 }
 
-fn keeper_order(a: &CleanupItem, b: &CleanupItem, decisions: &HashMap<String, ReviewDecision>) -> Ordering {
-    let protected = |item: &CleanupItem| decisions.get(&item.id) == Some(&ReviewDecision::Keep) || item.favorite;
+fn keeper_order(
+    a: &CleanupItem,
+    b: &CleanupItem,
+    decisions: &HashMap<String, ReviewDecision>,
+) -> Ordering {
+    let protected = |item: &CleanupItem| {
+        decisions.get(&item.id) == Some(&ReviewDecision::Keep) || item.favorite
+    };
     let (pa, pb) = (protected(a), protected(b));
     if pa != pb {
-        return if pa { Ordering::Less } else { Ordering::Greater };
+        return if pa {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        };
     }
     let area = |item: &CleanupItem| item.width as i64 * item.height as i64;
     if area(a) != area(b) {
@@ -142,9 +165,14 @@ fn keeper_order(a: &CleanupItem, b: &CleanupItem, decisions: &HashMap<String, Re
 /// `Matching.keeper`: among items not marked for removal, prefer kept or favorite, then the
 /// most pixels, then the earliest date (unknown last), then the id.
 #[uniffi::export]
-pub fn matching_keeper(items: &[CleanupItem], decisions: &HashMap<String, ReviewDecision>) -> Option<String> {
-    let mut candidates: Vec<&CleanupItem> =
-        items.iter().filter(|item| decisions.get(&item.id) != Some(&ReviewDecision::Remove)).collect();
+pub fn matching_keeper(
+    items: &[CleanupItem],
+    decisions: &HashMap<String, ReviewDecision>,
+) -> Option<String> {
+    let mut candidates: Vec<&CleanupItem> = items
+        .iter()
+        .filter(|item| decisions.get(&item.id) != Some(&ReviewDecision::Remove))
+        .collect();
     candidates.sort_by(|a, b| keeper_order(a, b, decisions));
     candidates.first().map(|item| item.id.clone())
 }
@@ -158,16 +186,30 @@ pub fn matching_proposed_removal(
     decisions: &HashMap<String, ReviewDecision>,
 ) -> Vec<String> {
     // Swift builds this with `uniqueKeysWithValues`, which traps on a repeated id; the last wins here.
-    let by_id: HashMap<&str, &CleanupItem> = items.iter().map(|item| (item.id.as_str(), item)).collect();
+    let by_id: HashMap<&str, &CleanupItem> =
+        items.iter().map(|item| (item.id.as_str(), item)).collect();
     let mut result = Vec::new();
-    for group in groups.iter().filter(|g| g.kind == MatchKind::IdenticalResources) {
-        let members: Vec<CleanupItem> = group.members.iter().filter_map(|id| by_id.get(id.as_str()).map(|i| (*i).clone())).collect();
+    for group in groups
+        .iter()
+        .filter(|g| g.kind == MatchKind::IdenticalResources)
+    {
+        let members: Vec<CleanupItem> = group
+            .members
+            .iter()
+            .filter_map(|id| by_id.get(id.as_str()).map(|i| (*i).clone()))
+            .collect();
         if members.len() <= 1 {
             continue;
         }
-        let Some(keeper) = matching_keeper(&members, decisions) else { continue };
+        let Some(keeper) = matching_keeper(&members, decisions) else {
+            continue;
+        };
         for item in &members {
-            let undecided = decisions.get(&item.id).copied().unwrap_or(ReviewDecision::Undecided) == ReviewDecision::Undecided;
+            let undecided = decisions
+                .get(&item.id)
+                .copied()
+                .unwrap_or(ReviewDecision::Undecided)
+                == ReviewDecision::Undecided;
             if item.id != keeper && !item.favorite && undecided {
                 result.push(item.id.clone());
             }
@@ -186,7 +228,10 @@ pub struct StorageSummary {
 #[uniffi::export]
 pub fn storage_summary(items: &[CleanupItem]) -> StorageSummary {
     StorageSummary {
-        known_bytes: items.iter().filter_map(|i| i.bytes).fold(0i64, |a, b| a.saturating_add(b)),
+        known_bytes: items
+            .iter()
+            .filter_map(|i| i.bytes)
+            .fold(0i64, |a, b| a.saturating_add(b)),
         unknown_count: items.iter().filter(|i| i.bytes.is_none()).count() as i32,
     }
 }

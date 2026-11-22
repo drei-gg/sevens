@@ -1,0 +1,7 @@
+# Synthetic native video fixture
+
+`video-profile.mp4` is generated test content, not a user video. It contains FFmpeg `testsrc2` moving color bars and a 440 Hz sine wave: 6 seconds, 1920 × 1080 H.264 High / 8-bit BT.709 at constant 20 fps, stereo AAC at 48 kHz. A 90-degree display matrix makes it portrait. Synthetic capture metadata is 2020-01-02T03:04:05Z and latitude/longitude 14.6/120.9.
+
+The native tests trim 1.250–4.750 seconds, deliberately between keyframes. They check upright 720 × 1280 geometry, selected first/middle/last frame content, full native AAC-to-PCM decode, duration, supported metadata, cancellation cleanup and unchanged original bytes. Android reads this same fixture as an instrumentation asset; Apple copies it as a package test resource. Library tests additionally exercise actual MediaStore/PhotoKit insertion, verification and same-copy retry after a failed ledger write.
+
+Generation uses FFmpeg's lavfi `testsrc2=size=1920x1080:rate=20:duration=6` and `sine=frequency=440:sample_rate=48000:duration=6`, libx264 `-preset veryfast -crf 8 -pix_fmt yuv420p`, AAC `-b:a 128k -ac 2`, and BT.709 metadata. The H.264 bitstream explicitly sets `colour_primaries=1:transfer_characteristics=1:matrix_coefficients=1`; a lossless remux with `-display_rotation 90` before the input writes the display matrix. Tests use native platform APIs; FFmpeg is not an application dependency.

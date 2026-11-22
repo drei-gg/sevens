@@ -6,7 +6,7 @@ import PackageDescription
 // CleanerPlatform service that calls it, is Apple-only.
 var products: [Product] = [.library(name: "CleanerPlatform", targets: ["CleanerPlatform"])]
 var platformDependencies: [Target.Dependency] = [.product(name: "PhoneNumberKit", package: "PhoneNumberKit")]
-var targets: [Target] = [.testTarget(name: "CleanerPlatformTests", dependencies: ["CleanerPlatform"])]
+var targets: [Target] = [.testTarget(name: "CleanerPlatformTests", dependencies: ["CleanerPlatform"], resources: [.copy("Fixtures")])]
 #if canImport(Darwin)
 products.insert(.library(name: "CleanerCore", targets: ["CleanerCore"]), at: 0)
 platformDependencies.insert("CleanerCore", at: 0)
@@ -16,7 +16,7 @@ targets += [
     .testTarget(name: "CleanerCoreTests", dependencies: ["CleanerCore"]),
 ]
 #endif
-targets.append(.target(name: "CleanerPlatform", dependencies: platformDependencies))
+targets.append(.target(name: "CleanerPlatform", dependencies: platformDependencies, linkerSettings: [.linkedLibrary("sqlite3", .when(platforms: [.iOS, .macOS]))]))
 let package = Package(
     name: "CleanerKit", platforms: [.iOS(.v18), .macOS(.v15)],
     products: products,

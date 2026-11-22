@@ -56,7 +56,45 @@ import CoreGraphics
     #expect(candidate.assessment.fullResolutionPSNR > 0)
     #expect(!candidate.assessment.authorizesSourceDeletion)
     #expect(FileManager.default.fileExists(atPath: url.path))
+    let originalBytes = try Data(contentsOf: url)
+    for quality in [0.9, 1.0] {
+        let revised = try ImageCompression.makeCandidate(sourceURL: url, directory: directory, quality: quality)
+        #expect(revised.quality == quality)
+        #expect(revised.sourceURL == url)
+        #expect(revised.assessment.output.width == 512)
+        #expect(revised.assessment.output.orientation == 6)
+        #expect(!revised.assessment.authorizesSourceDeletion)
+        #expect(try Data(contentsOf: url) == originalBytes)
+    }
     print("CLEANER_QUALITY fixture=lines orientation=6 globalPSNR=\(candidate.assessment.fullResolutionPSNR) worstTilePSNR=\(candidate.assessment.worstTilePSNR) issues=\(candidate.assessment.issues)")
+}
+@Test func explicitResizeChecksSavedDimensionsMetadataAndOriginal() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let url = folder.appendingPathComponent("source.png")
+    let context = CGContext(data: nil, width: 1600, height: 1200, bitsPerComponent: 8, bytesPerRow: 0,
+        space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+    for y in 0..<1200 { context.setFillColor(CGColor(gray: Double(y) / 1200, alpha: 1)); context.fill(CGRect(x: 0, y: y, width: 1600, height: 1)) }
+    let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)!
+    CGImageDestinationAddImage(destination, context.makeImage()!, [kCGImagePropertyOrientation: 6,
+        kCGImagePropertyExifDictionary: [kCGImagePropertyExifDateTimeOriginal: "2026:11:17 10:12:13", kCGImagePropertyExifPixelXDimension: 1600, kCGImagePropertyExifPixelYDimension: 1200]] as CFDictionary)
+    #expect(CGImageDestinationFinalize(destination))
+    let bytes = try Data(contentsOf: url)
+    let candidate = try ImageCompression.makeCandidate(sourceURL: url, directory: folder, size: .small)
+    #expect(candidate.size == .small)
+    #expect(candidate.assessment.source.width == 1600)
+    #expect(candidate.assessment.output.width == 800)
+    #expect(candidate.assessment.output.height == 600)
+    #expect(candidate.assessment.output.orientation == 6)
+    #expect(!candidate.assessment.issues.contains { $0.contains("metadata") || $0.contains("Dimensions") })
+    #expect(!candidate.assessment.authorizesSourceDeletion)
+    #expect(try Data(contentsOf: url) == bytes)
+    let saved = CGImageSourceCreateWithURL(candidate.outputURL as CFURL, nil)!
+    let properties = CGImageSourceCopyPropertiesAtIndex(saved, 0, nil)! as NSDictionary
+    let exif = properties[kCGImagePropertyExifDictionary] as! NSDictionary
+    #expect(exif[kCGImagePropertyExifDateTimeOriginal] as? String == "2026:11:17 10:12:13")
+    #expect(exif[kCGImagePropertyExifPixelXDimension] as? Int == 800)
 }
 @Test func alphaCannotBeSilentlyFlattened() throws {
     let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

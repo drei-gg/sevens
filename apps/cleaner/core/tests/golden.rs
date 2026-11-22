@@ -18,7 +18,11 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 /// `Date(timeIntervalSinceReferenceDate:)`.
 fn reference(seconds: f64) -> SystemTime {
     let base = UNIX_EPOCH + Duration::from_secs(978_307_200);
-    if seconds >= 0.0 { base + Duration::from_secs_f64(seconds) } else { base - Duration::from_secs_f64(-seconds) }
+    if seconds >= 0.0 {
+        base + Duration::from_secs_f64(seconds)
+    } else {
+        base - Duration::from_secs_f64(-seconds)
+    }
 }
 fn strings(values: &[&str]) -> Vec<String> {
     values.iter().map(|s| s.to_string()).collect()
@@ -37,11 +41,19 @@ fn sample_items() -> Vec<CleanupItem> {
             favorite: true,
             tags: strings(&["HDR", "Live Photos", "Screenshots"]),
             fingerprint: Some(FINGERPRINT.into()),
-            ..new_cleanup_item("A1B2/L0/001".into(), "IMG_0001.HEIC".into(), MediaKind::Photo)
+            ..new_cleanup_item(
+                "A1B2/L0/001".into(),
+                "IMG_0001.HEIC".into(),
+                MediaKind::Photo,
+            )
         },
         CleanupItem {
             revision: "0.0:-1".into(),
-            ..new_cleanup_item("file:///Docs/report%20final.pdf".into(), "Docs/report final.pdf".into(), MediaKind::File)
+            ..new_cleanup_item(
+                "file:///Docs/report%20final.pdf".into(),
+                "Docs/report final.pdf".into(),
+                MediaKind::File,
+            )
         },
         CleanupItem {
             revision: "1.5:1920x1080:1".into(),
@@ -63,8 +75,16 @@ fn sample_items() -> Vec<CleanupItem> {
 }
 
 fn sample_assessment() -> CompressionAssessment {
-    let source = ImageFacts { orientation: 6, color_space: "kCGColorSpaceSRGB".into(), ..new_image_facts(4000, 3000, 8_000_000) };
-    let output = ImageFacts { bytes: 7_998_000, orientation: 1, ..source.clone() };
+    let source = ImageFacts {
+        orientation: 6,
+        color_space: "kCGColorSpaceSRGB".into(),
+        ..new_image_facts(4000, 3000, 8_000_000)
+    };
+    let output = ImageFacts {
+        bytes: 7_998_000,
+        orientation: 1,
+        ..source.clone()
+    };
     new_compression_assessment(source, output, 41.123456789, 29.5, false)
 }
 
@@ -72,12 +92,18 @@ fn sample_state() -> ReviewState {
     let mut state = new_review_state();
     state.decisions = HashMap::from([
         ("A1B2/L0/001".to_string(), ReviewDecision::Remove),
-        ("file:///Docs/report%20final.pdf".to_string(), ReviewDecision::Keep),
+        (
+            "file:///Docs/report%20final.pdf".to_string(),
+            ReviewDecision::Keep,
+        ),
         ("C3/L0/001".to_string(), ReviewDecision::Later),
         ("D4/L0/001".to_string(), ReviewDecision::Undecided),
     ]);
     state.revisions = HashMap::from([
-        ("A1B2/L0/001".to_string(), "784891800.25:4032x3024:2".to_string()),
+        (
+            "A1B2/L0/001".to_string(),
+            "784891800.25:4032x3024:2".to_string(),
+        ),
         ("C3/L0/001".to_string(), "1.5:1920x1080:1".to_string()),
     ]);
     state.history = vec![
@@ -104,7 +130,11 @@ fn sample_package() -> ContactPackage {
         vec![
             new_contact_field("email".into(), "jean@example.com".into(), "Work".into()),
             new_contact_field("givenName".into(), "Jean".into(), String::new()),
-            new_contact_field("phone".into(), "+44 20 7946 0018 ext 12".into(), "_$!<Home>!$_".into()),
+            new_contact_field(
+                "phone".into(),
+                "+44 20 7946 0018 ext 12".into(),
+                "_$!<Home>!$_".into(),
+            ),
         ],
         strings(&["+442079460018;ext=12", "+442079460018"]),
         strings(&["jean@example.com"]),
@@ -115,14 +145,21 @@ fn sample_package() -> ContactPackage {
             "B:ABPerson".into(),
             "Zoë".into(),
             "exchange".into(),
-            vec![new_contact_field("givenName".into(), "Zoë".into(), String::new())],
+            vec![new_contact_field(
+                "givenName".into(),
+                "Zoë".into(),
+                String::new(),
+            )],
             vec![],
             vec![],
         )
     };
     new_contact_package(
         vec![a, b],
-        HashMap::from([("A:ABPerson".to_string(), vec![0, 1, 2, 250, 255]), ("B:ABPerson".to_string(), b"bplist00".to_vec())]),
+        HashMap::from([
+            ("A:ABPerson".to_string(), vec![0, 1, 2, 250, 255]),
+            ("B:ABPerson".to_string(), b"bplist00".to_vec()),
+        ]),
     )
 }
 
@@ -138,7 +175,9 @@ fn normalized(value: Value) -> Value {
             }
             Value::Array(items)
         }
-        Value::Object(map) => Value::Object(map.into_iter().map(|(k, v)| (k, normalized(v))).collect()),
+        Value::Object(map) => {
+            Value::Object(map.into_iter().map(|(k, v)| (k, normalized(v))).collect())
+        }
         other => other,
     }
 }
@@ -169,17 +208,29 @@ fn swift_contacts_package_reads_back_equal() {
 
 #[test]
 fn swift_items_groups_and_assessment_read_back_equal() {
-    let items: Vec<CleanupItem> = serde_json::from_slice(include_bytes!("fixtures/swift-items.json")).unwrap();
+    let items: Vec<CleanupItem> =
+        serde_json::from_slice(include_bytes!("fixtures/swift-items.json")).unwrap();
     assert_eq!(items, sample_items());
-    same_json(include_bytes!("fixtures/swift-items.json"), &serde_json::to_vec(&items).unwrap());
+    same_json(
+        include_bytes!("fixtures/swift-items.json"),
+        &serde_json::to_vec(&items).unwrap(),
+    );
 
-    let groups: Vec<MatchGroup> = serde_json::from_slice(include_bytes!("fixtures/swift-groups.json")).unwrap();
+    let groups: Vec<MatchGroup> =
+        serde_json::from_slice(include_bytes!("fixtures/swift-groups.json")).unwrap();
     assert_eq!(groups, matching_exact(&sample_items()));
-    same_json(include_bytes!("fixtures/swift-groups.json"), &serde_json::to_vec(&groups).unwrap());
+    same_json(
+        include_bytes!("fixtures/swift-groups.json"),
+        &serde_json::to_vec(&groups).unwrap(),
+    );
 
-    let assessment: CompressionAssessment = serde_json::from_slice(include_bytes!("fixtures/swift-assessment.json")).unwrap();
+    let assessment: CompressionAssessment =
+        serde_json::from_slice(include_bytes!("fixtures/swift-assessment.json")).unwrap();
     assert_eq!(assessment, sample_assessment());
-    same_json(include_bytes!("fixtures/swift-assessment.json"), &serde_json::to_vec(&assessment).unwrap());
+    same_json(
+        include_bytes!("fixtures/swift-assessment.json"),
+        &serde_json::to_vec(&assessment).unwrap(),
+    );
 }
 
 #[test]
@@ -190,7 +241,10 @@ fn swift_revision_strings_match() {
         let columns: Vec<&str> = line.split('\t').collect();
         let stamp = (columns[1] != "nil").then(|| columns[1].parse::<f64>().unwrap());
         let ours = match columns[0] {
-            "file" => file_revision(stamp, (columns[2] != "nil").then(|| columns[2].parse().unwrap())),
+            "file" => file_revision(
+                stamp,
+                (columns[2] != "nil").then(|| columns[2].parse().unwrap()),
+            ),
             "photo" => photo_revision(stamp, 4032, 3024, 2),
             other => panic!("unknown row {other}"),
         };
@@ -204,11 +258,26 @@ fn swift_revision_strings_match() {
 
 fn rust_written() -> Vec<(&'static str, Vec<u8>)> {
     vec![
-        ("rust-review-state.json", review_state_encode(&sample_state()).unwrap()),
-        ("rust-contacts-package.json", contact_package_encode(&sample_package()).unwrap()),
-        ("rust-items.json", serde_json::to_vec(&sample_items()).unwrap()),
-        ("rust-groups.json", serde_json::to_vec(&matching_exact(&sample_items())).unwrap()),
-        ("rust-assessment.json", serde_json::to_vec(&sample_assessment()).unwrap()),
+        (
+            "rust-review-state.json",
+            review_state_encode(&sample_state()).unwrap(),
+        ),
+        (
+            "rust-contacts-package.json",
+            contact_package_encode(&sample_package()).unwrap(),
+        ),
+        (
+            "rust-items.json",
+            serde_json::to_vec(&sample_items()).unwrap(),
+        ),
+        (
+            "rust-groups.json",
+            serde_json::to_vec(&matching_exact(&sample_items())).unwrap(),
+        ),
+        (
+            "rust-assessment.json",
+            serde_json::to_vec(&sample_assessment()).unwrap(),
+        ),
     ]
 }
 
@@ -221,6 +290,10 @@ fn rust_writes_the_files_swift_read() {
             std::fs::write(dir.join(name), &bytes).unwrap();
         }
         let fixture = std::fs::read(dir.join(name)).unwrap();
-        assert_eq!(String::from_utf8(bytes).unwrap(), String::from_utf8(fixture).unwrap(), "{name}");
+        assert_eq!(
+            String::from_utf8(bytes).unwrap(),
+            String::from_utf8(fixture).unwrap(),
+            "{name}"
+        );
     }
 }

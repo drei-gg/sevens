@@ -22,7 +22,15 @@ pub struct ImageFacts {
 /// `ImageFacts(width:height:bytes:)` with Swift's defaults: orientation 1, sRGB, opaque, 8-bit.
 #[uniffi::export]
 pub fn new_image_facts(width: i32, height: i32, bytes: i64) -> ImageFacts {
-    ImageFacts { width, height, orientation: 1, color_space: "sRGB".into(), has_alpha: false, bits: 8, bytes }
+    ImageFacts {
+        width,
+        height,
+        orientation: 1,
+        color_space: "sRGB".into(),
+        has_alpha: false,
+        bits: 8,
+        bytes,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
@@ -66,10 +74,20 @@ pub fn new_compression_assessment(
     if output.bytes >= source.bytes || source.bytes - output.bytes < 4096 {
         issues.push("No meaningful byte reduction.".to_string());
     }
-    if full_resolution_psnr.is_nan() || full_resolution_psnr < 38.0 || worst_tile_psnr.is_nan() || worst_tile_psnr < 30.0 {
+    if full_resolution_psnr.is_nan()
+        || full_resolution_psnr < 38.0
+        || worst_tile_psnr.is_nan()
+        || worst_tile_psnr < 30.0
+    {
         issues.push("Detail comparison did not pass the current profile.".to_string());
     }
-    CompressionAssessment { source, output, full_resolution_psnr, worst_tile_psnr, issues }
+    CompressionAssessment {
+        source,
+        output,
+        full_resolution_psnr,
+        worst_tile_psnr,
+        issues,
+    }
 }
 
 /// `canOfferCopy`: a separate copy may be offered only when nothing was found.
@@ -87,7 +105,11 @@ pub fn assessment_authorizes_source_deletion(_assessment: &CompressionAssessment
 /// `savings`: bytes saved, never negative.
 #[uniffi::export]
 pub fn assessment_savings(assessment: &CompressionAssessment) -> i64 {
-    assessment.source.bytes.saturating_sub(assessment.output.bytes).max(0)
+    assessment
+        .source
+        .bytes
+        .saturating_sub(assessment.output.bytes)
+        .max(0)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, uniffi::Record)]
@@ -145,7 +167,10 @@ pub fn new_contact_record(
 #[uniffi::export]
 pub fn contact_is_incomplete(record: &ContactRecord) -> bool {
     record.name.is_empty()
-        || !record.fields.iter().any(|f| (f.key == "phone" || f.key == "email") && !trimmed(&f.value).is_empty())
+        || !record
+            .fields
+            .iter()
+            .any(|f| (f.key == "phone" || f.key == "email") && !trimmed(&f.value).is_empty())
 }
 
 /// A candidate pair, never a transitive identity group.
@@ -167,17 +192,28 @@ fn match_id(left: &str, right: &str) -> String {
 /// `ContactMatch(left:right:reasons:)`, deriving its id.
 #[uniffi::export]
 pub fn new_contact_match(left: String, right: String, reasons: Vec<String>) -> ContactMatch {
-    ContactMatch { id: match_id(&left, &right), left, right, reasons }
+    ContactMatch {
+        id: match_id(&left, &right),
+        left,
+        right,
+        reasons,
+    }
 }
 
 fn identifier_buckets(records: &[ContactRecord]) -> BTreeMap<String, Vec<String>> {
     let mut buckets: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for record in records {
         for key in canonical_set(record.phone_keys.clone()) {
-            buckets.entry(format!("p:{}", nfc(&key))).or_default().push(record.id.clone());
+            buckets
+                .entry(format!("p:{}", nfc(&key)))
+                .or_default()
+                .push(record.id.clone());
         }
         for key in canonical_set(record.email_keys.clone()) {
-            buckets.entry(format!("e:{}", nfc(&key))).or_default().push(record.id.clone());
+            buckets
+                .entry(format!("e:{}", nfc(&key)))
+                .or_default()
+                .push(record.id.clone());
         }
     }
     buckets
@@ -186,7 +222,10 @@ fn identifier_buckets(records: &[ContactRecord]) -> BTreeMap<String, Vec<String>
 /// `ContactMatching.crowdedIdentifierCount`: identifiers shared by more than 100 records.
 #[uniffi::export]
 pub fn contact_crowded_identifier_count(records: &[ContactRecord]) -> i32 {
-    identifier_buckets(records).values().filter(|ids| ids.len() > 100).count() as i32
+    identifier_buckets(records)
+        .values()
+        .filter(|ids| ids.len() > 100)
+        .count() as i32
 }
 
 /// `ContactMatching.candidates`: pairs sharing a phone key or email key. Identifiers shared by
@@ -201,11 +240,17 @@ pub fn contact_candidates(records: &[ContactRecord]) -> Vec<ContactMatch> {
         if ids.len() > 100 {
             continue;
         }
-        let reason = if key.starts_with("p:") { "Shared phone number (including extension)" } else { "Shared email address" };
+        let reason = if key.starts_with("p:") {
+            "Shared phone number (including extension)"
+        } else {
+            "Shared email address"
+        };
         for i in 0..ids.len() {
             for j in (i + 1)..ids.len() {
                 let id = format!("{}|{}", ids[i], ids[j]);
-                let entry = pairs.entry(id).or_insert_with(|| new_contact_match(ids[i].clone(), ids[j].clone(), vec![]));
+                let entry = pairs
+                    .entry(id)
+                    .or_insert_with(|| new_contact_match(ids[i].clone(), ids[j].clone(), vec![]));
                 if !entry.reasons.iter().any(|r| r == reason) {
                     entry.reasons.push(reason.to_string());
                 }
@@ -224,28 +269,52 @@ pub struct ContactMergePlan {
     pub blockers: Vec<String>,
 }
 
-const MULTIVALUE: [&str; 8] = ["phone", "email", "address", "url", "social", "instantMessage", "relation", "date"];
+const MULTIVALUE: [&str; 8] = [
+    "phone",
+    "email",
+    "address",
+    "url",
+    "social",
+    "instantMessage",
+    "relation",
+    "date",
+];
 
 fn field_order(a: &ContactField, b: &ContactField) -> std::cmp::Ordering {
-    swift_cmp(&a.key, &b.key).then_with(|| swift_cmp(&a.label, &b.label)).then_with(|| swift_cmp(&a.value, &b.value))
+    swift_cmp(&a.key, &b.key)
+        .then_with(|| swift_cmp(&a.label, &b.label))
+        .then_with(|| swift_cmp(&a.value, &b.value))
 }
 
 /// `ContactMergePlan(_:backupVerified:revisionUnchanged:)`.
 #[uniffi::export]
-pub fn new_contact_merge_plan(records: &[ContactRecord], backup_verified: bool, revision_unchanged: bool) -> ContactMergePlan {
-    let mut fields: Vec<ContactField> = records.iter().flat_map(|r| r.fields.iter().cloned()).collect();
+pub fn new_contact_merge_plan(
+    records: &[ContactRecord],
+    backup_verified: bool,
+    revision_unchanged: bool,
+) -> ContactMergePlan {
+    let mut fields: Vec<ContactField> = records
+        .iter()
+        .flat_map(|r| r.fields.iter().cloned())
+        .collect();
     fields.sort_by(field_order);
     fields.dedup_by(|a, b| field_order(a, b).is_eq());
 
     let mut by_key: Vec<(String, Vec<String>)> = Vec::new();
-    for field in fields.iter().filter(|f| !MULTIVALUE.contains(&f.key.as_str()) && !f.value.is_empty()) {
+    for field in fields
+        .iter()
+        .filter(|f| !MULTIVALUE.contains(&f.key.as_str()) && !f.value.is_empty())
+    {
         match by_key.iter_mut().find(|(key, _)| swift_eq(key, &field.key)) {
             Some((_, values)) => values.push(field.value.clone()),
             None => by_key.push((field.key.clone(), vec![field.value.clone()])),
         }
     }
-    let mut conflicts: Vec<String> =
-        by_key.into_iter().filter(|(_, values)| canonical_set(values.clone()).len() > 1).map(|(key, _)| key).collect();
+    let mut conflicts: Vec<String> = by_key
+        .into_iter()
+        .filter(|(_, values)| canonical_set(values.clone()).len() > 1)
+        .map(|(key, _)| key)
+        .collect();
     conflicts.sort_by(|a, b| swift_cmp(a, b));
 
     let mut blockers = Vec::new();
@@ -264,11 +333,54 @@ pub fn new_contact_merge_plan(records: &[ContactRecord], backup_verified: bool, 
     if !revision_unchanged {
         blockers.push("A source changed after review.".to_string());
     }
-    ContactMergePlan { fields, conflicts, blockers }
+    ContactMergePlan {
+        fields,
+        conflicts,
+        blockers,
+    }
 }
 
 /// `canDeleteSources`: no blockers and no conflicts.
 #[uniffi::export]
 pub fn merge_plan_can_delete_sources(plan: &ContactMergePlan) -> bool {
     plan.blockers.is_empty() && plan.conflicts.is_empty()
+}
+
+/// Explicit copy sizes. Original is always the default; no profile enlarges a source.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum ImageSizeProfile {
+    Original,
+    Large,
+    Medium,
+    Small,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Record)]
+pub struct ImageResizePlan {
+    pub width: u32,
+    pub height: u32,
+    pub resized: bool,
+}
+#[uniffi::export]
+pub fn image_resize_plan(
+    width: u32,
+    height: u32,
+    profile: ImageSizeProfile,
+) -> Result<ImageResizePlan, crate::CleanerError> {
+    if width == 0 || height == 0 || width as u64 * height as u64 > 16_000_000 {
+        return Err(crate::blocked("Choose a still image up to 16 megapixels."));
+    }
+    let limit = match profile {
+        ImageSizeProfile::Original => width.max(height),
+        ImageSizeProfile::Large => 2400,
+        ImageSizeProfile::Medium => 1600,
+        ImageSizeProfile::Small => 800,
+    };
+    let scale = (limit as f64 / width.max(height) as f64).min(1.0);
+    let out_width = ((width as f64 * scale).round() as u32).max(1);
+    let out_height = ((height as f64 * scale).round() as u32).max(1);
+    Ok(ImageResizePlan {
+        width: out_width,
+        height: out_height,
+        resized: out_width != width || out_height != height,
+    })
 }

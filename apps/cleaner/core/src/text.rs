@@ -43,12 +43,20 @@ pub(crate) fn swift_double(value: f64) -> String {
         return "nan".into();
     }
     if value.is_infinite() {
-        return if value < 0.0 { "-inf".into() } else { "inf".into() };
+        return if value < 0.0 {
+            "-inf".into()
+        } else {
+            "inf".into()
+        };
     }
     let magnitude = value.abs();
     if magnitude == 0.0 || (1e-4..=9_007_199_254_740_992.0).contains(&magnitude) {
         let fixed = format!("{value}");
-        return if fixed.contains('.') { fixed } else { fixed + ".0" };
+        return if fixed.contains('.') {
+            fixed
+        } else {
+            fixed + ".0"
+        };
     }
     let exponential = format!("{value:e}");
     let (mantissa, exponent) = exponential.split_once('e').expect("exponential format");

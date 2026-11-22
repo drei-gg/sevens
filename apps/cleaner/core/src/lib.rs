@@ -10,18 +10,26 @@
 uniffi::setup_scaffolding!();
 
 mod codec;
+mod compression_queue;
+mod dates;
 mod library;
 mod perceptual;
 mod platform;
 mod preservation;
 mod review;
+mod scan;
 mod text;
+mod video;
 
+pub use compression_queue::*;
+pub use dates::*;
 pub use library::*;
 pub use perceptual::*;
 pub use platform::*;
 pub use preservation::*;
 pub use review::*;
+pub use scan::*;
+pub use video::*;
 
 pub use uuid::Uuid;
 
@@ -43,7 +51,9 @@ pub enum CleanerError {
 }
 
 pub(crate) fn blocked(reason: &str) -> CleanerError {
-    CleanerError::Blocked { reason: reason.to_string() }
+    CleanerError::Blocked {
+        reason: reason.to_string(),
+    }
 }
 
 /// The crate's version, so an app can log which core it runs.
@@ -51,3 +61,6 @@ pub(crate) fn blocked(reason: &str) -> CleanerError {
 pub fn core_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
+
+mod file_filters;
+pub use file_filters::*;

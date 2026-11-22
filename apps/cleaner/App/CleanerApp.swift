@@ -27,13 +27,23 @@ struct CleanerHome: View {
             NavigationStack { ContactsScreen() }.tabItem { Label("Contacts",systemImage: "person.crop.rectangle") }
         }.sevenAdaptiveTabs()
             .safeAreaInset(edge: .bottom) {
-                if model.busy { HStack(spacing: Tokens.Space.s) { ProgressView(); Text(model.progress).textRole(.caption); Spacer(); Button("Cancel") { model.cancel() }.disabled(!model.canCancel) }.padding(Tokens.Space.ms).background(.bar) }
+                if model.busy {
+                    VStack(spacing: Tokens.Space.s) {
+                        if let fraction = model.comparisonFraction { ProgressView(value: fraction).accessibilityLabel("Comparison progress") }
+                        HStack(spacing: Tokens.Space.s) {
+                            if model.comparisonFraction == nil { ProgressView() }
+                            Text(model.progress).textRole(.caption); Spacer()
+                            Button("Cancel") { model.cancel() }.disabled(!model.canCancel)
+                        }
+                    }.padding(Tokens.Space.ms).background(.bar)
+                }
             }
             .task(id: model.store.hasStarted) { if model.store.hasStarted && model.store.launchSheet == .beforeYouBuy { before = true } }
             .sheet(isPresented: $before) { BeforeYouBuyView(content: CleanerGate.before) { _ in before = false } }
             .trialEndedSheet(content: CleanerGate.expired)
-            .sheet(isPresented: Binding(get: { model.candidate != nil },set: { if !$0 { model.discardCandidate() } })) { CompressionScreen() }
-            .alert("Could not complete",isPresented: Binding(get: { model.error != nil },set: { shown in if !shown { model.error = nil } })) { Button("OK",role: .cancel) { model.error = nil } } message: { Text(model.error ?? "") }
+            .sheet(isPresented: Binding(get: { model.candidate != nil || model.compressionBatch != nil },set: { if !$0 { model.stopCompressionBatch() } })) { CompressionScreen() }
+            .sheet(isPresented: Binding(get: { model.videoReview != nil }, set: { if !$0 { model.closeVideo() } })) { if let review = model.videoReview { VideoReviewScreen(review: review) } }
+            .alert("Could not complete",isPresented: Binding(get: { model.error != nil && model.candidate == nil && model.compressionBatch == nil && model.videoReview == nil },set: { shown in if !shown { model.error = nil } })) { Button("OK",role: .cancel) { model.error = nil } } message: { Text(model.error ?? "") }
     }
 }
 func byteText(_ bytes: Int64?) -> String { bytes.map { ByteCountFormatter.string(fromByteCount: $0,countStyle: .file) } ?? c("Not measured") }
@@ -48,8 +58,9 @@ struct Dashboard: View {
                 if !model.groups.isEmpty {
                     NavigationLink { GroupsScreen() } label: { Text("Review matches").frame(maxWidth: .infinity) }.cleanerPrimary().accessibilityIdentifier("cleaner.review-groups")
                 } else {
-                    Button { model.media.isEmpty ? model.scanPhotos() : model.analyze() } label: { Text(model.media.isEmpty ? c("Scan library") : c("Find duplicates")).frame(maxWidth: .infinity) }.cleanerPrimary().disabled(model.busy).accessibilityIdentifier("cleaner.scan")
+                    Button { model.media.isEmpty ? model.scanPhotos() : model.analyze() } label: { Text(model.media.isEmpty ? c("Scan library") : c(model.savedMeasurements > 0 ? "Continue comparison" : "Find duplicates")).frame(maxWidth: .infinity) }.cleanerPrimary().disabled(model.busy).accessibilityIdentifier("cleaner.scan")
                 }
+                if model.savedMeasurements > 0 { CleanerNotice(text: "Saved measurements: \(model.savedMeasurements). Continue after a fresh library check.") }
                 CleanerTiles {
                     NavigationLink { GroupsScreen() } label: { CleanerStat(title: c("Matching groups"),value: model.groups.count.formatted(),symbol: "square.on.square",detail: c("Compare before choosing")) }.buttonStyle(.plain).accessibilityIdentifier("cleaner.groups")
                     NavigationLink { PendingScreen() } label: { CleanerStat(title: c("Pending removal"),value: pending.formatted(),symbol: "tray",detail: c("Nothing deleted yet"),hue: Tokens.dataWarm) }.buttonStyle(.plain).accessibilityIdentifier("cleaner.pending").accessibilityValue(pending.formatted())
@@ -88,6 +99,12 @@ struct CleanerSettings: View {
             Section {
                 Toggle("Allow iCloud downloads",isOn: Binding(get: { model.allowCloud },set: { model.allowCloud = $0 }))
             } header: { Text("Cloud originals").textRole(.caption) } footer: { Text("Off by default. Reading original media may require downloads and temporary storage.").textRole(.caption) }
+            Section {
+                Text("Saved measurements: \(model.savedMeasurements)").textRole(.body)
+                Button("Clear scan progress") { model.clearScanProgress() }.disabled(model.busy).accessibilityIdentifier("clear-scan-progress")
+                Text("Clearing progress keeps your media, review decisions and activity history.").textRole(.caption)
+            } header: { Text("Saved scan progress").textRole(.caption) }
+              footer: { Text("Completed comparisons stay on this device. Scan library checks access and changes before continuing. Closing Cleaner pauses work; it does not scan in the background.").textRole(.caption) }
             Section { Text("No Cleaner account, analytics, ads or servers. Apple Photos and your chosen file provider may fetch cloud content when you permit it.").textRole(.body) } header: { Text("Privacy").textRole(.caption) }
             Section { Text("Compression saves a separate copy. The current still-image profile excludes HDR, RAW, Live Photos, transparency and unverified formats.").textRole(.body); Text("Contact archives contain accessible fields. Notes require additional Apple permission, so archives are labelled partial and destructive merges are not enabled.").textRole(.body) } header: { Text("Preservation").textRole(.caption) }
             Section {
@@ -105,13 +122,16 @@ struct MediaLibrary: View {
     @Environment(\.dynamicTypeSize) private var textSize
     let kind: MediaKind
     @State private var query = ""
+    @State private var dateMode = MediaDateFilter.any
+    @State private var referenceDate = Date()
+    @State private var dateEditor = false
     @State private var category = "All"
     @State private var order = "Newest"
     @State private var album = false
     @State private var albumName = ""
     private var library: [CleanupItem] { model.media.filter { $0.kind == kind } }
     private var visible: [CleanupItem] {
-        library.filter { item in (query.isEmpty || item.name.localizedCaseInsensitiveContains(query)) && (category == "All" || item.tags.contains(category) || (category == "Keep" && model.state.decisions[item.id] == .keep) || (category == "Later" && model.state.decisions[item.id] == .later)) }.sorted {
+        library.filter { item in matchesDate(item.date, mode: dateMode, reference: referenceDate) && (query.isEmpty || item.name.localizedCaseInsensitiveContains(query)) && (category == "All" || item.tags.contains(category) || (category == "Keep" && model.state.decisions[item.id] == .keep) || (category == "Later" && model.state.decisions[item.id] == .later)) }.sorted {
             if order == "Largest" { return ($0.bytes ?? -1) > ($1.bytes ?? -1) }; return ($0.date ?? .distantPast) > ($1.date ?? .distantPast)
         }
     }
@@ -119,7 +139,7 @@ struct MediaLibrary: View {
         ScrollView {
             VStack(spacing: Tokens.Space.l) {
                 CleanerHero(label: kind == .photo ? c("Your photo library") : c("The bigger picture"),value: kind == .video && StorageSummary(library).knownBytes > 0 ? byteText(StorageSummary(library).knownBytes) : library.count.formatted(),detail: kind == .photo ? c("A little less clutter. The moments stay yours.") : c("Review the clips taking up room."),symbol: kind == .photo ? "photo.stack.fill" : "video.fill",hue: kind == .photo ? Tokens.dataCool : Tokens.dataWarm)
-                Button { library.isEmpty ? model.scanPhotos() : model.analyze() } label: { Text(library.isEmpty ? c("Scan library") : c("Find duplicates")).frame(maxWidth: .infinity) }.cleanerPrimary().disabled(model.busy)
+                Button { library.isEmpty ? model.scanPhotos() : model.analyze() } label: { Text(library.isEmpty ? c("Scan library") : c(model.savedMeasurements > 0 ? "Continue comparison" : "Find duplicates")).frame(maxWidth: .infinity) }.cleanerPrimary().disabled(model.busy)
                 if !library.isEmpty {
                     ViewThatFits(in: .horizontal) {
                         HStack(spacing: Tokens.Space.s) { reviewActions }
@@ -137,12 +157,20 @@ struct MediaLibrary: View {
                             HStack(spacing: Tokens.Space.s) { selectionActions }
                             VStack(spacing: Tokens.Space.s) { selectionActions }
                         }
+                        if kind == .photo {
+                            Button("Review selected photos") { model.startCompressionBatch(model.selected.intersection(Set(library.map(\.id)))) }
+                                .disabled(model.busy || model.selected.intersection(Set(library.map(\.id))).isEmpty)
+                        }
                         NavigationLink("Review pending removal") { PendingScreen() }
                     }.padding(Tokens.Space.m).sevenCard()
                 }
                 if library.isEmpty { CleanerNotice(text: c("Choose which photos Cleaner can access when you scan. Originals stay in Photos."),symbol: "photo.badge.checkmark") }
                 else {
-                    HStack { Text(category == "All" ? c("Browse your library") : c(category)).textRole(.section); Spacer(); Text(visible.count.formatted()).textRole(.caption).numeric() }
+                    HStack { Text(category == "All" ? c("Browse your library") : c(category)).textRole(.section); Spacer(); Text(visible.count.formatted()).textRole(.caption).numeric().accessibilityIdentifier("cleaner-visible-count") }
+                    if dateMode != .any {
+                        Button { dateMode = .any } label: { Label(dateSummary(dateMode, date: referenceDate), systemImage: "xmark.circle") }
+                            .accessibilityLabel("Clear date filter: " + dateSummary(dateMode, date: referenceDate)).accessibilityIdentifier("cleaner-date-active")
+                    }
                     if visible.isEmpty { ContentUnavailableView.search(text: query) }
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(),spacing: Tokens.Space.ms,alignment: .top),count: textSize.isAccessibilitySize ? 1 : 2),spacing: Tokens.Space.ms) {
                         ForEach(visible) { item in MediaTile(item: item) }
@@ -153,6 +181,7 @@ struct MediaLibrary: View {
             .toolbar {
                 Menu {
                     Picker("Collection",selection: $category) { ForEach(kind == .photo ? ["All","Screenshots","Live Photos","Bursts","HDR","Keep","Later"] : ["All","Screen recordings","High frame rate","Keep","Later"],id: \.self) { Text(c($0)).tag($0) } }
+                    Button("Recorded date…") { dateEditor = true }.accessibilityIdentifier("cleaner-date-open")
                     Picker("Sort",selection: $order) { Text("Newest").tag("Newest"); Text("Largest").tag("Largest") }
                     Button("Read Photos library") { model.scanPhotos() }
                 } label: { Image(systemName: "line.3.horizontal.decrease").accessibilityLabel("Sort and filter") }
@@ -162,9 +191,15 @@ struct MediaLibrary: View {
                     Button("Keep selected") { Task { await model.decide(model.selected,.keep) } }
                     Button("Decide later") { Task { await model.decide(model.selected,.later) } }
                     Button("Queue removal") { Task { await model.decide(model.selected,.remove) } }
+                    if kind == .photo {
+                        Button("Review selected photos") { model.startCompressionBatch(model.selected.intersection(Set(library.map(\.id)))) }
+                            .disabled(model.busy || model.selected.intersection(Set(library.map(\.id))).isEmpty)
+                            .accessibilityIdentifier("compression-batch-open")
+                    }
                     Button("Create album with selected") { album = true }
                 } label: { Image(systemName: "checklist").accessibilityLabel("Batch actions") }
             }
+            .sheet(isPresented: $dateEditor) { DateFilterEditor(mode: dateMode, reference: referenceDate) { mode, date in dateMode = mode; referenceDate = date } }
             .alert("New album",isPresented: $album) { TextField("Album name",text: $albumName); Button("Create") { let ids = model.selected,title = albumName; model.run("Creating album…",cancellable: false) { try await model.photos.addToAlbum(ids: ids,title: title) } }; Button("Cancel",role: .cancel) {} }
     }
     @ViewBuilder private var selectionActions: some View {

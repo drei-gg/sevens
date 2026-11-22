@@ -44,3 +44,23 @@ import Testing
     #expect(record.phoneKeys == ["1", "2"] && record.inaccessibleFields == ["notes"] && !record.incomplete)
     #expect(ContactMatching.crowdedIdentifierCount([record]) == 0)
 }
+
+@Test func recordedCopyIsAtomicAndRetryDoesNotDuplicateHistory() async throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let url = folder.appendingPathComponent("review.json")
+    let store = ReviewStore(url: url)
+    let source = CleanupItem(id: "a", name: "Original", kind: .photo, revision: "r1")
+    let before = try await store.decide(["a": .keep], revisions: ["a": "r1"])
+    let valid = try Data(contentsOf: url)
+    try Data("broken".utf8).write(to: url)
+    await #expect(throws: (any Error).self) { try await store.recordCopy(source: source, outputID: "copy") }
+    #expect(try Data(contentsOf: url) == Data("broken".utf8))
+    try valid.write(to: url)
+    _ = try await store.recordCopy(source: source, outputID: "copy")
+    _ = try await store.recordCopy(source: source, outputID: "copy")
+    let readback = try await ReviewStore(url: url).read()
+    #expect(readback.decisions == before.decisions)
+    #expect(readback.processedSources == ["a|r1", "output:copy"])
+    #expect(readback.history.count == 1)
+}

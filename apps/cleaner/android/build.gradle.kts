@@ -6,7 +6,14 @@ extra["sevenGenericName"] = "Cleaner"
 
 apply(plugin = "seven.base-app")
 
+configure<com.android.build.api.dsl.ApplicationExtension> {
+    sourceSets.getByName("androidTest").assets.srcDir("../Kit/Tests/CleanerPlatformTests/Fixtures")
+}
+
 dependencies {
+    // Native bounded video exports; MediaCodec/GL and the maintained MP4 muxer stay in Media3.
+    "implementation"("androidx.media3:media3-transformer:1.11.1")
+    "implementation"("androidx.media3:media3-effect:1.11.1")
     // PhoneNumberKit's Android counterpart: the same Google numbering-plan metadata (9.0.43).
     "implementation"("com.googlecode.libphonenumber:libphonenumber:9.0.43")
     // Reading and copying capture metadata on compressed copies (Image I/O's role on iOS).

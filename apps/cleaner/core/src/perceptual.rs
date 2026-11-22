@@ -36,19 +36,26 @@ pub fn perceptual_hash(rgba: &[u8]) -> Result<u64, CleanerError> {
     let mut rows = vec![0.0; side * LOW];
     for y in 0..side {
         for u in 0..LOW {
-            rows[y * LOW + u] = (0..side).map(|x| luma[y * side + x] * cos[u * side + x]).sum();
+            rows[y * LOW + u] = (0..side)
+                .map(|x| luma[y * side + x] * cos[u * side + x])
+                .sum();
         }
     }
     let mut low = [0.0f64; LOW * LOW];
     for v in 0..LOW {
         for u in 0..LOW {
-            low[v * LOW + u] = (0..side).map(|y| rows[y * LOW + u] * cos[v * side + y]).sum();
+            low[v * LOW + u] = (0..side)
+                .map(|y| rows[y * LOW + u] * cos[v * side + y])
+                .sum();
         }
     }
     let mut rest: Vec<f64> = low[1..].to_vec();
     rest.sort_by(|a, b| a.total_cmp(b));
     let median = (rest[rest.len() / 2 - 1] + rest[rest.len() / 2]) / 2.0;
-    Ok(low.iter().enumerate().fold(0u64, |hash, (i, c)| if *c > median { hash | (1 << i) } else { hash }))
+    Ok(low.iter().enumerate().fold(
+        0u64,
+        |hash, (i, c)| if *c > median { hash | (1 << i) } else { hash },
+    ))
 }
 
 /// Bits that differ between two perceptual hashes, 0 to 64.
@@ -60,7 +67,11 @@ pub fn perceptual_distance(a: u64, b: u64) -> u32 {
 /// [`crate::similar_group`] for perceptual hashes: the suggestion for a nearby pair, or `None`
 /// above the threshold. Review only; never preselected.
 #[uniffi::export]
-pub fn similar_hash_group(earlier_id: String, later_id: String, distance: u32) -> Option<MatchGroup> {
+pub fn similar_hash_group(
+    earlier_id: String,
+    later_id: String,
+    distance: u32,
+) -> Option<MatchGroup> {
     if distance > SIMILAR_HASH_DISTANCE {
         return None;
     }

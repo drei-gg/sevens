@@ -1,0 +1,4 @@
+AndroidX Media3 Transformer, Effect and supporting Media3 modules 1.11.1
+Copyright The Android Open Source Project
+https://github.com/androidx/media
+Licensed under Apache License 2.0. The full license is included as Apache-2.0.txt.

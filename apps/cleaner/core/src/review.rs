@@ -40,13 +40,23 @@ pub struct HistoryEntry {
 /// `ReviewState()`: version 1, nothing decided.
 #[uniffi::export]
 pub fn new_review_state() -> ReviewState {
-    ReviewState { version: 1, decisions: HashMap::new(), revisions: HashMap::new(), history: vec![], processed_sources: vec![] }
+    ReviewState {
+        version: 1,
+        decisions: HashMap::new(),
+        revisions: HashMap::new(),
+        history: vec![],
+        processed_sources: vec![],
+    }
 }
 
 /// `HistoryEntry(message)`: a fresh id, dated now.
 #[uniffi::export]
 pub fn new_history_entry(message: String) -> HistoryEntry {
-    HistoryEntry { id: Uuid::new_v4(), date: SystemTime::now(), message }
+    HistoryEntry {
+        id: Uuid::new_v4(),
+        date: SystemTime::now(),
+        message,
+    }
 }
 
 /// `ReviewStore.read` after the file exists: unreadable JSON is an error, never an empty state,
@@ -88,7 +98,11 @@ pub fn review_state_decide(
 /// `ReviewStore.record`: the entry goes first; an optional processed source is remembered so a
 /// compressed copy is never compressed again.
 #[uniffi::export]
-pub fn review_state_record(state: &ReviewState, entry: HistoryEntry, processed_source: Option<String>) -> ReviewState {
+pub fn review_state_record(
+    state: &ReviewState,
+    entry: HistoryEntry,
+    processed_source: Option<String>,
+) -> ReviewState {
     let mut state = state.clone();
     state.history.insert(0, entry);
     if let Some(source) = processed_source {
@@ -103,7 +117,11 @@ const STALE: &str = "Selection changed, is protected, or needs review again.";
 /// `MutationGuard.validateRemoval`: every selected item must still exist, be marked for removal
 /// at its current revision, and not be a favorite.
 #[uniffi::export]
-pub fn validate_removal(ids: Vec<String>, items: &[CleanupItem], state: &ReviewState) -> Result<(), CleanerError> {
+pub fn validate_removal(
+    ids: Vec<String>,
+    items: &[CleanupItem],
+    state: &ReviewState,
+) -> Result<(), CleanerError> {
     if ids.is_empty() {
         return Err(blocked("Nothing selected."));
     }
@@ -112,9 +130,12 @@ pub fn validate_removal(ids: Vec<String>, items: &[CleanupItem], state: &ReviewS
     if !items.iter().all(|item| seen.insert(item.id.as_str())) {
         return Err(blocked(STALE));
     }
-    let by_id: HashMap<&str, &CleanupItem> = items.iter().map(|item| (item.id.as_str(), item)).collect();
+    let by_id: HashMap<&str, &CleanupItem> =
+        items.iter().map(|item| (item.id.as_str(), item)).collect();
     for id in &ids {
-        let Some(item) = by_id.get(id.as_str()) else { return Err(blocked(STALE)) };
+        let Some(item) = by_id.get(id.as_str()) else {
+            return Err(blocked(STALE));
+        };
         let marked = state.decisions.get(id) == Some(&ReviewDecision::Remove);
         let current = state.revisions.get(id) == Some(&item.revision);
         if !marked || !current || item.favorite {

@@ -39,7 +39,11 @@ pub(crate) fn from_reference(seconds: f64) -> Option<SystemTime> {
         return None;
     }
     let magnitude = Duration::try_from_secs_f64(seconds.abs()).ok()?;
-    if seconds >= 0.0 { reference_date().checked_add(magnitude) } else { reference_date().checked_sub(magnitude) }
+    if seconds >= 0.0 {
+        reference_date().checked_add(magnitude)
+    } else {
+        reference_date().checked_sub(magnitude)
+    }
 }
 
 /// Seconds between two dates, as `Date.timeIntervalSince(_:)`.
@@ -70,7 +74,9 @@ pub(crate) mod date_opt {
     }
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<SystemTime>, D::Error> {
         match Option::<f64>::deserialize(d)? {
-            Some(seconds) => super::from_reference(seconds).map(Some).ok_or_else(|| serde::de::Error::custom("date out of range")),
+            Some(seconds) => super::from_reference(seconds)
+                .map(Some)
+                .ok_or_else(|| serde::de::Error::custom("date out of range")),
             None => Ok(None),
         }
     }
@@ -103,7 +109,10 @@ pub(crate) mod set {
 pub(crate) mod sorted_map {
     use serde::{Serialize, Serializer};
     use std::collections::{BTreeMap, HashMap};
-    pub fn serialize<S: Serializer, V: Serialize>(map: &HashMap<String, V>, s: S) -> Result<S::Ok, S::Error> {
+    pub fn serialize<S: Serializer, V: Serialize>(
+        map: &HashMap<String, V>,
+        s: S,
+    ) -> Result<S::Ok, S::Error> {
         map.iter().collect::<BTreeMap<_, _>>().serialize(s)
     }
 }
@@ -113,13 +122,26 @@ pub(crate) mod data_map {
     use base64::{Engine, engine::general_purpose::STANDARD};
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
     use std::collections::{BTreeMap, HashMap};
-    pub fn serialize<S: Serializer>(map: &HashMap<String, Vec<u8>>, s: S) -> Result<S::Ok, S::Error> {
-        map.iter().map(|(k, v)| (k, STANDARD.encode(v))).collect::<BTreeMap<_, _>>().serialize(s)
+    pub fn serialize<S: Serializer>(
+        map: &HashMap<String, Vec<u8>>,
+        s: S,
+    ) -> Result<S::Ok, S::Error> {
+        map.iter()
+            .map(|(k, v)| (k, STANDARD.encode(v)))
+            .collect::<BTreeMap<_, _>>()
+            .serialize(s)
     }
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<HashMap<String, Vec<u8>>, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        d: D,
+    ) -> Result<HashMap<String, Vec<u8>>, D::Error> {
         HashMap::<String, String>::deserialize(d)?
             .into_iter()
-            .map(|(k, v)| STANDARD.decode(v).map(|bytes| (k, bytes)).map_err(serde::de::Error::custom))
+            .map(|(k, v)| {
+                STANDARD
+                    .decode(v)
+                    .map(|bytes| (k, bytes))
+                    .map_err(serde::de::Error::custom)
+            })
             .collect()
     }
 }

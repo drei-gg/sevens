@@ -9,11 +9,12 @@ struct FilesScreen: View {
     @Environment(CleanerModel.self) private var model
     @State private var importing = false
     @State private var query = ""
-    @State private var duplicatesOnly = false
+    @State private var filters = FolderFilters()
+    @State private var filtering = false
     private var items: [CleanupItem] {
         guard let scan = model.folderScan else { return [] }
         let duplicates = Set(scan.groups.flatMap(\.members))
-        return scan.items.filter { (!duplicatesOnly || duplicates.contains($0.id)) && (query.isEmpty || $0.name.localizedCaseInsensitiveContains(query)) }
+        return scan.items.filter { (!filters.duplicatesOnly || duplicates.contains($0.id)) && (filters.fileExtension == nil || fileNameExtension(name: $0.name) == filters.fileExtension) && fileSizeMatches(bytes: $0.bytes, filter: filters.size) && matchesDate($0.date, mode: filters.dateMode, reference: filters.date) && (query.isEmpty || $0.name.localizedCaseInsensitiveContains(query)) }
     }
     var body: some View {
         ScrollView {
@@ -23,11 +24,21 @@ struct FilesScreen: View {
                 if let scan = model.folderScan {
                     CleanerTiles {
                         CleanerStat(title: c("Files found"),value: scan.items.count.formatted(),symbol: "doc",hue: Tokens.dataWarm)
-                        Button { duplicatesOnly.toggle() } label: { CleanerStat(title: c("Duplicate groups"),value: scan.groups.count.formatted(),symbol: "doc.on.doc",detail: duplicatesOnly ? c("Showing duplicates") : c("Tap to inspect"),hue: Tokens.dataWarm) }.buttonStyle(.plain)
+                        Button { filters.duplicatesOnly.toggle() } label: { CleanerStat(title: c("Duplicate groups"),value: scan.groups.count.formatted(),symbol: "doc.on.doc",detail: filters.duplicatesOnly ? c("Showing duplicates") : c("Tap to inspect"),hue: Tokens.dataWarm) }.buttonStyle(.plain)
                     }
                     FileSizeChart(items: scan.items)
-                    HStack { Text(duplicatesOnly ? c("Exact copies") : c("All files")).textRole(.section); Spacer(); if duplicatesOnly { Button("Show all") { duplicatesOnly = false } } }
-                    if items.isEmpty { ContentUnavailableView.search(text: query) }
+                    HStack { Text(filters.duplicatesOnly ? c("Exact copies") : c("All files")).textRole(.section); Spacer(); if filters.duplicatesOnly { Button("Show all") { filters.duplicatesOnly = false } } }
+                    Button { filtering = true } label: { Label("Filter files", systemImage: "line.3.horizontal.decrease") }.accessibilityIdentifier("files-filter-open")
+                    Text("\(items.count) of \(scan.items.count) files").textRole(.secondary).accessibilityIdentifier("files-visible-count")
+                    if filters.active {
+                        VStack(alignment: .leading, spacing: Tokens.Space.s) {
+                            if let ext = filters.fileExtension { Text(extensionTitle(ext)).textRole(.secondary) }
+                            if filters.size != .any { Text(filters.size.title).textRole(.secondary) }
+                            if filters.dateMode != .any { Text(dateSummary(filters.dateMode, date: filters.date)).textRole(.secondary) }
+                            Button("Clear filters") { filters.clear() }.accessibilityIdentifier("files-clear")
+                        }
+                    }
+                    if items.isEmpty { ContentUnavailableView("No matching files", systemImage: "doc.text.magnifyingglass", description: Text("Clear a filter, change the search, or choose another folder.")) }
                     VStack(spacing: Tokens.Space.ms) {
                         ForEach(items) { item in
                             HStack(alignment: .top,spacing: Tokens.Space.ms) {
@@ -37,7 +48,7 @@ struct FilesScreen: View {
                                     Text(byteText(item.bytes)).textRole(.caption).numeric()
                                     if scan.groups.contains(where: { $0.members.contains(item.id) }) { Label("Exact duplicate candidate",systemImage: "doc.on.doc").textRole(.caption) }
                                 }; Spacer(minLength: 0)
-                            }.frame(maxWidth: .infinity,alignment: .leading).padding(Tokens.Space.m).sevenCard().accessibilityElement(children: .combine)
+                            }.frame(maxWidth: .infinity,alignment: .leading).padding(Tokens.Space.m).sevenCard().accessibilityElement(children: .combine).accessibilityIdentifier("file-\(item.id)")
                         }
                     }
                     if StorageSummary(scan.items).unknownCount > 0 { CleanerNotice(text: cCount(Int(StorageSummary(scan.items).unknownCount),key: "unmeasured")) }
@@ -47,9 +58,10 @@ struct FilesScreen: View {
                 CleanerNotice(text: c("Cloud placeholders are not downloaded for hashing. File providers may behave differently."))
             }.padding(Tokens.Space.m).frame(maxWidth: 672)
         }.frame(maxWidth: .infinity).cleanerCanvas().navigationTitle("Files").searchable(text: $query)
+            .sheet(isPresented: $filtering) { FileFilterEditor(filters: filters, extensions: model.folderScan?.items.map { fileNameExtension(name: $0.name) } ?? []) { filters = $0 } }
             .fileImporter(isPresented: $importing,allowedContentTypes: [.folder]) { result in do { model.scanFolder(try result.get()) } catch { model.error = error.cleanerMessage } }
     }
-    private func fileSymbol(_ name: String) -> String { switch (name as NSString).pathExtension.lowercased() { case "mov","mp4": "film"; case "zip": "doc.zipper"; case "pdf": "doc.richtext"; default: "doc" } }
+    private func fileSymbol(_ name: String) -> String { switch fileNameExtension(name: name) { case "mov","mp4": "film"; case "zip": "doc.zipper"; case "pdf": "doc.richtext"; default: "doc" } }
 }
 struct ContactsScreen: View {
     @Environment(CleanerModel.self) private var model

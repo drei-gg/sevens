@@ -19,13 +19,28 @@ use std::time::SystemTime;
 /// Takes `timeIntervalSince1970` itself so the digits match what Swift stored, to the last bit.
 #[uniffi::export]
 pub fn file_revision(modified_since_1970: Option<f64>, file_size: Option<i64>) -> String {
-    format!("{}:{}", swift_double(modified_since_1970.unwrap_or(0.0)), file_size.unwrap_or(-1))
+    format!(
+        "{}:{}",
+        swift_double(modified_since_1970.unwrap_or(0.0)),
+        file_size.unwrap_or(-1)
+    )
 }
 
 /// PhotosService's revision: `"\(modificationDate?.timeIntervalSince1970 ?? 0):\(w)x\(h):\(resources)"`.
 #[uniffi::export]
-pub fn photo_revision(modified_since_1970: Option<f64>, pixel_width: i32, pixel_height: i32, resource_count: i32) -> String {
-    format!("{}:{}x{}:{}", swift_double(modified_since_1970.unwrap_or(0.0)), pixel_width, pixel_height, resource_count)
+pub fn photo_revision(
+    modified_since_1970: Option<f64>,
+    pixel_width: i32,
+    pixel_height: i32,
+    resource_count: i32,
+) -> String {
+    format!(
+        "{}:{}x{}:{}",
+        swift_double(modified_since_1970.unwrap_or(0.0)),
+        pixel_width,
+        pixel_height,
+        resource_count
+    )
 }
 
 // MARK: Photos
@@ -52,12 +67,22 @@ pub fn photo_tags(traits: PhotoTraits) -> Vec<String> {
         (traits.hdr, "HDR"),
         (traits.burst, "Bursts"),
     ];
-    canonical_set(pairs.iter().filter(|(on, _)| *on).map(|(_, tag)| tag.to_string()).collect())
+    canonical_set(
+        pairs
+            .iter()
+            .filter(|(on, _)| *on)
+            .map(|(_, tag)| tag.to_string())
+            .collect(),
+    )
 }
 
 /// One resource's part of a photo fingerprint: `"\(type.rawValue):\(uti):\(sha256)"`.
 #[uniffi::export]
-pub fn photo_resource_part(resource_type: i64, uniform_type_identifier: String, sha256: String) -> String {
+pub fn photo_resource_part(
+    resource_type: i64,
+    uniform_type_identifier: String,
+    sha256: String,
+) -> String {
     format!("{resource_type}:{uniform_type_identifier}:{sha256}")
 }
 
@@ -79,7 +104,11 @@ pub fn sort_largest_first(items: Vec<CleanupItem>) -> Vec<CleanupItem> {
 
 /// `addToAlbum`'s guard: every requested item is accessible and the title is not blank.
 #[uniffi::export]
-pub fn validate_album_request(requested: u32, accessible: u32, title: String) -> Result<(), CleanerError> {
+pub fn validate_album_request(
+    requested: u32,
+    accessible: u32,
+    title: String,
+) -> Result<(), CleanerError> {
     if accessible != requested || trimmed(&title).is_empty() {
         return Err(blocked("Choose accessible media and an album name."));
     }
@@ -98,7 +127,10 @@ const SIMILAR_WINDOW_COUNT: usize = 20;
 #[uniffi::export]
 pub fn similarity_order(items: Vec<CleanupItem>) -> Vec<CleanupItem> {
     let past = distant_past();
-    let mut photos: Vec<CleanupItem> = items.into_iter().filter(|i| i.kind == crate::MediaKind::Photo).collect();
+    let mut photos: Vec<CleanupItem> = items
+        .into_iter()
+        .filter(|i| i.kind == crate::MediaKind::Photo)
+        .collect();
     photos.sort_by(|a, b| a.date.unwrap_or(past).cmp(&b.date.unwrap_or(past)));
     photos
 }
@@ -184,12 +216,23 @@ pub fn tile_error(original_rgbx: &[u8], output_rgbx: &[u8]) -> Result<TileError,
         sum += d * d;
         samples += 1;
     }
-    let mean_squared_error = if samples == 0 { f64::NAN } else { sum / samples as f64 };
-    Ok(TileError { mean_squared_error, samples })
+    let mean_squared_error = if samples == 0 {
+        f64::NAN
+    } else {
+        sum / samples as f64
+    };
+    Ok(TileError {
+        mean_squared_error,
+        samples,
+    })
 }
 
 fn psnr(mse: f64) -> f64 {
-    if mse == 0.0 { 120.0 } else { 10.0 * (PEAK / mse).log10() }
+    if mse == 0.0 {
+        120.0
+    } else {
+        10.0 * (PEAK / mse).log10()
+    }
 }
 
 /// Whole-image PSNR (sample-weighted) and the worst tile's, which catches local damage a global
@@ -204,13 +247,14 @@ pub fn psnr_scores(tiles: &[TileError]) -> PsnrScores {
         count += tile.samples;
         worst = worst.min(psnr(tile.mean_squared_error));
     }
-    PsnrScores { full_resolution: psnr(total / count as f64), worst_tile: worst }
+    PsnrScores {
+        full_resolution: psnr(total / count as f64),
+        worst_tile: worst,
+    }
 }
 
-const PROFILE_SOURCE: &str =
-    "This profile accepts JPEG or PNG stills up to 16 megapixels. Other profiles still need validation.";
-const PROFILE_PIXELS: &str =
-    "This profile preserves 8-bit sRGB images without transparency. This image needs a different profile.";
+const PROFILE_SOURCE: &str = "This profile accepts JPEG or PNG stills up to 16 megapixels. Other profiles still need validation.";
+const PROFILE_PIXELS: &str = "This profile preserves 8-bit sRGB images without transparency. This image needs a different profile.";
 
 /// The initial profile's source gate, in Swift's order: quality 0.9...1, one frame, JPEG or PNG,
 /// positive dimensions, at most 16 MP.
@@ -228,25 +272,43 @@ pub fn check_compression_source(
         && width > 0
         && height > 0
         && width <= 16_000_000 / height;
-    if accepted { Ok(()) } else { Err(blocked(PROFILE_SOURCE)) }
+    if accepted {
+        Ok(())
+    } else {
+        Err(blocked(PROFILE_SOURCE))
+    }
 }
 
 /// The initial profile's pixel gate: 8 bits per component, sRGB, no alpha.
 #[uniffi::export]
-pub fn check_compression_pixels(bits_per_component: i32, is_srgb: bool, has_alpha: bool) -> Result<(), CleanerError> {
-    if bits_per_component == 8 && is_srgb && !has_alpha { Ok(()) } else { Err(blocked(PROFILE_PIXELS)) }
+pub fn check_compression_pixels(
+    bits_per_component: i32,
+    is_srgb: bool,
+    has_alpha: bool,
+) -> Result<(), CleanerError> {
+    if bits_per_component == 8 && is_srgb && !has_alpha {
+        Ok(())
+    } else {
+        Err(blocked(PROFILE_PIXELS))
+    }
 }
 
 /// The refusal when an image carries depth, matte or HDR gain-map data.
 #[uniffi::export]
 pub fn auxiliary_data_refusal() -> CleanerError {
-    blocked("This image contains auxiliary or HDR data. Keep the original; this profile cannot preserve it yet.")
+    blocked(
+        "This image contains auxiliary or HDR data. Keep the original; this profile cannot preserve it yet.",
+    )
 }
 
 /// `saveCopy`'s first guard: only a candidate that passed the profile is saved.
 #[uniffi::export]
 pub fn check_copy_offer(assessment: &CompressionAssessment) -> Result<(), CleanerError> {
-    if assessment_can_offer_copy(assessment) { Ok(()) } else { Err(blocked("This candidate did not pass the current profile.")) }
+    if assessment_can_offer_copy(assessment) {
+        Ok(())
+    } else {
+        Err(blocked("This candidate did not pass the current profile."))
+    }
 }
 
 // MARK: Contacts (ContactsService)
@@ -265,8 +327,17 @@ pub fn email_key(raw: String) -> Option<String> {
 /// A contact's display name: given, middle and family names joined with spaces, or the
 /// organization when all three are empty.
 #[uniffi::export]
-pub fn contact_display_name(given: String, middle: String, family: String, organization: String) -> String {
-    let name = [given, middle, family].into_iter().filter(|p| !p.is_empty()).collect::<Vec<_>>().join(" ");
+pub fn contact_display_name(
+    given: String,
+    middle: String,
+    family: String,
+    organization: String,
+) -> String {
+    let name = [given, middle, family]
+        .into_iter()
+        .filter(|p| !p.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
     if name.is_empty() { organization } else { name }
 }
 
@@ -291,7 +362,10 @@ pub struct ContactPackage {
 
 /// A package with Swift's version and list of what it cannot contain.
 #[uniffi::export]
-pub fn new_contact_package(records: Vec<ContactRecord>, archives: HashMap<String, Vec<u8>>) -> ContactPackage {
+pub fn new_contact_package(
+    records: Vec<ContactRecord>,
+    archives: HashMap<String, Vec<u8>>,
+) -> ContactPackage {
     ContactPackage {
         version: 1,
         unavailable: vec![
@@ -328,9 +402,14 @@ fn canonical_records(records: &[ContactRecord]) -> Vec<ContactRecord> {
 
 /// `export`'s read-back check: the bytes read from disk must hold the same records and archives.
 #[uniffi::export]
-pub fn contact_package_verify(written: &ContactPackage, read_back: &[u8]) -> Result<(), CleanerError> {
+pub fn contact_package_verify(
+    written: &ContactPackage,
+    read_back: &[u8],
+) -> Result<(), CleanerError> {
     let read = contact_package_decode(read_back)?;
-    if canonical_records(&read.records) != canonical_records(&written.records) || read.archives != written.archives {
+    if canonical_records(&read.records) != canonical_records(&written.records)
+        || read.archives != written.archives
+    {
         return Err(blocked("Archive read-back did not match."));
     }
     Ok(())

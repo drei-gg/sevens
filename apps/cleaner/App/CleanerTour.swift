@@ -2,9 +2,16 @@ import SwiftUI
 import SevenKit
 
 struct CleanerLaunchRoot: View {
+    @Environment(CleanerModel.self) private var model
     var body: some View {
         #if DEBUG
-        if CleanerFixtures.active { CleanerTourHost().preferredColorScheme(CleanerFixtures.argument("-cleaner.theme") == "dark" ? .dark : .light) }
+        if ProcessInfo.processInfo.arguments.contains("-cleaner.ui") && (ProcessInfo.processInfo.arguments.contains("-cleaner.batch-audit") || ProcessInfo.processInfo.arguments.contains("-cleaner.batch-cleanup") || ProcessInfo.processInfo.arguments.contains("-cleaner.video-audit") || ProcessInfo.processInfo.arguments.contains("-cleaner.video-cleanup")) {
+            Text(model.batchAuditStatus).padding()
+        }
+        else if ProcessInfo.processInfo.arguments.contains("-cleaner.ui") && ProcessInfo.processInfo.arguments.contains("-cleaner.resume-cleanup") {
+            Text(model.error ?? (model.resumeFixtureFinished ? "Fixture cleanup complete" : "Cleaning test photos…"))
+        }
+        else if CleanerFixtures.active { CleanerTourHost().preferredColorScheme(CleanerFixtures.argument("-cleaner.theme") == "dark" ? .dark : .light) }
         else { CleanerHome() }
         #else
         CleanerHome()
@@ -14,6 +21,7 @@ struct CleanerLaunchRoot: View {
 #if DEBUG
 import UIKit
 import AVFoundation
+@preconcurrency import Photos
 import CleanerCore
 import CleanerPlatform
 
@@ -68,6 +76,45 @@ import CleanerPlatform
             if argument("-cleaner.tour")?.hasPrefix("empty-") == true { model.media = []; model.groups = []; model.folderScan = nil; model.contactSnapshot = nil; model.contactMatches = []; model.state = ReviewState() }
         } catch { model.error = error.cleanerMessage }
     }
+    /// Native PhotoKit fixture for checkpoint/relaunch verification. Only test-created identifiers
+    /// from this isolated manifest can be removed; ordinary tours never request Photos access.
+    static func resumeFixture(_ model: CleanerModel, cleanup: Bool) async throws {
+        let manifest = FileManager.default.temporaryDirectory.appendingPathComponent("CleanerResumeFixture.json")
+        let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        guard status == .authorized || status == .limited else { throw CleanerError.blocked("Fixture Photos permission was not granted.") }
+        if let data = try? Data(contentsOf: manifest), let ids = try? JSONDecoder().decode([String].self, from: data) {
+            let assets = PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+            try await PHPhotoLibrary.shared().performChanges { @Sendable in PHAssetChangeRequest.deleteAssets(assets) }
+            try FileManager.default.removeItem(at: manifest)
+        }
+        if cleanup { return }
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 640, height: 480))
+        let data = renderer.image { context in
+            UIColor.systemTeal.setFill(); context.fill(CGRect(x: 0, y: 0, width: 640, height: 480))
+        }.jpegData(compressionQuality: 1)!
+        let identifiers = ResumeFixtureIdentifiers()
+        try await PHPhotoLibrary.shared().performChanges { @Sendable in
+            for _ in 0..<2 {
+                let request = PHAssetCreationRequest.forAsset()
+                request.addResource(with: .photo, data: data, options: nil)
+                if let id = request.placeholderForCreatedAsset?.localIdentifier { identifiers.append(id) }
+            }
+        }
+        let ids = identifiers.read()
+        try JSONEncoder().encode(ids).write(to: manifest, options: .atomic)
+        guard ids.count == 2 else { throw CleanerError.blocked("Fixture did not create both original resources.") }
+        let inventory = try await model.photos.inventory()
+        let owned = inventory.items.filter { ids.contains($0.id) }
+        let cache = model.measurements
+        do {
+            _ = try await model.photos.analyze(owned, allowCloud: false, checkpoint: { item in
+                try cache.checkpoint(item)
+                throw CancellationError()
+            }) { _, _ in }
+        } catch is CancellationError { }
+        model.savedMeasurements = try cache.count()
+    }
+
     private static func makeVideo(_ image: UIImage) async throws {
         if FileManager.default.fileExists(atPath: videoURL.path) { return }
         let writer = try AVAssetWriter(outputURL: videoURL,fileType: .mov)
@@ -85,6 +132,12 @@ import CleanerPlatform
         }
         input.markAsFinished(); await writer.finishWriting()
     }
+}
+private final class ResumeFixtureIdentifiers: @unchecked Sendable {
+    private let lock = NSLock()
+    private var values: [String] = []
+    func append(_ id: String) { lock.withLock { values.append(id) } }
+    func read() -> [String] { lock.withLock { values } }
 }
 struct CleanerTourHost: View {
     @Environment(CleanerModel.self) private var model
