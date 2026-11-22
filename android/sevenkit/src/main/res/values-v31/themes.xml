@@ -1,0 +1,12 @@
+<resources>
+    <!-- Android 12+ always draws a launch splash. With a transparent icon and the paper background it
+         is just the window colour, so launch and the first frame still match (no splash). -->
+    <style name="Theme.Seven" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F3EFE6</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowSplashScreenBackground">#F3EFE6</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#F3EFE6</item>
+    </style>
+</resources>

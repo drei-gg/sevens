@@ -1,0 +1,11 @@
+<resources>
+    <!-- Dark: the same empty launch splash in the dark paper colour (see values-v31). -->
+    <style name="Theme.Seven" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#121110</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowSplashScreenBackground">#121110</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#121110</item>
+    </style>
+</resources>

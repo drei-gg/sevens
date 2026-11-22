@@ -1,5 +1,6 @@
 <resources>
-    <!-- The window behind Compose: paper, so launch and the first frame match (no splash). -->
+    <!-- The window behind Compose: paper, so launch and the first frame match (no splash).
+         Android 12+ splash attributes live in values-v31 and values-night-v31; keep them in step. -->
     <style name="Theme.Seven" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">#F3EFE6</item>
         <item name="android:windowLightStatusBar">true</item>
