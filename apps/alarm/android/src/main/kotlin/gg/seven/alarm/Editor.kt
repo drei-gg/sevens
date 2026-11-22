@@ -13,7 +13,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.alarm.core.*
@@ -41,6 +44,7 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
     val archive by engine.archive.collectAsStateWithLifecycle()
     val busy by engine.busy.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val res = LocalResources.current
     var saveError by remember { mutableStateOf<String?>(null) }
     var scanning by remember { mutableStateOf(false) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
@@ -73,7 +77,7 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
                         saveError =
                             (error as? LoopException.Invalid)?.reason
                                 ?: error.message
-                                ?: "This sound could not be imported."
+                                ?: res.getString(R.string.sound_import_failed)
                     } finally {
                         importing = false
                         if (model.draft.value?.id != routine.id)
@@ -89,8 +93,11 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
     }
     FullScreenForm(
         title =
-            if (isNew) (if (routine.kind == RoutineKind.ALARM) "New alarm" else "New loop")
-            else "Edit routine",
+            stringResource(
+                if (!isNew) R.string.editor_edit
+                else if (routine.kind == RoutineKind.ALARM) R.string.editor_new_alarm
+                else R.string.editor_new_loop
+            ),
         onClose = { model.draft.value = null },
         onSave = {
             model.save(
@@ -107,24 +114,36 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
         val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
         TimeSections(routine, ::set)
 
-        EditorHeading("Routine")
-        TextInput("Name", routine.name, Modifier.testTag("routine-name")) {
+        EditorHeading(stringResource(R.string.editor_routine))
+        TextInput(
+            stringResource(R.string.editor_name),
+            routine.name,
+            Modifier.testTag("routine-name"),
+        ) {
             set(routine.copy(name = it))
         }
-        TextInput("Why get up? (optional)", routine.reason.orEmpty(), minLines = 2) {
+        TextInput(
+            stringResource(R.string.editor_reason),
+            routine.reason.orEmpty(),
+            minLines = 2,
+        ) {
             set(routine.copy(reason = it))
         }
-        TextInput("Group (optional)", routine.group.orEmpty()) { set(routine.copy(group = it)) }
+        TextInput(stringResource(R.string.editor_group), routine.group.orEmpty()) {
+            set(routine.copy(group = it))
+        }
         Text(
-            "Timing",
+            stringResource(R.string.editor_timing),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         ConnectedChoice(
             listOfNotNull(
-                Timing.WEEKLY to "Weekly times",
-                Timing.ONCE to "Once",
-                if (routine.kind == RoutineKind.LOOP) Timing.WINDOW to "Interval window" else null,
+                Timing.WEEKLY to stringResource(R.string.editor_timing_weekly),
+                Timing.ONCE to stringResource(R.string.editor_timing_once),
+                if (routine.kind == RoutineKind.LOOP)
+                    Timing.WINDOW to stringResource(R.string.editor_timing_window)
+                else null,
             ),
             routine.timing,
         ) {
@@ -132,12 +151,15 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
         }
         if (routine.kind == RoutineKind.LOOP) {
             Text(
-                "Delivery",
+                stringResource(R.string.editor_delivery),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             ConnectedChoice(
-                listOf(Delivery.REMINDER to "Quiet reminder", Delivery.ALARM to "Alarm"),
+                listOf(
+                    Delivery.REMINDER to stringResource(R.string.editor_delivery_reminder),
+                    Delivery.ALARM to stringResource(R.string.editor_delivery_alarm),
+                ),
                 routine.delivery,
             ) {
                 set(
@@ -149,7 +171,7 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
         }
 
         if (routine.delivery == Delivery.ALARM) {
-            EditorHeading("Sound")
+            EditorHeading(stringResource(R.string.editor_sound))
             routine.importedSound?.let { sound ->
                 Text(
                     sound.name,
@@ -158,7 +180,7 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
                 )
                 if (!sounds.available(sound))
                     Text(
-                        "This audio file is missing. The fallback tone will play; import it again to restore your sound.",
+                        stringResource(R.string.editor_sound_missing),
                         color = MaterialTheme.colorScheme.error,
                     )
             }
@@ -194,7 +216,8 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
                                     throw error
                                 }
                             } catch (error: Exception) {
-                                saveError = error.message ?: "This sound could not be previewed."
+                                saveError =
+                                    error.message ?: res.getString(R.string.sound_preview_failed)
                             }
                         }
                     },
@@ -206,9 +229,11 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
                     )
                     Spacer(Modifier.width(Space.s))
                     Text(
-                        if (player != null) "Stop preview"
-                        else if (routine.importedSound != null) "Preview imported sound"
-                        else "Preview tone"
+                        stringResource(
+                            if (player != null) R.string.editor_stop_preview
+                            else if (routine.importedSound != null) R.string.editor_preview_imported
+                            else R.string.editor_preview_tone
+                        )
                     )
                 }
             }
@@ -222,7 +247,12 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
                     enabled = !importing,
                     modifier = Modifier.testTag("import-sound"),
                 ) {
-                    Text(if (routine.importedSound == null) "Import WAV sound" else "Replace sound")
+                    Text(
+                        stringResource(
+                            if (routine.importedSound == null) R.string.editor_import_sound
+                            else R.string.editor_replace_sound
+                        )
+                    )
                 }
                 if (routine.importedSound != null)
                     TextButton(
@@ -232,12 +262,15 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
                             set(routine.copy(importedSound = null))
                         }
                     ) {
-                        Text("Use built-in tone")
+                        Text(stringResource(R.string.editor_use_built_in))
                     }
                 if (importing) LoadingIndicator(Modifier.size(32.dp))
             }
             DropdownField(
-                if (routine.importedSound == null) "Tone" else "Fallback tone",
+                stringResource(
+                    if (routine.importedSound == null) R.string.editor_tone
+                    else R.string.editor_fallback_tone
+                ),
                 routine.tone ?: AlarmTone.SYSTEM,
                 AlarmTone.entries.map { it to it.title },
             ) {
@@ -245,16 +278,12 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
                 player = null
                 set(routine.copy(tone = it))
             }
-            EditorFooter(
-                "16-bit PCM WAV, mono or stereo, 8–48 kHz, up to 29 seconds and 6 MB. JSON backups and templates do not include audio. Missing audio uses the fallback tone."
-            )
-            EditorFooter(
-                "Preview uses media volume. The ringing alarm uses the alarm volume; this app doesn’t override it."
-            )
+            EditorFooter(stringResource(R.string.editor_sound_footer))
+            EditorFooter(stringResource(R.string.editor_volume_footer))
 
-            EditorHeading("Wake-up mission")
+            EditorHeading(stringResource(R.string.editor_mission_heading))
             DropdownField(
-                "Mission",
+                stringResource(R.string.editor_mission),
                 routine.mission,
                 MissionKind.entries.map { it to it.title },
                 Modifier.testTag("mission-picker"),
@@ -272,12 +301,16 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
                     )
             ) {
                 Text(
-                    "Difficulty",
+                    stringResource(R.string.editor_difficulty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 ConnectedChoice(
-                    listOf(1 to "Easy", 2 to "Medium", 3 to "Hard"),
+                    listOf(
+                        1 to stringResource(R.string.editor_easy),
+                        2 to stringResource(R.string.editor_medium),
+                        3 to stringResource(R.string.editor_hard),
+                    ),
                     routine.difficulty,
                 ) {
                     set(routine.copy(challengeLevel = it))
@@ -285,19 +318,30 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
             }
             if (routine.mission == MissionKind.ARITHMETIC)
                 StepRow(
-                    if (routine.mathCount == 1) "1 question" else "${routine.mathCount} questions",
+                    pluralStringResource(
+                        R.plurals.editor_questions,
+                        routine.mathCount,
+                        routine.mathCount,
+                    ),
                     routine.mathCount,
                     1..10,
                 ) {
                     set(routine.copy(mathCount = it))
                 }
             if (routine.mission == MissionKind.TYPING)
-                TextInput("Phrase", routine.phrase) { set(routine.copy(phrase = it)) }
+                TextInput(stringResource(R.string.editor_phrase), routine.phrase) {
+                    set(routine.copy(phrase = it))
+                }
             if (routine.mission == MissionKind.CODE) {
                 OutlinedButton(onClick = { scanning = true }, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Outlined.QrCodeScanner, null, Modifier.size(ButtonDefaults.IconSize))
                     Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                    Text(if (routine.code.isEmpty()) "Scan your code" else "Replace saved code")
+                    Text(
+                        stringResource(
+                            if (routine.code.isEmpty()) R.string.editor_scan_code
+                            else R.string.editor_replace_code
+                        )
+                    )
                 }
                 if (routine.code.isNotEmpty())
                     Row(
@@ -310,7 +354,7 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            "Code saved on this phone",
+                            stringResource(R.string.editor_code_saved),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
@@ -319,42 +363,45 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
                 TextButton(onClick = { engine.previewMission.value = routine }) {
                     Icon(Icons.Outlined.PlayCircle, null, Modifier.size(ButtonDefaults.IconSize))
                     Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                    Text("Preview mission")
+                    Text(stringResource(R.string.editor_preview_mission))
                 }
-            EditorFooter(
-                "Android keeps a Stop button on the ringing alarm. A mission records completion; it can’t prevent shutdown or the system’s own dismissal."
-            )
+            EditorFooter(stringResource(R.string.editor_mission_footer))
 
-            EditorHeading("Snooze and wake-up check")
+            EditorHeading(stringResource(R.string.editor_snooze_heading))
             StepRow(
-                "Snooze: ${ClockFormat.minutes(routine.snoozeMinutes)}",
+                stringResource(
+                    R.string.defaults_snooze,
+                    ClockFormat.minutes(routine.snoozeMinutes),
+                ),
                 routine.snoozeMinutes,
                 1..30,
             ) {
                 set(routine.copy(snoozeMinutes = it))
             }
             StepRow(
-                if (routine.snoozeLimit == 0) "No snoozes"
-                else "Snooze limit: ${routine.snoozeLimit}",
+                if (routine.snoozeLimit == 0) stringResource(R.string.defaults_no_snoozes)
+                else stringResource(R.string.defaults_snooze_limit, routine.snoozeLimit),
                 routine.snoozeLimit,
                 0..10,
             ) {
                 set(routine.copy(snoozeLimit = it))
             }
             StepRow(
-                if (routine.followUpMinutes == 0) "Wake-up check: off"
-                else "Check again after ${ClockFormat.minutes(routine.followUpMinutes)}",
+                if (routine.followUpMinutes == 0) stringResource(R.string.defaults_check_off)
+                else
+                    stringResource(
+                        R.string.defaults_check_after,
+                        ClockFormat.minutes(routine.followUpMinutes),
+                    ),
                 routine.followUpMinutes,
                 0..30,
             ) {
                 set(routine.copy(followUpMinutes = it))
             }
-            EditorFooter(
-                "Open the alarm to use its mission or snooze. A wake-up check rings once after completion or a dismissal."
-            )
+            EditorFooter(stringResource(R.string.editor_snooze_footer))
         }
 
-        EditorHeading("Next seven days")
+        EditorHeading(stringResource(R.string.editor_next_week))
         val upcoming =
             remember(routine) {
                 runCatching { scheduleOccurrences(routine, Instant.now(), 7, deviceCalendar()) }
@@ -362,7 +409,7 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
             }
         if (upcoming.isNullOrEmpty())
             Text(
-                "No upcoming times. Check the schedule.",
+                stringResource(R.string.editor_no_upcoming),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -382,14 +429,16 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
             }
             if (upcoming.size > 12)
                 Text(
-                    "${upcoming.size - 12} more this week",
+                    pluralStringResource(
+                        R.plurals.editor_more_this_week,
+                        upcoming.size - 12,
+                        upcoming.size - 12,
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
         }
-        EditorFooter(
-            "Clock times follow your current time zone. When the clocks change, the preview uses the next valid time and the first of a repeated time."
-        )
+        EditorFooter(stringResource(R.string.editor_zone_footer))
         Spacer(Modifier.height(Space.l))
     }
     if (scanning)
@@ -400,8 +449,12 @@ fun RoutineEditor(model: AlarmModel, routine: Routine) {
     saveError?.let { message ->
         AlertDialog(
             onDismissRequest = { saveError = null },
-            confirmButton = { TextButton(onClick = { saveError = null }) { Text("OK") } },
-            title = { Text("Couldn’t save") },
+            confirmButton = {
+                TextButton(onClick = { saveError = null }) {
+                    Text(stringResource(R.string.common_ok))
+                }
+            },
+            title = { Text(stringResource(R.string.editor_save_failed)) },
             text = { Text(message) },
         )
     }
@@ -430,7 +483,7 @@ private fun EditorFooter(text: String) {
 private fun TimeSections(routine: Routine, set: (Routine) -> Unit) {
     when (routine.timing) {
         Timing.ONCE -> {
-            EditorHeading("Rings once")
+            EditorHeading(stringResource(R.string.editor_rings_once))
             val zone = ZoneId.systemDefault()
             val at = routine.once.atZone(zone)
             BigTime(at.hour, at.minute, key = "once") { h, m ->
@@ -440,7 +493,7 @@ private fun TimeSections(routine: Routine, set: (Routine) -> Unit) {
                     )
                 )
             }
-            DateField("Date", at.toLocalDate()) { day ->
+            DateField(stringResource(R.string.editor_date), at.toLocalDate()) { day ->
                 set(routine.copy(once = day.atTime(at.toLocalTime()).atZone(zone).toInstant()))
             }
         }
@@ -452,13 +505,23 @@ private fun TimeSections(routine: Routine, set: (Routine) -> Unit) {
                             slots = routine.slots.map { if (it.id == slot.id) next else it }
                         )
                     )
-                EditorHeading("${ClockFormat.time(slot.minute)} · ${WeekOrder.list(slot.weekdays)}")
+                EditorHeading(
+                    stringResource(
+                        R.string.editor_slot_heading,
+                        ClockFormat.time(slot.minute),
+                        WeekOrder.list(slot.weekdays),
+                    )
+                )
                 if (routine.slots.size == 1)
                     BigTime(slot.minute / 60, slot.minute % 60, key = slot.id.toString()) { h, m ->
                         update(slot.copy(minute = h * 60 + m))
                     }
                 else
-                    TimeField("Time", slot.minute / 60, slot.minute % 60) { h, m ->
+                    TimeField(
+                        stringResource(R.string.editor_time),
+                        slot.minute / 60,
+                        slot.minute % 60,
+                    ) { h, m ->
                         update(slot.copy(minute = h * 60 + m))
                     }
                 WeekdayPicker(slot.weekdays) { update(slot.copy(weekdays = it)) }
@@ -472,7 +535,7 @@ private fun TimeSections(routine: Routine, set: (Routine) -> Unit) {
                                 contentColor = MaterialTheme.colorScheme.error
                             ),
                     ) {
-                        Text("Remove time")
+                        Text(stringResource(R.string.editor_remove_time))
                     }
             }
             OutlinedButton(
@@ -488,22 +551,28 @@ private fun TimeSections(routine: Routine, set: (Routine) -> Unit) {
             ) {
                 Icon(Icons.Outlined.Add, null, Modifier.size(ButtonDefaults.IconSize))
                 Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                Text("Add another time")
+                Text(stringResource(R.string.editor_add_time))
             }
-            EditorFooter(
-                "Each time rings on its own days. Turn Wednesday off for 7:00 without changing noon or 2:00."
-            )
+            EditorFooter(stringResource(R.string.editor_slots_footer))
         }
         Timing.WINDOW -> {
-            EditorHeading("Time window")
-            TimeField("Start", routine.windowStart / 60, routine.windowStart % 60) { h, m ->
+            EditorHeading(stringResource(R.string.editor_window))
+            TimeField(
+                stringResource(R.string.editor_start),
+                routine.windowStart / 60,
+                routine.windowStart % 60,
+            ) { h, m ->
                 set(routine.copy(windowStart = h * 60 + m))
             }
-            TimeField("End", routine.windowEnd / 60, routine.windowEnd % 60) { h, m ->
+            TimeField(
+                stringResource(R.string.editor_end),
+                routine.windowEnd / 60,
+                routine.windowEnd % 60,
+            ) { h, m ->
                 set(routine.copy(windowEnd = h * 60 + m))
             }
             gg.seven.kit.IntegerSetting(
-                "Interval in minutes",
+                stringResource(R.string.editor_interval),
                 routine.intervalMinutes,
                 5..720,
                 step = 5,
@@ -511,9 +580,7 @@ private fun TimeSections(routine: Routine, set: (Routine) -> Unit) {
                 set(routine.copy(intervalMinutes = it))
             }
             WeekdayPicker(routine.windowDays) { set(routine.copy(windowDays = it)) }
-            EditorFooter(
-                "Overnight windows belong to the day they start. The end is included only when an interval lands on it."
-            )
+            EditorFooter(stringResource(R.string.editor_window_footer))
         }
     }
 }
@@ -542,7 +609,11 @@ private fun BigTime(hour: Int, minute: Int, key: String, onChange: (Int, Int) ->
             TextButton(onClick = { keyboard = !keyboard }) {
                 Icon(if (keyboard) Icons.Outlined.Schedule else Icons.Outlined.Keyboard, null)
                 Spacer(Modifier.width(Space.s))
-                Text(if (keyboard) "Use clock" else "Type time")
+                Text(
+                    stringResource(
+                        if (keyboard) R.string.editor_use_clock else R.string.editor_type_time
+                    )
+                )
             }
     }
 }

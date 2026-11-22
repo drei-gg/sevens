@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Imported sounds (AlarmLoops/Sounds, up to 128 MiB) stay out: they would exceed Auto Backup's
-     25 MB quota and fail the whole backup. Saved selections fall back to their built-in tone. -->
-<data-extraction-rules><cloud-backup><include domain="sharedpref" path="seven-trial.xml"/><include domain="device_file" path="AlarmLoops/"/><exclude domain="device_file" path="AlarmLoops/Sounds/"/></cloud-backup><device-transfer><include domain="sharedpref" path="seven-trial.xml"/><include domain="device_file" path="AlarmLoops/"/><exclude domain="device_file" path="AlarmLoops/Sounds/"/></device-transfer></data-extraction-rules>
+<!-- Cloud backup leaves imported sounds (AlarmLoops/Sounds, up to 128 MiB) out: they would exceed
+     Auto Backup's 25 MB quota and fail the whole backup, so restored selections fall back to their
+     built-in tone. Device-to-device transfer (Android 12+) has no such quota and carries them.
+     Android 11 reads backup_rules.xml, which cannot tell the two apart and leaves them out. -->
+<data-extraction-rules><cloud-backup><include domain="sharedpref" path="seven-trial.xml"/><include domain="device_file" path="AlarmLoops/"/><exclude domain="device_file" path="AlarmLoops/Sounds/"/></cloud-backup><device-transfer><include domain="sharedpref" path="seven-trial.xml"/><include domain="device_file" path="AlarmLoops/"/></device-transfer></data-extraction-rules>

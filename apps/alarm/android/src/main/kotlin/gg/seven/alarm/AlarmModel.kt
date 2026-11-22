@@ -61,15 +61,14 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
         val bytes =
             pendingTemplate
                 ?: kotlin.run {
-                    engine.error.value = "Choose the routine again to save a template."
+                    engine.error.value = Words.get(R.string.error_template_again)
                     return
                 }
         run {
             try {
                 write(uri, bytes)
                 if (pendingTemplate === bytes) pendingTemplate = null
-                note.value =
-                    Note("Routine template saved. Import it from Settings on either platform.")
+                note.value = Note(Words.get(R.string.note_template_saved))
             } catch (e: Exception) {
                 error.value = e.sentence
             }
@@ -112,7 +111,7 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
     fun save(routine: Routine, onSaved: () -> Unit, onFailed: (String) -> Unit) = run {
         if (save(routine, paid)) onSaved()
         else {
-            onFailed(error.value ?: "Couldn’t save.")
+            onFailed(error.value ?: Words.get(R.string.error_save_failed))
             error.value = null
         }
     }
@@ -121,7 +120,7 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
         if (mutate { a -> a.copy(events = a.events.filter { it.id != event.id }) }) {
             onDeleted()
             note.value =
-                Note("Record deleted") {
+                Note(Words.get(R.string.note_record_deleted)) {
                     this@AlarmModel.run {
                         mutate { a ->
                             if (a.events.any { it.id == event.id }) a
@@ -145,7 +144,7 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
         withContext(Dispatchers.IO) {
             getApplication<Application>().contentResolver.openOutputStream(uri, "wt")?.use {
                 it.write(bytes)
-            } ?: throw LoopFailure("Couldn’t open that file.")
+            } ?: throw LoopFailure(Words.get(R.string.error_open_file))
         }
 
     private fun export(uri: Uri, done: String, bytes: suspend AlarmEngine.() -> ByteArray) = run {
@@ -158,13 +157,15 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun exportBackup(uri: Uri) =
-        export(uri, "Backup saved") { core { backupEncode(archive.value) } }
+        export(uri, Words.get(R.string.note_backup_saved)) { core { backupEncode(archive.value) } }
 
     fun exportCsv(uri: Uri) =
-        export(uri, "History saved") { backupCsv(archive.value).toByteArray() }
+        export(uri, Words.get(R.string.note_history_saved)) {
+            backupCsv(archive.value).toByteArray()
+        }
 
     fun exportDiagnostics(uri: Uri) =
-        export(uri, "Diagnostics saved") { diagnostics().toByteArray() }
+        export(uri, Words.get(R.string.note_diagnostics_saved)) { diagnostics().toByteArray() }
 
     fun previewImport(uri: Uri) = run {
         try {
@@ -179,10 +180,10 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
                             if (read < 0) break
                             out.write(buffer, 0, read)
                             if (out.size() > maxBackupBytes)
-                                throw LoopFailure("This backup is larger than 32 MB.")
+                                throw LoopFailure(Words.get(R.string.error_backup_too_large))
                         }
                         out.toByteArray()
-                    } ?: throw LoopFailure("Couldn’t open that file.")
+                    } ?: throw LoopFailure(Words.get(R.string.error_open_file))
                 }
             importPreview.value = decodeArchive(bytes)
         } catch (e: Exception) {
@@ -194,7 +195,7 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
         val incoming = importPreview.value ?: return@run
         importPreview.value = null
         if (mutate { core { backupMerge(incoming, it) } })
-            note.value = Note("Backup imported. New routines are off.")
+            note.value = Note(Words.get(R.string.note_backup_imported))
     }
 
     /**

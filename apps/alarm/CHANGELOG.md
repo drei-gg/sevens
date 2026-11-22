@@ -6,6 +6,9 @@
 - Android: alarms that go off together each keep their own notification, Stop and Open, and dismissal record; the first rings, the rest wait in order.
 - Android: notification and ringing-screen times follow the 24-hour setting after the app was closed.
 - Android: imported sounds stay out of the OS backup, which they could push past its 25 MB quota and fail entirely.
+- Both phones: leaving a mission mid-way (a call, a mis-swipe) and reopening it keeps its progress: questions answered, rounds, tapped numbers, the memory tiles, shakes or steps, a scanned code. It belongs to that ringing only, and completing, an emergency stop or Stop clears it; a snooze keeps it for the snooze.
+- Android: moving to a new phone (Android 12 or later) brings imported sounds along; the cloud backup still leaves them out.
+- Android: every word on screen, in notifications and in the widget comes from string resources (English), ready for translations; Android 11 is the oldest supported version.
 - Both phones: the Settings test alarm plays the selected default tone and never writes History, stats or a wake-up check.
 - iOS: the editor's time picker shows the right time on days the clocks change; an emergency-stop failure shows inside the mission; Show one day respects Reduce Motion; screens, the Saved schedule widget and the alarm’s Open button read from String Catalogs (refreshed by `scripts/alarm-strings`), with plural forms (also on Android for counts).
 

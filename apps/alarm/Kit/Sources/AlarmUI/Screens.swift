@@ -26,7 +26,7 @@ public struct AlarmRootView: View {
         .task(id: model.store.hasStarted) { if model.store.hasStarted && model.store.launchSheet == .beforeYouBuy { before = true } }
         .sheet(isPresented: $before) { BeforeYouBuyView(content: AlarmGate.before) { _ in before = false }.interactiveDismissDisabled() }
         .sheet(item: $model.previewMission) { MissionScreen(routine: $0, row: nil) }
-        .fullScreenCover(item: $model.mission) { MissionScreen(routine: $0.routine, row: $0).interactiveDismissDisabled() }
+        .fullScreenCover(item: $model.mission) { MissionScreen(routine: $0.routine, row: $0, progress: model.progress).interactiveDismissDisabled() }
         .alert(f("Needs attention"), isPresented: Binding(get: { model.error != nil }, set: { shown in if !shown { model.error = nil } })) { Button(f("OK"), role: .cancel) { model.error = nil } } message: { Text(model.error ?? "") }
         .environment(model).sevenStore(model.store, unlock: AlarmGate.unlock)
         // Expiry is presented in Settings, never over a ringing alarm or mission.
@@ -288,13 +288,23 @@ struct MissionScreen: View {
     @Environment(\.dismiss) private var dismiss
     let routine: Routine
     let row: Registration?
+    /// Steps already done in this ringing's mission, saved as they happen so reopening it resumes
+    /// here. A preview keeps none.
+    @State private var progress: MissionProgress?
     @State private var challenge = ArithmeticChallenge()
     @State private var answer = ""
-    @State private var solved = 0
+    @State private var solved: Int
     @State private var feedback = ""
     @State private var scanning = false
     @State private var emergency = false
     @State private var complete = false
+    init(routine: Routine, row: Registration?, progress: MissionProgress? = nil) {
+        self.routine = routine; self.row = row
+        let start = row.map { progress ?? missionProgressStart(row: $0) }
+        _progress = State(initialValue: start)
+        // The last question is always answered here, so reopening never completes the mission.
+        _solved = State(initialValue: min(Int(start?.solved ?? 0), max(0, Int(routine.mathCount) - 1)))
+    }
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -326,7 +336,7 @@ struct MissionScreen: View {
             .sevenScreenBackground()
             .navigationTitle(row == nil ? f("Try mission") : f("Wake up")).navigationBarTitleDisplayMode(.inline)
             .toolbar { if row == nil { Button(f("Close")) { dismiss() } } }
-            .sheet(isPresented: $scanning) { CodeScanner { value in scanning = false; if MissionCheck.code(value, expected: routine.code) { finish() } else { feedback = f("That’s a different code.") } } }
+            .sheet(isPresented: $scanning) { CodeScanner { value in scanning = false; if MissionCheck.code(value, expected: routine.code) { record { $0.matched = true }; finish() } else { feedback = f("That’s a different code.") } } }
             .confirmationDialog(f("Stop without completing the mission?"), isPresented: $emergency, titleVisibility: .visible) {
                 // The root alert can't show over this full-screen mission, so a failure shows here.
                 Button(f("Stop alarm"), role: .destructive) { if let row { Task { if await model.finish(row, kind: .emergencyStop) { dismiss() } else { feedback = model.error ?? f("Couldn’t stop the alarm."); model.error = nil } } } }
@@ -347,7 +357,10 @@ struct MissionScreen: View {
                     .padding(Tokens.Space.ms).sevenCard().frame(maxWidth: 240)
                     .accessibilityIdentifier("mission-answer")
                 PrimaryButton(title: f("Check answer")) {
-                    if challenge.accepts(answer) { solved += 1; answer = ""; feedback = ""; if solved >= Int(routine.mathCount) { finish() } else { challenge = ArithmeticChallenge() } } else { feedback = f("Try that one again.") }
+                    if challenge.accepts(answer) {
+                        solved += 1; answer = ""; feedback = ""
+                        if solved >= Int(routine.mathCount) { finish() } else { let done = solved; record { $0.solved = Int32(done) }; challenge = ArithmeticChallenge() }
+                    } else { feedback = f("Try that one again.") }
                 }
             }
         case .typing:
@@ -357,18 +370,31 @@ struct MissionScreen: View {
                     .padding(Tokens.Space.ms).sevenCard()
                 PrimaryButton(title: f("Check phrase")) { if MissionCheck.phrase(answer, expected: routine.phrase) { finish() } else { feedback = f("The phrase doesn’t match yet.") } }
             }
-        case .memory: MemoryMission(level: routine.difficulty, onComplete: finish)
-        case .shake: MovementMission(mode: .shake, target: routine.difficulty * 10, onComplete: finish)
-        case .walk: MovementMission(mode: .walk, target: routine.difficulty * 20, onComplete: finish)
-        case .numberOrder: NumberOrderMission(level: routine.difficulty, onComplete: finish)
-        case .colorWord: ColorWordMission(level: routine.difficulty, onComplete: finish)
+        case .memory: MemoryMission(level: routine.difficulty, saved: progress, record: record, onComplete: finish)
+        case .shake: MovementMission(mode: .shake, target: routine.difficulty * 10, saved: progress, record: record, onComplete: finish)
+        case .walk: MovementMission(mode: .walk, target: routine.difficulty * 20, saved: progress, record: record, onComplete: finish)
+        case .numberOrder: NumberOrderMission(level: routine.difficulty, saved: progress, record: record, onComplete: finish)
+        case .colorWord: ColorWordMission(level: routine.difficulty, saved: progress, record: record, onComplete: finish)
         case .code:
             VStack(spacing: Tokens.Space.m) {
-                Image(systemName: "qrcode.viewfinder").glyph()
-                Text(f("Go to your saved code and scan it.")).textRole(.body).multilineTextAlignment(.center)
-                PrimaryButton(title: f("Scan code"), systemImage: "qrcode.viewfinder") { scanning = true }
+                Image(systemName: progress?.matched == true ? "checkmark.circle" : "qrcode.viewfinder").glyph()
+                if progress?.matched == true {
+                    // Scanned before the mission was left; only recording the completion is left.
+                    Text(f("Your saved code was already scanned.")).textRole(.body).multilineTextAlignment(.center)
+                    PrimaryButton(title: f("Finish mission")) { finish() }
+                } else {
+                    Text(f("Go to your saved code and scan it.")).textRole(.body).multilineTextAlignment(.center)
+                    PrimaryButton(title: f("Scan code"), systemImage: "qrcode.viewfinder") { scanning = true }
+                }
             }
         }
+    }
+
+    /// Saves a step of the ringing's mission so reopening resumes from it. Previews keep nothing.
+    func record(_ change: (inout MissionProgress) -> Void) {
+        guard row != nil, var next = progress else { return }
+        change(&next); progress = next
+        Task { await model.saveProgress(next) }
     }
 
     func finish() { if let row { Task { if await model.finish(row, kind: .completed) { dismiss() } else { feedback = model.error ?? f("Couldn’t complete."); model.error = nil } } } else { complete = true } }

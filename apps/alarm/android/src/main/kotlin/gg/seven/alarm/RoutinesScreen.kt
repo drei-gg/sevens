@@ -23,8 +23,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -83,7 +85,10 @@ fun RoutinesScreen(model: AlarmModel, kind: RoutineKind) {
             ) {
                 Hero(kind, all, now)
                 PrimaryButton(
-                    if (kind == RoutineKind.ALARM) "Add alarm" else "Add loop",
+                    stringResource(
+                        if (kind == RoutineKind.ALARM) R.string.routines_add_alarm
+                        else R.string.routines_add_loop
+                    ),
                     Modifier.testTag("add-routine"),
                     icon = Icons.Outlined.Add,
                 ) {
@@ -98,7 +103,7 @@ fun RoutinesScreen(model: AlarmModel, kind: RoutineKind) {
                     verticalArrangement = Arrangement.spacedBy(Space.s),
                 ) {
                     Text(
-                        "Quick nap",
+                        stringResource(R.string.routines_quick_nap),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -119,10 +124,14 @@ fun RoutinesScreen(model: AlarmModel, kind: RoutineKind) {
                                     contentPadding =
                                         PaddingValues(horizontal = Space.xs, vertical = Space.xs),
                                 ) {
+                                    val spoken =
+                                        stringResource(
+                                            R.string.nap_spoken,
+                                            ClockFormat.minutes(minutes),
+                                        )
                                     Column(
                                         Modifier.clearAndSetSemantics {
-                                            contentDescription =
-                                                "Nap for ${ClockFormat.minutes(minutes)}"
+                                            contentDescription = spoken
                                         },
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                     ) {
@@ -132,7 +141,7 @@ fun RoutinesScreen(model: AlarmModel, kind: RoutineKind) {
                                             maxLines = 1,
                                         )
                                         Text(
-                                            "min",
+                                            stringResource(R.string.nap_min_unit),
                                             style = MaterialTheme.typography.bodySmall,
                                             maxLines = 1,
                                         )
@@ -147,7 +156,7 @@ fun RoutinesScreen(model: AlarmModel, kind: RoutineKind) {
                     ) {
                         Icon(Icons.Outlined.Timer, null, Modifier.size(ButtonDefaults.IconSize))
                         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                        Text("Custom nap…")
+                        Text(stringResource(R.string.routines_custom_nap))
                     }
                 }
             }
@@ -159,12 +168,15 @@ fun RoutinesScreen(model: AlarmModel, kind: RoutineKind) {
                 ) {
                     Icon(Icons.Outlined.CheckCircle, null, Modifier.size(ButtonDefaults.IconSize))
                     Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                    Text("I’m awake. Cancel wake-up checks")
+                    Text(stringResource(R.string.routines_cancel_checks))
                 }
             }
         if (groups.isNotEmpty())
             item(key = "groups") {
-                Section(Modifier.padding(top = Space.s), title = "Groups") {
+                Section(
+                    Modifier.padding(top = Space.s),
+                    title = stringResource(R.string.routines_groups),
+                ) {
                     groups.forEach { group ->
                         val on =
                             archive.routines.filter { it.group?.trim() == group }.all { it.enabled }
@@ -175,12 +187,14 @@ fun RoutinesScreen(model: AlarmModel, kind: RoutineKind) {
                 }
             }
         if (all.size >= 8)
-            item(key = "search") { SearchInput("Find a routine or group", state = search) }
+            item(key = "search") {
+                SearchInput(stringResource(R.string.routines_search), state = search)
+            }
         if (query.isNotEmpty() && routines.isEmpty())
             item(key = "no-results") {
                 EmptyState(
-                    "No results for “$query”",
-                    "Try another name or group.",
+                    stringResource(R.string.history_no_results, query),
+                    stringResource(R.string.routines_no_results_body),
                     icon = Icons.Outlined.Search,
                 )
             }
@@ -209,7 +223,7 @@ fun RoutinesScreen(model: AlarmModel, kind: RoutineKind) {
                     )
                 }
                 if (!engine.isPreview)
-                    TextButton(onClick = allow) { Text("Allow alarms and reminders") }
+                    TextButton(onClick = allow) { Text(stringResource(R.string.routines_allow)) }
             }
         }
     }
@@ -217,8 +231,8 @@ fun RoutinesScreen(model: AlarmModel, kind: RoutineKind) {
     deleting?.let { routine ->
         AlertDialog(
             onDismissRequest = { deleting = null },
-            title = { Text("Delete this routine?") },
-            text = { Text("History will stay.") },
+            title = { Text(stringResource(R.string.routines_delete_title)) },
+            text = { Text(stringResource(R.string.routines_delete_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -230,10 +244,14 @@ fun RoutinesScreen(model: AlarmModel, kind: RoutineKind) {
                             contentColor = MaterialTheme.colorScheme.error
                         ),
                 ) {
-                    Text("Delete routine")
+                    Text(stringResource(R.string.routines_delete))
                 }
             },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { deleting = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
         )
     }
 }
@@ -251,7 +269,10 @@ private fun Hero(kind: RoutineKind, all: List<Routine>, now: Instant) {
             if (upcoming != null) {
                 val (routine, date) = upcoming
                 Text(
-                    if (kind == RoutineKind.ALARM) "Next alarm" else "Next loop",
+                    stringResource(
+                        if (kind == RoutineKind.ALARM) R.string.routines_next_alarm
+                        else R.string.routines_next_loop
+                    ),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -268,7 +289,11 @@ private fun Hero(kind: RoutineKind, all: List<Routine>, now: Instant) {
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    "${ClockFormat.day(date, now)}, ${ClockFormat.countdown(date, now)}",
+                    stringResource(
+                        R.string.routines_next_when,
+                        ClockFormat.day(date, now),
+                        ClockFormat.countdown(date, now),
+                    ),
                     style = MaterialTheme.typography.bodySmall.numeric(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -281,21 +306,26 @@ private fun Hero(kind: RoutineKind, all: List<Routine>, now: Instant) {
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    when {
-                        all.isEmpty() && kind == RoutineKind.ALARM -> "No alarms yet"
-                        all.isEmpty() -> "No loops yet"
-                        kind == RoutineKind.ALARM -> "All alarms off"
-                        else -> "All loops off"
-                    },
+                    stringResource(
+                        when {
+                            all.isEmpty() && kind == RoutineKind.ALARM ->
+                                R.string.routines_no_alarms
+                            all.isEmpty() -> R.string.routines_no_loops
+                            kind == RoutineKind.ALARM -> R.string.routines_alarms_off
+                            else -> R.string.routines_loops_off
+                        }
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    when {
-                        all.isNotEmpty() -> "Turn one on below, or add another."
-                        kind == RoutineKind.ALARM -> "Add a wake-up time and an optional mission."
-                        else -> "Several times. Different weekdays. One routine."
-                    },
+                    stringResource(
+                        when {
+                            all.isNotEmpty() -> R.string.routines_turn_one_on
+                            kind == RoutineKind.ALARM -> R.string.routines_alarm_hint
+                            else -> R.string.routines_loop_hint
+                        }
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -316,6 +346,7 @@ private fun Hero(kind: RoutineKind, all: List<Routine>, now: Instant) {
 private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDelete: () -> Unit) {
     val engine = model.engine
     val view = LocalView.current
+    val res = LocalResources.current
     var menu by remember { mutableStateOf(false) }
     var templateConsent by rememberSaveable { mutableStateOf(false) }
     val templateFile =
@@ -326,10 +357,10 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
     if (templateConsent)
         AlertDialog(
             onDismissRequest = { templateConsent = false },
-            title = { Text("Save a routine template?") },
+            title = { Text(stringResource(R.string.template_title)) },
             text = {
                 Text(
-                    "Includes this routine’s name, reason, times and mission phrase or scanned code. History, delivery status and app defaults are excluded. Import from Settings; the new copy starts turned off. Imported audio files are not included.",
+                    stringResource(R.string.template_body),
                     modifier =
                         Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()),
                 )
@@ -343,10 +374,14 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
                         }
                     }
                 ) {
-                    Text("Save template")
+                    Text(stringResource(R.string.template_save))
                 }
             },
-            dismissButton = { TextButton(onClick = { templateConsent = false }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { templateConsent = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
         )
     val single =
         routine.timing == Timing.ONCE ||
@@ -373,31 +408,39 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
                         Modifier.weight(1f)
                             .combinedClickable(
                                 onClick = edit,
-                                onClickLabel = "Edit",
+                                onClickLabel = res.getString(R.string.routine_edit),
                                 onLongClick = {
                                     view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                                     menu = true
                                 },
-                                onLongClickLabel = "More actions",
+                                onLongClickLabel = res.getString(R.string.routine_more_actions),
                             )
                             .semantics(mergeDescendants = true) {
                                 customActions =
                                     listOfNotNull(
-                                        CustomAccessibilityAction("Duplicate") {
+                                        CustomAccessibilityAction(
+                                            res.getString(R.string.routine_duplicate)
+                                        ) {
                                             duplicate()
                                             true
                                         },
                                         if (routine.mission != MissionKind.NONE)
-                                            CustomAccessibilityAction("Try mission") {
+                                            CustomAccessibilityAction(
+                                                res.getString(R.string.routine_try_mission)
+                                            ) {
                                                 tryMission()
                                                 true
                                             }
                                         else null,
-                                        CustomAccessibilityAction("Log done") {
+                                        CustomAccessibilityAction(
+                                            res.getString(R.string.routine_log_done)
+                                        ) {
                                             log()
                                             true
                                         },
-                                        CustomAccessibilityAction("Delete") {
+                                        CustomAccessibilityAction(
+                                            res.getString(R.string.common_delete)
+                                        ) {
                                             onDelete()
                                             true
                                         },
@@ -412,7 +455,10 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
                         onClick = { menu = true },
                         modifier = Modifier.testTag("routine-options-${routine.name}"),
                     ) {
-                        Icon(Icons.Outlined.MoreVert, "Actions for ${routine.name}")
+                        Icon(
+                            Icons.Outlined.MoreVert,
+                            stringResource(R.string.routine_actions_for, routine.name),
+                        )
                     }
                     Switch(
                         checked = routine.enabled,
@@ -443,7 +489,7 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
                         if (routine.kind == RoutineKind.LOOP)
                             AssistChip(
                                 onClick = log,
-                                label = { Text("Log done") },
+                                label = { Text(stringResource(R.string.routine_log_done)) },
                                 leadingIcon = {
                                     Icon(
                                         Icons.Outlined.Check,
@@ -457,7 +503,7 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
             }
             DropdownMenu(menu, onDismissRequest = { menu = false }) {
                 DropdownMenuItem(
-                    text = { Text("Edit") },
+                    text = { Text(stringResource(R.string.routine_edit)) },
                     leadingIcon = { Icon(Icons.Outlined.Edit, null) },
                     onClick = {
                         menu = false
@@ -465,7 +511,7 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
                     },
                 )
                 DropdownMenuItem(
-                    text = { Text("Duplicate") },
+                    text = { Text(stringResource(R.string.routine_duplicate)) },
                     leadingIcon = { Icon(Icons.Outlined.ContentCopy, null) },
                     onClick = {
                         menu = false
@@ -473,7 +519,7 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
                     },
                 )
                 DropdownMenuItem(
-                    text = { Text("Save routine template") },
+                    text = { Text(stringResource(R.string.routine_save_template)) },
                     leadingIcon = { Icon(Icons.Outlined.IosShare, null) },
                     onClick = {
                         menu = false
@@ -482,7 +528,7 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
                 )
                 if (routine.mission != MissionKind.NONE)
                     DropdownMenuItem(
-                        text = { Text("Try mission") },
+                        text = { Text(stringResource(R.string.routine_try_mission)) },
                         leadingIcon = { Icon(routine.mission.icon, null) },
                         onClick = {
                             menu = false
@@ -490,7 +536,7 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
                         },
                     )
                 DropdownMenuItem(
-                    text = { Text("Log done") },
+                    text = { Text(stringResource(R.string.routine_log_done)) },
                     leadingIcon = { Icon(Icons.Outlined.Check, null) },
                     onClick = {
                         menu = false
@@ -499,7 +545,12 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
                 )
                 HorizontalDivider()
                 DropdownMenuItem(
-                    text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                    text = {
+                        Text(
+                            stringResource(R.string.common_delete),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    },
                     leadingIcon = {
                         Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error)
                     },
@@ -567,12 +618,19 @@ private fun Summary(
         NameRow(true)
         if (routine.timing == Timing.WINDOW) {
             Text(
-                "${ClockFormat.time(routine.windowStart)}–${ClockFormat.time(routine.windowEnd)}",
+                stringResource(
+                    R.string.routine_window,
+                    ClockFormat.time(routine.windowStart),
+                    ClockFormat.time(routine.windowEnd),
+                ),
                 style = MaterialTheme.typography.titleLarge.numeric(),
                 color = color,
             )
             Text(
-                "Every ${ClockFormat.minutes(routine.intervalMinutes)}",
+                stringResource(
+                    R.string.routine_every,
+                    ClockFormat.minutes(routine.intervalMinutes),
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -601,11 +659,18 @@ private fun Summary(
 fun NextLabel(routine: Routine, now: Instant) {
     val text =
         when {
-            !routine.enabled -> "Off"
+            !routine.enabled -> stringResource(R.string.routine_off)
             else ->
                 routine.next(now)?.let {
-                    "${ClockFormat.day(it, now)}, ${ClockFormat.countdown(it, now)}"
-                } ?: if (routine.timing == Timing.ONCE) "Time has passed" else null
+                    stringResource(
+                        R.string.routines_next_when,
+                        ClockFormat.day(it, now),
+                        ClockFormat.countdown(it, now),
+                    )
+                }
+                    ?: if (routine.timing == Timing.ONCE)
+                        stringResource(R.string.routine_time_passed)
+                    else null
         }
     text?.let {
         Text(
@@ -642,19 +707,19 @@ fun CustomNapSheet(model: AlarmModel, onClose: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
             Text(
-                "Custom nap",
+                stringResource(R.string.nap_custom_title),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.fillMaxWidth(),
             )
             gg.seven.kit.ChoiceChips(
-                listOf(15, 25, 45, 90).map { it to "$it min" },
+                listOf(15, 25, 45, 90).map { it to stringResource(R.string.nap_chip, it) },
                 duration,
                 enabled = !saving,
             ) {
                 if (!saving) duration = it
             }
             gg.seven.kit.IntegerSetting(
-                "Duration in minutes",
+                stringResource(R.string.nap_duration),
                 duration,
                 1..720,
                 enabled = !saving,
@@ -667,7 +732,7 @@ fun CustomNapSheet(model: AlarmModel, onClose: () -> Unit) {
             ) {
                 if (valid) {
                     Text(
-                        "Rings at",
+                        stringResource(R.string.nap_rings_at),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -677,13 +742,13 @@ fun CustomNapSheet(model: AlarmModel, onClose: () -> Unit) {
                     )
                 } else
                     Text(
-                        "Choose between 1 minute and 12 hours.",
+                        stringResource(R.string.nap_out_of_range),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
             }
             PrimaryButton(
-                "Start nap",
+                stringResource(R.string.nap_start),
                 Modifier.testTag("start-custom-nap"),
                 icon = Icons.Outlined.Bedtime,
                 enabled = valid && !saving,
@@ -708,7 +773,7 @@ fun CustomNapSheet(model: AlarmModel, onClose: () -> Unit) {
                 )
             }
             Text(
-                "Uses your default sound, snooze and wake-up check. You can edit the nap after starting it.",
+                stringResource(R.string.nap_footer),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

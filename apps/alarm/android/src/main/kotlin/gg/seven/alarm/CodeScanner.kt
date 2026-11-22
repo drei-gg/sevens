@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -64,24 +66,24 @@ fun CodeScanner(onClose: () -> Unit, onCode: (String) -> Unit) {
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
-                    title = { Text("Scan your code") },
-                    navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, "Cancel") } },
+                    title = { Text(stringResource(R.string.scanner_title)) },
+                    navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, stringResource(R.string.common_cancel)) } },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 )
             },
         ) { padding ->
             Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
                 when {
-                    failure != null -> EmptyState("Could not start camera", failure.orEmpty(), icon = Icons.Outlined.NoPhotography)
+                    failure != null -> EmptyState(stringResource(R.string.scanner_camera_failed), failure.orEmpty(), icon = Icons.Outlined.NoPhotography)
                     granted && hasCamera -> CameraFeed(onCode = onCode, onFailure = { failure = it })
                     !granted && !asked -> Unit
                     else ->
                         EmptyState(
-                            "Camera unavailable",
-                            "Allow camera access in Settings, or try on a phone with a camera. You can always stop a mission without scanning.",
+                            stringResource(R.string.scanner_unavailable),
+                            stringResource(R.string.scanner_unavailable_body),
                             icon = Icons.Outlined.NoPhotography,
                             action =
-                                "Open settings" to {
+                                stringResource(R.string.common_open_settings) to {
                                     context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri()))
                                 },
                         )
@@ -94,6 +96,7 @@ fun CodeScanner(onClose: () -> Unit, onCode: (String) -> Unit) {
 @Composable
 private fun CameraFeed(onCode: (String) -> Unit, onFailure: (String) -> Unit) {
     val context = LocalContext.current
+    val res = LocalResources.current
     val owner = LocalLifecycleOwner.current
     val view = LocalView.current
     val consumed = remember { AtomicBoolean(false) }
@@ -122,7 +125,7 @@ private fun CameraFeed(onCode: (String) -> Unit, onFailure: (String) -> Unit) {
                     camera.unbindAll()
                     camera.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, shown, analysis)
                 } catch (e: Exception) {
-                    onFailure(e.message ?: "The camera didn’t start.")
+                    onFailure(e.message ?: res.getString(R.string.scanner_did_not_start))
                 }
             },
             ContextCompat.getMainExecutor(context),
@@ -141,7 +144,7 @@ private fun CameraFeed(onCode: (String) -> Unit, onFailure: (String) -> Unit) {
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surfaceContainer,
         ) {
-            Text("Point the camera at your saved code.", Modifier.padding(horizontal = Space.m, vertical = Space.s), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.scanner_hint), Modifier.padding(horizontal = Space.m, vertical = Space.s), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

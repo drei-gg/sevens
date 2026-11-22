@@ -332,11 +332,15 @@ pub struct LoopArchive {
     pub installed: Vec<Registration>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pending: Option<Registration>,
+    /// Progress inside the pending mission, for reopening it (see `progress.rs`). Optional so
+    /// archives from before it remain readable; like `pending`, it belongs to this device only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mission_progress: Option<crate::progress::MissionProgress>,
 }
 
 impl Default for LoopArchive {
     fn default() -> Self {
-        Self { version: 1, alarm_defaults: None, routines: vec![], events: vec![], installed: vec![], pending: None }
+        Self { version: 1, alarm_defaults: None, routines: vec![], events: vec![], installed: vec![], pending: None, mission_progress: None }
     }
 }
 
@@ -378,6 +382,12 @@ pub fn loop_archive_validate(archive: &LoopArchive) -> Result<(), LoopError> {
         require(
             r.minute.is_none_or(|m| (0..1440).contains(&m)) && r.weekdays.iter().all(|d| (1..=7).contains(d)) && (0..=10).contains(&r.snoozes),
             "Invalid alarm receipt.",
+        )?;
+    }
+    if let Some(p) = &a.mission_progress {
+        require(
+            (0..=10_000).contains(&p.solved) && p.tiles.len() <= 64 && p.tiles.iter().all(|t| (0..=1000).contains(t)),
+            "Invalid mission progress.",
         )?;
     }
     Ok(())

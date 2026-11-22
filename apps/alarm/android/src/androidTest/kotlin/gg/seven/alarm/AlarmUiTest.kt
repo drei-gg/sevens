@@ -173,7 +173,6 @@ class AlarmUiTest {
 
     @Test
     fun importedSoundProviderResultIsValidatedBeforeDraftAndSave() {
-        org.junit.Assume.assumeTrue(android.os.Build.VERSION.SDK_INT >= 29)
         val original =
             newRoutine(RoutineKind.ALARM, Instant.now())
                 .copy(name = "Provider import", enabled = false, tone = AlarmTone.PULSE)
@@ -480,6 +479,9 @@ class AlarmUiTest {
 
     @Test
     fun anExpiredTrialRefusesNewAlarmsWithTheIosSentence() {
+        // The generic build is the public source, unlocked with no trial
+        // (SourceBuildPurchaseSource); the personal build without its build-time unlock and the store build keep the trial.
+        org.junit.Assume.assumeTrue(BuildConfig.FLAVOR != "generic" && !BuildConfig.PERSONAL_UNLOCK)
         launch(trial = false)
         ui.onNodeWithTag("nap-15").performClick()
         ui.onNodeWithText("Needs attention").assertIsDisplayed()
@@ -489,6 +491,41 @@ class AlarmUiTest {
             .assertIsDisplayed()
         ui.onNodeWithText("OK").performClick()
         assertTrue(app.engine.archive.value.routines.isEmpty())
+    }
+
+    @Test
+    fun theSourceBuildCreatesAlarmsWithoutATrial() {
+        org.junit.Assume.assumeTrue(BuildConfig.FLAVOR == "generic")
+        // A trial window that would have ended long ago changes nothing in a build from source.
+        launch(trial = false)
+        ui.onNodeWithTag("nap-15").performClick()
+        ui.waitUntil(5_000) { app.engine.archive.value.routines.isNotEmpty() }
+        assertEquals("15-minute nap", app.engine.archive.value.routines.single().name)
+    }
+
+    @Test
+    fun aReopenedMissionResumesWhereItWasLeft() {
+        val wake =
+            newRoutine(RoutineKind.ALARM, Instant.now())
+                .copy(name = "Morning", mission = MissionKind.ARITHMETIC, mathCount = 3)
+        launch(newLoopArchive().copy(routines = listOf(wake)))
+        ui.waitUntil(5_000) { app.engine.archive.value.installed.isNotEmpty() }
+        val row = app.engine.archive.value.installed.single()
+        kotlinx.coroutines.runBlocking {
+            app.engine.openNative(row.id)
+            // One question answered before a call took the person away.
+            app.engine.saveProgress(
+                missionProgressStart(app.engine.archive.value.pending!!).copy(solved = 1)
+            )
+        }
+        scenario?.recreate()
+        ui.onNodeWithText("Question 2 of 3").assertIsDisplayed()
+        // The app is closed and opened again: still the second question.
+        scenario?.close()
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+        ui.waitUntil(10_000) { app.engine.ready.value }
+        ui.onNodeWithText("Question 2 of 3").assertIsDisplayed()
+        assertTrue(app.engine.archive.value.events.isEmpty())
     }
 
     @Test

@@ -85,12 +85,13 @@ class NativeAlarmDriver(private val context: Context) : AlarmDriver {
     override val status: String
         get() =
             when {
-                !exactAllowed -> "Alarms blocked in Settings"
-                !notificationsAllowed && !notificationsAsked -> "Alarm permission not requested"
-                !notificationsAllowed -> "Notifications blocked in Settings"
-                !alarmChannelOn -> "Alarm notifications muted in Settings"
-                !fullScreenAllowed -> "Full-screen alarms blocked in Settings"
-                else -> "Alarms allowed"
+                !exactAllowed -> Words.get(R.string.status_alarms_blocked)
+                !notificationsAllowed && !notificationsAsked ->
+                    Words.get(R.string.status_not_requested)
+                !notificationsAllowed -> Words.get(R.string.status_notifications_blocked)
+                !alarmChannelOn -> Words.get(R.string.status_channel_muted)
+                !fullScreenAllowed -> Words.get(R.string.status_full_screen_blocked)
+                else -> Words.get(R.string.status_allowed)
             }
 
     override fun isLive(row: Registration) = wakes.isArmed(wake(row.id))
@@ -104,9 +105,9 @@ class NativeAlarmDriver(private val context: Context) : AlarmDriver {
     override fun schedule(row: Registration) {
         if (row.routine.delivery == Delivery.REMINDER) {
             if (!notificationsAllowed)
-                throw LoopFailure("Allow notifications in Settings to deliver quiet reminders.")
+                throw LoopFailure(Words.get(R.string.error_allow_notifications))
         } else if (!exactAllowed)
-            throw LoopFailure("Allow alarms in Settings before relying on this schedule.")
+            throw LoopFailure(Words.get(R.string.error_allow_alarms))
         val next = registrationNext(row, Instant.now(), deviceCalendar())
         if (next == null) {
             // A one-off whose time has passed: nothing is left to ring.
@@ -164,7 +165,8 @@ class NativeAlarmDriver(private val context: Context) : AlarmDriver {
 class PreviewAlarmDriver : AlarmDriver {
     val rows = linkedMapOf<UUID, Registration>()
     var failure: String? = null
-    override val status = "Preview mode: no alarms are scheduled"
+    override val status: String
+        get() = Words.get(R.string.status_preview)
 
     override fun isLive(row: Registration) = row.id in rows
 

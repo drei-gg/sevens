@@ -14,7 +14,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -81,28 +84,35 @@ fun HistoryScreen(model: AlarmModel) {
         contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.s),
         verticalArrangement = Arrangement.spacedBy(Space.s),
     ) {
-        item(key = "search") { SearchInput("Find a routine or note", state = search) }
+        item(key = "search") {
+            SearchInput(stringResource(R.string.history_search), state = search)
+        }
         if (archive.events.isNotEmpty() && query.isEmpty())
             item(key = "summary") { Summary(archive.events) }
         item(key = "filter") {
+            val showOneDay = stringResource(R.string.history_show_one_day)
             Section(
                 Modifier.padding(top = Space.s),
-                footer =
-                    "Only recorded actions appear here. An alarm being scheduled doesn’t prove you heard it or did the activity.",
+                footer = stringResource(R.string.history_footer),
             ) {
-                switch("Show one day", filter) { filter = it }
+                switch(showOneDay, filter) { filter = it }
             }
             if (filter)
-                DateField("Day", day, Modifier.padding(top = Space.s)) {
+                DateField(
+                    stringResource(R.string.history_day),
+                    day,
+                    Modifier.padding(top = Space.s),
+                ) {
                     dayEpoch = minOf(it, LocalDate.now()).toEpochDay()
                 }
         }
         if (events.isEmpty())
             item(key = "empty") {
                 gg.seven.kit.EmptyState(
-                    if (query.isEmpty()) "No recorded actions" else "No results for “$query”",
-                    if (query.isEmpty()) "Completed missions, snoozes and check-ins appear here."
-                    else "Try another name or note.",
+                    if (query.isEmpty()) stringResource(R.string.history_empty)
+                    else stringResource(R.string.history_no_results, query),
+                    if (query.isEmpty()) stringResource(R.string.history_empty_body)
+                    else stringResource(R.string.history_no_results_body),
                     icon = Icons.Outlined.CalendarMonth,
                 )
             }
@@ -152,8 +162,8 @@ fun HistoryScreen(model: AlarmModel) {
 private fun dayTitle(day: LocalDate): String {
     val today = LocalDate.now()
     return when (day) {
-        today -> "Today"
-        today.minusDays(1) -> "Yesterday"
+        today -> Words.get(R.string.day_today)
+        today.minusDays(1) -> Words.get(R.string.day_yesterday)
         else -> ClockFormat.longDay(day.atStartOfDay(ZoneId.systemDefault()).toInstant())
     }
 }
@@ -172,8 +182,18 @@ private fun Summary(all: List<LoopEvent>) {
     val counts = week.map { d -> d to recent.count { it.date.atZone(zone).toLocalDate() == d } }
     Column(Modifier.padding(top = Space.s), verticalArrangement = Arrangement.spacedBy(Space.ms)) {
         val tiles: @Composable (Modifier) -> Unit = { m ->
-            StatTile("Last 7 days", "${recent.size}", "recorded actions", m)
-            StatTile("Missions", "$missions", "completed", m)
+            StatTile(
+                stringResource(R.string.history_last_week),
+                "${recent.size}",
+                pluralStringResource(R.plurals.history_recorded_actions, recent.size),
+                m,
+            )
+            StatTile(
+                stringResource(R.string.history_missions),
+                "$missions",
+                stringResource(R.string.history_completed),
+                m,
+            )
         }
         if (largeText())
             Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
@@ -186,7 +206,7 @@ private fun Summary(all: List<LoopEvent>) {
         Surface(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.large) {
             Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.s)) {
                 Text(
-                    "Recorded each day",
+                    stringResource(R.string.history_each_day),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -224,6 +244,18 @@ private fun StatTile(title: String, value: String, detail: String, modifier: Mod
 
 @Composable
 private fun WeekChart(counts: List<Pair<LocalDate, Int>>) {
+    val res = LocalResources.current
+    val spoken =
+        res.getString(
+            R.string.history_chart_spoken,
+            counts.joinToString(", ") { (d, n) ->
+                res.getString(
+                    R.string.history_chart_day,
+                    d.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault()),
+                    n,
+                )
+            },
+        )
     val producer = remember { CartesianChartModelProducer() }
     LaunchedEffect(counts) {
         producer.runTransaction {
@@ -258,11 +290,7 @@ private fun WeekChart(counts: List<Pair<LocalDate, Int>>) {
             animateIn = false,
             modifier =
                 Modifier.fillMaxWidth().height(140.dp).clearAndSetSemantics {
-                    contentDescription =
-                        "Recorded actions per day, last seven days: " +
-                            counts.joinToString(", ") { (d, n) ->
-                                "${d.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())} $n"
-                            }
+                    contentDescription = spoken
                 },
         )
     }
@@ -275,23 +303,28 @@ private fun EventEditor(model: AlarmModel, event: LoopEvent) {
     val busy by model.engine.busy.collectAsStateWithLifecycle()
     FullScreenForm(
         busy = busy,
-        title = "Edit record",
+        title = stringResource(R.string.history_edit_title),
         onClose = { model.eventDraft.value = null },
         onSave = { model.saveEvent(event) { model.eventDraft.value = null } },
     ) {
+        val routineLabel = stringResource(R.string.history_routine)
+        val recordedAs = stringResource(R.string.history_recorded_as)
         Section {
-            item("Routine", event.name)
-            item("Recorded as", event.kind.title)
+            item(routineLabel, event.name)
+            item(recordedAs, event.kind.title)
         }
-        DateTimeField("Recorded time", event.date.toEpochMilli().toDouble()) { millis ->
+        DateTimeField(
+            stringResource(R.string.history_recorded_time),
+            event.date.toEpochMilli().toDouble(),
+        ) { millis ->
             val at = Instant.ofEpochMilli(millis.toLong())
             model.eventDraft.value = event.copy(date = minOf(at, Instant.now()))
         }
-        TextInput("Note", event.note, minLines = 3) {
+        TextInput(stringResource(R.string.history_note), event.note, minLines = 3) {
             model.eventDraft.value = event.copy(note = it)
         }
         Text(
-            "Corrections are marked as manually recorded.",
+            stringResource(R.string.history_corrections),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -303,13 +336,13 @@ private fun EventEditor(model: AlarmModel, event: LoopEvent) {
         ) {
             Icon(Icons.Outlined.Delete, null, Modifier.size(ButtonDefaults.IconSize))
             Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-            Text("Delete record")
+            Text(stringResource(R.string.history_delete))
         }
     }
     if (confirmDelete)
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete this record?") },
+            title = { Text(stringResource(R.string.history_delete_title)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -321,9 +354,13 @@ private fun EventEditor(model: AlarmModel, event: LoopEvent) {
                             contentColor = MaterialTheme.colorScheme.error
                         ),
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.common_delete))
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
         )
 }

@@ -55,6 +55,7 @@ class AlarmApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         ClockFormat.install(this)
+        Words.install(this)
         Ringing.createChannels(this)
         scope.launch {
             widgetRefresh.collectLatest {
@@ -151,7 +152,7 @@ object Reminders {
             NotificationCompat.Builder(context, Ringing.REMINDER_CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_alarm)
                 .setContentTitle(row.routine.name)
-                .setContentText("Time for your routine.")
+                .setContentText(context.getString(R.string.reminder_text))
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
                 .setWhen(Instant.now().toEpochMilli())
                 .setAutoCancel(true)

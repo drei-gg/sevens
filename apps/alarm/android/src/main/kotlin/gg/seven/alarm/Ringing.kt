@@ -37,6 +37,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
@@ -162,10 +163,13 @@ object Ringing {
     fun createChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
-            NotificationChannel(ALARM_CHANNEL, "Alarms", NotificationManager.IMPORTANCE_HIGH)
+            NotificationChannel(
+                    ALARM_CHANNEL,
+                    context.getString(R.string.channel_alarms),
+                    NotificationManager.IMPORTANCE_HIGH,
+                )
                 .apply {
-                    description =
-                        "The alarm while it rings. The app plays its tone at alarm volume."
+                    description = context.getString(R.string.channel_alarms_description)
                     setSound(null, null)
                     enableVibration(false)
                     lockscreenVisibility = Notification.VISIBILITY_PUBLIC
@@ -175,10 +179,10 @@ object Ringing {
         manager.createNotificationChannel(
             NotificationChannel(
                     REMINDER_CHANNEL,
-                    "Quiet reminders",
+                    context.getString(R.string.channel_reminders),
                     NotificationManager.IMPORTANCE_DEFAULT,
                 )
-                .apply { description = "Loops delivered as reminders instead of alarms." }
+                .apply { description = context.getString(R.string.channel_reminders_description) }
         )
     }
 
@@ -246,10 +250,7 @@ object Tones {
                 return prepare { it.setDataSource(SoundFiles(context).file(imported).path) }
             } catch (error: Exception) {
                 if (!ringing)
-                    throw IllegalStateException(
-                        "This imported sound cannot be played. Re-import it or use the fallback tone.",
-                        error,
-                    )
+                    throw IllegalStateException(context.getString(R.string.sound_unplayable), error)
             }
         }
         if (tone == AlarmTone.SYSTEM) {
@@ -392,7 +393,9 @@ class RingingService : Service() {
                     .build()
                     .also { audio.requestAudioFocus(it) }
         val imported =
-            alarm.sound?.let { gg.seven.alarm.core.ImportedSound(it, "Imported sound") }
+            alarm.sound?.let {
+                gg.seven.alarm.core.ImportedSound(it, getString(R.string.sound_default_name))
+            }
         player =
             runCatching {
                     val next =
@@ -459,7 +462,7 @@ class RingingService : Service() {
         return NotificationCompat.Builder(this, Ringing.ALARM_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_alarm)
             .setContentTitle(now.name)
-            .setContentText(if (waiting) "$time · Rings after the current alarm" else time)
+            .setContentText(if (waiting) getString(R.string.ringing_waiting_text, time) else time)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -469,8 +472,8 @@ class RingingService : Service() {
             .setOnlyAlertOnce(true)
             .apply { if (!waiting) setFullScreenIntent(screen, true) }
             .setContentIntent(screen)
-            .addAction(0, "Stop", stop)
-            .addAction(0, "Open", open)
+            .addAction(0, getString(R.string.ringing_stop), stop)
+            .addAction(0, getString(R.string.ringing_open), open)
             .build()
     }
 
@@ -540,15 +543,8 @@ class RingingActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (Build.VERSION.SDK_INT >= 27) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
-        } else
-            @Suppress("DEPRECATION")
-            window.addFlags(
-                android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-            )
+        setShowWhenLocked(true)
+        setTurnScreenOn(true)
         enableEdgeToEdge()
         setContent {
             SevenTheme {
@@ -623,7 +619,7 @@ private fun RingingScreen(
         ) {
             Spacer(Modifier.weight(1f))
             Text(
-                "Alarm",
+                stringResource(R.string.ringing_label),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -655,17 +651,17 @@ private fun RingingScreen(
                     onClick = onOpen,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("ringing-open"),
                 ) {
-                    Text("Open")
+                    Text(stringResource(R.string.ringing_open))
                 }
                 OutlinedButton(
                     onClick = onStop,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("ringing-stop"),
                 ) {
-                    Text("Stop")
+                    Text(stringResource(R.string.ringing_stop))
                 }
             }
             Text(
-                "Open starts the alarm’s mission. Stop records a dismissal.",
+                stringResource(R.string.ringing_footnote),
                 Modifier.padding(top = Space.m),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

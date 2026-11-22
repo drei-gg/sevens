@@ -865,6 +865,16 @@
         }
       }
     },
+    "Finish mission": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish mission"
+          }
+        }
+      }
+    },
     "Free trial not started. Existing alarms and history remain available.": {
       "localizations": {
         "en": {
@@ -2623,6 +2633,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your iPhone already has alarms."
+          }
+        }
+      }
+    },
+    "Your saved code was already scanned.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your saved code was already scanned."
           }
         }
       }

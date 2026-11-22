@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         if (savedInstanceState == null) handle(intent)
-        setContent { SevenTheme { SevenRoot(model.store, AlarmContent) { AlarmApp(model) } } }
+        setContent { SevenTheme { SevenRoot(model.store, alarmContent(resources)) { AlarmApp(model) } } }
     }
 
     override fun onNewIntent(intent: Intent) {

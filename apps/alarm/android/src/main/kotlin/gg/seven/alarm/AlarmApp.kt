@@ -15,6 +15,7 @@ import android.provider.Settings
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.annotation.StringRes
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -31,6 +32,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -47,11 +49,11 @@ import java.time.Instant
 import kotlinx.coroutines.delay
 
 /** Alarms, Loops, History and Settings: the four peer areas of the iOS tab bar. */
-enum class Tab(val title: String, val icon: ImageVector) {
-    Alarms("Alarms", Icons.Outlined.Alarm),
-    Loops("Loops", Icons.Outlined.Repeat),
-    History("History", Icons.Outlined.CalendarMonth),
-    Settings("Settings", Icons.Outlined.Settings),
+enum class Tab(@param:StringRes val title: Int, val icon: ImageVector) {
+    Alarms(R.string.tab_alarms, Icons.Outlined.Alarm),
+    Loops(R.string.tab_loops, Icons.Outlined.Repeat),
+    History(R.string.tab_history, Icons.Outlined.CalendarMonth),
+    Settings(R.string.tab_settings, Icons.Outlined.Settings),
 }
 
 @Composable
@@ -66,12 +68,13 @@ fun AlarmApp(model: AlarmModel) {
     val note by model.note.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(Tab.Alarms) }
     val snackbar = remember { SnackbarHostState() }
+    val undo = stringResource(R.string.common_undo)
     LaunchedEffect(note) {
         val shown = note ?: return@LaunchedEffect
         val result =
             snackbar.showSnackbar(
                 shown.text,
-                actionLabel = if (shown.undo != null) "Undo" else null,
+                actionLabel = if (shown.undo != null) undo else null,
                 duration = SnackbarDuration.Short,
             )
         if (result == SnackbarResult.ActionPerformed) shown.undo?.invoke()
@@ -82,10 +85,11 @@ fun AlarmApp(model: AlarmModel) {
             Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
                 Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
                     EmptyState(
-                        "Couldn’t open your records",
+                        stringResource(R.string.load_failed_title),
                         loadError.orEmpty(),
                         icon = Icons.Outlined.SdCardAlert,
-                        action = "Try again" to { model.run { reload() } },
+                        action =
+                            stringResource(R.string.common_try_again) to { model.run { reload() } },
                     )
                 }
             }
@@ -115,8 +119,8 @@ fun AlarmApp(model: AlarmModel) {
                                 selected = tab == item,
                                 onClick = { tab = item },
                                 icon = { Icon(item.icon, null) },
-                                label = { Text(item.title) },
-                                modifier = Modifier.testTag("tab-${item.title}"),
+                                label = { Text(stringResource(item.title)) },
+                                modifier = Modifier.testTag("tab-${item.name}"),
                             )
                         }
                         Spacer(Modifier.weight(1f))
@@ -124,7 +128,13 @@ fun AlarmApp(model: AlarmModel) {
                 Scaffold(
                     modifier = Modifier.weight(1f),
                     containerColor = MaterialTheme.colorScheme.background,
-                    topBar = { SevenTopBar(if (tab == Tab.Loops) "Time loops" else tab.title) },
+                    topBar = {
+                        SevenTopBar(
+                            stringResource(
+                                if (tab == Tab.Loops) R.string.title_loops else tab.title
+                            )
+                        )
+                    },
                     snackbarHost = { SnackbarHost(snackbar) },
                     bottomBar = {
                         if (!wide)
@@ -136,8 +146,8 @@ fun AlarmApp(model: AlarmModel) {
                                         selected = tab == item,
                                         onClick = { tab = item },
                                         icon = { Icon(item.icon, null) },
-                                        label = { Text(item.title) },
-                                        modifier = Modifier.testTag("tab-${item.title}"),
+                                        label = { Text(stringResource(item.title)) },
+                                        modifier = Modifier.testTag("tab-${item.name}"),
                                     )
                                 }
                             }
@@ -168,8 +178,12 @@ fun AlarmApp(model: AlarmModel) {
     error?.let { message ->
         AlertDialog(
             onDismissRequest = { engine.error.value = null },
-            confirmButton = { TextButton(onClick = { engine.error.value = null }) { Text("OK") } },
-            title = { Text("Needs attention") },
+            confirmButton = {
+                TextButton(onClick = { engine.error.value = null }) {
+                    Text(stringResource(R.string.common_ok))
+                }
+            },
+            title = { Text(stringResource(R.string.error_title)) },
             text = { Text(message) },
         )
     }
@@ -251,14 +265,14 @@ fun StepRow(
             enabled = value > range.first,
             modifier = Modifier.testTag("$label-minus"),
         ) {
-            Icon(Icons.Outlined.Remove, "Decrease $label")
+            Icon(Icons.Outlined.Remove, stringResource(R.string.step_decrease, label))
         }
         FilledTonalIconButton(
             onClick = { set(value + step) },
             enabled = value < range.last,
             modifier = Modifier.testTag("$label-plus"),
         ) {
-            Icon(Icons.Outlined.Add, "Increase $label")
+            Icon(Icons.Outlined.Add, stringResource(R.string.step_increase, label))
         }
     }
 }
@@ -319,16 +333,16 @@ fun WeekdayPicker(days: List<Int>, modifier: Modifier = Modifier, onChange: (Lis
             }
         }
         Box {
-            TextButton(onClick = { presets = true }) { Text("Choose days") }
+            TextButton(onClick = { presets = true }) { Text(stringResource(R.string.days_choose)) }
             DropdownMenu(presets, onDismissRequest = { presets = false }) {
                 listOf(
-                        "Every day" to listOf(1, 2, 3, 4, 5, 6, 7),
-                        "Weekdays" to listOf(2, 3, 4, 5, 6),
-                        "Weekends" to listOf(1, 7),
+                        R.string.days_every to listOf(1, 2, 3, 4, 5, 6, 7),
+                        R.string.days_weekdays to listOf(2, 3, 4, 5, 6),
+                        R.string.days_weekends to listOf(1, 7),
                     )
                     .forEach { (label, preset) ->
                         DropdownMenuItem(
-                            text = { Text(label) },
+                            text = { Text(stringResource(label)) },
                             onClick = {
                                 onChange(preset)
                                 presets = false
@@ -356,9 +370,9 @@ fun rememberAllowAlarms(onDone: () -> Unit): () -> Unit {
         val fullScreen = !driver.fullScreenAllowed
         val intent =
             when {
-                exact && Build.VERSION.SDK_INT >= 31 ->
+                exact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
                     Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, app)
-                fullScreen && Build.VERSION.SDK_INT >= 34 ->
+                fullScreen && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE ->
                     Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, app)
                 !driver.notificationsAllowed ->
                     Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
@@ -391,17 +405,9 @@ fun rememberAllowAlarms(onDone: () -> Unit): () -> Unit {
 
 /** Haptics that confirm (polish guide §3.8), on the constants each Android version has. */
 object Haptics {
-    fun confirm(view: View) =
-        view.performHapticFeedback(
-            if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.CONFIRM
-            else HapticFeedbackConstants.VIRTUAL_KEY
-        )
+    fun confirm(view: View) = view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
 
-    fun reject(view: View) =
-        view.performHapticFeedback(
-            if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.REJECT
-            else HapticFeedbackConstants.LONG_PRESS
-        )
+    fun reject(view: View) = view.performHapticFeedback(HapticFeedbackConstants.REJECT)
 
     fun select(view: View) =
         view.performHapticFeedback(

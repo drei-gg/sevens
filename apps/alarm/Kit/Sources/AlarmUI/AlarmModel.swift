@@ -326,8 +326,18 @@ public struct StopLoopIntent: LiveActivityIntent {
         // Each ringing is its own occurrence, so snoozes and checks from different days never share IDs.
         if row.occurrenceID == nil { row.occurrenceID = UUID() }
         let opened = row
-        guard await mutate({ $0.pending = opened }) else { throw LoopFailure.invalid(f("Could not save the active mission.")) }
+        // Progress of the same ringing survives reopening; any other mission's is superseded.
+        guard await mutate({ $0 = archiveOpenMission(archive: $0, row: opened) }) else { throw LoopFailure.invalid(f("Could not save the active mission.")) }
         mission = opened
+    }
+    /// What the person had already done in the pending mission, for reopening it (the core's
+    /// `mission_progress`); nil when it belongs to another ringing.
+    public var progress: MissionProgress? { missionProgress(archive: archive) }
+    /// Saves progress inside the pending mission. Best effort: the mission itself still finishes
+    /// through its own check, and progress for a mission that has already ended is ignored.
+    public func saveProgress(_ progress: MissionProgress) async {
+        guard archiveWithProgress(archive: archive, progress: progress) != archive else { return }
+        if let next = try? await repository.change({ $0 = archiveWithProgress(archive: $0, progress: progress) }) { archive = next }
     }
     public func dismissNative(_ id: String) async throws {
         await reload()
@@ -335,15 +345,16 @@ public struct StopLoopIntent: LiveActivityIntent {
         if archive.pending?.id == row.id, let pending = archive.pending { row = pending }
         if row.purpose == Self.testPurpose {
             // The Settings test is not a routine: no record, no wake-up check.
-            let rowID = row.id
-            guard await mutate({ if $0.pending?.id == rowID { $0.pending = nil } }) else { throw LoopFailure.invalid(f("Could not stop the test alarm.")) }
+            let rowID = row.id, stopped = row
+            guard await mutate({ $0 = archiveEndMission(archive: $0, row: stopped, kind: .dismissed) }) else { throw LoopFailure.invalid(f("Could not stop the test alarm.")) }
             if mission?.id == rowID { mission = nil }
             return
         }
         if row.occurrenceID == nil { row.occurrenceID = UUID() }
         let event = LoopEvent(routine:row.routine,kind:.dismissed,note:"Stopped with the system control; mission completion is unconfirmed.")
-        let rowID = row.id
-        guard await mutate({ $0.events.append(event); if $0.pending?.id == rowID { $0.pending = nil } }) else { throw LoopFailure.invalid(f("Could not record dismissal.")) }
+        let stopped = row
+        // The system Stop ends this ringing: its pending mission and progress go.
+        guard await mutate({ $0.events.append(event); $0 = archiveEndMission(archive: $0, row: stopped, kind: .dismissed) }) else { throw LoopFailure.invalid(f("Could not record dismissal.")) }
         if row.purpose != "followUp" && row.routine.followUpMinutes > 0 { try await extra(row,minutes:Int(row.routine.followUpMinutes),purpose:"followUp") }
     }
     public func extra(_ row: Registration, minutes: Int, purpose: String) async throws {
@@ -370,7 +381,9 @@ public struct StopLoopIntent: LiveActivityIntent {
             }
             try await driver.stop(row)
             let event = LoopEvent(routine:row.routine,kind:kind)
-            guard await mutate({ a in if record { a.events.append(event) }; a.pending = nil }) else { return false }
+            // Completing or an emergency stop clears the mission's progress; a snooze keeps it for
+            // the snooze, which belongs to the same ringing.
+            guard await mutate({ a in if record { a.events.append(event) }; a = archiveEndMission(archive: a, row: row, kind: kind) }) else { return false }
             mission = nil; await publishVerifiedWidget(); return true
         } catch { self.error = error.localizedDescription; return false }
     }

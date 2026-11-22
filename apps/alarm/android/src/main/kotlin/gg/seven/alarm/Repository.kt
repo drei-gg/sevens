@@ -22,9 +22,8 @@ val Throwable.sentence: String
     get() =
         when (this) {
             is LoopException.Invalid -> reason
-            is LoopException.Unreadable ->
-                "The data couldn’t be read because it isn’t in the correct format."
-            else -> message ?: "Something went wrong."
+            is LoopException.Unreadable -> Words.get(R.string.error_unreadable)
+            else -> message ?: Words.get(R.string.error_generic)
         }
 
 /** Runs a core call, turning its `LoopException` into a [LoopFailure] sentence. */
@@ -62,7 +61,8 @@ class ArchiveRepository(private val file: File?, seed: LoopArchive = newLoopArch
             val atomic = atomic!!
             if (atomic.baseFile.exists() || File(atomic.baseFile.path + ".bak").exists()) {
                 val bytes = atomic.openRead().use { it.readBytes() }
-                if (bytes.size > maxBackupBytes) throw LoopFailure("Archive exceeds 32 MB.")
+                if (bytes.size > maxBackupBytes)
+                    throw LoopFailure(Words.get(R.string.error_archive_too_large))
                 cache = decodeArchive(bytes)
             }
             loaded = true

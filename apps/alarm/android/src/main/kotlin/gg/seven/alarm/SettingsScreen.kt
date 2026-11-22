@@ -16,8 +16,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.alarm.core.AlarmDefaults
@@ -40,6 +42,7 @@ import gg.seven.kit.item
 fun SettingsScreen(model: AlarmModel) {
     val engine = model.engine
     val context = LocalContext.current
+    val res = LocalResources.current
     val archive by engine.archive.collectAsStateWithLifecycle()
     val scheduling by engine.scheduling.collectAsStateWithLifecycle()
     val pendingImport by model.importPreview.collectAsStateWithLifecycle()
@@ -76,20 +79,23 @@ fun SettingsScreen(model: AlarmModel) {
         verticalArrangement = Arrangement.spacedBy(Space.l),
     ) {
         Section(
-            title = "Alarm delivery",
-            footer =
-                "Uses your selected tone at the alarm volume. Test on your phone before relying on an alarm. The ringing alarm always has its own Stop button.",
+            title = stringResource(R.string.settings_delivery),
+            footer = stringResource(R.string.settings_delivery_footer),
         ) {
             item(
                 status,
                 supporting = scheduling.takeIf { it != status },
                 icon = Icons.Outlined.NotificationsActive,
             )
-            action("Ring a test alarm in 10 seconds", Icons.Outlined.Alarm) {
+            action(res.getString(R.string.settings_test_alarm), Icons.Outlined.Alarm) {
                 model.run { testAlarm() }
             }
-            action("Request permissions", Icons.Outlined.BackHand, onClick = allow)
-            action("Open system settings", Icons.Outlined.Settings) {
+            action(
+                res.getString(R.string.settings_request_permissions),
+                Icons.Outlined.BackHand,
+                onClick = allow,
+            )
+            action(res.getString(R.string.settings_open_system), Icons.Outlined.Settings) {
                 context.startActivity(
                     Intent(
                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -97,59 +103,63 @@ fun SettingsScreen(model: AlarmModel) {
                     )
                 )
             }
-            action("Retry schedule registration", Icons.Outlined.Refresh) {
+            action(res.getString(R.string.settings_retry), Icons.Outlined.Refresh) {
                 model.run { synchronize() }
             }
         }
         val widgetError by engine.widgetError.collectAsStateWithLifecycle()
         Section(
-            title = "Home Screen widget",
-            footer =
-                "Shows upcoming saved alarms and loops, including routine names. Refreshes after changes and expires after a day without an app check. A schedule is not proof of delivery.",
+            title = stringResource(R.string.settings_widget),
+            footer = stringResource(R.string.settings_widget_footer),
         ) {
             widgetError?.let { item(it, icon = Icons.Outlined.ErrorOutline) }
             val manager = android.appwidget.AppWidgetManager.getInstance(context)
             if (manager.isRequestPinAppWidgetSupported) {
-                action("Add schedule widget", Icons.Outlined.Widgets) {
+                action(res.getString(R.string.settings_add_widget), Icons.Outlined.Widgets) {
                     manager.requestPinAppWidget(
                         android.content.ComponentName(context, AlarmWidget::class.java),
                         null,
                         null,
                     )
                 }
-            } else item("Add Saved schedule from your launcher’s widget picker.")
+            } else item(res.getString(R.string.settings_widget_picker))
         }
-        Section(title = "Less setup") {
-            item("New alarm defaults", icon = Icons.Outlined.Tune, onClick = { defaults = true })
+        Section(title = stringResource(R.string.settings_less_setup)) {
+            item(
+                res.getString(R.string.settings_defaults),
+                icon = Icons.Outlined.Tune,
+                onClick = { defaults = true },
+            )
         }
         Section(
-            title = "Your data",
-            footer =
-                "Stored on this phone. No accounts, ads or analytics. Your phone’s backup may include these records. Imports add new routines turned off; they never arm alarms on their own. JSON backups and your phone’s backup retain sound selections but not imported audio files; re-import missing sounds or use their built-in fallback.",
+            title = stringResource(R.string.settings_data),
+            footer = stringResource(R.string.settings_data_footer),
         ) {
-            action("Export JSON backup", Icons.Outlined.Share) {
+            action(res.getString(R.string.settings_export_backup), Icons.Outlined.Share) {
                 exportJson.launch("alarm-loops-backup.json")
             }
-            action("Export history CSV", Icons.Outlined.TableChart) {
+            action(res.getString(R.string.settings_export_csv), Icons.Outlined.TableChart) {
                 exportCsv.launch("alarm-loops-history.csv")
             }
-            action("Import backup", Icons.Outlined.Download) {
+            action(res.getString(R.string.settings_import), Icons.Outlined.Download) {
                 importer.launch(
                     arrayOf("application/json", "application/octet-stream", "text/plain")
                 )
             }
         }
         Section(
-            title = "Troubleshooting",
-            footer =
-                "A local report with app and Android versions, alarm permission, registration counts and error flags. Leaves out names, schedules, scanned codes, phrases and history. Nothing is sent automatically. Registration counts don’t prove an alarm rang.",
+            title = stringResource(R.string.settings_troubleshooting),
+            footer = stringResource(R.string.settings_troubleshooting_footer),
         ) {
-            action("Export diagnostics", Icons.Outlined.MedicalServices) {
+            action(
+                res.getString(R.string.settings_export_diagnostics),
+                Icons.Outlined.MedicalServices,
+            ) {
                 exportDiagnostics.launch("alarm-loops-diagnostics.json")
             }
         }
         SevenAbout(coreVersion = remember { coreVersion() })
-        Footer("Scanned mission codes stay on this phone and are never opened as links.")
+        Footer(stringResource(R.string.settings_codes_footer))
         Spacer(Modifier.height(Space.l))
     }
     if (defaults)
@@ -173,17 +183,19 @@ fun SettingsScreen(model: AlarmModel) {
                     )
                 )
             },
-            text = { Text("Existing routine IDs are kept; new routines start turned off.") },
+            text = { Text(stringResource(R.string.settings_import_body)) },
             confirmButton = {
                 TextButton(
                     onClick = model::confirmImport,
                     modifier = Modifier.testTag("confirm-import"),
                 ) {
-                    Text("Import routines turned off")
+                    Text(stringResource(R.string.settings_import_confirm))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { model.importPreview.value = null }) { Text("Cancel") }
+                TextButton(onClick = { model.importPreview.value = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
             },
         )
     }
@@ -211,7 +223,7 @@ private fun DefaultsEditor(model: AlarmModel, initial: AlarmDefaults, onClose: (
     }
     var saving by remember { mutableStateOf(false) }
     FullScreenForm(
-        title = "New alarm defaults",
+        title = stringResource(R.string.settings_defaults),
         onClose = onClose,
         onSave = {
             saving = true
@@ -223,41 +235,49 @@ private fun DefaultsEditor(model: AlarmModel, initial: AlarmDefaults, onClose: (
         busy = saving,
         confirmDiscard = defaults != initial,
     ) {
-        DropdownField("Tone", defaults.tone, AlarmTone.entries.map { it to it.title }) {
+        DropdownField(
+            stringResource(R.string.defaults_tone),
+            defaults.tone,
+            AlarmTone.entries.map { it to it.title },
+        ) {
             setDefaults(defaults.copy(tone = it))
         }
         StepRow(
-            "Snooze: ${ClockFormat.minutes(defaults.snoozeMinutes)}",
+            stringResource(R.string.defaults_snooze, ClockFormat.minutes(defaults.snoozeMinutes)),
             defaults.snoozeMinutes,
             1..30,
         ) {
             setDefaults(defaults.copy(snoozeMinutes = it))
         }
         StepRow(
-            if (defaults.snoozeLimit == 0) "No snoozes"
-            else "Snooze limit: ${defaults.snoozeLimit}",
+            if (defaults.snoozeLimit == 0) stringResource(R.string.defaults_no_snoozes)
+            else stringResource(R.string.defaults_snooze_limit, defaults.snoozeLimit),
             defaults.snoozeLimit,
             0..10,
         ) {
             setDefaults(defaults.copy(snoozeLimit = it))
         }
         StepRow(
-            if (defaults.followUpMinutes == 0) "Wake-up check: off"
-            else "Check again after ${ClockFormat.minutes(defaults.followUpMinutes)}",
+            if (defaults.followUpMinutes == 0) stringResource(R.string.defaults_check_off)
+            else
+                stringResource(
+                    R.string.defaults_check_after,
+                    ClockFormat.minutes(defaults.followUpMinutes),
+                ),
             defaults.followUpMinutes,
             0..30,
         ) {
             setDefaults(defaults.copy(followUpMinutes = it))
         }
         Text(
-            "Applies to new alarms and naps. Existing routines and quiet reminders keep their settings. Duplicates keep the original’s settings.",
+            stringResource(R.string.defaults_footer),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         TextButton(onClick = { setDefaults(defaultAlarmDefaults()) }) {
             Icon(Icons.Outlined.Undo, null, Modifier.size(ButtonDefaults.IconSize))
             Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-            Text("Reset defaults")
+            Text(stringResource(R.string.defaults_reset))
         }
     }
 }

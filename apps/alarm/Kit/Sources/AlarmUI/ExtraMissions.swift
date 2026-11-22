@@ -4,8 +4,13 @@ import Observation
 import AlarmCore
 import SevenKit
 
+/// Saves a step of the open mission (MissionScreen.record); a preview ignores it.
+typealias RecordProgress = ((inout MissionProgress) -> Void) -> Void
+
 struct MemoryMission: View {
     let level: Int
+    let saved: MissionProgress?
+    let record: RecordProgress
     let onComplete: () -> Void
     @State private var sequence = SequenceChallenge(sequence:[])
     @State private var highlighted: Int?
@@ -31,7 +36,12 @@ struct MemoryMission: View {
         }.task(id:replay) {
             showing = true
             // The core object holds the progress; a replay starts a fresh one on the same tiles.
-            if sequence.sequence().isEmpty { sequence = SequenceChallenge(sequence:(0..<(level + 2)).map { _ in Int32.random(in:0..<9) }) }
+            if sequence.sequence().isEmpty {
+                // A reopened mission replays the tiles it was showing.
+                let kept = saved?.tiles ?? []
+                let tiles = kept.count == level + 2 && kept.allSatisfy({ (0..<9).contains($0) }) ? kept : (0..<(level + 2)).map { _ in Int32.random(in:0..<9) }
+                sequence = SequenceChallenge(sequence:tiles); record { $0.tiles = tiles }
+            }
             else { sequence = SequenceChallenge(sequence:sequence.sequence()) }
             do {
                 try await Task.sleep(for:.milliseconds(600))
@@ -48,6 +58,8 @@ struct MemoryMission: View {
 }
 struct NumberOrderMission: View {
     let level: Int
+    let saved: MissionProgress?
+    let record: RecordProgress
     let onComplete: () -> Void
     @State private var tiles: [Int] = []
     @State private var next = 1
@@ -58,12 +70,21 @@ struct NumberOrderMission: View {
             LazyVGrid(columns:Array(repeating:GridItem(.flexible(),spacing:Tokens.Space.s),count:3),spacing:Tokens.Space.s) {
                 ForEach(tiles,id:\.self) { number in
                     Button {
-                        if number == next { next += 1; message = "Next: \(next)"; if next > tiles.count { onComplete() } }
+                        if number == next { next += 1; message = "Next: \(next)"; if next > tiles.count { onComplete() } else { let done = next - 1; record { $0.solved = Int32(done) } } }
                         else { message = "Find \(next) next." }
                     } label: { MissionTile(text:number < next ? "✓" : "\(number)",lit:false,done:number < next) }.buttonStyle(.plain).disabled(number < next).accessibilityLabel(number < next ? "Completed \(number)" : "Number \(number)").accessibilityIdentifier("order-\(number)")
                 }
             }
-        }.onAppear { if tiles.isEmpty { tiles = Array(1...(level * 3 + 3)).shuffled() } }
+        }.onAppear {
+            guard tiles.isEmpty else { return }
+            let count = level * 3 + 3
+            // A reopened mission keeps its board and the numbers already tapped; the last tap is
+            // always made here, so reopening never completes it.
+            if let kept = saved?.tiles.map(Int.init), kept.count == count, Set(kept) == Set(1...count) {
+                tiles = kept; next = min(Int(saved?.solved ?? 0), count - 1) + 1
+            } else { tiles = Array(1...count).shuffled() }
+            let board = tiles.map(Int32.init); record { $0.tiles = board }
+        }
     }
 }
 extension ColorWord {
@@ -85,10 +106,15 @@ extension ColorWord {
 }
 struct ColorWordMission: View {
     let level: Int
+    let record: RecordProgress
     let onComplete: () -> Void
     @State private var word = ColorWord.red
     @State private var ink = ColorWord.blue
-    @State private var solved = 0
+    @State private var solved: Int
+    init(level: Int, saved: MissionProgress?, record: @escaping RecordProgress, onComplete: @escaping () -> Void) {
+        self.level = level; self.record = record; self.onComplete = onComplete
+        _solved = State(initialValue: min(Int(saved?.solved ?? 0), level + 1))
+    }
     @State private var message = f("Choose the ink color, not the word.")
     var body: some View {
         VStack(spacing:Tokens.Space.m) {
@@ -98,7 +124,7 @@ struct ColorWordMission: View {
             LazyVGrid(columns:[GridItem(.flexible(),spacing:Tokens.Space.s),GridItem(.flexible(),spacing:Tokens.Space.s)],spacing:Tokens.Space.s) {
                 ForEach(ColorWord.allCases,id:\.self) { answer in
                     Button(answer.label) {
-                        if ColorWord.accepts(answer,ink:ink) { solved += 1; if solved >= level + 2 { onComplete() } else { randomize(); message = f("Choose the ink color.") } }
+                        if ColorWord.accepts(answer,ink:ink) { solved += 1; if solved >= level + 2 { onComplete() } else { let done = solved; record { $0.solved = Int32(done) }; randomize(); message = f("Choose the ink color.") } }
                         else { message = f("Look at the ink, not the word.") }
                     }.quickAddChip().frame(minHeight:48).disabled(solved >= level + 2)
                 }
@@ -110,6 +136,9 @@ struct ColorWordMission: View {
 }
 @Observable @MainActor final class MovementTracker {
     var count = 0
+    /// What was counted before this start (an earlier start, or before the mission was left).
+    @ObservationIgnored private var offset = 0
+    init(count: Int = 0) { self.count = count }
     var message = ""
     var running = false
     @ObservationIgnored private let motion = CMMotionManager()
@@ -117,7 +146,7 @@ struct ColorWordMission: View {
     @ObservationIgnored private var counter = ShakeCounter()
     @ObservationIgnored private var generation = UUID()
     func start(mode:MissionKind) {
-        stop(); counter = ShakeCounter(); count = 0; message = ""; running = true
+        stop(); counter = ShakeCounter(); offset = count; message = ""; running = true
         let token = generation
         if mode == .walk {
             guard CMPedometer.isStepCountingAvailable() else { running = false; message = f("Step counting is unavailable on this device."); return }
@@ -126,7 +155,7 @@ struct ColorWordMission: View {
                 let failure = error?.localizedDescription
                 Task { @MainActor in
                     guard let self, self.running, self.generation == token else { return }
-                    if let failure { self.message = failure; self.stop() } else if let steps { self.count = steps }
+                    if let failure { self.message = failure; self.stop() } else if let steps { self.count = self.offset + steps }
                 }
             }
         } else {
@@ -140,7 +169,7 @@ struct ColorWordMission: View {
                 Task { @MainActor in
                     guard let self, self.running, self.generation == token else { return }
                     if let failure { self.message = failure; self.stop() }
-                    else if let magnitude, let time { self.counter.sample(acceleration:magnitude,timestamp:time); self.count = Int(self.counter.count()) }
+                    else if let magnitude, let time { self.counter.sample(acceleration:magnitude,timestamp:time); self.count = self.offset + Int(self.counter.count()) }
                 }
             }
         }
@@ -150,9 +179,23 @@ struct ColorWordMission: View {
 struct MovementMission: View {
     let mode: MissionKind
     let target: Int
+    let record: RecordProgress
     let onComplete: () -> Void
-    @State private var tracker = MovementTracker()
+    @State private var tracker: MovementTracker
     @State private var finished = false
+    @State private var savedCount: Int
+    init(mode: MissionKind, target: Int, saved: MissionProgress?, record: @escaping RecordProgress, onComplete: @escaping () -> Void) {
+        self.mode = mode; self.target = target; self.record = record; self.onComplete = onComplete
+        // Counted before the mission was left; the last one is always counted here.
+        let start = min(Int(saved?.solved ?? 0), max(0, target - 1))
+        _tracker = State(initialValue: MovementTracker(count: start)); _savedCount = State(initialValue: start)
+    }
+    /// Saves the count every few, and on leaving, rather than on every step.
+    private func save(force: Bool = false) {
+        let count = min(tracker.count, target)
+        guard count != savedCount, force || count - savedCount >= 5 else { return }
+        savedCount = count; record { $0.solved = Int32(count) }
+    }
     @Environment(\.scenePhase) private var phase
     var body: some View {
         VStack(spacing:Tokens.Space.m) {
@@ -168,9 +211,9 @@ struct MovementMission: View {
             if !tracker.message.isEmpty { Text(tracker.message).textRole(.secondary) }
             if !tracker.running && !finished { PrimaryButton(title:f("Start challenge"),systemImage:"play.fill") { tracker.start(mode:mode) } }
             Text(f("Motion stays on this phone and stops when you leave this challenge.")).textRole(.caption).multilineTextAlignment(.center)
-        }.onChange(of:tracker.count) { _, count in if count >= target && !finished { finished = true; tracker.stop(); onComplete() } }
-            .onChange(of:phase) { _, value in if value != .active { tracker.stop() } }
-            .onDisappear { tracker.stop() }
+        }.onChange(of:tracker.count) { _, count in if count >= target && !finished { finished = true; tracker.stop(); onComplete() } else { save() } }
+            .onChange(of:phase) { _, value in if value != .active { tracker.stop(); if !finished { save(force: true) } } }
+            .onDisappear { tracker.stop(); if !finished { save(force: true) } }
     }
 }
 

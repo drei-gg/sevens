@@ -1,5 +1,6 @@
 package gg.seven.alarm
 
+import android.content.res.Resources
 import gg.seven.kit.BeforeYouBuyContent
 import gg.seven.kit.SevenContent
 import gg.seven.kit.TrialEndedContent
@@ -9,36 +10,31 @@ import gg.seven.kit.UnlockContent
  * Alarm & Loops's words for the brand moments, from the iOS gate copy. "Before you buy" names what
  * Android already does built in (never another third-party app), so it differs from iOS.
  */
-internal val AlarmContent =
+internal fun alarmContent(res: Resources) =
     SevenContent(
         beforeYouBuy =
             BeforeYouBuyContent(
-                title = "Your phone already has alarms.",
+                title = res.getString(R.string.gate_title),
                 paragraphs =
                     listOf(
+                        BeforeYouBuyContent.Paragraph(res.getString(R.string.gate_built_in)),
                         BeforeYouBuyContent.Paragraph(
-                            "The Clock app already wakes you up and times things. If that is enough, keep your money.",
+                            res.getString(R.string.gate_offer, BeforeYouBuyContent.PRICE),
+                            withoutPrice = res.getString(R.string.gate_offer_without_price),
                         ),
-                        BeforeYouBuyContent.Paragraph(
-                            "This adds wake-up missions, flexible time loops and a history you can keep. Try everything for 7 days, then {price}, once. Nothing renews.",
-                            withoutPrice =
-                                "This adds wake-up missions, flexible time loops and a history you can keep. Try everything for 7 days, then a one-time purchase.",
-                        ),
-                        BeforeYouBuyContent.Paragraph(
-                            "Existing enabled alarms keep running after the trial. You can always stop alarms and read, export or delete your history.",
-                        ),
+                        BeforeYouBuyContent.Paragraph(res.getString(R.string.gate_records_stay)),
                     ),
-                lookAroundLabel = "Look around first",
+                lookAroundLabel = res.getString(R.string.gate_look_around),
             ),
         unlock =
             UnlockContent(
-                appName = "Alarm & Loops",
+                appName = res.getString(R.string.gate_app_name),
                 features =
                     listOf(
-                        "Wake-up missions and follow-up checks",
-                        "Shared times with different weekdays",
-                        "Interval loops and complete local history",
-                        "Portable backups and exports",
+                        res.getString(R.string.gate_feature_missions),
+                        res.getString(R.string.gate_feature_shared_times),
+                        res.getString(R.string.gate_feature_loops),
+                        res.getString(R.string.gate_feature_backups),
                     ),
             ),
         // iOS never presents a trial-ended sheet (expiry shows in Settings only, never over a ringing
@@ -48,16 +44,16 @@ internal val AlarmContent =
             TrialEndedContent(
                 stillFree =
                     listOf(
-                        "Alarms you already enabled keep ringing",
-                        "Turning alarms off, deleting them and stopping them",
-                        "Correcting, exporting and deleting your history",
-                        "Importing a backup, with its routines turned off",
+                        res.getString(R.string.gate_free_alarms),
+                        res.getString(R.string.gate_free_stop),
+                        res.getString(R.string.gate_free_history),
+                        res.getString(R.string.gate_free_import),
                     ),
                 unlockKeeps =
                     listOf(
-                        "Creating and editing alarms, loops and naps",
-                        "Turning routines back on",
+                        res.getString(R.string.gate_keeps_editing),
+                        res.getString(R.string.gate_keeps_reenable),
                     ),
             ),
-        notStartedStatus = "Free trial not started. Existing alarms and history remain available.",
+        notStartedStatus = res.getString(R.string.gate_not_started),
     )

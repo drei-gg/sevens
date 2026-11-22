@@ -131,13 +131,13 @@ class AlarmGlanceWidget : GlanceAppWidget() {
         ) {
             if (!largeText)
                 Text(
-                    "Saved schedule",
+                    context.getString(R.string.alarm_widget_title),
                     style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 14.sp),
                 )
             Spacer(GlanceModifier.height(8.dp))
             if (view == null || view.stale) {
                 Text(
-                    "Open to refresh",
+                    context.getString(R.string.alarm_widget_open),
                     style =
                         TextStyle(
                             color = GlanceTheme.colors.onSurface,
@@ -148,7 +148,7 @@ class AlarmGlanceWidget : GlanceAppWidget() {
             } else {
                 if (view.items.isEmpty()) {
                     Text(
-                        "No upcoming times",
+                        context.getString(R.string.widget_no_upcoming),
                         style =
                             TextStyle(
                                 color = GlanceTheme.colors.onSurface,
@@ -196,13 +196,16 @@ class AlarmGlanceWidget : GlanceAppWidget() {
                         )
                         if (!largeText)
                             Text(
-                                when (item.purpose) {
-                                    "snooze" -> "Snoozed alarm"
-                                    "followUp" -> "Wake-up check"
-                                    else ->
-                                        if (item.delivery == Delivery.ALARM) "Alarm"
-                                        else "Quiet reminder"
-                                },
+                                context.getString(
+                                    when (item.purpose) {
+                                        "snooze" -> R.string.widget_kind_snooze
+                                        "followUp" -> R.string.widget_kind_check
+                                        else ->
+                                            if (item.delivery == Delivery.ALARM)
+                                                R.string.widget_kind_alarm
+                                            else R.string.widget_kind_reminder
+                                    }
+                                ),
                                 style =
                                     TextStyle(
                                         color = GlanceTheme.colors.onSurfaceVariant,
@@ -215,8 +218,11 @@ class AlarmGlanceWidget : GlanceAppWidget() {
                 }
                 Text(
                     if (view.needsAttention)
-                        (if (largeText) "Check in app" else "Open to check scheduling")
-                    else "Checked $checkedTime",
+                        context.getString(
+                            if (largeText) R.string.widget_check_in_app
+                            else R.string.widget_open_to_check
+                        )
+                    else context.getString(R.string.widget_checked, checkedTime),
                     style =
                         TextStyle(
                             color =

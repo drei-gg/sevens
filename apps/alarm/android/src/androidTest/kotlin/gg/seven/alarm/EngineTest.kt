@@ -264,6 +264,79 @@ class EngineTest {
         }
     }
 
+    /** Progress inside a mission survives leaving and relaunching, for that ringing only. */
+    @Test
+    fun missionProgressResumesAfterARelaunchAndEndsWithTheMission() = runBlocking {
+        val file = File(context.cacheDir, "archive-${UUID.randomUUID()}.json")
+        try {
+            val first = AlarmEngine(ArchiveRepository(file), PreviewAlarmDriver(), isPreview = true)
+            first.reload()
+            first.save(alarm().copy(mission = MissionKind.ARITHMETIC, mathCount = 3), paid = true)
+            val row = first.archive.value.installed.single()
+            first.openNative(row.id)
+            val pending = first.archive.value.pending!!
+            first.saveProgress(missionProgressStart(pending).copy(solved = 2))
+            // The app is closed mid-mission and opened again.
+            val again = AlarmEngine(ArchiveRepository(file), PreviewAlarmDriver(), isPreview = true)
+            again.reload()
+            assertEquals(pending.id, again.mission.value?.id)
+            assertEquals(2, again.progress()?.solved)
+            // Open pressed again on the same ringing keeps it; completing clears it.
+            again.openNative(row.id)
+            assertEquals(2, again.progress()?.solved)
+            assertTrue(again.finish(again.mission.value!!, EventKind.COMPLETED))
+            assertNull(again.archive.value.missionProgress)
+            again.openNative(row.id)
+            assertNull(again.progress())
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
+    fun aDifferentAlarmDoesNotInheritMissionProgress() = runBlocking {
+        val (engine, _) = engine()
+        engine.save(alarm(name = "Wake up").copy(mission = MissionKind.WALK), paid = true)
+        engine.save(
+            alarm(name = "Medication", minute = 540, days = listOf(2)).copy(
+                mission = MissionKind.WALK
+            ),
+            paid = true,
+        )
+        val (wake, other) =
+            engine.archive.value.installed.partition { it.routine.name == "Wake up" }
+        engine.openNative(wake.single().id)
+        val progress = missionProgressStart(engine.archive.value.pending!!).copy(solved = 12)
+        engine.saveProgress(progress)
+        assertEquals(12, engine.progress()?.solved)
+        engine.openNative(other.single().id)
+        assertNull(engine.progress())
+        assertNull(engine.archive.value.missionProgress)
+        // A late save for the superseded mission changes nothing.
+        engine.saveProgress(progress)
+        assertNull(engine.archive.value.missionProgress)
+    }
+
+    @Test
+    fun emergencyStopAndSystemStopClearMissionProgressButASnoozeKeepsIt() = runBlocking {
+        val (engine, _) = engine()
+        engine.save(alarm().copy(mission = MissionKind.COLOR_WORD, snoozeLimit = 2), paid = true)
+        val row = engine.archive.value.installed.single()
+        engine.openNative(row.id)
+        engine.saveProgress(missionProgressStart(engine.archive.value.pending!!).copy(solved = 1))
+        assertTrue(engine.finish(engine.archive.value.pending!!, EventKind.SNOOZED))
+        val snooze = engine.archive.value.installed.single { it.purpose == "snooze" }
+        engine.openNative(snooze.id)
+        assertEquals(1, engine.progress()?.solved)
+        assertTrue(engine.finish(engine.archive.value.pending!!, EventKind.EMERGENCY_STOP))
+        assertNull(engine.archive.value.missionProgress)
+        engine.openNative(row.id)
+        engine.saveProgress(missionProgressStart(engine.archive.value.pending!!).copy(solved = 2))
+        engine.dismissNative(row.id)
+        assertNull(engine.archive.value.pending)
+        assertNull(engine.archive.value.missionProgress)
+    }
+
     @Test
     fun nativeDriverArmsAndCancelsAnAlarmClock() {
         val driver = NativeAlarmDriver(context)

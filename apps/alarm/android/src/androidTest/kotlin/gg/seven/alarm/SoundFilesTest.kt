@@ -16,7 +16,6 @@ class SoundFilesTest {
 
     @Test
     fun providerImportOwnsItsCopyAndFailureDoesNotReplaceExistingAudio() {
-        org.junit.Assume.assumeTrue(android.os.Build.VERSION.SDK_INT >= 29)
         val directory = File(context.cacheDir, "provider-sound-${UUID.randomUUID()}")
         val resolver = context.contentResolver
         val bytes = context.assets.open("alarm-chime.wav").use { it.readBytes() }

@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English, the source for community translations (values-<lang>/strings.xml). -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Shared -->
+    <string name="common_close">Close</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_ok">OK</string>
+    <string name="common_delete">Delete</string>
+
+    <!-- Missions -->
+    <string name="mission_title_preview">Try mission</string>
+    <string name="mission_title_ringing">Wake up</string>
+    <string name="mission_done">Done.</string>
+    <string name="mission_preview_note">Mission preview. No alarm will ring.</string>
+    <string name="mission_complete_failed">Couldn’t complete.</string>
+    <string name="mission_snooze_failed">Couldn’t snooze.</string>
+    <string name="mission_snooze">Snooze %1$s</string>
+    <string name="mission_emergency_stop">Emergency stop</string>
+    <string name="mission_emergency_title">Stop without completing the mission?</string>
+    <string name="mission_stop_failed">Couldn’t stop the alarm.</string>
+    <string name="mission_stop_alarm">Stop alarm</string>
+    <string name="mission_im_up">I’m up</string>
+    <string name="mission_count_of">%1$d of %2$d</string>
+    <string name="mission_try_again">Try that one again.</string>
+    <string name="mission_question">Question %1$d of %2$d</string>
+    <string name="mission_sum">%1$d + %2$d</string>
+    <string name="mission_sum_spoken" tools:ignore="PluralsCandidate">%1$d plus %2$d</string>
+    <string name="mission_answer">Answer</string>
+    <string name="mission_check_answer">Check answer</string>
+    <string name="mission_type_phrase">Type the phrase</string>
+    <string name="mission_check_phrase">Check phrase</string>
+    <string name="mission_phrase_mismatch">The phrase doesn’t match yet.</string>
+    <string name="mission_code_prompt">Go to your saved code and scan it.</string>
+    <string name="mission_scan_code">Scan code</string>
+    <string name="mission_code_mismatch">That’s a different code.</string>
+    <string name="mission_code_scanned">Your saved code was already scanned.</string>
+    <string name="mission_finish">Finish mission</string>
+    <string name="mission_tile_highlighted">Highlighted</string>
+    <string name="mission_tile_completed">Completed</string>
+    <string name="mission_tile_ready">Ready</string>
+    <string name="memory_watch">Watch the tiles, then repeat the order.</string>
+    <string name="memory_tile">Tile %1$d</string>
+    <string name="memory_your_turn">Your turn. Repeat the order.</string>
+    <string name="memory_try_again">Try that sequence again.</string>
+    <string name="memory_show_again">Show sequence again</string>
+    <string name="order_prompt">Tap the numbers from smallest to largest.</string>
+    <string name="order_completed">Completed %1$d</string>
+    <string name="order_number">Number %1$d</string>
+    <string name="order_next">Next: %1$d</string>
+    <string name="order_find" tools:ignore="PluralsCandidate">Find %1$d next.</string>
+    <string name="color_prompt">Choose the ink color, not the word.</string>
+    <string name="color_next">Choose the ink color.</string>
+    <string name="color_wrong">Look at the ink, not the word.</string>
+    <string name="color_spoken">The word %1$s, printed in %2$s</string>
+    <string name="color_red">Red</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_green">Green</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_vision_note">Color vision makes this one difficult? Choose a different mission in your alarm settings.</string>
+    <string name="movement_unavailable_steps">Step counting is unavailable on this device.</string>
+    <string name="movement_unavailable_motion">Motion sensing is unavailable on this device.</string>
+    <string name="movement_allow_activity">Allow physical activity in Settings to count steps.</string>
+    <plurals name="movement_steps_spoken">
+        <item quantity="one">%1$d of %2$d step</item>
+        <item quantity="other">%1$d of %2$d steps</item>
+    </plurals>
+    <plurals name="movement_shakes_spoken">
+        <item quantity="one">%1$d of %2$d shake</item>
+        <item quantity="other">%1$d of %2$d shakes</item>
+    </plurals>
+    <string name="movement_of_target">/ %1$d</string>
+    <string name="movement_walk_hint">Take a short walk with your phone. Only steps after you start count.</string>
+    <string name="movement_shake_hint">Hold your phone securely and shake it back and forth.</string>
+    <string name="movement_start">Start challenge</string>
+    <string name="movement_privacy">Motion stays on this phone and stops when you leave this challenge.</string>
+
+    <!-- Scheduling and the model (AlarmEngine) -->
+    <string name="scheduling_checking">Checking alarm registrations…</string>
+    <plurals name="scheduling_times_registered">
+        <item quantity="one">%d alarm time registered.</item>
+        <item quantity="other">%d alarm times registered.</item>
+    </plurals>
+    <string name="scheduling_summary">%1$s %2$s.</string>
+    <string name="scheduling_failure">%1$s: %2$s</string>
+    <string name="scheduling_remove_failed">Could not remove %1$s: %2$s</string>
+    <string name="scheduling_test_scheduled">Test alarm scheduled for 10 seconds from now.</string>
+    <string name="widget_refresh_failed">The Home Screen widget could not refresh. Open the app for the latest schedule.</string>
+    <string name="error_trial_edit">Start the trial or unlock in Settings to create or edit schedules. Existing enabled alarms keep running.</string>
+    <string name="error_trial_reenable">Unlock to re-enable this routine. Existing enabled alarms keep running.</string>
+    <string name="error_trial_reenable_group">Unlock to re-enable routines.</string>
+    <string name="error_save_receipt">Could not save alarm receipt.</string>
+    <string name="error_update_receipt">Alarm scheduled, but its receipt could not be updated. Retry before relying on it.</string>
+    <string name="error_alarm_gone">The alarm is no longer in your saved schedule.</string>
+    <string name="error_save_mission">Could not save the active mission.</string>
+    <string name="error_stop_test">Could not stop the test alarm.</string>
+    <string name="error_record_dismissal">Could not record dismissal.</string>
+    <string name="error_save_follow_up">Could not save follow-up alarm.</string>
+    <string name="error_snooze_limit">Snooze limit reached.</string>
+    <string name="history_note_system_stop">Stopped with the system control; mission completion is unconfirmed.</string>
+    <string name="test_alarm_name">Test alarm</string>
+    <string name="error_unreadable">The data couldn’t be read because it isn’t in the correct format.</string>
+    <string name="error_generic">Something went wrong.</string>
+    <string name="error_archive_too_large">Archive exceeds 32 MB.</string>
+    <string name="error_backup_too_large">This backup is larger than 32 MB.</string>
+    <string name="error_open_file">Couldn’t open that file.</string>
+    <string name="error_template_again">Choose the routine again to save a template.</string>
+    <string name="error_save_failed">Couldn’t save.</string>
+    <string name="note_template_saved">Routine template saved. Import it from Settings on either platform.</string>
+    <string name="note_record_deleted">Record deleted</string>
+    <string name="note_backup_saved">Backup saved</string>
+    <string name="note_history_saved">History saved</string>
+    <string name="note_diagnostics_saved">Diagnostics saved</string>
+    <string name="note_backup_imported">Backup imported. New routines are off.</string>
+
+    <!-- Alarm delivery status (AlarmDriver) -->
+    <string name="status_alarms_blocked">Alarms blocked in Settings</string>
+    <string name="status_not_requested">Alarm permission not requested</string>
+    <string name="status_notifications_blocked">Notifications blocked in Settings</string>
+    <string name="status_channel_muted">Alarm notifications muted in Settings</string>
+    <string name="status_full_screen_blocked">Full-screen alarms blocked in Settings</string>
+    <string name="status_allowed">Alarms allowed</string>
+    <string name="status_preview">Preview mode: no alarms are scheduled</string>
+    <string name="error_allow_notifications">Allow notifications in Settings to deliver quiet reminders.</string>
+    <string name="error_allow_alarms">Allow alarms in Settings before relying on this schedule.</string>
+
+    <!-- Quiet reminders -->
+    <string name="reminder_text">Time for your routine.</string>
+
+    <!-- Imported sounds -->
+    <string name="sound_default_name">Imported sound</string>
+    <string name="sound_open_failed">This sound could not be opened.</string>
+    <string name="sound_folder_failed">The sound folder could not be created.</string>
+    <string name="sound_storage_full">Sound storage is full. Close the editor to clear unused imports, then try again.</string>
+
+    <!-- Ringing alarm: notification channels, notifications and the screen over the lock screen -->
+    <string name="channel_alarms">Alarms</string>
+    <string name="channel_alarms_description">The alarm while it rings. The app plays its tone at alarm volume.</string>
+    <string name="channel_reminders">Quiet reminders</string>
+    <string name="channel_reminders_description">Loops delivered as reminders instead of alarms.</string>
+    <string name="ringing_waiting_text">%1$s · Rings after the current alarm</string>
+    <string name="ringing_stop">Stop</string>
+    <string name="ringing_open">Open</string>
+    <string name="ringing_label">Alarm</string>
+    <string name="ringing_footnote">Open starts the alarm’s mission. Stop records a dismissal.</string>
+    <string name="sound_unplayable">This imported sound cannot be played. Re-import it or use the fallback tone.</string>
+
+    <!-- App frame and shared controls -->
+    <string name="tab_alarms">Alarms</string>
+    <string name="tab_loops">Loops</string>
+    <string name="tab_history">History</string>
+    <string name="tab_settings">Settings</string>
+    <string name="title_loops">Time loops</string>
+    <string name="common_undo">Undo</string>
+    <string name="load_failed_title">Couldn’t open your records</string>
+    <string name="common_try_again">Try again</string>
+    <string name="error_title">Needs attention</string>
+    <string name="step_decrease">Decrease %1$s</string>
+    <string name="step_increase">Increase %1$s</string>
+    <string name="days_choose">Choose days</string>
+    <string name="days_every">Every day</string>
+    <string name="days_weekdays">Weekdays</string>
+    <string name="days_weekends">Weekends</string>
+
+    <!-- Brand moments (SevenKit gate) -->
+    <string name="gate_title">Your phone already has alarms.</string>
+    <string name="gate_built_in">The Clock app already wakes you up and times things. If that is enough, keep your money.</string>
+    <string name="gate_offer">This adds wake-up missions, flexible time loops and a history you can keep. Try everything for 7 days, then %1$s, once. Nothing renews.</string>
+    <string name="gate_offer_without_price">This adds wake-up missions, flexible time loops and a history you can keep. Try everything for 7 days, then a one-time purchase.</string>
+    <string name="gate_records_stay">Existing enabled alarms keep running after the trial. You can always stop alarms and read, export or delete your history.</string>
+    <string name="gate_look_around">Look around first</string>
+    <string name="gate_app_name">Alarm &amp; Loops</string>
+    <string name="gate_feature_missions">Wake-up missions and follow-up checks</string>
+    <string name="gate_feature_shared_times">Shared times with different weekdays</string>
+    <string name="gate_feature_loops">Interval loops and complete local history</string>
+    <string name="gate_feature_backups">Portable backups and exports</string>
+    <string name="gate_free_alarms">Alarms you already enabled keep ringing</string>
+    <string name="gate_free_stop">Turning alarms off, deleting them and stopping them</string>
+    <string name="gate_free_history">Correcting, exporting and deleting your history</string>
+    <string name="gate_free_import">Importing a backup, with its routines turned off</string>
+    <string name="gate_keeps_editing">Creating and editing alarms, loops and naps</string>
+    <string name="gate_keeps_reenable">Turning routines back on</string>
+    <string name="gate_not_started">Free trial not started. Existing alarms and history remain available.</string>
+
+    <!-- Scan-a-code camera -->
+    <string name="scanner_title">Scan your code</string>
+    <string name="scanner_camera_failed">Could not start camera</string>
+    <string name="scanner_unavailable">Camera unavailable</string>
+    <string name="scanner_unavailable_body">Allow camera access in Settings, or try on a phone with a camera. You can always stop a mission without scanning.</string>
+    <string name="common_open_settings">Open settings</string>
+    <string name="scanner_did_not_start">The camera didn’t start.</string>
+    <string name="scanner_hint">Point the camera at your saved code.</string>
+
+    <!-- Saved schedule widget -->
+    <string name="widget_no_upcoming">No upcoming times</string>
+    <string name="widget_kind_snooze">Snoozed alarm</string>
+    <string name="widget_kind_check">Wake-up check</string>
+    <string name="widget_kind_alarm">Alarm</string>
+    <string name="widget_kind_reminder">Quiet reminder</string>
+    <string name="widget_check_in_app">Check in app</string>
+    <string name="widget_open_to_check">Open to check scheduling</string>
+    <string name="widget_checked">Checked %1$s</string>
+
+    <!-- History -->
+    <string name="history_search">Find a routine or note</string>
+    <string name="history_footer">Only recorded actions appear here. An alarm being scheduled doesn’t prove you heard it or did the activity.</string>
+    <string name="history_show_one_day">Show one day</string>
+    <string name="history_day">Day</string>
+    <string name="history_empty">No recorded actions</string>
+    <string name="history_no_results">No results for “%1$s”</string>
+    <string name="history_empty_body">Completed missions, snoozes and check-ins appear here.</string>
+    <string name="history_no_results_body">Try another name or note.</string>
+    <string name="day_today">Today</string>
+    <string name="day_yesterday">Yesterday</string>
+    <string name="day_tomorrow">Tomorrow</string>
+    <string name="history_last_week">Last 7 days</string>
+    <plurals name="history_recorded_actions">
+        <item quantity="one">recorded action</item>
+        <item quantity="other">recorded actions</item>
+    </plurals>
+    <string name="history_missions">Missions</string>
+    <string name="history_completed">completed</string>
+    <string name="history_each_day">Recorded each day</string>
+    <string name="history_chart_spoken">Recorded actions per day, last seven days: %1$s</string>
+    <string name="history_chart_day">%1$s %2$d</string>
+    <string name="history_edit_title">Edit record</string>
+    <string name="history_routine">Routine</string>
+    <string name="history_recorded_as">Recorded as</string>
+    <string name="history_recorded_time">Recorded time</string>
+    <string name="history_note">Note</string>
+    <string name="history_corrections">Corrections are marked as manually recorded.</string>
+    <string name="history_delete">Delete record</string>
+    <string name="history_delete_title">Delete this record?</string>
+
+    <!-- Times, days and names -->
+    <string name="countdown_soon">in less than a minute</string>
+    <string name="countdown_in">in %1$s</string>
+    <string name="mission_none">None</string>
+    <string name="mission_arithmetic">Arithmetic</string>
+    <string name="mission_typing">Type a phrase</string>
+    <string name="mission_code">Scan a code</string>
+    <string name="mission_memory">Memory tiles</string>
+    <string name="mission_shake">Shake</string>
+    <string name="mission_walk">Walk</string>
+    <string name="mission_number_order">Number order</string>
+    <string name="mission_color_word">Color clash</string>
+    <string name="event_completed">Mission completed</string>
+    <string name="event_dismissed">System dismissal</string>
+    <string name="event_snoozed">Snoozed</string>
+    <string name="event_emergency_stop">Emergency stop</string>
+    <string name="event_manual">Manual check-in</string>
+    <string name="event_follow_up">Wake-up check scheduled</string>
+    <string name="tone_system">System default</string>
+    <string name="tone_chime">Soft chime</string>
+    <string name="tone_pulse">Pulse</string>
+    <string name="tone_bright">Bright bells</string>
+
+    <!-- Settings -->
+    <string name="settings_delivery">Alarm delivery</string>
+    <string name="settings_delivery_footer">Uses your selected tone at the alarm volume. Test on your phone before relying on an alarm. The ringing alarm always has its own Stop button.</string>
+    <string name="settings_test_alarm">Ring a test alarm in 10 seconds</string>
+    <string name="settings_request_permissions">Request permissions</string>
+    <string name="settings_open_system">Open system settings</string>
+    <string name="settings_retry">Retry schedule registration</string>
+    <string name="settings_widget">Home Screen widget</string>
+    <string name="settings_widget_footer">Shows upcoming saved alarms and loops, including routine names. Refreshes after changes and expires after a day without an app check. A schedule is not proof of delivery.</string>
+    <string name="settings_add_widget">Add schedule widget</string>
+    <string name="settings_widget_picker">Add Saved schedule from your launcher’s widget picker.</string>
+    <string name="settings_less_setup">Less setup</string>
+    <string name="settings_defaults">New alarm defaults</string>
+    <string name="settings_data">Your data</string>
+    <string name="settings_data_footer">Stored on this phone. No accounts, ads or analytics. Your phone’s backup may include these records. Imports add new routines turned off; they never arm alarms on their own. JSON backups and your phone’s cloud backup keep sound selections but not imported audio files, which play their built-in tone until re-imported. Moving to a new phone with Android 12 or later brings the audio files along.</string>
+    <string name="settings_export_backup">Export JSON backup</string>
+    <string name="settings_export_csv">Export history CSV</string>
+    <string name="settings_import">Import backup</string>
+    <string name="settings_troubleshooting">Troubleshooting</string>
+    <string name="settings_troubleshooting_footer">A local report with app and Android versions, alarm permission, registration counts and error flags. Leaves out names, schedules, scanned codes, phrases and history. Nothing is sent automatically. Registration counts don’t prove an alarm rang.</string>
+    <string name="settings_export_diagnostics">Export diagnostics</string>
+    <string name="settings_codes_footer">Scanned mission codes stay on this phone and are never opened as links.</string>
+    <string name="settings_import_body">Existing routine IDs are kept; new routines start turned off.</string>
+    <string name="settings_import_confirm">Import routines turned off</string>
+    <string name="defaults_tone">Tone</string>
+    <string name="defaults_snooze">Snooze: %1$s</string>
+    <string name="defaults_no_snoozes">No snoozes</string>
+    <string name="defaults_snooze_limit">Snooze limit: %1$d</string>
+    <string name="defaults_check_off">Wake-up check: off</string>
+    <string name="defaults_check_after">Check again after %1$s</string>
+    <string name="defaults_footer">Applies to new alarms and naps. Existing routines and quiet reminders keep their settings. Duplicates keep the original’s settings.</string>
+    <string name="defaults_reset">Reset defaults</string>
+
+    <!-- Routine editor -->
+    <string name="sound_import_failed">This sound could not be imported.</string>
+    <string name="editor_new_alarm">New alarm</string>
+    <string name="editor_new_loop">New loop</string>
+    <string name="editor_edit">Edit routine</string>
+    <string name="editor_routine">Routine</string>
+    <string name="editor_name">Name</string>
+    <string name="editor_reason">Why get up? (optional)</string>
+    <string name="editor_group">Group (optional)</string>
+    <string name="editor_timing">Timing</string>
+    <string name="editor_timing_weekly">Weekly times</string>
+    <string name="editor_timing_once">Once</string>
+    <string name="editor_timing_window">Interval window</string>
+    <string name="editor_delivery">Delivery</string>
+    <string name="editor_delivery_reminder">Quiet reminder</string>
+    <string name="editor_delivery_alarm">Alarm</string>
+    <string name="editor_sound">Sound</string>
+    <string name="editor_sound_missing">This audio file is missing. The fallback tone will play; import it again to restore your sound.</string>
+    <string name="sound_preview_failed">This sound could not be previewed.</string>
+    <string name="editor_stop_preview">Stop preview</string>
+    <string name="editor_preview_imported">Preview imported sound</string>
+    <string name="editor_preview_tone">Preview tone</string>
+    <string name="editor_import_sound">Import WAV sound</string>
+    <string name="editor_replace_sound">Replace sound</string>
+    <string name="editor_use_built_in">Use built-in tone</string>
+    <string name="editor_tone">Tone</string>
+    <string name="editor_fallback_tone">Fallback tone</string>
+    <string name="editor_sound_footer">16-bit PCM WAV, mono or stereo, 8–48 kHz, up to 29 seconds and 6 MB. JSON backups and templates do not include audio. Missing audio uses the fallback tone.</string>
+    <string name="editor_volume_footer">Preview uses media volume. The ringing alarm uses the alarm volume; this app doesn’t override it.</string>
+    <string name="editor_mission_heading">Wake-up mission</string>
+    <string name="editor_mission">Mission</string>
+    <string name="editor_difficulty">Difficulty</string>
+    <string name="editor_easy">Easy</string>
+    <string name="editor_medium">Medium</string>
+    <string name="editor_hard">Hard</string>
+    <plurals name="editor_questions">
+        <item quantity="one">%d question</item>
+        <item quantity="other">%d questions</item>
+    </plurals>
+    <string name="editor_phrase">Phrase</string>
+    <string name="editor_scan_code">Scan your code</string>
+    <string name="editor_replace_code">Replace saved code</string>
+    <string name="editor_code_saved">Code saved on this phone</string>
+    <string name="editor_preview_mission">Preview mission</string>
+    <string name="editor_mission_footer">Android keeps a Stop button on the ringing alarm. A mission records completion; it can’t prevent shutdown or the system’s own dismissal.</string>
+    <string name="editor_snooze_heading">Snooze and wake-up check</string>
+    <string name="editor_snooze_footer">Open the alarm to use its mission or snooze. A wake-up check rings once after completion or a dismissal.</string>
+    <string name="editor_next_week">Next seven days</string>
+    <string name="editor_no_upcoming">No upcoming times. Check the schedule.</string>
+    <plurals name="editor_more_this_week">
+        <item quantity="one">%d more this week</item>
+        <item quantity="other">%d more this week</item>
+    </plurals>
+    <string name="editor_zone_footer">Clock times follow your current time zone. When the clocks change, the preview uses the next valid time and the first of a repeated time.</string>
+    <string name="editor_save_failed">Couldn’t save</string>
+    <string name="editor_rings_once">Rings once</string>
+    <string name="editor_date">Date</string>
+    <string name="editor_slot_heading">%1$s · %2$s</string>
+    <string name="editor_time">Time</string>
+    <string name="editor_remove_time">Remove time</string>
+    <string name="editor_add_time">Add another time</string>
+    <string name="editor_slots_footer">Each time rings on its own days. Turn Wednesday off for 7:00 without changing noon or 2:00.</string>
+    <string name="editor_window">Time window</string>
+    <string name="editor_start">Start</string>
+    <string name="editor_end">End</string>
+    <string name="editor_interval">Interval in minutes</string>
+    <string name="editor_window_footer">Overnight windows belong to the day they start. The end is included only when an interval lands on it.</string>
+    <string name="editor_use_clock">Use clock</string>
+    <string name="editor_type_time">Type time</string>
+
+    <!-- Alarms and Loops lists -->
+    <string name="routines_add_alarm">Add alarm</string>
+    <string name="routines_add_loop">Add loop</string>
+    <string name="routines_quick_nap">Quick nap</string>
+    <string name="nap_spoken">Nap for %1$s</string>
+    <string name="nap_min_unit">min</string>
+    <string name="routines_custom_nap">Custom nap…</string>
+    <string name="routines_cancel_checks">I’m awake. Cancel wake-up checks</string>
+    <string name="routines_groups">Groups</string>
+    <string name="routines_search">Find a routine or group</string>
+    <string name="routines_no_results_body">Try another name or group.</string>
+    <string name="routines_allow">Allow alarms and reminders</string>
+    <string name="routines_delete_title">Delete this routine?</string>
+    <string name="routines_delete_body">History will stay.</string>
+    <string name="routines_delete">Delete routine</string>
+    <string name="routines_next_alarm">Next alarm</string>
+    <string name="routines_next_loop">Next loop</string>
+    <string name="routines_next_when">%1$s, %2$s</string>
+    <string name="routines_no_alarms">No alarms yet</string>
+    <string name="routines_no_loops">No loops yet</string>
+    <string name="routines_alarms_off">All alarms off</string>
+    <string name="routines_loops_off">All loops off</string>
+    <string name="routines_turn_one_on">Turn one on below, or add another.</string>
+    <string name="routines_alarm_hint">Add a wake-up time and an optional mission.</string>
+    <string name="routines_loop_hint">Several times. Different weekdays. One routine.</string>
+    <string name="template_title">Save a routine template?</string>
+    <string name="template_body">Includes this routine’s name, reason, times and mission phrase or scanned code. History, delivery status and app defaults are excluded. Import from Settings; the new copy starts turned off. Imported audio files are not included.</string>
+    <string name="template_save">Save template</string>
+    <string name="routine_edit">Edit</string>
+    <string name="routine_more_actions">More actions</string>
+    <string name="routine_duplicate">Duplicate</string>
+    <string name="routine_try_mission">Try mission</string>
+    <string name="routine_log_done">Log done</string>
+    <string name="routine_actions_for">Actions for %1$s</string>
+    <string name="routine_save_template">Save routine template</string>
+    <string name="routine_window">%1$s–%2$s</string>
+    <string name="routine_every">Every %1$s</string>
+    <string name="routine_off">Off</string>
+    <string name="routine_time_passed">Time has passed</string>
+    <string name="nap_custom_title">Custom nap</string>
+    <string name="nap_chip">%1$d min</string>
+    <string name="nap_duration">Duration in minutes</string>
+    <string name="nap_rings_at">Rings at</string>
+    <string name="nap_out_of_range">Choose between 1 minute and 12 hours.</string>
+    <string name="nap_start">Start nap</string>
+    <string name="nap_footer">Uses your default sound, snooze and wake-up check. You can edit the nap after starting it.</string>
+</resources>

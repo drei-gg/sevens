@@ -29,9 +29,9 @@ class SoundFiles(
             val name =
                 resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
                     if (it.moveToFirst()) it.getString(0) else null
-                } ?: "Imported sound"
+                } ?: Words.get(R.string.sound_default_name)
             resolver.openInputStream(uri)?.use { import(it, name) }
-                ?: error("This sound could not be opened.")
+                ?: error(Words.get(R.string.sound_open_failed))
         }
 
     internal fun import(input: InputStream, name: String): ImportedSound {
@@ -49,16 +49,18 @@ class SoundFiles(
         val sound =
             ImportedSound(
                 UUID.randomUUID(),
-                String(points, 0, points.size).trim().ifBlank { "Imported sound" },
+                String(points, 0, points.size).trim().ifBlank {
+                    Words.get(R.string.sound_default_name)
+                },
             )
         check(directory.isDirectory || directory.mkdirs()) {
-            "The sound folder could not be created."
+            Words.get(R.string.sound_folder_failed)
         }
         check(
             directory.listFiles().orEmpty().sumOf { it.length() } + prepared.wav.size <=
                 128L * 1024 * 1024
         ) {
-            "Sound storage is full. Close the editor to clear unused imports, then try again."
+            Words.get(R.string.sound_storage_full)
         }
         val atomic = AtomicFile(file(sound))
         val stream = atomic.startWrite()

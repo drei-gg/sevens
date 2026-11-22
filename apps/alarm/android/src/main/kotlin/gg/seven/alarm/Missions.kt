@@ -9,7 +9,6 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -38,6 +39,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,10 +66,23 @@ import kotlinx.coroutines.delay
 @Composable
 fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClose: () -> Unit) {
     val engine = model.engine
+    val res = LocalResources.current
     var feedback by remember { mutableStateOf("") }
     var emergency by remember { mutableStateOf(false) }
     var complete by remember { mutableStateOf(false) }
     val view = LocalView.current
+    // Steps already done in this ringing's mission, saved as they happen so reopening it (after a
+    // call, a mis-swipe or the system ending the app, or a rotation) resumes here. A preview keeps
+    // none. Read from the archive each time the screen is built, so it is never stale.
+    var progress by
+        remember(row?.id) {
+            mutableStateOf(row?.let { engine.progress() ?: missionProgressStart(it) })
+        }
+    fun record(change: (MissionProgress) -> MissionProgress) {
+        val next = progress?.let(change) ?: return
+        progress = next
+        model.run { saveProgress(next) }
+    }
     fun finish() {
         if (row == null) {
             complete = true
@@ -75,7 +91,7 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
             model.run {
                 if (finish(row, EventKind.COMPLETED)) Haptics.confirm(view)
                 else {
-                    feedback = error.value ?: "Couldn’t complete."
+                    feedback = error.value ?: res.getString(R.string.mission_complete_failed)
                     error.value = null
                 }
             }
@@ -95,10 +111,19 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
-                    title = { Text(if (row == null) "Try mission" else "Wake up") },
+                    title = {
+                        Text(
+                            stringResource(
+                                if (row == null) R.string.mission_title_preview
+                                else R.string.mission_title_ringing
+                            )
+                        )
+                    },
                     navigationIcon = {
                         if (row == null)
-                            IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, "Close") }
+                            IconButton(onClick = onClose) {
+                                Icon(Icons.Outlined.Close, stringResource(R.string.common_close))
+                            }
                     },
                     colors =
                         TopAppBarDefaults.topAppBarColors(
@@ -129,7 +154,7 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
                         tint = SevenColors.time,
                     )
                     Text(
-                        if (complete) "Done." else routine.name,
+                        if (complete) stringResource(R.string.mission_done) else routine.name,
                         style = MaterialTheme.typography.headlineMedium,
                         textAlign = TextAlign.Center,
                     )
@@ -145,7 +170,7 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
                             }
                     if (row == null)
                         Text(
-                            "Mission preview. No alarm will ring.",
+                            stringResource(R.string.mission_preview_note),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -155,7 +180,13 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
                         Modifier.widthIn(max = 520.dp).fillMaxWidth(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Mission(routine, onFeedback = { feedback = it }, onComplete = ::finish)
+                        Mission(
+                            routine,
+                            progress,
+                            ::record,
+                            onFeedback = { feedback = it },
+                            onComplete = ::finish,
+                        )
                     }
                     if (feedback.isNotEmpty())
                         Text(
@@ -177,7 +208,9 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
                                 onClick = {
                                     model.run {
                                         if (!finish(row, EventKind.SNOOZED)) {
-                                            feedback = error.value ?: "Couldn’t snooze."
+                                            feedback =
+                                                error.value
+                                                    ?: res.getString(R.string.mission_snooze_failed)
                                             error.value = null
                                         }
                                     }
@@ -191,7 +224,12 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
                                     Modifier.size(ButtonDefaults.IconSize),
                                 )
                                 Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                                Text("Snooze ${ClockFormat.minutes(routine.snoozeMinutes)}")
+                                Text(
+                                    stringResource(
+                                        R.string.mission_snooze,
+                                        ClockFormat.minutes(routine.snoozeMinutes),
+                                    )
+                                )
                             }
                         if (row != null)
                             TextButton(
@@ -202,16 +240,16 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
                                     ),
                                 modifier = Modifier.testTag("emergency-stop"),
                             ) {
-                                Text("Emergency stop")
+                                Text(stringResource(R.string.mission_emergency_stop))
                             }
                     }
-                } else PrimaryButton("Close", onClick = onClose)
+                } else PrimaryButton(stringResource(R.string.common_close), onClick = onClose)
             }
         }
         if (emergency)
             AlertDialog(
                 onDismissRequest = { emergency = false },
-                title = { Text("Stop without completing the mission?") },
+                title = { Text(stringResource(R.string.mission_emergency_title)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -220,7 +258,9 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
                             if (row != null)
                                 model.run {
                                     if (!finish(row, EventKind.EMERGENCY_STOP)) {
-                                        feedback = error.value ?: "Couldn’t stop the alarm."
+                                        feedback =
+                                            error.value
+                                                ?: res.getString(R.string.mission_stop_failed)
                                         error.value = null
                                     }
                                 }
@@ -230,57 +270,97 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
                                 contentColor = MaterialTheme.colorScheme.error
                             ),
                     ) {
-                        Text("Stop alarm")
+                        Text(stringResource(R.string.mission_stop_alarm))
                     }
                 },
-                dismissButton = { TextButton(onClick = { emergency = false }) { Text("Cancel") } },
+                dismissButton = {
+                    TextButton(onClick = { emergency = false }) {
+                        Text(stringResource(R.string.common_cancel))
+                    }
+                },
             )
     }
     // A preview whose routine was opened from the editor closes with it, so the model stays tidy.
     DisposableEffect(Unit) { onDispose { if (row == null) engine.previewMission.value = null } }
 }
 
+/** Saves a step of the ringing's mission (MissionScreen's record); a preview ignores it. */
+private typealias Record = ((MissionProgress) -> MissionProgress) -> Unit
+
 @Composable
-private fun Mission(routine: Routine, onFeedback: (String) -> Unit, onComplete: () -> Unit) {
+private fun Mission(
+    routine: Routine,
+    saved: MissionProgress?,
+    record: Record,
+    onFeedback: (String) -> Unit,
+    onComplete: () -> Unit,
+) {
     when (routine.mission) {
-        MissionKind.NONE -> PrimaryButton("I’m up", Modifier.testTag("im-up"), onClick = onComplete)
-        MissionKind.ARITHMETIC -> ArithmeticMission(routine.mathCount, onFeedback, onComplete)
+        MissionKind.NONE ->
+            PrimaryButton(
+                stringResource(R.string.mission_im_up),
+                Modifier.testTag("im-up"),
+                onClick = onComplete,
+            )
+        MissionKind.ARITHMETIC ->
+            ArithmeticMission(routine.mathCount, saved, record, onFeedback, onComplete)
         MissionKind.TYPING -> TypingMission(routine.phrase, onFeedback, onComplete)
-        MissionKind.CODE -> CodeMission(routine.code, onFeedback, onComplete)
-        MissionKind.MEMORY -> MemoryMission(routine.difficulty, onComplete)
-        MissionKind.SHAKE -> MovementMission(MissionKind.SHAKE, routine.difficulty * 10, onComplete)
-        MissionKind.WALK -> MovementMission(MissionKind.WALK, routine.difficulty * 20, onComplete)
-        MissionKind.NUMBER_ORDER -> NumberOrderMission(routine.difficulty, onComplete)
-        MissionKind.COLOR_WORD -> ColorWordMission(routine.difficulty, onComplete)
+        MissionKind.CODE -> CodeMission(routine.code, saved, record, onFeedback, onComplete)
+        MissionKind.MEMORY -> MemoryMission(routine.difficulty, saved, record, onComplete)
+        MissionKind.SHAKE ->
+            MovementMission(MissionKind.SHAKE, routine.difficulty * 10, saved, record, onComplete)
+        MissionKind.WALK ->
+            MovementMission(MissionKind.WALK, routine.difficulty * 20, saved, record, onComplete)
+        MissionKind.NUMBER_ORDER ->
+            NumberOrderMission(routine.difficulty, saved, record, onComplete)
+        MissionKind.COLOR_WORD -> ColorWordMission(routine.difficulty, saved, record, onComplete)
     }
 }
 
+/** Steps saved before the mission was left, short of the last: reopening never completes it. */
+private fun MissionProgress?.resumed(target: Int) =
+    (this?.solved ?: 0).coerceIn(0, maxOf(0, target - 1))
+
 @Composable
-private fun ArithmeticMission(count: Int, onFeedback: (String) -> Unit, onComplete: () -> Unit) {
+private fun ArithmeticMission(
+    count: Int,
+    saved: MissionProgress?,
+    record: Record,
+    onFeedback: (String) -> Unit,
+    onComplete: () -> Unit,
+) {
+    val res = LocalResources.current
     var challenge by remember { mutableStateOf(newArithmeticChallenge()) }
     var answer by remember { mutableStateOf("") }
-    var solved by remember { mutableIntStateOf(0) }
+    var solved by remember { mutableIntStateOf(saved.resumed(count)) }
     fun check() {
         if (arithmeticAccepts(challenge, answer)) {
             solved += 1
             answer = ""
             onFeedback("")
-            if (solved >= count) onComplete() else challenge = newArithmeticChallenge()
-        } else onFeedback("Try that one again.")
+            if (solved >= count) onComplete()
+            else {
+                val done = solved
+                record { it.copy(solved = done) }
+                challenge = newArithmeticChallenge()
+            }
+        } else onFeedback(res.getString(R.string.mission_try_again))
     }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
         Text(
-            "Question ${solved + 1} of $count",
+            stringResource(R.string.mission_question, solved + 1, count),
             style = MaterialTheme.typography.labelLarge.numeric(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         AnimatedContent(challenge, label = "sum") { c ->
             Text(
-                "${c.left} + ${c.right}",
-                Modifier.semantics { contentDescription = "${c.left} plus ${c.right}" },
+                stringResource(R.string.mission_sum, c.left, c.right),
+                Modifier.semantics {
+                    contentDescription = res.getString(R.string.mission_sum_spoken, c.left, c.right)
+                },
                 style =
                     MaterialTheme.typography.displayLarge
                         .numeric()
@@ -291,7 +371,7 @@ private fun ArithmeticMission(count: Int, onFeedback: (String) -> Unit, onComple
             answer,
             { next -> answer = next.filter { it.isDigit() || it == '-' }.take(6) },
             Modifier.widthIn(max = 240.dp).testTag("mission-answer"),
-            label = { Text("Answer") },
+            label = { Text(stringResource(R.string.mission_answer)) },
             singleLine = true,
             textStyle =
                 MaterialTheme.typography.titleLarge.numeric().copy(textAlign = TextAlign.Center),
@@ -302,12 +382,17 @@ private fun ArithmeticMission(count: Int, onFeedback: (String) -> Unit, onComple
                 ),
             keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { check() }),
         )
-        PrimaryButton("Check answer", Modifier.testTag("check-answer"), onClick = ::check)
+        PrimaryButton(
+            stringResource(R.string.mission_check_answer),
+            Modifier.testTag("check-answer"),
+            onClick = ::check,
+        )
     }
 }
 
 @Composable
 private fun TypingMission(phrase: String, onFeedback: (String) -> Unit, onComplete: () -> Unit) {
+    val res = LocalResources.current
     var answer by remember { mutableStateOf("") }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -318,46 +403,71 @@ private fun TypingMission(phrase: String, onFeedback: (String) -> Unit, onComple
             answer,
             { answer = it },
             Modifier.fillMaxWidth().testTag("mission-phrase"),
-            label = { Text("Type the phrase") },
+            label = { Text(stringResource(R.string.mission_type_phrase)) },
             keyboardOptions =
                 KeyboardOptions(
                     capitalization = KeyboardCapitalization.None,
                     autoCorrectEnabled = false,
                 ),
         )
-        PrimaryButton("Check phrase") {
+        PrimaryButton(stringResource(R.string.mission_check_phrase)) {
             if (missionCheckPhrase(answer, phrase)) onComplete()
-            else onFeedback("The phrase doesn’t match yet.")
+            else onFeedback(res.getString(R.string.mission_phrase_mismatch))
         }
     }
 }
 
 @Composable
-private fun CodeMission(expected: String, onFeedback: (String) -> Unit, onComplete: () -> Unit) {
+private fun CodeMission(
+    expected: String,
+    saved: MissionProgress?,
+    record: Record,
+    onFeedback: (String) -> Unit,
+    onComplete: () -> Unit,
+) {
+    val res = LocalResources.current
     var scanning by remember { mutableStateOf(false) }
+    // Scanned before the mission was left: only recording the completion is left to do.
+    val matched = saved?.matched == true
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
         Icon(
-            Icons.Outlined.QrCodeScanner,
+            if (matched) Icons.Outlined.CheckCircle else Icons.Outlined.QrCodeScanner,
             null,
             Modifier.size(48.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            "Go to your saved code and scan it.",
+            stringResource(
+                if (matched) R.string.mission_code_scanned else R.string.mission_code_prompt
+            ),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
         )
-        PrimaryButton("Scan code", icon = Icons.Outlined.QrCodeScanner) { scanning = true }
+        if (matched)
+            PrimaryButton(
+                stringResource(R.string.mission_finish),
+                Modifier.testTag("finish-mission"),
+                onClick = onComplete,
+            )
+        else
+            PrimaryButton(
+                stringResource(R.string.mission_scan_code),
+                icon = Icons.Outlined.QrCodeScanner,
+            ) {
+                scanning = true
+            }
     }
     if (scanning)
         CodeScanner(onClose = { scanning = false }) { value ->
             scanning = false
             // Compared as data, never opened.
-            if (missionCheckCode(value, expected)) onComplete()
-            else onFeedback("That’s a different code.")
+            if (missionCheckCode(value, expected)) {
+                record { it.copy(matched = true) }
+                onComplete()
+            } else onFeedback(res.getString(R.string.mission_code_mismatch))
         }
 }
 
@@ -375,6 +485,14 @@ private fun MissionTile(
     onClick: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
+    val state =
+        stringResource(
+            when {
+                lit -> R.string.mission_tile_highlighted
+                done -> R.string.mission_tile_completed
+                else -> R.string.mission_tile_ready
+            }
+        )
     FilledTonalButton(
         onClick = onClick,
         enabled = enabled,
@@ -399,7 +517,7 @@ private fun MissionTile(
         modifier =
             modifier.heightIn(min = 68.dp).semantics {
                 contentDescription = label
-                stateDescription = if (lit) "Highlighted" else if (done) "Completed" else "Ready"
+                stateDescription = state
             },
         contentPadding = PaddingValues(8.dp),
     ) {
@@ -420,15 +538,28 @@ private fun TileGrid(count: Int, tile: @Composable RowScope.(Int) -> Unit) {
 }
 
 @Composable
-private fun MemoryMission(level: Int, onComplete: () -> Unit) {
+private fun MemoryMission(
+    level: Int,
+    saved: MissionProgress?,
+    record: Record,
+    onComplete: () -> Unit,
+) {
+    val res = LocalResources.current
+    // A reopened mission replays the tiles it was showing.
+    val kept =
+        saved?.tiles.orEmpty().takeIf { t -> t.size == level + 2 && t.all { it in 0 until 9 } }
     var sequence by remember {
-        mutableStateOf(SequenceChallenge(List(level + 2) { (0 until 9).random() }))
+        mutableStateOf(SequenceChallenge(kept ?: List(level + 2) { (0 until 9).random() }))
     }
     var highlighted by remember { mutableStateOf<Int?>(null) }
     var showing by remember { mutableStateOf(true) }
     var completed by remember { mutableStateOf(false) }
     var replay by remember { mutableIntStateOf(0) }
-    var message by remember { mutableStateOf("Watch the tiles, then repeat the order.") }
+    var message by remember { mutableStateOf(res.getString(R.string.memory_watch)) }
+    LaunchedEffect(Unit) {
+        val tiles = sequence.sequence()
+        if (kept != tiles) record { it.copy(tiles = tiles) }
+    }
     LaunchedEffect(replay) {
         showing = true
         // The core object holds the progress; a replay starts a fresh one on the same tiles.
@@ -436,13 +567,13 @@ private fun MemoryMission(level: Int, onComplete: () -> Unit) {
         delay(600)
         for (tile in sequence.sequence()) {
             highlighted = tile
-            message = "Tile ${tile + 1}"
+            message = res.getString(R.string.memory_tile, tile + 1)
             delay(850)
             highlighted = null
             delay(250)
         }
         showing = false
-        message = "Your turn. Repeat the order."
+        message = res.getString(R.string.memory_your_turn)
     }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -460,15 +591,21 @@ private fun MemoryMission(level: Int, onComplete: () -> Unit) {
                 Modifier.weight(1f).testTag("memory-tile-$tile"),
                 lit = highlighted == tile,
                 enabled = !showing && !completed,
-                label = "Tile ${tile + 1}",
+                label = stringResource(R.string.memory_tile, tile + 1),
             ) {
                 if (sequence.tap(tile)) {
                     if (sequence.complete()) {
                         completed = true
                         onComplete()
-                    } else message = "${sequence.progress()} of ${sequence.sequence().size}"
+                    } else
+                        message =
+                            res.getString(
+                                R.string.mission_count_of,
+                                sequence.progress().toInt(),
+                                sequence.sequence().size,
+                            )
                 } else {
-                    message = "Try that sequence again."
+                    message = res.getString(R.string.memory_try_again)
                     replay += 1
                 }
             }
@@ -476,16 +613,26 @@ private fun MemoryMission(level: Int, onComplete: () -> Unit) {
         TextButton(onClick = { replay += 1 }, enabled = !showing && !completed) {
             Icon(Icons.Outlined.Replay, null, Modifier.size(ButtonDefaults.IconSize))
             Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-            Text("Show sequence again")
+            Text(stringResource(R.string.memory_show_again))
         }
     }
 }
 
 @Composable
-private fun NumberOrderMission(level: Int, onComplete: () -> Unit) {
-    val tiles = remember { (1..(level * 3 + 3)).shuffled() }
-    var next by remember { mutableIntStateOf(1) }
-    var message by remember { mutableStateOf("Tap the numbers from smallest to largest.") }
+private fun NumberOrderMission(
+    level: Int,
+    saved: MissionProgress?,
+    record: Record,
+    onComplete: () -> Unit,
+) {
+    val res = LocalResources.current
+    val count = level * 3 + 3
+    // A reopened mission keeps its board and the numbers already tapped.
+    val kept = saved?.tiles?.takeIf { it.size == count && it.toSet() == (1..count).toSet() }
+    val tiles = remember { kept ?: (1..count).shuffled() }
+    var next by remember { mutableIntStateOf(if (kept != null) saved.resumed(count) + 1 else 1) }
+    var message by remember { mutableStateOf(res.getString(R.string.order_prompt)) }
+    LaunchedEffect(Unit) { if (kept != tiles) record { it.copy(tiles = tiles, solved = 0) } }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Space.m),
@@ -504,13 +651,21 @@ private fun NumberOrderMission(level: Int, onComplete: () -> Unit) {
                 Modifier.weight(1f).testTag("order-$number"),
                 done = done,
                 enabled = !done,
-                label = if (done) "Completed $number" else "Number $number",
+                label =
+                    stringResource(
+                        if (done) R.string.order_completed else R.string.order_number,
+                        number,
+                    ),
             ) {
                 if (number == next) {
                     next += 1
-                    message = "Next: $next"
+                    message = res.getString(R.string.order_next, next)
                     if (next > tiles.size) onComplete()
-                } else message = "Find $next next."
+                    else {
+                        val tapped = next - 1
+                        record { it.copy(solved = tapped) }
+                    }
+                } else message = res.getString(R.string.order_find, next)
             }
         }
     }
@@ -531,26 +686,38 @@ private fun ColorWord.ink(): Color {
     }
 }
 
-private val ColorWord.label: String
-    get() = name.lowercase().replaceFirstChar { it.uppercase() }
+private val ColorWord.label: Int
+    get() =
+        when (this) {
+            ColorWord.RED -> R.string.color_red
+            ColorWord.BLUE -> R.string.color_blue
+            ColorWord.GREEN -> R.string.color_green
+            ColorWord.ORANGE -> R.string.color_orange
+        }
 
 @Composable
-private fun ColorWordMission(level: Int, onComplete: () -> Unit) {
+private fun ColorWordMission(
+    level: Int,
+    saved: MissionProgress?,
+    record: Record,
+    onComplete: () -> Unit,
+) {
+    val res = LocalResources.current
     fun draw(): Pair<ColorWord, ColorWord> {
         val ink = ColorWord.entries.random()
         return ColorWord.entries.filter { it != ink }.random() to ink
     }
-    var round by remember { mutableStateOf(draw()) }
-    var solved by remember { mutableIntStateOf(0) }
-    var message by remember { mutableStateOf("Choose the ink color, not the word.") }
     val target = level + 2
+    var round by remember { mutableStateOf(draw()) }
+    var solved by remember { mutableIntStateOf(saved.resumed(target)) }
+    var message by remember { mutableStateOf(res.getString(R.string.color_prompt)) }
     val (word, ink) = round
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
         Text(
-            "$solved of $target",
+            stringResource(R.string.mission_count_of, solved, target),
             style = MaterialTheme.typography.labelLarge.numeric(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -560,12 +727,11 @@ private fun ColorWordMission(level: Int, onComplete: () -> Unit) {
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
         )
+        val wordLabel = stringResource(word.label)
+        val spoken = stringResource(R.string.color_spoken, wordLabel, stringResource(ink.label))
         Text(
-            word.label.uppercase(),
-            Modifier.semantics {
-                    contentDescription = "The word ${word.label}, printed in ${ink.label}"
-                }
-                .testTag("color-word"),
+            wordLabel.uppercase(LocalLocale.current.platformLocale),
+            Modifier.semantics { contentDescription = spoken }.testTag("color-word"),
             style = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Bold),
             color = ink.ink(),
         )
@@ -578,10 +744,12 @@ private fun ColorWordMission(level: Int, onComplete: () -> Unit) {
                                 solved += 1
                                 if (solved >= target) onComplete()
                                 else {
+                                    val done = solved
+                                    record { it.copy(solved = done) }
                                     round = draw()
-                                    message = "Choose the ink color."
+                                    message = res.getString(R.string.color_next)
                                 }
-                            } else message = "Look at the ink, not the word."
+                            } else message = res.getString(R.string.color_wrong)
                         },
                         enabled = solved < target,
                         modifier =
@@ -589,13 +757,13 @@ private fun ColorWordMission(level: Int, onComplete: () -> Unit) {
                                 .heightIn(min = 48.dp)
                                 .testTag("color-${answer.name}"),
                     ) {
-                        Text(answer.label)
+                        Text(stringResource(answer.label))
                     }
                 }
             }
         }
         Text(
-            "Color vision makes this one difficult? Choose a different mission in your alarm settings.",
+            stringResource(R.string.color_vision_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -608,21 +776,23 @@ private fun ColorWordMission(level: Int, onComplete: () -> Unit) {
  * the app goes to the background (iOS MovementTracker). Shakes come from the linear accelerometer
  * through the core's counter; steps from the step detector.
  */
-private class MovementTracker(context: Context, private val mode: MissionKind) :
+private class MovementTracker(context: Context, private val mode: MissionKind, start: Int) :
     SensorEventListener {
     private val sensors = context.getSystemService(SensorManager::class.java)
     private var counter = ShakeCounter()
     private var baseline: Float? = null
-    var count by mutableIntStateOf(0)
-    var message by mutableStateOf("")
+    /** Counted before this start: an earlier start, or before the mission was left. */
+    private var offset = start
+    var count by mutableIntStateOf(start)
+    @get:androidx.annotation.StringRes var message by mutableStateOf<Int?>(null)
     var running by mutableStateOf(false)
 
     fun start() {
         stop()
         counter = ShakeCounter()
         baseline = null
-        count = 0
-        message = ""
+        offset = count
+        message = null
         val sensor =
             if (mode == MissionKind.WALK)
                 sensors?.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
@@ -630,8 +800,8 @@ private class MovementTracker(context: Context, private val mode: MissionKind) :
             else sensors?.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
         if (sensor == null) {
             message =
-                if (mode == MissionKind.WALK) "Step counting is unavailable on this device."
-                else "Motion sensing is unavailable on this device."
+                if (mode == MissionKind.WALK) R.string.movement_unavailable_steps
+                else R.string.movement_unavailable_motion
             return
         }
         running =
@@ -641,7 +811,7 @@ private class MovementTracker(context: Context, private val mode: MissionKind) :
                 if (mode == MissionKind.WALK) SensorManager.SENSOR_DELAY_NORMAL
                 else SensorManager.SENSOR_DELAY_GAME,
             )
-        if (!running) message = "Motion sensing is unavailable on this device."
+        if (!running) message = R.string.movement_unavailable_motion
     }
 
     fun stop() {
@@ -656,7 +826,7 @@ private class MovementTracker(context: Context, private val mode: MissionKind) :
             Sensor.TYPE_STEP_COUNTER -> {
                 val total = event.values[0]
                 val start = baseline ?: total.also { baseline = it }
-                count = (total - start).toInt()
+                count = offset + (total - start).toInt()
             }
             else -> {
                 // The core counts in g, as iOS's userAcceleration is.
@@ -665,7 +835,7 @@ private class MovementTracker(context: Context, private val mode: MissionKind) :
                     sqrt((x * x + y * y + z * z).toDouble()) / SensorManager.GRAVITY_EARTH,
                     event.timestamp / 1e9,
                 )
-                count = counter.count().toInt()
+                count = offset + counter.count().toInt()
             }
         }
     }
@@ -674,19 +844,37 @@ private class MovementTracker(context: Context, private val mode: MissionKind) :
 }
 
 @Composable
-private fun MovementMission(mode: MissionKind, target: Int, onComplete: () -> Unit) {
+private fun MovementMission(
+    mode: MissionKind,
+    target: Int,
+    saved: MissionProgress?,
+    record: Record,
+    onComplete: () -> Unit,
+) {
     val context = LocalContext.current
-    val tracker = remember { MovementTracker(context, mode) }
+    val tracker = remember { MovementTracker(context, mode, saved.resumed(target)) }
     var finished by remember { mutableStateOf(false) }
+    var savedCount by remember { mutableIntStateOf(saved.resumed(target)) }
+    // The count is saved every few, and on leaving, rather than on every step.
+    fun save(force: Boolean = false) {
+        val count = minOf(tracker.count, target)
+        if (finished || count == savedCount || (!force && count - savedCount < 5)) return
+        savedCount = count
+        record { it.copy(solved = count) }
+    }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_PAUSE) tracker.stop()
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                tracker.stop()
+                save(force = true)
+            }
         }
         lifecycle.addObserver(observer)
         onDispose {
             lifecycle.removeObserver(observer)
             tracker.stop()
+            save(force = true)
         }
     }
     LaunchedEffect(tracker.count) {
@@ -694,13 +882,20 @@ private fun MovementMission(mode: MissionKind, target: Int, onComplete: () -> Un
             finished = true
             tracker.stop()
             onComplete()
-        }
+        } else save()
     }
     val permission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) tracker.start()
-            else tracker.message = "Allow physical activity in Settings to count steps."
+            if (granted) tracker.start() else tracker.message = R.string.movement_allow_activity
         }
+    val spoken =
+        pluralStringResource(
+            if (mode == MissionKind.WALK) R.plurals.movement_steps_spoken
+            else R.plurals.movement_shakes_spoken,
+            target,
+            minOf(tracker.count, target),
+            target,
+        )
     val shown = minOf(tracker.count, target)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -714,11 +909,7 @@ private fun MovementMission(mode: MissionKind, target: Int, onComplete: () -> Un
             tint = SevenColors.time,
         )
         Row(
-            Modifier.clearAndSetSemantics {
-                contentDescription =
-                    if (mode == MissionKind.WALK) "$shown of $target steps"
-                    else "$shown of $target shakes"
-            },
+            Modifier.clearAndSetSemantics { contentDescription = spoken },
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(Space.xs),
         ) {
@@ -731,7 +922,10 @@ private fun MovementMission(mode: MissionKind, target: Int, onComplete: () -> Un
                             .copy(fontWeight = FontWeight.Bold),
                 )
             }
-            Text("/ $target", style = MaterialTheme.typography.titleLarge.numeric())
+            Text(
+                stringResource(R.string.movement_of_target, target),
+                style = MaterialTheme.typography.titleLarge.numeric(),
+            )
         }
         LinearProgressIndicator(
             progress = { shown / target.toFloat() },
@@ -739,27 +933,28 @@ private fun MovementMission(mode: MissionKind, target: Int, onComplete: () -> Un
             color = SevenColors.time,
         )
         Text(
-            if (mode == MissionKind.WALK)
-                "Take a short walk with your phone. Only steps after you start count."
-            else "Hold your phone securely and shake it back and forth.",
+            stringResource(
+                if (mode == MissionKind.WALK) R.string.movement_walk_hint
+                else R.string.movement_shake_hint
+            ),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
         )
-        if (tracker.message.isNotEmpty())
+        tracker.message?.let {
             Text(
-                tracker.message,
+                stringResource(it),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
         if (!tracker.running && !finished)
             PrimaryButton(
-                "Start challenge",
+                stringResource(R.string.movement_start),
                 Modifier.testTag("start-challenge"),
                 icon = Icons.Outlined.PlayArrow,
             ) {
                 if (
                     mode == MissionKind.WALK &&
-                        Build.VERSION.SDK_INT >= 29 &&
                         context.checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION) !=
                             PackageManager.PERMISSION_GRANTED
                 )
@@ -767,7 +962,7 @@ private fun MovementMission(mode: MissionKind, target: Int, onComplete: () -> Un
                 else tracker.start()
             }
         Text(
-            "Motion stays on this phone and stops when you leave this challenge.",
+            stringResource(R.string.movement_privacy),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

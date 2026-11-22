@@ -92,7 +92,7 @@ object ClockFormat {
     /** "in 14 hr, 46 min", rounded down to the minute. */
     fun countdown(to: Instant, from: Instant): String {
         val seconds = ChronoUnit.SECONDS.between(from, to)
-        if (seconds < 60) return "in less than a minute"
+        if (seconds < 60) return Words.get(R.string.countdown_soon)
         var minutes = seconds / 60
         val days = minutes / 1440
         minutes -= days * 1440
@@ -101,7 +101,7 @@ object ClockFormat {
         val all = listOf(days to MeasureUnit.DAY, hours to MeasureUnit.HOUR, minutes to MeasureUnit.MINUTE)
         val shown = all.dropWhile { it.first == 0L }.take(2).filter { it.first > 0 }
         val text = MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.SHORT).formatMeasures(*shown.map { Measure(it.first, it.second) }.toTypedArray())
-        return "in $text"
+        return Words.get(R.string.countdown_in, text)
     }
 
     /** "Today", "Tomorrow" or the weekday, for the day an alarm rings. */
@@ -110,8 +110,8 @@ object ClockFormat {
         val date = at.atZone(zone).toLocalDate()
         val today = from.atZone(zone).toLocalDate()
         return when {
-            date == today -> "Today"
-            date == today.plusDays(1) -> "Tomorrow"
+            date == today -> Words.get(R.string.day_today)
+            date == today.plusDays(1) -> Words.get(R.string.day_tomorrow)
             ChronoUnit.SECONDS.between(from, at) < 6 * 86_400 -> date.dayOfWeek.getDisplayName(DayStyle.FULL, locale)
             else -> at.atZone(zone).format(DateTimeFormatter.ofPattern(android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEMMMd"), locale))
         }
@@ -178,9 +178,9 @@ object WeekOrder {
     fun spoken(days: List<Int>): String {
         val set = days.toSet()
         return when {
-            set.size == 7 -> "Every day"
-            set == setOf(2, 3, 4, 5, 6) -> "Weekdays"
-            set == setOf(1, 7) -> "Weekends"
+            set.size == 7 -> Words.get(R.string.days_every)
+            set == setOf(2, 3, 4, 5, 6) -> Words.get(R.string.days_weekdays)
+            set == setOf(1, 7) -> Words.get(R.string.days_weekends)
             else -> {
                 val names = WeekOrder.days.filter { it in set }.map(::name)
                 android.icu.text.ListFormatter.getInstance(Locale.getDefault()).format(names)
@@ -276,17 +276,19 @@ private fun fraction(at: Instant): Double {
 
 val MissionKind.title: String
     get() =
-        when (this) {
-            MissionKind.NONE -> "None"
-            MissionKind.ARITHMETIC -> "Arithmetic"
-            MissionKind.TYPING -> "Type a phrase"
-            MissionKind.CODE -> "Scan a code"
-            MissionKind.MEMORY -> "Memory tiles"
-            MissionKind.SHAKE -> "Shake"
-            MissionKind.WALK -> "Walk"
-            MissionKind.NUMBER_ORDER -> "Number order"
-            MissionKind.COLOR_WORD -> "Color clash"
-        }
+        Words.get(
+            when (this) {
+                MissionKind.NONE -> R.string.mission_none
+                MissionKind.ARITHMETIC -> R.string.mission_arithmetic
+                MissionKind.TYPING -> R.string.mission_typing
+                MissionKind.CODE -> R.string.mission_code
+                MissionKind.MEMORY -> R.string.mission_memory
+                MissionKind.SHAKE -> R.string.mission_shake
+                MissionKind.WALK -> R.string.mission_walk
+                MissionKind.NUMBER_ORDER -> R.string.mission_number_order
+                MissionKind.COLOR_WORD -> R.string.mission_color_word
+            }
+        )
 
 val MissionKind.icon: ImageVector
     get() =
@@ -304,14 +306,16 @@ val MissionKind.icon: ImageVector
 
 val EventKind.title: String
     get() =
-        when (this) {
-            EventKind.COMPLETED -> "Mission completed"
-            EventKind.DISMISSED -> "System dismissal"
-            EventKind.SNOOZED -> "Snoozed"
-            EventKind.EMERGENCY_STOP -> "Emergency stop"
-            EventKind.MANUAL -> "Manual check-in"
-            EventKind.FOLLOW_UP_SCHEDULED -> "Wake-up check scheduled"
-        }
+        Words.get(
+            when (this) {
+                EventKind.COMPLETED -> R.string.event_completed
+                EventKind.DISMISSED -> R.string.event_dismissed
+                EventKind.SNOOZED -> R.string.event_snoozed
+                EventKind.EMERGENCY_STOP -> R.string.event_emergency_stop
+                EventKind.MANUAL -> R.string.event_manual
+                EventKind.FOLLOW_UP_SCHEDULED -> R.string.event_follow_up
+            }
+        )
 
 val EventKind.icon: ImageVector
     get() =
@@ -326,12 +330,14 @@ val EventKind.icon: ImageVector
 
 val AlarmTone.title: String
     get() =
-        when (this) {
-            AlarmTone.SYSTEM -> "System default"
-            AlarmTone.CHIME -> "Soft chime"
-            AlarmTone.PULSE -> "Pulse"
-            AlarmTone.BRIGHT -> "Bright bells"
-        }
+        Words.get(
+            when (this) {
+                AlarmTone.SYSTEM -> R.string.tone_system
+                AlarmTone.CHIME -> R.string.tone_chime
+                AlarmTone.PULSE -> R.string.tone_pulse
+                AlarmTone.BRIGHT -> R.string.tone_bright
+            }
+        )
 
 /** The next time this routine rings or reminds, if it is on. */
 fun Routine.next(after: Instant): Instant? {

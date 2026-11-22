@@ -27,7 +27,7 @@ class AlarmEngine(
     val ready: StateFlow<Boolean> = _ready.asStateFlow()
     val loadError = MutableStateFlow<String?>(null)
     val error = MutableStateFlow<String?>(null)
-    val scheduling = MutableStateFlow("Checking alarm registrations…")
+    val scheduling = MutableStateFlow(Words.get(R.string.scheduling_checking))
     val busy = MutableStateFlow(false)
 
     /**
@@ -61,8 +61,7 @@ class AlarmEngine(
         } catch (_: Exception) {
             // An unprojectable schedule must not leave a previously checked widget looking current.
             runCatching { widgetSink(null) }
-            widgetError.value =
-                "The Home Screen widget could not refresh. Open the app for the latest schedule."
+            widgetError.value = Words.get(R.string.widget_refresh_failed)
         }
     }
 
@@ -121,8 +120,7 @@ class AlarmEngine(
 
     suspend fun save(routine: Routine, paid: Boolean): Boolean {
         if (!paid) {
-            error.value =
-                "Start the trial or unlock in Settings to create or edit schedules. Existing enabled alarms keep running."
+            error.value = Words.get(R.string.error_trial_edit)
             return false
         }
         return exclusive {
@@ -145,7 +143,7 @@ class AlarmEngine(
 
     suspend fun toggle(routine: Routine, enabled: Boolean, paid: Boolean) {
         if (enabled && !paid) {
-            error.value = "Unlock to re-enable this routine. Existing enabled alarms keep running."
+            error.value = Words.get(R.string.error_trial_reenable)
             return
         }
         mutate { a ->
@@ -189,7 +187,7 @@ class AlarmEngine(
 
     suspend fun toggleGroup(name: String, enabled: Boolean, paid: Boolean) {
         if (enabled && !paid) {
-            error.value = "Unlock to re-enable routines."
+            error.value = Words.get(R.string.error_trial_reenable_group)
             return
         }
         mutate { a ->
@@ -249,18 +247,17 @@ class AlarmEngine(
                     if (!rearm && old == row && driver.isLive(row)) continue
                     try {
                         if (old == null)
-                            mutateOrThrow("Could not save alarm receipt.") {
+                            mutateOrThrow(Words.get(R.string.error_save_receipt)) {
                                 it.copy(installed = it.installed + row)
                             }
                         driver.schedule(row)
-                        mutateOrThrow(
-                            "Alarm scheduled, but its receipt could not be updated. Retry before relying on it."
-                        ) { a ->
+                        mutateOrThrow(Words.get(R.string.error_update_receipt)) { a ->
                             a.copy(installed = a.installed.filter { it.id != row.id } + row)
                         }
                     } catch (e: Exception) {
                         unverified += row.id
-                        failures += "${row.routine.name}: ${e.sentence}"
+                        failures +=
+                            Words.get(R.string.scheduling_failure, row.routine.name, e.sentence)
                     }
                 }
                 val wanted = desired.mapTo(HashSet()) { it.id }
@@ -279,7 +276,12 @@ class AlarmEngine(
                                 a.copy(installed = a.installed.filter { it.id != row.id })
                             }
                         } catch (e: Exception) {
-                            failures += "Could not remove ${row.routine.name}: ${e.sentence}"
+                            failures +=
+                                Words.get(
+                                    R.string.scheduling_remove_failed,
+                                    row.routine.name,
+                                    e.sentence,
+                                )
                         }
                     }
                 publishVerifiedWidget(unverified)
@@ -287,7 +289,12 @@ class AlarmEngine(
                     when {
                         failures.isNotEmpty() -> failures.joinToString("\n")
                         isPreview -> driver.status
-                        else -> "${timesRegistered(desired.size)} ${driver.status}."
+                        else ->
+                            Words.get(
+                                R.string.scheduling_summary,
+                                timesRegistered(desired.size),
+                                driver.status,
+                            )
                     }
             } catch (e: Exception) {
                 scheduling.value = e.sentence
@@ -301,14 +308,30 @@ class AlarmEngine(
         reload()
         var row =
             archive.value.installed.firstOrNull { it.id == id }
-                ?: throw LoopFailure("The alarm is no longer in your saved schedule.")
+                ?: throw LoopFailure(Words.get(R.string.error_alarm_gone))
         archive.value.pending?.takeIf { it.id == row.id }?.let { row = it }
         // Each ringing is its own occurrence, so snoozes and checks from different days never share
         // IDs.
         if (row.occurrenceId == null) row = row.copy(occurrenceId = UUID.randomUUID())
         val opened = row
-        mutateOrThrow("Could not save the active mission.") { it.copy(pending = opened) }
+        // Progress of the same ringing survives reopening; any other mission's is superseded.
+        mutateOrThrow(Words.get(R.string.error_save_mission)) { archiveOpenMission(it, opened) }
         mission.value = opened
+    }
+
+    /**
+     * What the person had already done in the pending mission, for reopening it (the core's
+     * `mission_progress`); null when it belongs to another ringing.
+     */
+    fun progress(): MissionProgress? = missionProgress(archive.value)
+
+    /**
+     * Saves progress inside the pending mission. Best effort and quiet: the mission still finishes
+     * through its own check, and progress for a mission that has already ended is ignored.
+     */
+    suspend fun saveProgress(progress: MissionProgress) {
+        if (archiveWithProgress(archive.value, progress) == archive.value) return
+        runCatching { _archive.value = repository.change { archiveWithProgress(it, progress) } }
     }
 
     /**
@@ -322,8 +345,9 @@ class AlarmEngine(
         if (row.purpose == TEST) {
             // The Settings test is not a routine: no record, no wake-up check.
             val rowId = row.id
-            mutateOrThrow("Could not stop the test alarm.") { a ->
-                a.copy(pending = a.pending.takeUnless { it?.id == rowId })
+            val stopped = row
+            mutateOrThrow(Words.get(R.string.error_stop_test)) { a ->
+                archiveEndMission(a, stopped, EventKind.DISMISSED)
             }
             if (mission.value?.id == rowId) mission.value = null
             return
@@ -334,11 +358,13 @@ class AlarmEngine(
                 row.routine,
                 EventKind.DISMISSED,
                 Instant.now(),
-                "Stopped with the system control; mission completion is unconfirmed.",
+                Words.get(R.string.history_note_system_stop),
             )
         val rowId = row.id
-        mutateOrThrow("Could not record dismissal.") { a ->
-            a.copy(events = a.events + event, pending = a.pending.takeUnless { it?.id == rowId })
+        val stopped = row
+        // The system Stop ends this ringing: its pending mission and progress go.
+        mutateOrThrow(Words.get(R.string.error_record_dismissal)) { a ->
+            archiveEndMission(a.copy(events = a.events + event), stopped, EventKind.DISMISSED)
         }
         if (mission.value?.id == rowId) mission.value = null
         if (row.purpose != "followUp" && row.routine.followUpMinutes > 0)
@@ -347,7 +373,7 @@ class AlarmEngine(
 
     suspend fun extra(row: Registration, minutes: Int, purpose: String) {
         val extra = followOnRegistration(row, minutes, purpose, Instant.now())
-        mutateOrThrow("Could not save follow-up alarm.") { a ->
+        mutateOrThrow(Words.get(R.string.error_save_follow_up)) { a ->
             a.copy(installed = a.installed.filter { it.id != extra.id } + extra)
         }
         try {
@@ -367,7 +393,7 @@ class AlarmEngine(
                 val record = row.purpose != TEST
                 if (kind == EventKind.SNOOZED) {
                     if (row.snoozes >= row.routine.snoozeLimit)
-                        throw LoopFailure("Snooze limit reached.")
+                        throw LoopFailure(Words.get(R.string.error_snooze_limit))
                     extra(row, row.routine.snoozeMinutes, "snooze")
                 } else if (
                     record &&
@@ -392,9 +418,15 @@ class AlarmEngine(
                 }
                 driver.stop(row)
                 val event = newLoopEvent(row.routine, kind, Instant.now(), "")
+                // Completing or an emergency stop clears the mission's progress; a snooze keeps it
+                // for the snooze, which belongs to the same ringing.
                 if (
                     !mutate { a ->
-                        a.copy(events = if (record) a.events + event else a.events, pending = null)
+                        archiveEndMission(
+                            a.copy(events = if (record) a.events + event else a.events),
+                            row,
+                            kind,
+                        )
                     }
                 )
                     return@exclusive false
@@ -421,7 +453,7 @@ class AlarmEngine(
             val routine =
                 newRoutine()
                     .copy(
-                        name = "Test alarm",
+                        name = Words.get(R.string.test_alarm_name),
                         timing = Timing.ONCE,
                         once = Instant.now().plusSeconds(10),
                         snoozeLimit = 0,
@@ -432,7 +464,7 @@ class AlarmEngine(
                     .copy(date = routine.once, purpose = TEST)
             if (!mutate { it.copy(installed = it.installed + row) }) return
             driver.schedule(row)
-            scheduling.value = "Test alarm scheduled for 10 seconds from now."
+            scheduling.value = Words.get(R.string.scheduling_test_scheduled)
         } catch (e: Exception) {
             error.value = e.sentence
         }
@@ -449,6 +481,6 @@ class AlarmEngine(
         const val TEST = "test"
 
         fun timesRegistered(count: Int) =
-            if (count == 1) "1 alarm time registered." else "$count alarm times registered."
+            Words.plural(R.plurals.scheduling_times_registered, count, count)
     }
 }
