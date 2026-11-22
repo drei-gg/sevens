@@ -12,12 +12,26 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import gg.seven.kit.*
 import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity() {
     private val model: BloomModel by viewModels()
     private lateinit var authentication: BiometricPrompt
+
+    /**
+     * Registered on the Activity, not in the composition the lock removes, so the picker's answer
+     * still arrives while the journal is locked or after recreation.
+     */
+    private val createDocument =
+        registerForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.CreateDocument(
+                "application/octet-stream"
+            )
+        ) {
+            model.picked(it)
+        }
     private val authenticators: Int
         get() =
             (if (android.os.Build.VERSION.SDK_INT >= 30)
@@ -55,6 +69,20 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         protectWindow(model.appLock.enabled.value)
         lifecycleScope.launch { model.appLock.enabled.collect(::protectWindow) }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Requests made just before the journal locked are dropped, never shown over it.
+                launch {
+                    for (name in model.launches)
+                        if (model.appLock.locked.value) model.picked(null)
+                        else createDocument.launch(name)
+                }
+                launch {
+                    for (intent in model.intents)
+                        if (!model.appLock.locked.value) startActivity(intent)
+                }
+            }
+        }
         setContent {
             val locked by model.appLock.locked.collectAsStateWithLifecycle()
             SevenTheme {

@@ -5,6 +5,8 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import gg.seven.bloom.core.*
@@ -12,6 +14,10 @@ import gg.seven.flavor.sevenPurchases
 import gg.seven.kit.SevenStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.drop
@@ -44,6 +50,29 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
     val busy = MutableStateFlow(false)
     val preview = MutableStateFlow<String?>(null)
     val healthPreview = MutableStateFlow<String?>(null)
+    /** The open editor's draft. Snapshot state in memory: never in a saved-state Bundle. */
+    internal var editor by mutableStateOf<EditorDraft?>(null)
+
+    private val exportMarker =
+        object : ExportMarker {
+            private val prefs =
+                app.getSharedPreferences("bloom-exports", android.content.Context.MODE_PRIVATE)
+
+            override fun read(): String? = prefs.getString("writing", null)
+
+            override fun write(uri: String?) {
+                // Synchronous: the record must be on disk before the write it guards begins.
+                prefs.edit(commit = true) {
+                    if (uri == null) remove("writing") else putString("writing", uri)
+                }
+            }
+        }
+    internal val exports = ExportFlow(exportMarker)
+    /** File names for the Activity's document picker, collected only while it is started. */
+    internal val launches = Channel<String>(Channel.BUFFERED)
+    /** Share sheets for the Activity to start, collected only while it is started. */
+    internal val intents = Channel<Intent>(Channel.BUFFERED)
+
     val healthNote =
         MutableStateFlow(
             "Nothing is shared automatically. Choose a direction to request its permission."
@@ -56,6 +85,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
             preview.value = null
             report.value = null
             error.value = null
+            editor = null
         }
     }
 
@@ -64,6 +94,8 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
     init {
         BloomReminders.maintain(app)
         run { reload() }
+        // A document whose write never finished (the process died) is removed on the next start.
+        viewModelScope.launch { finish(exports.recover()) }
         viewModelScope.launch {
             repository.changes.drop(1).collect {
                 try { reload() } catch (cancel: CancellationException) { throw cancel }
@@ -122,6 +154,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
     fun erase() = run {
         repository.erase()
         report.value = null
+        editor = null
         withContext(Dispatchers.IO) {
             java.io.File(getApplication<Application>().cacheDir, "reports").deleteRecursively()
         }
@@ -186,18 +219,89 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
             withContext(Dispatchers.Default) { bloomReport(archive, from, to, contacts, notes) }
     }
 
-    fun exportReport(uri: Uri, kind: String) = run {
-        val text = report.value
-        if (text == null) {
-            deleteDocument(uri)
-            error.value = "Preview the report again, then save it."
-            return@run
+    /** Prepares the reviewed report's bytes, then asks the Activity to open the picker. */
+    fun exportReport(kind: String) = run {
+        val text = report.value ?: return@run
+        val bytes = withContext(Dispatchers.Default) { reportBytes(text, kind) }
+        launches.send(exports.prepare(PendingExport("cycle-report.$kind", bytes)))
+    }
+
+    /**
+     * The picker's answer, delivered at Activity level so it arrives even while the journal is
+     * locked or after recreation. The bytes were prepared while the journal was open, so the write
+     * reads no locked state and shows nothing; it completes now rather than waiting for an unlock
+     * that may never come.
+     */
+    fun picked(uri: Uri?) {
+        val step = exports.picked(uri?.toString())
+        if (uri != null) retain(uri)
+        if (step == ExportFlow.Step.None) return
+        viewModelScope.launch {
+            busy.value = true
+            try {
+                finish(step)
+            } catch (cancel: CancellationException) {
+                throw cancel
+            } catch (failure: Exception) {
+                error.value = failure.sentence
+            } finally {
+                busy.value = false
+            }
         }
-        writeDocument(uri) { stream -> writeReport(stream, text, kind) }
+    }
+
+    private suspend fun finish(step: ExportFlow.Step) {
+        when (step) {
+            ExportFlow.Step.None -> Unit
+            is ExportFlow.Step.Write -> {
+                val uri = step.uri.toUri()
+                try {
+                    writeDocument(uri) { it.write(step.bytes) }
+                } finally {
+                    release(uri)
+                    exports.finished(step.uri)
+                }
+            }
+            is ExportFlow.Step.Discard -> {
+                val uri = step.uri.toUri()
+                deleteDocument(uri)
+                release(uri)
+                exports.finished(step.uri)
+                if (step.interrupted)
+                    error.value = "The export was interrupted, so nothing was saved. Try again."
+            }
+        }
+    }
+
+    /** Keeps access to the picked document across process death until it is written or deleted. */
+    private fun retain(uri: Uri) {
+        try {
+            getApplication<Application>()
+                .contentResolver
+                .takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+        } catch (_: Exception) {
+            /* Not every provider offers persistable access; the current grant still applies. */
+        }
+    }
+
+    private fun release(uri: Uri) {
+        try {
+            getApplication<Application>()
+                .contentResolver
+                .releasePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+        } catch (_: Exception) {
+            /* Nothing was retained. */
+        }
     }
 
     /** Shares the reviewed report: text directly, a PDF through this app's file provider. */
-    fun shareReport(kind: String, launch: (Intent) -> Unit) = run {
+    fun shareReport(kind: String) = run {
         val text = report.value ?: return@run
         val send =
             if (kind == "pdf") {
@@ -207,7 +311,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
                         folder.deleteRecursively()
                         folder.mkdirs()
                         java.io.File(folder, "cycle-report.pdf").also { file ->
-                            file.outputStream().use { writeReport(it, text, "pdf") }
+                            file.writeBytes(reportBytes(text, "pdf"))
                         }
                     }
                 val uri =
@@ -223,7 +327,7 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
                     .apply { clipData = android.content.ClipData.newRawUri(null, uri) }
             } else
                 Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
-        launch(Intent.createChooser(send, "Share report"))
+        intents.send(Intent.createChooser(send, "Share report"))
     }
 
     /** Doses scheduled on a calendar day, from the Rust dashboard evaluated at that day's noon. */
@@ -261,25 +365,33 @@ class BloomModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun exportFile(uri: Uri, kind: String, password: String, contacts: Boolean, notes: Boolean) =
-        run {
-            val bytes =
-                try {
-                    val json = repository.read()
-                    withContext(Dispatchers.Default) {
-                        when (kind) {
-                            "age" -> bloomSeal(json, password)
-                            "csv" -> bloomCsv(json, contacts, notes).toByteArray()
-                            else -> json.toByteArray()
-                        }
-                    }
-                } catch (failure: Exception) {
-                    deleteDocument(uri)
-                    throw failure
+    /**
+     * Prepares an export before the picker opens. Sealing first means a short passphrase fails
+     * before any file exists, and the passphrase is not kept while the picker is open.
+     */
+    fun exportFile(kind: String, password: String, contacts: Boolean, notes: Boolean) = run {
+        val json = repository.read()
+        val bytes =
+            withContext(Dispatchers.Default) {
+                when (kind) {
+                    "age" -> bloomSeal(json, password)
+                    "csv" -> bloomCsv(json, contacts, notes).toByteArray()
+                    else -> json.toByteArray()
                 }
-            writeDocument(uri) { it.write(bytes) }
-        }
+            }
+        launches.send(exports.prepare(PendingExport("bloom-${java.time.LocalDate.now()}.$kind", bytes)))
+    }
 }
+
+internal data class EditorDraft(
+    val kind: String,
+    val text: String,
+    val original: String,
+    val revision: Long,
+)
+
+internal fun reportBytes(text: String, kind: String): ByteArray =
+    java.io.ByteArrayOutputStream().also { writeReport(it, text, kind) }.toByteArray()
 
 /** Plain text, or an A4 PDF paginated from the same reviewed text. */
 private fun writeReport(stream: java.io.OutputStream, text: String, kind: String) {

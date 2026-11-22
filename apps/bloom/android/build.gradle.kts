@@ -18,6 +18,7 @@ dependencies {
     // Reminders, wakes and boot/clock recovery, shared with Alarm and Fast.
     "implementation"(project(":sevenschedule"))
     "implementation"("androidx.work:work-runtime-ktx:2.11.0")
+    "testImplementation"("junit:junit:4.13.2")
 }
 
 // Google Play services transport is confined to personal/store phone builds.

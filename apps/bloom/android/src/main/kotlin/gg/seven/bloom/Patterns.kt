@@ -1,14 +1,11 @@
 package gg.seven.bloom
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
@@ -224,14 +221,6 @@ private fun ReportPanel(model: BloomModel) {
     // saved-state Bundle; only the chosen format survives recreation.
     val preview by model.report.collectAsStateWithLifecycle()
     val busy by model.busy.collectAsStateWithLifecycle()
-    var kind by rememberSaveable { mutableStateOf("pdf") }
-    val context = LocalContext.current
-    val create =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("application/octet-stream")
-        ) { uri ->
-            if (uri != null) model.exportReport(uri, kind)
-        }
     fun changed() {
         model.report.value = null
     }
@@ -269,7 +258,7 @@ private fun ReportPanel(model: BloomModel) {
                 listOf("pdf" to "PDF", "txt" to "text").forEach { (format, label) ->
                     FilledTonalButton(
                         enabled = !busy,
-                        onClick = { model.shareReport(format) { context.startActivity(it) } },
+                        onClick = { model.shareReport(format) },
                     ) {
                         Text("Share $label")
                     }
@@ -277,10 +266,7 @@ private fun ReportPanel(model: BloomModel) {
                 listOf("pdf" to "PDF", "txt" to "text").forEach { (format, label) ->
                     TextButton(
                         enabled = !busy,
-                        onClick = {
-                            kind = format
-                            create.launch("cycle-report.$format")
-                        },
+                        onClick = { model.exportReport(format) },
                     ) {
                         Text("Save $label")
                     }

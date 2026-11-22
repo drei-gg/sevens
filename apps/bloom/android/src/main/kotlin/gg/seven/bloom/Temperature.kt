@@ -3,7 +3,7 @@ package gg.seven.bloom
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.text.util.LocalePreferences
 import gg.seven.bloom.core.bloomTemperatureCelsius
@@ -60,8 +60,9 @@ internal object BloomTemperature {
  */
 @Composable
 internal fun TemperatureField(label: String, row: JSONObject, key: String, change: (String) -> Unit) {
+    // In memory only; after recreation the field is rebuilt from the draft's stored value.
     var text by
-        rememberSaveable(row.optString("id"), row.optString("kind")) {
+        remember(row.optString("id"), row.optString("kind")) {
             mutableStateOf(
                 when (val value = row.opt(key)) {
                     is Number -> BloomTemperature.number(value.toDouble())

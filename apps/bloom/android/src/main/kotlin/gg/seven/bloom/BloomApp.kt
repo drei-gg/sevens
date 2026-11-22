@@ -43,28 +43,30 @@ fun BloomApp(model: BloomModel) {
     val busy by model.busy.collectAsStateWithLifecycle()
     val preview by model.preview.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    var editor by rememberSaveable { mutableStateOf<String?>(null) }
-    var draft by rememberSaveable { mutableStateOf("") }
-    var originalDraft by rememberSaveable { mutableStateOf("") }
-    var discarding by rememberSaveable { mutableStateOf(false) }
-    var revision by rememberSaveable { mutableLongStateOf(0) }
+    // Drafts can hold private notes: they live in the ViewModel, never the saved-state Bundle, and
+    // close on lock and erase. Process death discards an unsaved draft.
+    val open = model.editor
+    val editor = open?.kind
+    val draft = open?.text ?: ""
+    var discarding by remember { mutableStateOf(false) }
     var remove by rememberSaveable { mutableStateOf<String?>(null) }
     var guides by rememberSaveable { mutableStateOf(false) }
     val archive = remember(archiveText) { archiveText?.let(::JSONObject) }
     val dashboard = remember(dashboardText) { dashboardText?.let(::JSONObject) }
     fun closeEditor() {
         if (!busy) {
-            if (draft != originalDraft) discarding = true else editor = null
+            if (open != null && open.text != open.original) discarding = true
+            else model.editor = null
         }
     }
     BackHandler(enabled = editor != null) { closeEditor() }
     BackHandler(enabled = editor == null && guides) { guides = false }
-    if (discarding)
+    if (discarding && editor != null)
         gg.seven.kit.DiscardChangesDialog(
             { discarding = false },
             {
                 discarding = false
-                editor = null
+                model.editor = null
             },
         )
     val gate = LocalSevenGate.current
@@ -76,11 +78,9 @@ fun BloomApp(model: BloomModel) {
         }
     }
     fun edit(kind: String, row: JSONObject?) {
-        val open = {
-            draft = (row ?: newRecord(kind)).toString()
-            originalDraft = draft
-            revision = archive!!.getLong("revision")
-            editor = kind
+        val start = {
+            val text = (row ?: newRecord(kind)).toString()
+            model.editor = EditorDraft(kind, text, text, archive!!.getLong("revision"))
         }
         val key =
             when (kind) {
@@ -92,15 +92,15 @@ fun BloomApp(model: BloomModel) {
             row != null &&
                 archive?.rows(key)?.any { it.getString("id") == row.getString("id") } == true
         if (!exists && kind !in listOf("dose", "refill", "exclusion"))
-            gate.run("Add a record", open)
-        else open()
+            gate.run("Add a record", start)
+        else start()
     }
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        if (editor != null) editorTitle(editor!!)
+                        if (editor != null) editorTitle(editor)
                         else if (guides) "Guides and sources"
                         else listOf("Today", "Calendar", "Care", "Patterns", "Settings")[tab]
                     )
@@ -121,9 +121,12 @@ fun BloomApp(model: BloomModel) {
                             enabled = !busy,
                             onClick = {
                                 val row = JSONObject(draft)
-                                val problem = BloomTemperature.problem(editor!!, row)
+                                val problem = BloomTemperature.problem(editor, row)
                                 if (problem != null) model.error.value = problem
-                                else model.save(editor!!, row, revision) { editor = null }
+                                else
+                                    model.save(editor, row, open!!.revision) {
+                                        model.editor = null
+                                    }
                             },
                         ) {
                             Text("Save")
@@ -183,7 +186,7 @@ fun BloomApp(model: BloomModel) {
                     else "Your journal could not be opened. Existing data has not been changed."
                 )
             } else if (editor != null) {
-                RecordEditor(editor!!, draft, { draft = it })
+                RecordEditor(editor, draft) { text -> model.editor = model.editor?.copy(text = text) }
             } else if (guides) {
                 GuidesScreen()
             } else
@@ -624,19 +627,7 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject, openGuides: (
     var encrypted by rememberSaveable { mutableStateOf(true) }
     var contacts by rememberSaveable { mutableStateOf(false) }
     var notes by rememberSaveable { mutableStateOf(false) }
-    var exportKind by rememberSaveable { mutableStateOf("age") }
     var erase by rememberSaveable { mutableStateOf(false) }
-    // Capture export choices when opening the system picker, not after it returns.
-    var pendingPassword by remember { mutableStateOf("") }
-    var pendingContacts by rememberSaveable { mutableStateOf(false) }
-    var pendingNotes by rememberSaveable { mutableStateOf(false) }
-    val create =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("application/octet-stream")
-        ) { uri ->
-            if (uri != null)
-                model.exportFile(uri, exportKind, pendingPassword, pendingContacts, pendingNotes)
-        }
     val open =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) model.importFile(uri, if (encrypted) password else null)
@@ -777,13 +768,8 @@ private fun BackupSettings(model: BloomModel, archive: JSONObject, openGuides: (
                             password != confirmation -> "The passphrases do not match."
                             else -> null
                         }
-                    if (passphraseProblem == null) {
-                        exportKind = kind
-                        pendingPassword = password
-                        pendingContacts = contacts
-                        pendingNotes = notes
-                        create.launch("bloom-${LocalDate.now()}.$kind")
-                    }
+                    // The export is prepared (sealed) before the picker opens.
+                    if (passphraseProblem == null) model.exportFile(kind, password, contacts, notes)
                 }
             ) {
                 Text(label)

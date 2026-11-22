@@ -198,7 +198,8 @@ internal fun WellbeingFields(row: JSONObject, change: (String) -> Unit) {
     val context = LocalContext.current
     val prefs = preference(context)
     var expanded by rememberSaveable { mutableStateOf(false) }
-    var custom by rememberSaveable { mutableStateOf("") }
+    // A private draft: kept in memory only, like the rest of the editor.
+    var custom by remember { mutableStateOf("") }
     val symptoms = row.getJSONObject("symptoms")
     val pinned =
         prefs.getString("favorites", "Cramps,Headache,Fatigue,Calm")!!.split(',').filter {
