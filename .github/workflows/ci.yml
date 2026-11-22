@@ -1,148 +1,35 @@
-# Not run until Drei pushes. No third-party actions beyond GitHub's own checkout.
+# Deliberately small (2026-11-22): the full suite runs locally with scripts/check, Apple tests in
+# the tahoe VM (scripts/check --apple). GitHub runs only these Linux checks, when main moves or by hand.
+# No third-party actions beyond GitHub's own checkout.
 name: ci
 on:
   push:
-  pull_request:
+    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  linux:
-    name: Linux (swift test, rules)
+  swift:
+    name: Swift packages (swift test)
     runs-on: ubuntu-24.04
     container: swift:6.3   # keep in step with scripts/swift-version
     steps:
       - uses: actions/checkout@v4
       - name: Trust the checkout
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - name: SevenKit
-        run: swift test --package-path SevenKit
-      - name: FastKit
-        run: swift test --package-path apps/fast/Kit
-      - name: QRKit
-        run: swift test --package-path apps/qr/Kit
-      - name: AlarmStore
-        run: swift test --package-path apps/alarm/Kit
-      - name: ScannerKit
-        run: swift test --package-path apps/scanner/Kit
-      - name: CleanerKit
-        run: swift test --package-path apps/cleaner/Kit
-      - name: BloomWire
-        run: swift test --package-path apps/bloom/Kit
-      - name: Rules (G6, G7)
-        run: scripts/check-rules
+      - name: Each Seven's Swift package
+        run: for pkg in SevenKit apps/fast/Kit apps/qr/Kit apps/alarm/Kit apps/scanner/Kit apps/cleaner/Kit apps/bloom/Kit; do swift test --package-path "$pkg"; done
 
   rust:
-    name: Rust cores (cargo test)
-    runs-on: ubuntu-24.04
+    name: Rules and Rust cores
+    runs-on: ubuntu-24.04   # has python3, which scripts/check-rules needs (the swift container does not)
     steps:
       - uses: actions/checkout@v4
+      - name: Rules (G6, G7)
+        run: scripts/check-rules
       - name: Each Seven's shared core
         run: for app in fast qr alarm scanner cleaner vault bloom; do scripts/rust-core "$app" test; done
-
-  macos:
-    name: macOS (xcodebuild test)
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Toolchain
-        run: xcodebuild -version && swift --version
-      - name: Pick an iPhone simulator
-        run: |
-          udid=$(xcrun simctl list devices available -j | python3 -c '
-          import json, sys
-          d = json.load(sys.stdin)["devices"]
-          ios = sorted((k for k in d if "iOS" in k), reverse=True)
-          print(next(x["udid"] for k in ios for x in d[k] if x["name"].startswith("iPhone")))')
-          echo "SIM_UDID=$udid" >> "$GITHUB_ENV"
-      - name: Test SevenKit
-        working-directory: SevenKit
-        run: >
-          xcodebuild -scheme SevenKit-Package
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
-
-      - name: Rust cores for iOS
-        run: |
-          rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
-          for app in fast qr alarm scanner cleaner vault bloom; do scripts/rust-core "$app" apple; done
-      - name: Install Watch platform for the embedded companion
-        run: xcodebuild -downloadPlatform watchOS
-      - name: Build and test Fast Tracker
-        run: >
-          xcodebuild -project apps/fast/Fast.xcodeproj -scheme Fast -configuration Debug
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
-          build test
-
-      - name: Build and test Alarm
-        run: >
-          xcodebuild -project apps/alarm/Alarm.xcodeproj -scheme Alarm -configuration Debug
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
-          build test
-
-      - name: Build and test QR Code Kit
-        run: >
-          xcodebuild -project apps/qr/QR.xcodeproj -scheme QR -configuration Debug
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
-          build test
-      - name: Test Alarm core and models
-        working-directory: apps/alarm/Kit
-        run: >
-          xcodebuild -scheme AlarmLoopsKit-Package
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
-
-      - name: Build and test Document Scanner
-        run: >
-          xcodebuild -project apps/scanner/Scanner.xcodeproj -scheme Scanner -configuration Debug
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
-          build test
-
-      - name: Test Scanner core
-        working-directory: apps/scanner/Kit
-        run: >
-          xcodebuild -scheme ScannerKit
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
-
-      - name: Build and test Cleaner
-        run: >
-          xcodebuild -project apps/cleaner/Cleaner.xcodeproj -scheme Cleaner -configuration Debug
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
-          build test
-      - name: Test Cleaner platform and core
-        working-directory: apps/cleaner/Kit
-        run: >
-          xcodebuild -scheme CleanerKit-Package
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
-
-      - name: Test Vault storage and core
-        working-directory: apps/vault/Kit
-        run: >
-          xcodebuild -scheme VaultKit-Package
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
-      - name: Build and test Vault
-        run: >
-          xcodebuild -project apps/vault/Vault.xcodeproj -scheme Vault -configuration Debug
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
-          build test
-
-      - name: Test Bloom core and reports
-        working-directory: apps/bloom/Kit
-        run: >
-          xcodebuild -scheme BloomKit-Package
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES test
-      - name: Build and test Bloom
-        run: >
-          xcodebuild -project apps/bloom/Bloom.xcodeproj -scheme Bloom
-          -destination "platform=iOS Simulator,id=$SIM_UDID" -parallel-testing-enabled NO
-          CODE_SIGNING_ALLOWED=NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES build test
