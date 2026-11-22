@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Document Scanner's English copy (the iOS catalog's wording). Translations arrive as community
+    pull requests in values-<language>/strings.xml and plurals.xml; keep the format arguments
+    (%1$s, %1$d) and their order meaning. The scanner engine note lives per flavor (src/generic,
+    src/gms).
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Shared actions -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="back">Back</string>
+    <string name="save">Save</string>
+    <string name="undo">Undo</string>
+    <string name="redo">Redo</string>
+    <string name="apply">Apply</string>
+    <string name="discard">Discard</string>
+    <string name="keep_editing">Keep editing</string>
+    <string name="try_again">Try again</string>
+    <string name="options">Options</string>
+    <string name="sort_selected">Selected</string>
+    <string name="preview">Preview</string>
+    <string name="restore">Restore</string>
+    <string name="settings">Settings</string>
+    <string name="working">Working…</string>
+    <!-- Two whole sentences shown together; reorder or change the spacing if your language needs it. -->
+    <string name="two_sentences">%1$s %2$s</string>
+
+    <!-- Failures -->
+    <string name="could_not_complete">Could not complete</string>
+    <string name="error_invalid_document">Something in this document or file isn’t valid, so nothing was changed.</string>
+    <string name="error_too_large">This is more than one document can hold: up to 50 pages and 100 MB of images.</string>
+    <string name="error_missing_page">A page’s image is missing, so nothing was changed.</string>
+    <string name="error_unreadable">This file couldn’t be read. It may be damaged or from a newer version. Nothing was changed.</string>
+    <string name="error_generic">Something went wrong. Nothing was changed.</string>
+    <string name="error_unwritable">That location can’t be written to.</string>
+    <string name="error_unopenable">This file couldn’t be opened.</string>
+    <string name="needs_access">Start a trial or unlock to scan or import pages. Your saved documents remain available.</string>
+    <string name="document_full">This document already has 50 pages, the most one document can hold. Scan or import into a new document instead.</string>
+    <string name="recognition_failed">Your scan is saved. Text recognition could not finish. You can retry from the document.</string>
+    <string name="keep_one_page">Keep at least one page, or delete the document.</string>
+
+    <!-- Saving scans -->
+    <!-- A new document's name; %1$s is the date and time it was scanned. -->
+    <string name="document_title_default">Scan %1$s</string>
+    <string name="progress_preparing">Preparing pages…</string>
+    <string name="progress_importing">Importing pages…</string>
+    <string name="progress_saving">Saving document…</string>
+    <string name="progress_recognizing">Scan saved. Recognizing text…</string>
+    <string name="scan_saved">Scan saved</string>
+    <string name="discard_pages">Discard pages</string>
+
+    <!-- Unlock and trial (SevenKit's brand moments). {price} is replaced with the price. -->
+    <string name="gate_app_name">Document Scanner</string>
+    <string name="gate_before_title">Your phone already scans documents.</string>
+    <string name="gate_before_alternatives">Google Drive can scan paper into PDFs, and many phones’ cameras can too. If that covers your needs, keep your money.</string>
+    <string name="gate_before_offer">This adds a dedicated searchable library, recognized text and page management. Try everything for 7 days, then {price}, once. Nothing renews.</string>
+    <string name="gate_before_offer_without_price">This adds a dedicated searchable library, recognized text and page management. Try everything for 7 days, then a one-time purchase. Nothing renews.</string>
+    <string name="gate_before_after_trial">Your saved documents remain readable, editable, deletable and exportable after the trial. Backup and restore are included, with no additional fee.</string>
+    <string name="gate_look_around">Look around first</string>
+    <string name="gate_feature_new">Scan and import new documents</string>
+    <string name="gate_feature_add">Add scanned or imported pages to saved documents</string>
+    <string name="gate_free_documents">Read, edit, delete and export saved documents</string>
+    <string name="gate_free_backup">Back up and restore your library</string>
+    <!-- The feature names the unlock sheet shows when a locked action is tapped. -->
+    <string name="feature_import">Import documents</string>
+    <string name="feature_scan">Scan documents</string>
+
+    <!-- Library -->
+    <string name="library_title">Documents</string>
+    <string name="sort">Sort</string>
+    <string name="sort_newest">Newest first</string>
+    <string name="sort_oldest">Oldest first</string>
+    <string name="sort_name">Name</string>
+    <string name="heading_recent">Recent</string>
+    <string name="heading_oldest">Oldest first</string>
+    <string name="heading_by_name">By name</string>
+    <string name="import_short">Import</string>
+    <string name="import_images_or_pdf">Import images or PDF</string>
+    <string name="scan">Scan</string>
+    <string name="unreadable_title">Some folders could not be read</string>
+    <string name="camera_unavailable">Camera scanning is unavailable here. You can import documents instead.</string>
+    <string name="library_empty_title">No documents yet</string>
+    <string name="library_empty_camera">Scans you save appear here, newest first. Tap Scan to start.</string>
+    <string name="library_empty_import">Documents you import appear here, newest first.</string>
+    <string name="search_hint">Search names, notes and text</string>
+    <string name="filter_all">All</string>
+    <string name="favorites">Favorites</string>
+    <string name="no_favorites_title">No favorites</string>
+    <string name="no_favorites_text">Star a document to keep it here.</string>
+    <string name="no_results_title">No results for “%1$s”</string>
+    <string name="no_results_text">Try another word from the name, notes or text.</string>
+    <string name="clear_search">Clear search</string>
+    <string name="document_actions">Actions for %1$s</string>
+    <string name="favorite_add">Add to Favorites</string>
+    <string name="favorite_remove">Remove from Favorites</string>
+    <string name="move_to_trash">Move to Recently Deleted</string>
+    <string name="moved_to_trash">Moved to Recently Deleted</string>
+    <string name="recently_deleted">Recently Deleted</string>
+    <string name="backup_restore">Backup &amp; restore</string>
+    <string name="page_unavailable">Page unavailable</string>
+    <!-- What TalkBack reads for a document card: name, page count, date. -->
+    <string name="document_card">%1$s, %2$s, %3$s</string>
+    <string name="document_card_favorite">%1$s, %2$s, %3$s, Favorite</string>
+    <!-- A summary tile read aloud: its label, then its number. -->
+    <string name="stat_tile">%1$s, %2$s</string>
+
+    <!-- Document -->
+    <string name="export_pdf">Export PDF</string>
+    <!-- Page count, then the date and time the document was created. -->
+    <string name="document_summary">%1$s · %2$s</string>
+    <string name="arrange">Arrange</string>
+    <string name="share_text">Share text</string>
+    <string name="recognized_text">Recognized text</string>
+    <string name="no_text_yet">No recognized text yet.</string>
+    <string name="no_text">No recognized text</string>
+    <string name="recognize_again">Recognize text again</string>
+    <string name="details">Details</string>
+    <string name="details_name">Name</string>
+    <string name="details_notes">Notes</string>
+    <string name="details_notes_placeholder">Optional notes</string>
+    <string name="save_details">Save details</string>
+    <string name="delete_document">Delete document</string>
+    <string name="remove_page_title">Remove this page?</string>
+    <string name="remove_page_text">Its image is deleted when the document is saved.</string>
+    <string name="remove_page">Remove page</string>
+    <string name="rotate_or_adjust">Rotate or adjust</string>
+    <string name="page_number">Page %1$d</string>
+    <string name="page_actions" tools:ignore="PluralsCandidate">Page %1$d actions</string>
+    <string name="page_of">Page %1$d of %2$d</string>
+    <string name="add_pages">Add pages</string>
+    <string name="scan_more">Scan more pages</string>
+    <string name="append_files">Append images or PDF</string>
+    <string name="arrange_title">Arrange pages</string>
+    <string name="arrange_hint">Drag a handle or use a page’s options to move it. Changes apply when you tap Save. Keep at least one page.</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="move_earlier">Move earlier</string>
+    <string name="move_later">Move later</string>
+    <string name="reorder">Reorder</string>
+    <string name="position">Position %1$d of %2$d</string>
+    <string name="page_options">Options for page %1$d</string>
+
+    <!-- Recently Deleted -->
+    <string name="restored_named">Restored “%1$s”</string>
+    <string name="trash_empty_title">Nothing in Recently Deleted</string>
+    <string name="trash_empty_text">Documents you delete wait here until you restore them or delete them permanently.</string>
+    <string name="delete_permanently">Delete permanently</string>
+    <string name="trash_footer">Deleted documents stay on this phone until you restore or permanently delete them. Open a document’s menu to delete it for good. They are not a backup; export important copies.</string>
+    <string name="delete_permanently_title">Delete “%1$s” permanently?</string>
+    <string name="cannot_undo">This cannot be undone.</string>
+
+    <!-- Backup -->
+    <string name="backup_saved">Backup saved.</string>
+    <string name="backup_failed">Backup could not be completed. Your library is unchanged. %1$s</string>
+    <!-- %1$s is a document count, such as “3 documents”. -->
+    <string name="restored_copies">Restored %1$s as copies.</string>
+    <string name="restore_failed">This backup could not be restored. Your existing documents are unchanged. %1$s</string>
+    <string name="stat_pages">Pages</string>
+    <string name="backup_intro">One portable file holds your documents, original pages, adjustments, notes and Recently Deleted. Save it on this phone, a memory card or USB drive, or a storage provider you choose.</string>
+    <string name="export_backup">Export backup</string>
+    <string name="restore_from_backup">Restore from backup</string>
+    <string name="backup_note_restore">Restore adds copies and never overwrites your current documents. Recently Deleted items remain deleted. Each backup supports up to 1 GB and 1,000 documents.</string>
+    <string name="backup_note_cloud">No automatic uploads or Scanner account. Cloud storage, if you choose it, is provided by your storage provider.</string>
+    <string name="restore_confirm_title">Restore copies from this backup?</string>
+    <string name="restore_confirm_text">Your current documents stay as they are.</string>
+    <string name="restore_confirm">Add restored copies</string>
+
+    <!-- Settings -->
+    <string name="your_documents">Your documents</string>
+    <string name="appearance">Appearance</string>
+    <string name="appearance_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="privacy">Privacy</string>
+    <string name="privacy_on_phone">On this phone</string>
+    <string name="privacy_on_phone_text">Scans and text recognition are processed on your phone. Files you export or back up go only where you choose. No Scanner account or servers.</string>
+    <string name="camera_scanning">Camera scanning</string>
+    <string name="searchable_text">Searchable text</string>
+    <string name="searchable_text_note">Searchable PDF exports include recognized text. Review important text for recognition errors.</string>
+
+    <!-- Export -->
+    <string name="saved_file">Saved %1$s.</string>
+    <string name="share_pdf">Share PDF</string>
+    <string name="prepare_pdf">Prepare PDF</string>
+    <string name="preparing_pdf">Preparing PDF…</string>
+    <!-- Selected pages out of the document's page count, such as “1 of 2 pages”. -->
+    <string name="export_selection">%1$d of %2$s</string>
+    <string name="clear_selection">Clear selection</string>
+    <string name="select_all">Select all</string>
+    <string name="pdf">PDF</string>
+    <string name="pdf_footer">Text recognition runs on your device. Check important text for recognition errors. Smaller files reduce image detail in this export; your saved pages stay unchanged.</string>
+    <string name="paper_size">Paper size</string>
+    <string name="paper_a4">A4</string>
+    <string name="paper_letter">US Letter</string>
+    <string name="quality">Quality</string>
+    <string name="quality_standard">Standard</string>
+    <string name="quality_compact">Smaller file</string>
+    <string name="pdf_ready">PDF READY</string>
+    <string name="save_to_files">Save to files</string>
+    <string name="pdf_preview">PDF preview</string>
+
+    <!-- Page editor -->
+    <string name="save_page">Save page</string>
+    <string name="crop_page">Crop page</string>
+    <string name="adjust_crop">Adjust crop</string>
+    <string name="annotate_after_save">Save image adjustments before annotating.</string>
+    <string name="rotate_left">Rotate left</string>
+    <string name="rotate_right">Rotate right</string>
+    <string name="adjust">Adjust</string>
+    <string name="adjust_footer">Your original stays untouched. Save to apply these settings to previews, recognition and exports.</string>
+    <string name="grayscale">Grayscale</string>
+    <string name="brightness">Brightness</string>
+    <string name="contrast">Contrast</string>
+    <string name="contrast_value">%1$d%%</string>
+    <string name="reset_original">Reset to original</string>
+    <string name="edit_text">Edit text</string>
+    <string name="edit_text_after_save">Save image adjustments before editing text.</string>
+    <string name="edit_text_intro">Correct the saved text used by search and text sharing. The image stays unchanged. Searchable PDFs recognize the image again; they do not use these corrections.</string>
+    <!-- %1$s is the reason the save failed. -->
+    <string name="edit_text_failed">%1$s Your text is kept here. If the page changed, close and reopen this editor.</string>
+
+    <!-- Crop -->
+    <string name="crop">Crop</string>
+    <string name="use_crop">Use crop</string>
+    <string name="crop_intro">Drag the edges or enter exact bounds. Your original stays intact. Save the page to update recognition and exports.</string>
+    <string name="enter_bounds">Enter bounds</string>
+    <string name="use_full_page">Use full page</string>
+    <string name="bounds">Bounds</string>
+    <string name="bounds_intro">Percent of the displayed page, measured from its top-left corner. Right must exceed left; bottom must exceed top.</string>
+    <string name="edge_left">Left</string>
+    <string name="edge_top">Top</string>
+    <string name="edge_right">Right</string>
+    <string name="edge_bottom">Bottom</string>
+    <!-- An edge field's label: the edge, then a percent sign. -->
+    <string name="edge_percent">%1$s (%%)</string>
+    <string name="bounds_invalid">Enter bounds from 0 to 100 with a non-empty crop.</string>
+
+    <!-- Annotations -->
+    <string name="annotate">Annotate</string>
+    <string name="annotate_intro">Choose Ink to draw, or Rectangle for a highlight or box. Visual marks keep the original and searchable text; they do not redact information.</string>
+    <string name="mode_rectangle">Rectangle</string>
+    <string name="mode_ink">Ink</string>
+    <string name="style_highlight">Highlight</string>
+    <string name="style_red_box">Red box</string>
+    <string name="style_blue_box">Blue box</string>
+    <string name="ink_black">Black</string>
+    <string name="ink_red">Red</string>
+    <string name="ink_blue">Blue</string>
+    <string name="width_fine">Fine</string>
+    <string name="width_medium">Medium</string>
+    <string name="width_bold">Bold</string>
+    <string name="ink_hint">Draw with a finger or stylus. Undo removes the last change; ink does not erase or redact the page.</string>
+    <string name="marks_count">%1$d of 100 marks</string>
+    <string name="ink_count">%1$d of 100 ink strokes</string>
+    <string name="add_with_bounds">Add with bounds</string>
+    <string name="remove_last_stroke">Remove last stroke</string>
+    <string name="clear_ink">Clear ink</string>
+    <string name="remove_last_mark">Remove last mark</string>
+    <string name="clear_marks">Clear all marks</string>
+    <string name="marks_follow">Marks follow the original page through crop and rotation. Cropping hides marks outside the visible area; resetting the crop brings them back.</string>
+    <string name="marks_not_saved">Marks not saved</string>
+    <string name="annotation_canvas">Page annotation canvas. Use Add with bounds as an alternative to dragging.</string>
+    <string name="ink_canvas">Ink canvas. Draw a stroke; use Undo or Clear ink to remove it.</string>
+    <string name="ink_limit">This stroke exceeds the page’s ink limit. Your previous marks are kept. Undo or clear ink to make room.</string>
+    <string name="ink_stroke_rejected">This stroke is too long or outside the supported canvas. Your previous marks are kept; try a shorter stroke.</string>
+    <string name="marks_limit">This page already has 100 marks. Undo or remove a mark first.</string>
+    <!-- %1$s is the reason the save failed. -->
+    <string name="marks_failed">%1$s Your marks are kept here. If the page changed, close and reopen this editor.</string>
+
+    <!-- Camera capture -->
+    <string name="camera_failed">The camera couldn’t start. You can import images or PDFs instead.</string>
+    <string name="take_failed">That page couldn’t be taken. Try again.</string>
+    <string name="capture_hint">Hold the page flat and fill the frame.</string>
+    <!-- Pages taken so far, then the most this capture can take. -->
+    <string name="capture_count">%1$s · up to %2$d</string>
+    <string name="take_page">Take page</string>
+    <string name="save_count">Save %1$d</string>
+    <string name="camera_off_title">Camera access is off</string>
+    <string name="camera_off_text">Scanning needs the camera. Turn it on in Settings, or import images and PDFs instead.</string>
+    <string name="open_settings">Open settings</string>
+    <string name="import_instead">Import instead</string>
+    <!-- %1$s is a page count, such as “3 pages”. -->
+    <string name="discard_capture_title">Discard %1$s?</string>
+    <string name="discard_capture_text">The pages you took here are not saved yet.</string>
+    <string name="keep_scanning">Keep scanning</string>
+</resources>

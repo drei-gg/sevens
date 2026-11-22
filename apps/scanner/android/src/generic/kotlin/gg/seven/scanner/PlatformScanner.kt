@@ -17,7 +17,3 @@ fun rememberPlatformScanner(
     val camera = rememberUpdatedState(onCamera)
     return { camera.value() }
 }
-
-/** Which scanner this build uses, for the privacy note in Settings (THIRD-PARTY.md states the same). */
-const val SCANNER_ENGINE_NOTE =
-    "Pages are captured with the built-in camera capture (CameraX) on this phone, without Google Play services. Text recognition uses Tesseract on this phone."

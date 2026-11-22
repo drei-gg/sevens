@@ -1,5 +1,7 @@
 package gg.seven.scanner
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import gg.seven.kit.BeforeYouBuyContent
 import gg.seven.kit.SevenContent
 import gg.seven.kit.TrialEndedContent
@@ -9,47 +11,42 @@ import gg.seven.kit.UnlockContent
  * Document Scanner's words for the brand moments, from the iOS gate copy. "Before you buy" names what
  * Android already does built in (never another third-party app), so it differs from iOS.
  */
-internal val ScannerContent =
-    SevenContent(
+@Composable
+internal fun scannerContent(): SevenContent {
+    val newDocuments = stringResource(R.string.gate_feature_new)
+    val addPages = stringResource(R.string.gate_feature_add)
+    return SevenContent(
         beforeYouBuy =
             BeforeYouBuyContent(
-                title = "Your phone already scans documents.",
+                title = stringResource(R.string.gate_before_title),
                 paragraphs =
                     listOf(
                         BeforeYouBuyContent.Paragraph(
-                            "Google Drive can scan paper into PDFs, and many phones’ cameras can too. If that covers your needs, keep your money.",
+                            stringResource(R.string.gate_before_alternatives)
                         ),
                         BeforeYouBuyContent.Paragraph(
-                            "This adds a dedicated searchable library, recognized text and page management. Try everything for 7 days, then {price}, once. Nothing renews.",
-                            withoutPrice =
-                                "This adds a dedicated searchable library, recognized text and page management. Try everything for 7 days, then a one-time purchase. Nothing renews.",
+                            stringResource(R.string.gate_before_offer),
+                            withoutPrice = stringResource(R.string.gate_before_offer_without_price),
                         ),
                         BeforeYouBuyContent.Paragraph(
-                            "Your saved documents remain readable, editable, deletable and exportable after the trial. Backup and restore are included, with no additional fee.",
+                            stringResource(R.string.gate_before_after_trial)
                         ),
                     ),
-                lookAroundLabel = "Look around first",
+                lookAroundLabel = stringResource(R.string.gate_look_around),
             ),
         unlock =
             UnlockContent(
-                appName = "Document Scanner",
-                features =
-                    listOf(
-                        "Scan and import new documents",
-                        "Add scanned or imported pages to saved documents",
-                    ),
+                appName = stringResource(R.string.gate_app_name),
+                features = listOf(newDocuments, addPages),
             ),
         trialEnded =
             TrialEndedContent(
                 stillFree =
                     listOf(
-                        "Read, edit, delete and export saved documents",
-                        "Back up and restore your library",
+                        stringResource(R.string.gate_free_documents),
+                        stringResource(R.string.gate_free_backup),
                     ),
-                unlockKeeps =
-                    listOf(
-                        "Scan and import new documents",
-                        "Add scanned or imported pages to saved documents",
-                    ),
+                unlockKeeps = listOf(newDocuments, addPages),
             ),
     )
+}

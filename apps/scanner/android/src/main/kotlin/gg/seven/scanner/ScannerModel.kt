@@ -2,6 +2,7 @@ package gg.seven.scanner
 
 import android.app.Application
 import android.content.Context
+import android.content.res.Resources
 import android.net.Uri
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
@@ -22,25 +23,29 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** The sentence a person sees for a failure: the core's errors in the iOS wording. */
-fun describe(error: Throwable): String =
+/** The sentence a person sees for a failure: the core's error codes in the iOS wording. */
+fun describe(resources: Resources, error: Throwable): String =
     when (error) {
-        is ScanException.InvalidDocument ->
-            "Something in this document or file isn’t valid, so nothing was changed."
-        is ScanException.TooLarge -> {
-            val limits = scanLimits()
-            "This is more than one document can hold: up to ${limits.maxPages} pages and ${limits.maxDocumentImageBytes / 1_000_000} MB of images."
-        }
-        is ScanException.MissingPage -> "A page’s image is missing, so nothing was changed."
-        is ScanException.Unreadable ->
-            "This file couldn’t be read. It may be damaged or from a newer version. Nothing was changed."
+        is ScanException.InvalidDocument -> resources.getString(R.string.error_invalid_document)
+        // The limits (scanLimits) are in the words, as in the overflow plurals.
+        is ScanException.TooLarge -> resources.getString(R.string.error_too_large)
+        is ScanException.MissingPage -> resources.getString(R.string.error_missing_page)
+        is ScanException.Unreadable -> resources.getString(R.string.error_unreadable)
         else ->
             error.localizedMessage?.takeIf { it.isNotBlank() }
-                ?: "Something went wrong. Nothing was changed."
+                ?: resources.getString(R.string.error_generic)
     }
 
-const val NEEDS_ACCESS =
-    "Start a trial or unlock to scan or import pages. Your saved documents remain available."
+/**
+ * Words a plain class (a draft kept across recreation, a unit-tested model) can hold without a
+ * Context; the screen that shows them resolves them in the current configuration.
+ */
+fun interface Words {
+    fun resolve(resources: Resources): String
+}
+
+/** [describe], resolved where it is shown. */
+fun describing(error: Throwable) = Words { describe(it, error) }
 
 /** Captured pages not yet written, with the cleanup that deletes their files once resolved. */
 class UnsavedCapture(val sources: List<Uri>, val appendTo: UUID?, val cleanUp: () -> Unit)
@@ -56,6 +61,11 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
             viewModelScope,
         )
     val repository = DocumentStore(File(app.filesDir, LIBRARY))
+    private val resources: Resources
+        get() = getApplication<Application>().resources
+
+    private fun describe(error: Throwable) = describe(resources, error)
+
     private val prefs = app.getSharedPreferences("scanner", Context.MODE_PRIVATE)
 
     private val _documents = MutableStateFlow<List<ScanDocument>>(emptyList())
@@ -112,8 +122,7 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
     /** Whether [document] can take more pages; at the limit, explains it instead. */
     fun canAddPages(document: ScanDocument): Boolean {
         if (appendPageAllowance(document.pages.size.toULong()) > 0u) return true
-        error.value =
-            "This document already has 50 pages, the most one document can hold. Scan or import into a new document instead."
+        error.value = resources.getString(R.string.document_full)
         return false
     }
 
@@ -161,21 +170,21 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
         onHandled: () -> Unit,
         cleanUp: () -> Unit,
     ) {
-        val resources = getApplication<Application>().resources
         fun keep(written: Int, reason: String?) {
             val left = sources.size - written
             unsavedCapture.value = UnsavedCapture(sources.drop(written), appendTo, cleanUp)
+            val unsaved = resources.getQuantityString(R.plurals.unsaved, left, left)
             error.value =
-                listOfNotNull(resources.getQuantityString(R.plurals.unsaved, left, left), reason)
-                    .joinToString(" ")
+                reason?.let { resources.getString(R.string.two_sentences, unsaved, it) } ?: unsaved
             onHandled()
         }
         if (busy.value) return keep(0, null)
         // Adding pages is new scanning, so it needs access like a new document.
-        if (!store.paidFeaturesAvailable) return keep(0, NEEDS_ACCESS)
+        if (!store.paidFeaturesAvailable)
+            return keep(0, resources.getString(R.string.needs_access))
         if (sources.isEmpty()) return onHandled()
         busy.value = true
-        progress.value = "Preparing pages…"
+        progress.value = resources.getString(R.string.progress_preparing)
         val staging =
             File(getApplication<Application>().cacheDir, "ScannerStaging/${UUID.randomUUID()}")
                 .apply { mkdirs() }
@@ -200,8 +209,8 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
                                 out
                             }
                         }
-                    progress.value = "Saving document…"
-                    val title = "Scan " + titleStamp(System.currentTimeMillis())
+                    progress.value = resources.getString(R.string.progress_saving)
+                    val title = newTitle()
                     repository.io { addCapture(pages, appendTo, title) }
                 } catch (e: Exception) {
                     reload()
@@ -214,7 +223,7 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
             reload()
             onHandled()
             notice.value = overflowNotice(plan, appendTo != null)
-            progress.value = "Scan saved. Recognizing text…"
+            progress.value = resources.getString(R.string.progress_recognizing)
             for (document in saved) recognizeNow(document, onlyEmpty = true)
         } finally {
             withContext(Dispatchers.IO) { staging.deleteRecursively() }
@@ -226,7 +235,7 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
     /** Images and PDFs from the system picker. */
     fun importFiles(uris: List<Uri>, appendTo: UUID? = null) =
         viewModelScope.launch {
-            addPages("Importing pages…", appendTo) { staging ->
+            addPages(resources.getString(R.string.progress_importing), appendTo) { staging ->
                 Processing.importFiles(getApplication(), uris, staging)
             }
         }
@@ -241,7 +250,7 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
         // Adding pages is new scanning, so it needs access like a new document. Editing existing
         // pages stays free.
         if (!store.paidFeaturesAvailable) {
-            error.value = NEEDS_ACCESS
+            error.value = resources.getString(R.string.needs_access)
             return
         }
         busy.value = true
@@ -251,20 +260,15 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
                 .apply { mkdirs() }
         try {
             val pages = withContext(Dispatchers.Default) { prepare(staging) }
-            progress.value = "Saving document…"
+            progress.value = resources.getString(R.string.progress_saving)
             val saved =
                 repository.io {
                     if (appendTo != null) append(appendTo, pages)
-                    else
-                        create(
-                            "Scan " + titleStamp(System.currentTimeMillis()),
-                            pages,
-                            List(pages.size) { "" },
-                        )
+                    else create(newTitle(), pages, List(pages.size) { "" })
                 }
             reload()
             onSaved()
-            progress.value = "Scan saved. Recognizing text…"
+            progress.value = resources.getString(R.string.progress_recognizing)
             recognizeNow(saved, onlyEmpty = true)
         } catch (e: Exception) {
             error.value = describe(e)
@@ -275,8 +279,11 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** "Scan Nov 16, 2026, 4:05 PM": a new document's name, as iOS stamps it. */
+    private fun newTitle() =
+        resources.getString(R.string.document_title_default, titleStamp(System.currentTimeMillis()))
+
     private fun overflowNotice(plan: CapturePlan, appended: Boolean): String? {
-        val resources = getApplication<Application>().resources
         val documents = plan.newDocuments.size
         return when {
             appended && documents == 1 -> {
@@ -328,8 +335,7 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
             reload()
         } catch (_: Throwable) {
             if (_documents.value.any { it.id == document.id })
-                error.value =
-                    "Your scan is saved. Text recognition could not finish. You can retry from the document."
+                error.value = resources.getString(R.string.recognition_failed)
         }
     }
 
@@ -348,7 +354,7 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
     /** Reorders or removes pages; refuses an order made on a stale copy (an append in between). */
     suspend fun setPageOrder(document: ScanDocument, ids: List<UUID>): ScanDocument? {
         if (ids.isEmpty()) {
-            error.value = "Keep at least one page, or delete the document."
+            error.value = resources.getString(R.string.keep_one_page)
             return null
         }
         return attempt {
@@ -373,9 +379,7 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
                 reload()
                 if (annotationDraft.value === draft) annotationDraft.value = null
             } catch (e: Exception) {
-                draft.failure =
-                    describe(e) +
-                        " Your marks are kept here. If the page changed, close and reopen this editor."
+                draft.failure = Words { it.getString(R.string.marks_failed, describe(it, e)) }
             } finally {
                 draft.working = false
             }
@@ -422,7 +426,7 @@ class ScannerModel(app: Application) : AndroidViewModel(app) {
         private const val APPEARANCE = "scanner.appearance"
         private const val ORDER = "scanner.order"
 
-        /** "Nov 16, 2026, 4:05 PM": the new document's name, as iOS stamps it. */
+        /** "Nov 16, 2026, 4:05 PM": the date in a new document's name. */
         fun titleStamp(millis: Long): String =
             Instant.ofEpochMilli(millis)
                 .atZone(ZoneId.systemDefault())

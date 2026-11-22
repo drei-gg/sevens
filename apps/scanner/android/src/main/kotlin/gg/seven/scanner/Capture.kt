@@ -28,8 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -65,6 +67,7 @@ fun CameraCapture(
     limit: Int = scanLimits().maxPages.toInt(),
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val view = LocalView.current
     val folderPath = rememberSaveable {
         File(context.cacheDir, "ScannerCapture/${UUID.randomUUID()}").absolutePath
@@ -139,8 +142,7 @@ fun CameraCapture(
                         )
                         awaitCancellation()
                     } catch (e: IllegalArgumentException) {
-                        failure =
-                            "The camera couldn’t start. You can import images or PDFs instead."
+                        failure = resources.getString(R.string.camera_failed)
                     } finally {
                         provider.unbind(preview, capture)
                     }
@@ -165,8 +167,13 @@ fun CameraCapture(
                     if (busy) progress
                     else
                         failure
-                            ?: if (pages.isEmpty()) "Hold the page flat and fill the frame."
-                            else "${pageCount(pages.size)} · up to $limit",
+                            ?: if (pages.isEmpty()) stringResource(R.string.capture_hint)
+                            else
+                                stringResource(
+                                    R.string.capture_count,
+                                    pageCount(pages.size),
+                                    limit,
+                                ),
                     color = Color.White,
                     style = MaterialTheme.typography.bodyMedium.numeric(),
                     textAlign = TextAlign.Center,
@@ -178,7 +185,7 @@ fun CameraCapture(
                             enabled = !taking && !busy,
                             colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
                         ) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.cancel))
                         }
                     }
                     FilledIconButton(
@@ -201,7 +208,7 @@ fun CameraCapture(
                                     override fun onError(exception: ImageCaptureException) {
                                         file.delete()
                                         taking = false
-                                        failure = "That page couldn’t be taken. Try again."
+                                        failure = resources.getString(R.string.take_failed)
                                         view.reject()
                                     }
                                 },
@@ -215,7 +222,11 @@ fun CameraCapture(
                                 contentColor = Color.Black,
                             ),
                     ) {
-                        Icon(Icons.Outlined.CameraAlt, "Take page", Modifier.size(32.dp))
+                        Icon(
+                            Icons.Outlined.CameraAlt,
+                            stringResource(R.string.take_page),
+                            Modifier.size(32.dp),
+                        )
                     }
                     Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
                         Button(
@@ -231,7 +242,8 @@ fun CameraCapture(
                             modifier = Modifier.testTag("scanner.capture.save"),
                         ) {
                             Text(
-                                if (pages.isEmpty()) "Save" else "Save ${pages.size}",
+                                if (pages.isEmpty()) stringResource(R.string.save)
+                                else stringResource(R.string.save_count, pages.size),
                                 style = LocalTextStyle.current.numeric(),
                             )
                         }
@@ -245,12 +257,12 @@ fun CameraCapture(
                 verticalArrangement = Arrangement.spacedBy(Space.m),
             ) {
                 Text(
-                    "Camera access is off",
+                    stringResource(R.string.camera_off_title),
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
-                    "Scanning needs the camera. Turn it on in Settings, or import images and PDFs instead.",
+                    stringResource(R.string.camera_off_text),
                     color = Color.White,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
@@ -271,14 +283,14 @@ fun CameraCapture(
                                 contentColor = Color.Black,
                             ),
                     ) {
-                        Text("Open settings")
+                        Text(stringResource(R.string.open_settings))
                     }
                 onImport?.let {
                     OutlinedButton(
                         onClick = it,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     ) {
-                        Text("Import instead")
+                        Text(stringResource(R.string.import_instead))
                     }
                 }
             }
@@ -286,7 +298,7 @@ fun CameraCapture(
                 onClick = ::close,
                 modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(Space.s),
             ) {
-                Icon(Icons.Outlined.Close, "Close", tint = Color.White)
+                Icon(Icons.Outlined.Close, stringResource(R.string.close), tint = Color.White)
             }
         }
     }
@@ -300,13 +312,19 @@ fun CameraCapture(
     if (discard)
         AlertDialog(
             onDismissRequest = { discard = false },
-            title = { Text("Discard ${pageCount(pages.size)}?") },
-            text = { Text("The pages you took here are not saved yet.") },
+            title = {
+                Text(stringResource(R.string.discard_capture_title, pageCount(pages.size)))
+            },
+            text = { Text(stringResource(R.string.discard_capture_text)) },
             confirmButton = {
                 TextButton(onClick = ::close) {
-                    Text("Discard", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.discard), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { discard = false }) { Text("Keep scanning") } },
+            dismissButton = {
+                TextButton(onClick = { discard = false }) {
+                    Text(stringResource(R.string.keep_scanning))
+                }
+            },
         )
 }

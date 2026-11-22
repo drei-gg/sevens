@@ -2,6 +2,7 @@ package gg.seven.scanner
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -9,8 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -31,6 +34,7 @@ fun CropEditor(
     onClose: () -> Unit,
     onApply: (PageCrop?) -> Unit,
 ) {
+    val resources = LocalResources.current
     val windowHeight = LocalWindowInfo.current.containerSize.height
     val canvasHeight = minOf(320.dp, with(LocalDensity.current) { windowHeight.toDp() } * 0.45f)
     val whole = PageCrop(0.0, 0.0, 1.0, 1.0)
@@ -58,7 +62,7 @@ fun CropEditor(
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (e: Exception) {
-            failure = describe(e)
+            failure = describe(resources, e)
         } finally {
             rendered?.recycle()
         }
@@ -75,19 +79,17 @@ fun CropEditor(
     }
     val valid = runCatching { pageSettingsValidate(settings.copy(crop = crop)) }.isSuccess
     FullScreenForm(
-        title = "Crop",
+        title = stringResource(R.string.crop),
         onClose = onClose,
         confirmDiscard = crop != initial,
-        saveLabel = "Use crop",
+        saveLabel = stringResource(R.string.use_crop),
         saveEnabled = valid && bitmap != null,
         onSave = {
             val original = pageCropRotated(crop, (4 - settings.quarterTurns).toUInt())
             onApply(original.takeUnless { it == whole })
         },
     ) {
-        Text(
-            "Drag the edges or enter exact bounds. Your original stays intact. Save the page to update recognition and exports."
-        )
+        Text(stringResource(R.string.crop_intro))
         bitmap?.let { source ->
             key(revision) {
                 AndroidView(
@@ -154,7 +156,7 @@ fun CropEditor(
             onClick = { exact = true },
             modifier = Modifier.fillMaxWidth().testTag("page.cropBounds"),
         ) {
-            Text("Enter bounds")
+            Text(stringResource(R.string.enter_bounds))
         }
         TextButton(
             onClick = {
@@ -163,7 +165,7 @@ fun CropEditor(
             },
             modifier = Modifier.testTag("page.cropReset"),
         ) {
-            Text("Use full page")
+            Text(stringResource(R.string.use_full_page))
         }
         failure?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     }
@@ -203,38 +205,46 @@ internal fun CropEdges(initial: PageCrop, onClose: () -> Unit, onApply: (PageCro
             }
             .getOrNull()
     FullScreenForm(
-        title = "Bounds",
+        title = stringResource(R.string.bounds),
         onClose = onClose,
-        saveLabel = "Apply",
+        saveLabel = stringResource(R.string.apply),
         saveEnabled = value != null,
         onSave = { value?.let(onApply) },
         confirmDiscard =
             listOf(left, top, right, bottom) !=
                 listOf(initial.left, initial.top, initial.right, initial.bottom).map(::percent),
     ) {
-        Text(
-            "Percent of the displayed page, measured from its top-left corner. Right must exceed left; bottom must exceed top."
-        )
+        Text(stringResource(R.string.bounds_intro))
         listOf(
-                Triple("Left", left, { s: String -> left = s }),
-                Triple("Top", top, { s: String -> top = s }),
-                Triple("Right", right, { s: String -> right = s }),
-                Triple("Bottom", bottom, { s: String -> bottom = s }),
+                Edge(R.string.edge_left, "Left", left) { left = it },
+                Edge(R.string.edge_top, "Top", top) { top = it },
+                Edge(R.string.edge_right, "Right", right) { right = it },
+                Edge(R.string.edge_bottom, "Bottom", bottom) { bottom = it },
             )
-            .forEach { (label, text, change) ->
+            .forEach { edge ->
                 OutlinedTextField(
-                    text,
-                    change,
-                    label = { Text("$label (%)") },
+                    edge.text,
+                    edge.change,
+                    label = {
+                        Text(stringResource(R.string.edge_percent, stringResource(edge.label)))
+                    },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth().testTag("page.crop$label"),
+                    modifier = Modifier.fillMaxWidth().testTag("page.crop${edge.tag}"),
                 )
             }
         if (value == null)
             Text(
-                "Enter bounds from 0 to 100 with a non-empty crop.",
+                stringResource(R.string.bounds_invalid),
                 color = MaterialTheme.colorScheme.error,
             )
     }
 }
+
+/** One edge field: its label, its stable test tag, its text and how to change it. */
+private class Edge(
+    @param:StringRes val label: Int,
+    val tag: String,
+    val text: String,
+    val change: (String) -> Unit,
+)

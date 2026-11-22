@@ -1,5 +1,6 @@
 package gg.seven.scanner
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -21,8 +22,10 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -40,7 +43,7 @@ class AnnotationDraft(val documentID: UUID, val original: ScanPage) {
     var marks by mutableStateOf(original.annotations)
     var style by mutableStateOf(AnnotationStyle.HIGHLIGHT)
     var working by mutableStateOf(false)
-    var failure by mutableStateOf<String?>(null)
+    var failure by mutableStateOf<Words?>(null)
     var ink by mutableStateOf(original.ink)
     var inkMode by mutableStateOf(false)
     var inkColor by mutableStateOf(InkColor.BLACK)
@@ -84,7 +87,7 @@ class AnnotationDraft(val documentID: UUID, val original: ScanPage) {
             commit(next, nextInk)
             true
         } catch (e: Exception) {
-            failure = describe(e)
+            failure = describing(e)
             false
         }
 
@@ -106,31 +109,31 @@ class AnnotationDraft(val documentID: UUID, val original: ScanPage) {
         try {
             commit(marks, ink + stroke)
         } catch (_: Exception) {
-            failure =
-                "This stroke exceeds the page’s ink limit. Your previous marks are kept. Undo or clear ink to make room."
+            failure = Words { it.getString(R.string.ink_limit) }
         }
     }
 
     /** A rectangle drawn or entered against the displayed page, from a drag end or exact bounds. */
     fun add(bounds: PageCrop) {
         if (marks.size >= 100) {
-            failure = "This page already has 100 marks. Undo or remove a mark first."
+            failure = Words { it.getString(R.string.marks_limit) }
             return
         }
         try {
             commit(marks + annotationFromDisplay(bounds, original.settings, style), ink)
         } catch (e: Exception) {
-            failure = describe(e)
+            failure = describing(e)
         }
     }
 }
 
 internal val AnnotationStyle.title
+    @StringRes
     get() =
         when (this) {
-            AnnotationStyle.HIGHLIGHT -> "Highlight"
-            AnnotationStyle.RED_OUTLINE -> "Red box"
-            AnnotationStyle.BLUE_OUTLINE -> "Blue box"
+            AnnotationStyle.HIGHLIGHT -> R.string.style_highlight
+            AnnotationStyle.RED_OUTLINE -> R.string.style_red_box
+            AnnotationStyle.BLUE_OUTLINE -> R.string.style_blue_box
         }
 internal val AnnotationStyle.ink
     get() =
@@ -151,41 +154,61 @@ fun AnnotationEditor(file: File, draft: AnnotationDraft, close: () -> Unit, save
                     Processing.rendered(file, draft.original.settings, 1600).asImageBitmap()
                 }
         } catch (e: Exception) {
-            draft.failure = describe(e)
+            draft.failure = describing(e)
         }
     }
     FullScreenForm(
-        "Annotate",
+        stringResource(R.string.annotate),
         close,
         save,
         busy = draft.working,
         saveEnabled = image != null && draft.dirty && !draft.inking,
         confirmDiscard = draft.dirty || draft.inking,
     ) {
-        Text(
-            "Choose Ink to draw, or Rectangle for a highlight or box. Visual marks keep the original and searchable text; they do not redact information."
-        )
-        ConnectedChoice(listOf(false to "Rectangle", true to "Ink"), draft.inkMode) {
+        Text(stringResource(R.string.annotate_intro))
+        ConnectedChoice(
+            listOf(
+                false to stringResource(R.string.mode_rectangle),
+                true to stringResource(R.string.mode_ink),
+            ),
+            draft.inkMode,
+        ) {
             draft.inkMode = it
         }
         if (draft.inkMode) {
-            ConnectedChoice(InkColor.entries.map { it to it.title }, draft.inkColor) {
+            ConnectedChoice(
+                InkColor.entries.map { it to stringResource(it.title) },
+                draft.inkColor,
+            ) {
                 draft.inkColor = it
             }
-            ConnectedChoice(listOf(2 to "Fine", 4 to "Medium", 8 to "Bold"), draft.inkWidth) {
+            ConnectedChoice(
+                listOf(
+                    2 to stringResource(R.string.width_fine),
+                    4 to stringResource(R.string.width_medium),
+                    8 to stringResource(R.string.width_bold),
+                ),
+                draft.inkWidth,
+            ) {
                 draft.inkWidth = it
             }
             Text(
-                "Draw with a finger or stylus. Undo removes the last change; ink does not erase or redact the page.",
+                stringResource(R.string.ink_hint),
                 style = MaterialTheme.typography.bodySmall,
             )
         } else
-            ConnectedChoice(AnnotationStyle.entries.map { it to it.title }, draft.style) {
+            ConnectedChoice(
+                AnnotationStyle.entries.map { it to stringResource(it.title) },
+                draft.style,
+            ) {
                 draft.style = it
             }
         image?.let { source -> AnnotationCanvas(source, draft) }
-        Text("${draft.marks.size} of 100 marks", Modifier.testTag("annotations-count"))
-        Text("${draft.ink.size} of 100 ink strokes", Modifier.testTag("ink-count"))
+        Text(
+            stringResource(R.string.marks_count, draft.marks.size),
+            Modifier.testTag("annotations-count"),
+        )
+        Text(stringResource(R.string.ink_count, draft.ink.size), Modifier.testTag("ink-count"))
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(Space.s),
             verticalArrangement = Arrangement.spacedBy(Space.s),
@@ -195,21 +218,21 @@ fun AnnotationEditor(file: File, draft: AnnotationDraft, close: () -> Unit, save
                 enabled = draft.canUndo,
                 modifier = Modifier.testTag("annotations-undo"),
             ) {
-                Text("Undo")
+                Text(stringResource(R.string.undo))
             }
             OutlinedButton(
                 onClick = { draft.redo() },
                 enabled = draft.canRedo,
                 modifier = Modifier.testTag("annotations-redo"),
             ) {
-                Text("Redo")
+                Text(stringResource(R.string.redo))
             }
             OutlinedButton(
                 onClick = { exact = true },
                 enabled = draft.marks.size < 100 && image != null,
                 modifier = Modifier.testTag("annotations-exact"),
             ) {
-                Text("Add with bounds")
+                Text(stringResource(R.string.add_with_bounds))
             }
         }
         if (draft.ink.isNotEmpty()) {
@@ -217,13 +240,13 @@ fun AnnotationEditor(file: File, draft: AnnotationDraft, close: () -> Unit, save
                 onClick = { draft.change(draft.marks, draft.ink.dropLast(1)) },
                 modifier = Modifier.testTag("ink-remove"),
             ) {
-                Text("Remove last stroke")
+                Text(stringResource(R.string.remove_last_stroke))
             }
             TextButton(
                 onClick = { draft.change(draft.marks, emptyList()) },
                 modifier = Modifier.testTag("ink-clear"),
             ) {
-                Text("Clear ink")
+                Text(stringResource(R.string.clear_ink))
             }
         }
         if (draft.marks.isNotEmpty()) {
@@ -231,27 +254,30 @@ fun AnnotationEditor(file: File, draft: AnnotationDraft, close: () -> Unit, save
                 onClick = { draft.change(draft.marks.dropLast(1)) },
                 modifier = Modifier.testTag("annotations-remove"),
             ) {
-                Text("Remove last mark")
+                Text(stringResource(R.string.remove_last_mark))
             }
             TextButton(
                 onClick = { draft.change(emptyList()) },
                 modifier = Modifier.testTag("annotations-clear"),
             ) {
-                Text("Clear all marks")
+                Text(stringResource(R.string.clear_marks))
             }
         }
         Text(
-            "Marks follow the original page through crop and rotation. Cropping hides marks outside the visible area; resetting the crop brings them back.",
+            stringResource(R.string.marks_follow),
             style = MaterialTheme.typography.bodySmall,
         )
     }
-    draft.failure?.let { message ->
+    draft.failure?.let { words ->
+        val message = words.resolve(LocalResources.current)
         AlertDialog(
             onDismissRequest = { draft.failure = null },
-            title = { Text("Marks not saved") },
+            title = { Text(stringResource(R.string.marks_not_saved)) },
             text = { Text(message, Modifier.verticalScroll(rememberScrollState())) },
             confirmButton = {
-                TextButton(onClick = { draft.failure = null }) { Text("Keep editing") }
+                TextButton(onClick = { draft.failure = null }) {
+                    Text(stringResource(R.string.keep_editing))
+                }
             },
         )
     }
@@ -275,14 +301,14 @@ private fun AnnotationCanvas(image: ImageBitmap, draft: AnnotationDraft) {
         val height = width / ratio
         var start by remember { mutableStateOf<Offset?>(null) }
         var end by remember { mutableStateOf<Offset?>(null) }
+        val canvasLabel = stringResource(R.string.annotation_canvas)
         Box(Modifier.size(width, height).align(androidx.compose.ui.Alignment.Center)) {
             Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
             Canvas(
                 Modifier.fillMaxSize()
                     .testTag("annotations-canvas")
                     .semantics {
-                        contentDescription =
-                            "Page annotation canvas. Use Add with bounds as an alternative to dragging."
+                        contentDescription = canvasLabel
                     }
                     .pointerInput(draft, draft.style, draft.inkMode) {
                         fun normalized(p: Offset) =

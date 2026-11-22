@@ -29,8 +29,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -61,6 +63,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Unit) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     var selected by rememberSaveable {
@@ -89,9 +92,9 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
             scope.launch {
                 try {
                     withContext(Dispatchers.IO) { copyTo(context, file, target) }
-                    saved = "Saved ${file.name}."
+                    saved = resources.getString(R.string.saved_file, file.name)
                 } catch (e: Exception) {
-                    failure = describe(e)
+                    failure = describe(resources, e)
                 } finally {
                     working = false
                 }
@@ -112,7 +115,7 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                 exported = out
                 view.confirm()
             } catch (e: Exception) {
-                failure = describe(e)
+                failure = describe(resources, e)
                 view.reject()
             }
             working = false
@@ -127,14 +130,14 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
-                    title = { Text("Export PDF") },
+                    title = { Text(stringResource(R.string.export_pdf)) },
                     navigationIcon = {
                         IconButton(
                             onClick = onClose,
                             enabled = !working,
                             modifier = Modifier.testTag("export.close"),
                         ) {
-                            Icon(Icons.Outlined.Close, "Close")
+                            Icon(Icons.Outlined.Close, stringResource(R.string.close))
                         }
                     },
                     colors =
@@ -164,7 +167,7 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                             ) {
                                 Icon(Icons.Outlined.Share, null)
                                 Spacer(Modifier.width(Space.s))
-                                Text("Share PDF")
+                                Text(stringResource(R.string.share_pdf))
                             }
                         else
                             Button(
@@ -175,7 +178,12 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                                 if (working) LoadingIndicator(Modifier.size(24.dp))
                                 else Icon(Icons.Outlined.PictureAsPdf, null)
                                 Spacer(Modifier.width(Space.s))
-                                Text(if (working) "Preparing PDF…" else "Prepare PDF")
+                                Text(
+                                    stringResource(
+                                        if (working) R.string.preparing_pdf
+                                        else R.string.prepare_pdf
+                                    )
+                                )
                             }
                     }
                 }
@@ -192,7 +200,11 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                 Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "${selected.size} of ${pageCount(document.pages.size)}",
+                            stringResource(
+                                R.string.export_selection,
+                                selected.size,
+                                pageCount(document.pages.size),
+                            ),
                             Modifier.weight(1f),
                             style = MaterialTheme.typography.titleSmall.numeric(),
                         )
@@ -204,7 +216,12 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                                     else document.pages.map { it.id.toString() }.toSet()
                             },
                         ) {
-                            Text(if (allSelected) "Clear selection" else "Select all")
+                            Text(
+                                stringResource(
+                                    if (allSelected) R.string.clear_selection
+                                    else R.string.select_all
+                                )
+                            )
                         }
                     }
                     val columns = if (largeText()) 2 else 4
@@ -216,6 +233,7 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                     ) {
                         document.pages.forEachIndexed { index, page ->
                             val on = page.id.toString() in selected
+                            val pageLabel = stringResource(R.string.page_number, index + 1)
                             Column(
                                 Modifier.weight(1f)
                                     .toggleable(on, enabled = !working, role = Role.Checkbox) {
@@ -224,7 +242,7 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                                             else selected + page.id.toString()
                                         view.tick()
                                     }
-                                    .semantics { contentDescription = "Page ${index + 1}" }
+                                    .semantics { contentDescription = pageLabel }
                                     .testTag("export.page.${index + 1}"),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(Space.xs),
@@ -260,16 +278,28 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                         }
                     }
                 }
+                val paperSize = stringResource(R.string.paper_size)
+                val papers =
+                    listOf(
+                        PaperSize.A4 to stringResource(R.string.paper_a4),
+                        PaperSize.LETTER to stringResource(R.string.paper_letter),
+                    )
+                val searchableText = stringResource(R.string.searchable_text)
+                val qualityLabel = stringResource(R.string.quality)
+                val qualities =
+                    listOf(
+                        PdfQuality.STANDARD to stringResource(R.string.quality_standard),
+                        PdfQuality.COMPACT to stringResource(R.string.quality_compact),
+                    )
                 Section(
-                    title = "PDF",
-                    footer =
-                        "Text recognition runs on your device. Check important text for recognition errors. Smaller files reduce image detail in this export; your saved pages stay unchanged.",
+                    title = stringResource(R.string.pdf),
+                    footer = stringResource(R.string.pdf_footer),
                 ) {
                     content {
                         Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                            Text("Paper size", style = MaterialTheme.typography.bodyLarge)
+                            Text(paperSize, style = MaterialTheme.typography.bodyLarge)
                             ConnectedChoice(
-                                listOf(PaperSize.A4 to "A4", PaperSize.LETTER to "US Letter"),
+                                papers,
                                 paper,
                                 enabled = !working,
                             ) {
@@ -277,15 +307,12 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                             }
                         }
                     }
-                    switch("Searchable text", searchable, enabled = !working) { searchable = it }
+                    switch(searchableText, searchable, enabled = !working) { searchable = it }
                     content {
                         Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                            Text("Quality", style = MaterialTheme.typography.bodyLarge)
+                            Text(qualityLabel, style = MaterialTheme.typography.bodyLarge)
                             ConnectedChoice(
-                                listOf(
-                                    PdfQuality.STANDARD to "Standard",
-                                    PdfQuality.COMPACT to "Smaller file",
-                                ),
+                                qualities,
                                 quality,
                                 enabled = !working,
                             ) {
@@ -305,7 +332,7 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                             verticalArrangement = Arrangement.spacedBy(Space.xs),
                         ) {
                             Text(
-                                "PDF READY",
+                                stringResource(R.string.pdf_ready),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -330,7 +357,7 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                                 ) {
                                     Icon(Icons.Outlined.Visibility, null)
                                     Spacer(Modifier.width(Space.s))
-                                    Text("Preview")
+                                    Text(stringResource(R.string.preview))
                                 }
                                 OutlinedButton(
                                     onClick = { save.launch(file.name) },
@@ -340,7 +367,7 @@ fun ExportScreen(model: ScannerModel, document: ScanDocument, onClose: () -> Uni
                                     Icon(Icons.Outlined.Folder, null)
                                     Spacer(Modifier.width(Space.s))
                                     Text(
-                                        "Save to files",
+                                        stringResource(R.string.save_to_files),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )

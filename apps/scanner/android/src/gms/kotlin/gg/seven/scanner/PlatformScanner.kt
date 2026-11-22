@@ -67,7 +67,3 @@ fun rememberPlatformScanner(
         }
     }
 }
-
-/** Which scanner this build uses, for the privacy note in Settings (THIRD-PARTY.md states the same). */
-const val SCANNER_ENGINE_NOTE =
-    "Pages are captured with Google’s ML Kit document scanner, which runs on this phone inside Google Play services. Play services may download the scanner module; Scanner itself sends nothing. Until the module is available, the built-in camera capture is used. Text recognition uses Tesseract on this phone."

@@ -29,8 +29,10 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -70,10 +72,13 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
     val nav = LocalNav.current
     val gate = LocalSevenGate.current
     val context = LocalContext.current
+    val resources = LocalResources.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     val documents by model.documents.collectAsStateWithLifecycle()
     val busy by model.busy.collectAsStateWithLifecycle()
+    val scanFeature = stringResource(R.string.feature_scan)
+    val moved = stringResource(R.string.moved_to_trash)
     val found = documents.firstOrNull { it.id == id }
     if (found == null) {
         LaunchedEffect(Unit) { nav.pop() }
@@ -140,7 +145,7 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                 }
                 preview = out
             } catch (e: Exception) {
-                model.error.value = describe(e)
+                model.error.value = describe(resources, e)
             }
             working = false
         }
@@ -162,7 +167,9 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                 ) {
                     Icon(
                         if (starred) Icons.Outlined.Star else Icons.Outlined.StarOutline,
-                        if (starred) "Remove from Favorites" else "Add to Favorites",
+                        stringResource(
+                            if (starred) R.string.favorite_remove else R.string.favorite_add
+                        ),
                     )
                 }
             }
@@ -187,7 +194,7 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                     ) {
                         Icon(Icons.Outlined.PictureAsPdf, null)
                         Spacer(Modifier.width(Space.s))
-                        Text("Export PDF")
+                        Text(stringResource(R.string.export_pdf))
                     }
                 }
             }
@@ -202,7 +209,11 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                 verticalArrangement = Arrangement.spacedBy(Space.l),
             ) {
                 Text(
-                    "${pageCount(document.pages.size)} · ${dayAndTime(document.createdMillis)}",
+                    stringResource(
+                        R.string.document_summary,
+                        pageCount(document.pages.size),
+                        dayAndTime(document.createdMillis),
+                    ),
                     style = MaterialTheme.typography.bodyMedium.numeric(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -218,12 +229,12 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                                             enabled = !busy,
                                             camera = camera,
                                             onScan = {
-                                                gate.run("Scan documents") {
+                                                gate.run(scanFeature) {
                                                     if (model.canAddPages(document)) adders.scan()
                                                 }
                                             },
                                             onImport = {
-                                                gate.run("Scan documents") {
+                                                gate.run(scanFeature) {
                                                     if (model.canAddPages(document)) adders.import()
                                                 }
                                             },
@@ -248,7 +259,7 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                 }
                 val actions: @Composable (Modifier) -> Unit = { each ->
                     ActionTile(
-                        "Preview",
+                        stringResource(R.string.preview),
                         Icons.Outlined.Visibility,
                         each.testTag("scanner.preview"),
                         enabled = !working,
@@ -256,7 +267,7 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                         makePreview()
                     }
                     ActionTile(
-                        "Arrange",
+                        stringResource(R.string.arrange),
                         Icons.Outlined.GridView,
                         each.testTag("scanner.arrange"),
                         enabled = document.pages.size > 1 && !working,
@@ -264,7 +275,7 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                         arranging = true
                     }
                     ActionTile(
-                        "Share text",
+                        stringResource(R.string.share_text),
                         Icons.Outlined.FormatQuote,
                         each,
                         enabled = allText.isNotEmpty(),
@@ -286,10 +297,10 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                     Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                         actions(Modifier.weight(1f))
                     }
-                ContentCard("Recognized text") {
+                ContentCard(stringResource(R.string.recognized_text)) {
                     if (allText.isEmpty())
                         Text(
-                            "No recognized text yet.",
+                            stringResource(R.string.no_text_yet),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -310,15 +321,15 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                         enabled = !working,
                         modifier = Modifier.testTag("scanner.recognize"),
                     ) {
-                        Text("Recognize text again")
+                        Text(stringResource(R.string.recognize_again))
                     }
                 }
-                ContentCard("Details") {
+                ContentCard(stringResource(R.string.details)) {
                     OutlinedTextField(
                         title,
                         { title = it },
                         Modifier.fillMaxWidth().testTag("scanner.title"),
-                        label = { Text("Name") },
+                        label = { Text(stringResource(R.string.details_name)) },
                         singleLine = true,
                         keyboardOptions =
                             KeyboardOptions(
@@ -330,8 +341,8 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                         note,
                         { note = it },
                         Modifier.fillMaxWidth().testTag("scanner.note"),
-                        label = { Text("Notes") },
-                        placeholder = { Text("Optional notes") },
+                        label = { Text(stringResource(R.string.details_notes)) },
+                        placeholder = { Text(stringResource(R.string.details_notes_placeholder)) },
                         minLines = 3,
                         maxLines = 8,
                         keyboardOptions =
@@ -353,14 +364,14 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                         enabled = edited && title.isNotBlank() && !working,
                         modifier = Modifier.testTag("scanner.saveDetails"),
                     ) {
-                        Text("Save details")
+                        Text(stringResource(R.string.save_details))
                     }
                 }
                 TextButton(
                     onClick = {
                         scope.launch {
                             if (model.delete(document)) {
-                                nav.tell("Moved to Recently Deleted") { model.restore(document) }
+                                nav.tell(moved) { model.restore(document) }
                                 nav.pop()
                             }
                         }
@@ -372,7 +383,7 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                             contentColor = MaterialTheme.colorScheme.error
                         ),
                 ) {
-                    Text("Delete document")
+                    Text(stringResource(R.string.delete_document))
                 }
             }
             if (working) LoadingIndicator(Modifier.align(Alignment.Center).size(64.dp))
@@ -381,8 +392,8 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
     removing?.let { page ->
         AlertDialog(
             onDismissRequest = { removing = null },
-            title = { Text("Remove this page?") },
-            text = { Text("Its image is deleted when the document is saved.") },
+            title = { Text(stringResource(R.string.remove_page_title)) },
+            text = { Text(stringResource(R.string.remove_page_text)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -390,10 +401,15 @@ fun DocumentScreen(model: ScannerModel, id: UUID) {
                         orderPages(document.pages.filter { it.id != page.id }.map { it.id })
                     }
                 ) {
-                    Text("Remove page", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(R.string.remove_page),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             },
-            dismissButton = { TextButton(onClick = { removing = null }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { removing = null }) { Text(stringResource(R.string.cancel)) }
+            },
         )
     }
     if (exporting) ExportScreen(model, document) { exporting = false }
@@ -447,18 +463,20 @@ private fun PageTile(
 ) {
     var menu by remember { mutableStateOf(false) }
     val number = index + 1
+    val pageLabel = stringResource(R.string.page_number, number)
+    val pageText = page.text.ifEmpty { stringResource(R.string.no_text) }.take(200)
     Box {
         Column(
             Modifier.fillMaxWidth()
                 .combinedClickable(
-                    onLongClickLabel = "Options",
+                    onLongClickLabel = stringResource(R.string.options),
                     onLongClick = { menu = true },
-                    onClickLabel = "Rotate or adjust",
+                    onClickLabel = stringResource(R.string.rotate_or_adjust),
                     onClick = onOpen,
                 )
                 .semantics(mergeDescendants = true) {
-                    contentDescription = "Page $number"
-                    stateDescription = page.text.ifEmpty { "No recognized text" }.take(200)
+                    contentDescription = pageLabel
+                    stateDescription = pageText
                 }
                 .testTag("scanner.page.$number"),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -480,12 +498,12 @@ private fun PageTile(
             onClick = { menu = true },
             modifier = Modifier.align(Alignment.TopEnd).testTag("scanner.page.options.$number"),
         ) {
-            Icon(Icons.Outlined.MoreVert, "Page $number actions")
+            Icon(Icons.Outlined.MoreVert, stringResource(R.string.page_actions, number))
         }
         DropdownMenu(menu, onDismissRequest = { menu = false }) {
             if (page.text.isNotEmpty())
                 DropdownMenuItem(
-                    text = { Text("Share text") },
+                    text = { Text(stringResource(R.string.share_text)) },
                     leadingIcon = { Icon(Icons.Outlined.FormatQuote, null) },
                     onClick = {
                         menu = false
@@ -495,7 +513,12 @@ private fun PageTile(
             if (document.pages.size > 1) {
                 if (page.text.isNotEmpty()) HorizontalDivider()
                 DropdownMenuItem(
-                    text = { Text("Remove page", color = MaterialTheme.colorScheme.error) },
+                    text = {
+                        Text(
+                            stringResource(R.string.remove_page),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    },
                     leadingIcon = {
                         Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error)
                     },
@@ -507,7 +530,7 @@ private fun PageTile(
             }
             if (page.text.isEmpty() && document.pages.size < 2)
                 DropdownMenuItem(
-                    text = { Text("Rotate or adjust") },
+                    text = { Text(stringResource(R.string.rotate_or_adjust)) },
                     leadingIcon = { Icon(Icons.Outlined.Tune, null) },
                     onClick = {
                         menu = false
@@ -530,6 +553,7 @@ private fun AddPagesTile(
 ) {
     var menu by remember { mutableStateOf(false) }
     val rule = MaterialTheme.colorScheme.outline
+    val addPages = stringResource(R.string.add_pages)
     Box {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -561,7 +585,7 @@ private fun AddPagesTile(
                                     ),
                             )
                         }
-                        .semantics { contentDescription = "Add pages" }
+                        .semantics { contentDescription = addPages }
                         .testTag("scanner.addPages"),
             ) {
                 Column(
@@ -570,7 +594,7 @@ private fun AddPagesTile(
                     verticalArrangement = Arrangement.spacedBy(Space.s, Alignment.CenterVertically),
                 ) {
                     Icon(Icons.Outlined.Add, null)
-                    Text("Add pages", style = MaterialTheme.typography.titleSmall)
+                    Text(addPages, style = MaterialTheme.typography.titleSmall)
                 }
             }
             // Match the page-number caption height without exposing a blank accessibility node.
@@ -583,7 +607,7 @@ private fun AddPagesTile(
         DropdownMenu(menu, onDismissRequest = { menu = false }) {
             if (camera)
                 DropdownMenuItem(
-                    text = { Text("Scan more pages") },
+                    text = { Text(stringResource(R.string.scan_more)) },
                     leadingIcon = { Icon(Icons.Outlined.DocumentScanner, null) },
                     onClick = {
                         menu = false
@@ -591,7 +615,7 @@ private fun AddPagesTile(
                     },
                 )
             DropdownMenuItem(
-                text = { Text("Append images or PDF") },
+                text = { Text(stringResource(R.string.append_files)) },
                 leadingIcon = { Icon(Icons.Outlined.FileOpen, null) },
                 onClick = {
                     menu = false
@@ -646,6 +670,8 @@ private fun ArrangePages(
         pages = pages.toMutableList().apply { add(to, removeAt(from)) }
     }
     val changed = pages.map { it.id } != document.pages.map { it.id }
+    val moveUp = stringResource(R.string.move_up)
+    val moveDown = stringResource(R.string.move_down)
     // Material's full-screen dialog (SevenKit FullScreenForm's bar), with the list itself
     // scrolling.
     var discarding by remember { mutableStateOf(false) }
@@ -670,14 +696,14 @@ private fun ArrangePages(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Arrange pages") },
+                    title = { Text(stringResource(R.string.arrange_title)) },
                     navigationIcon = {
                         IconButton(
                             onClick = close,
                             enabled = !busy,
                             modifier = Modifier.testTag("editor-cancel"),
                         ) {
-                            Icon(Icons.Outlined.Close, "Close")
+                            Icon(Icons.Outlined.Close, stringResource(R.string.close))
                         }
                     },
                     actions = {
@@ -686,7 +712,7 @@ private fun ArrangePages(
                             enabled = changed && !busy,
                             modifier = Modifier.testTag("editor-save"),
                         ) {
-                            Text("Save")
+                            Text(stringResource(R.string.save))
                         }
                     },
                 )
@@ -700,7 +726,7 @@ private fun ArrangePages(
             ) {
                 item {
                     Text(
-                        "Drag a handle or use a page’s options to move it. Changes apply when you tap Save. Keep at least one page.",
+                        stringResource(R.string.arrange_hint),
                         Modifier.padding(bottom = Space.s),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -720,14 +746,14 @@ private fun ArrangePages(
                                     customActions = buildList {
                                         if (!busy && index > 0)
                                             add(
-                                                CustomAccessibilityAction("Move up") {
+                                                CustomAccessibilityAction(moveUp) {
                                                     move(index, index - 1)
                                                     true
                                                 }
                                             )
                                         if (!busy && index < pages.lastIndex)
                                             add(
-                                                CustomAccessibilityAction("Move down") {
+                                                CustomAccessibilityAction(moveDown) {
                                                     move(index, index + 1)
                                                     true
                                                 }
@@ -742,7 +768,7 @@ private fun ArrangePages(
                             ) {
                                 Icon(
                                     Icons.Outlined.DragHandle,
-                                    "Reorder",
+                                    stringResource(R.string.reorder),
                                     (if (busy) Modifier else Modifier.draggableHandle())
                                         .size(48.dp)
                                         .padding(Space.ms),
@@ -758,15 +784,22 @@ private fun ArrangePages(
                                     verticalArrangement = Arrangement.spacedBy(Space.xs),
                                 ) {
                                     Text(
-                                        "Page ${numbers[page.id]}",
+                                        stringResource(
+                                            R.string.page_number,
+                                            numbers[page.id] ?: 0,
+                                        ),
                                         style = MaterialTheme.typography.titleSmall,
                                     )
                                     Text(
-                                        "Position ${index + 1} of ${pages.size}",
+                                        stringResource(
+                                            R.string.position,
+                                            index + 1,
+                                            pages.size,
+                                        ),
                                         style = MaterialTheme.typography.labelMedium,
                                     )
                                     Text(
-                                        page.text.ifEmpty { "No recognized text" },
+                                        page.text.ifEmpty { stringResource(R.string.no_text) },
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 2,
@@ -783,12 +816,15 @@ private fun ArrangePages(
                                     ) {
                                         Icon(
                                             Icons.Outlined.MoreVert,
-                                            "Options for page ${numbers[page.id]}",
+                                            stringResource(
+                                                R.string.page_options,
+                                                numbers[page.id] ?: 0,
+                                            ),
                                         )
                                     }
                                     DropdownMenu(options, onDismissRequest = { options = false }) {
                                         DropdownMenuItem(
-                                            text = { Text("Move earlier") },
+                                            text = { Text(stringResource(R.string.move_earlier)) },
                                             enabled = index > 0 && !busy,
                                             leadingIcon = {
                                                 Icon(Icons.Outlined.ArrowUpward, null)
@@ -799,7 +835,7 @@ private fun ArrangePages(
                                             },
                                         )
                                         DropdownMenuItem(
-                                            text = { Text("Move later") },
+                                            text = { Text(stringResource(R.string.move_later)) },
                                             enabled = index < pages.lastIndex && !busy,
                                             leadingIcon = {
                                                 Icon(Icons.Outlined.ArrowDownward, null)
@@ -810,7 +846,7 @@ private fun ArrangePages(
                                             },
                                         )
                                         DropdownMenuItem(
-                                            text = { Text("Remove page") },
+                                            text = { Text(stringResource(R.string.remove_page)) },
                                             enabled = pages.size > 1 && !busy,
                                             leadingIcon = {
                                                 Icon(Icons.Outlined.RemoveCircleOutline, null)

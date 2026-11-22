@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings › Privacy: which scanner this build uses (THIRD-PARTY.md states the same). -->
+    <string name="scanner_engine_note">Pages are captured with the built-in camera capture (CameraX) on this phone, without Google Play services. Text recognition uses Tesseract on this phone.</string>
+</resources>

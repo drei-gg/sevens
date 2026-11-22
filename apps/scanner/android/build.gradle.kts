@@ -11,8 +11,10 @@ configure<com.android.build.api.dsl.ApplicationExtension> {
     androidResources { noCompress += "traineddata" }
     // ML Kit's document scanner is a Google Play services exception, like Play Billing: personal
     // and store only. Generic captures with CameraX alone (src/generic).
-    sourceSets.getByName("personal").java.srcDir("src/gms/kotlin")
-    sourceSets.getByName("store").java.srcDir("src/gms/kotlin")
+    for (flavor in listOf("personal", "store")) {
+        sourceSets.getByName(flavor).java.srcDir("src/gms/kotlin")
+        sourceSets.getByName(flavor).res.srcDir("src/gms/res")
+    }
     // Instrumented tests read the Swift-written backup index the core's golden tests use.
     sourceSets.getByName("androidTest").assets.srcDir("../core/tests/fixtures")
     // JavaCPP's jars also carry headers, CMake files and the tesseract CLI under lib/<abi>/; only

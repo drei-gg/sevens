@@ -45,6 +45,8 @@ fun shareFile(context: Context, file: File, mime: String) {
 
 /** Copies [file] into the document the person created with the system picker. */
 fun copyTo(context: Context, file: File, target: Uri) {
-    val out = context.contentResolver.openOutputStream(target, "wt") ?: throw IllegalStateException("That location can’t be written to.")
+    val out =
+        context.contentResolver.openOutputStream(target, "wt")
+            ?: throw IllegalStateException(context.getString(R.string.error_unwritable))
     out.use { stream -> file.inputStream().use { it.copyTo(stream) } }
 }

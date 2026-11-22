@@ -21,6 +21,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.window.Dialog
@@ -63,15 +64,15 @@ fun PdfPreview(file: File, onClose: () -> Unit) {
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             topBar = {
                 TopAppBar(
-                    title = { Text("PDF preview") },
+                    title = { Text(stringResource(R.string.pdf_preview)) },
                     navigationIcon = {
                         IconButton(onClick = onClose, modifier = Modifier.testTag("pdf.close")) {
-                            Icon(Icons.Outlined.Close, "Close")
+                            Icon(Icons.Outlined.Close, stringResource(R.string.close))
                         }
                     },
                     actions = {
                         IconButton(onClick = { shareFile(context, file, "application/pdf") }) {
-                            Icon(Icons.Outlined.Share, "Share PDF")
+                            Icon(Icons.Outlined.Share, stringResource(R.string.share_pdf))
                         }
                     },
                 )
@@ -90,6 +91,7 @@ fun PdfPreview(file: File, onClose: () -> Unit) {
                     items(count) { index ->
                         var image by remember(index, width) { mutableStateOf<ImageBitmap?>(null) }
                         val aspect = aspects[index]
+                        val pageLabel = stringResource(R.string.page_of, index + 1, count)
                         LaunchedEffect(index, width) {
                             image =
                                 withContext(Dispatchers.IO) {
@@ -124,7 +126,7 @@ fun PdfPreview(file: File, onClose: () -> Unit) {
                             Modifier.fillMaxWidth()
                                 .aspectRatio(aspect)
                                 .background(MaterialTheme.colorScheme.surface)
-                                .semantics { contentDescription = "Page ${index + 1} of $count" }
+                                .semantics { contentDescription = pageLabel }
                         ) {
                             image?.let {
                                 Image(

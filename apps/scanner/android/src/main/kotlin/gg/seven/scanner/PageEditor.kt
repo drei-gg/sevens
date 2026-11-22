@@ -17,9 +17,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -52,6 +54,7 @@ class TextCorrectionDraft(val original: ScanPage) {
 fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
     val nav = LocalNav.current
     val context = LocalContext.current
+    val resources = LocalResources.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     val documents by model.documents.collectAsStateWithLifecycle()
@@ -118,7 +121,7 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
         ?.takeIf { it.original.id == pageId }
         ?.let { draft ->
             gg.seven.kit.FullScreenForm(
-                title = "Edit text",
+                title = stringResource(R.string.edit_text),
                 onClose = {
                     model.textCorrection.value = null
                     failure = null
@@ -138,21 +141,21 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
                             model.textCorrection.value = null
                         } catch (e: Exception) {
                             failure =
-                                describe(e) +
-                                    " Your text is kept here. If the page changed, close and reopen this editor."
+                                resources.getString(
+                                    R.string.edit_text_failed,
+                                    describe(resources, e),
+                                )
                         } finally {
                             working = false
                         }
                     }
                 },
             ) {
-                Text(
-                    "Correct the saved text used by search and text sharing. The image stays unchanged. Searchable PDFs recognize the image again; they do not use these corrections."
-                )
+                Text(stringResource(R.string.edit_text_intro))
                 OutlinedTextField(
                     draft.text,
                     { draft.text = it },
-                    label = { Text("Recognized text") },
+                    label = { Text(stringResource(R.string.recognized_text)) },
                     modifier =
                         Modifier.fillMaxWidth()
                             .heightIn(min = 240.dp)
@@ -187,9 +190,10 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
         cropRight = value.crop?.right ?: 1.0
         cropBottom = value.crop?.bottom ?: 1.0
     }
+    val pageLabel = stringResource(R.string.page_number, number)
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { ScannerTopBar("Page $number", onBack = close) },
+        topBar = { ScannerTopBar(pageLabel, onBack = close) },
         bottomBar = {
             Surface(color = MaterialTheme.colorScheme.background) {
                 Box(
@@ -215,7 +219,7 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
                                 .heightIn(min = 56.dp)
                                 .testTag("page.save"),
                     ) {
-                        Text("Save page")
+                        Text(stringResource(R.string.save_page))
                     }
                 }
             }
@@ -233,7 +237,7 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
                 model.repository.pageFile(document.id, page.id),
                 settings,
                 Modifier.fillMaxWidth().height(420.dp).semantics {
-                    contentDescription = "Page $number"
+                    contentDescription = pageLabel
                 },
                 maxPixels = 1600,
                 annotations = page.annotations,
@@ -244,7 +248,7 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
                 enabled = !working,
                 modifier = Modifier.fillMaxWidth().testTag("page.crop"),
             ) {
-                Text(if (cropped) "Adjust crop" else "Crop page")
+                Text(stringResource(if (cropped) R.string.adjust_crop else R.string.crop_page))
             }
             OutlinedButton(
                 onClick = {
@@ -257,7 +261,7 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
                                     .first { it.id == pageId }
                             model.annotationDraft.value = AnnotationDraft(documentId, latest)
                         } catch (e: Exception) {
-                            failure = describe(e)
+                            failure = describe(resources, e)
                         }
                     }
                 },
@@ -269,7 +273,7 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
             }
             if (settings != page.settings)
                 Text(
-                    "Save image adjustments before annotating.",
+                    stringResource(R.string.annotate_after_save),
                     style = MaterialTheme.typography.bodySmall,
                 )
             FlowRow(
@@ -286,7 +290,7 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
                 ) {
                     Icon(Icons.AutoMirrored.Outlined.RotateLeft, null)
                     Spacer(Modifier.width(Space.s))
-                    Text("Rotate left")
+                    Text(stringResource(R.string.rotate_left))
                 }
                 OutlinedButton(
                     onClick = {
@@ -298,26 +302,33 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
                 ) {
                     Icon(Icons.AutoMirrored.Outlined.RotateRight, null)
                     Spacer(Modifier.width(Space.s))
-                    Text("Rotate right")
+                    Text(stringResource(R.string.rotate_right))
                 }
             }
+            val grayscaleLabel = stringResource(R.string.grayscale)
             Section(
-                title = "Adjust",
-                footer =
-                    "Your original stays untouched. Save to apply these settings to previews, recognition and exports.",
+                title = stringResource(R.string.adjust),
+                footer = stringResource(R.string.adjust_footer),
             ) {
-                switch("Grayscale", grayscale) { grayscale = it }
+                switch(grayscaleLabel, grayscale) { grayscale = it }
                 content {
                     val shown =
                         (brightness * 100).roundToInt().let { if (it > 0) "+$it" else "$it" }
-                    Adjustment("Brightness", shown, brightness.toFloat(), -0.5f..0.5f) {
+                    Adjustment(
+                        stringResource(R.string.brightness),
+                        "brightness",
+                        shown,
+                        brightness.toFloat(),
+                        -0.5f..0.5f,
+                    ) {
                         brightness = it
                     }
                 }
                 content {
                     Adjustment(
-                        "Contrast",
-                        "${(contrast * 100).roundToInt()}%",
+                        stringResource(R.string.contrast),
+                        "contrast",
+                        stringResource(R.string.contrast_value, (contrast * 100).roundToInt()),
                         contrast.toFloat(),
                         0.5f..2f,
                     ) {
@@ -330,11 +341,11 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
                         enabled = settings != pageSettingsDefault(),
                         modifier = Modifier.testTag("page.reset"),
                     ) {
-                        Text("Reset to original")
+                        Text(stringResource(R.string.reset_original))
                     }
                 }
             }
-            ContentCard("Recognized text") {
+            ContentCard(stringResource(R.string.recognized_text)) {
                 OutlinedButton(
                     // The latest saved page, not this screen's copy: recognition may have finished.
                     onClick = {
@@ -348,23 +359,23 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
                                         ?: throw gg.seven.scanner.core.ScanException.MissingPage()
                                 model.textCorrection.value = TextCorrectionDraft(latest)
                             } catch (e: Exception) {
-                                failure = describe(e)
+                                failure = describe(resources, e)
                             }
                         }
                     },
                     enabled = !working && settings == page.settings,
                     modifier = Modifier.testTag("page.editText"),
                 ) {
-                    Text("Edit text")
+                    Text(stringResource(R.string.edit_text))
                 }
                 if (settings != page.settings)
                     Text(
-                        "Save image adjustments before editing text.",
+                        stringResource(R.string.edit_text_after_save),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 if (page.text.isEmpty())
                     Text(
-                        "No recognized text yet.",
+                        stringResource(R.string.no_text_yet),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -380,7 +391,7 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
                     TextButton(onClick = { shareText(context, page.text) }) {
                         Icon(Icons.Outlined.Share, null)
                         Spacer(Modifier.width(Space.s))
-                        Text("Share text")
+                        Text(stringResource(R.string.share_text))
                     }
                 }
             }
@@ -393,6 +404,7 @@ fun PageEditor(model: ScannerModel, documentId: UUID, pageId: UUID) {
 @Composable
 private fun Adjustment(
     title: String,
+    tag: String,
     shown: String,
     value: Float,
     range: ClosedFloatingPointRange<Float>,
@@ -424,7 +436,7 @@ private fun Adjustment(
                         contentDescription = title
                         stateDescription = shown
                     }
-                    .testTag("page.$title"),
+                    .testTag("page.$tag"),
         )
     }
 }

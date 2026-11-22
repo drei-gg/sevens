@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings › Privacy: which scanner this build uses (THIRD-PARTY.md states the same). -->
+    <string name="scanner_engine_note">Pages are captured with Google’s ML Kit document scanner, which runs on this phone inside Google Play services. Play services may download the scanner module; Scanner itself sends nothing. Until the module is available, the built-in camera capture is used. Text recognition uses Tesseract on this phone.</string>
+</resources>

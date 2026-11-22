@@ -11,6 +11,7 @@ import gg.seven.scanner.core.ScanDocument
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -43,6 +44,14 @@ class ScannerUiTest {
         runBlocking { model.reload() }
         ui.waitForIdle()
     }
+
+    /**
+     * Whether access can lapse in this build: the generic flavor is built from source with
+     * everything unlocked, and a personal build may carry its explicit unlock. Trial-expiry checks
+     * run on personal builds without the unlock (and store builds).
+     */
+    private val trialApplies: Boolean
+        get() = !BuildConfig.PERSONAL_UNLOCK && !model.store.purchase.value.sourceBuild
 
     private fun stored(title: String): ScanDocument =
         model.repository.list().first { it.title == title }
@@ -378,19 +387,21 @@ class ScannerUiTest {
         ui.onNodeWithText("Save 1").assertExists()
         capture("scanner-camera-draft")
         // A trial can expire while the camera is open. Failure must keep the captured page.
-        val prefs = ui.activity.getSharedPreferences("seven-trial", 0)
-        prefs.edit().putLong("start", System.currentTimeMillis() - 8 * 86_400_000L).commit()
-        ui.runOnUiThread { model.store.refresh() }
-        ui.waitUntil(5_000) { !model.store.paidFeaturesAvailable }
-        ui.onNodeWithTag("scanner.capture.save").performClick()
-        ui.onNodeWithTag("scanner.error.ok").performClick()
-        ui.onNodeWithText("Save 1").assertIsEnabled()
-        prefs.edit().clear().commit()
-        ui.runOnUiThread {
-            model.store.access.startTrial()
-            model.store.refresh()
+        if (trialApplies) {
+            val prefs = ui.activity.getSharedPreferences("seven-trial", 0)
+            prefs.edit().putLong("start", System.currentTimeMillis() - 8 * 86_400_000L).commit()
+            ui.runOnUiThread { model.store.refresh() }
+            ui.waitUntil(5_000) { !model.store.paidFeaturesAvailable }
+            ui.onNodeWithTag("scanner.capture.save").performClick()
+            ui.onNodeWithTag("scanner.error.ok").performClick()
+            ui.onNodeWithText("Save 1").assertIsEnabled()
+            prefs.edit().clear().commit()
+            ui.runOnUiThread {
+                model.store.access.startTrial()
+                model.store.refresh()
+            }
+            ui.waitUntil(5_000) { model.store.paidFeaturesAvailable }
         }
-        ui.waitUntil(5_000) { model.store.paidFeaturesAvailable }
         ui.onNodeWithTag("scanner.capture.save").performClick()
         ui.waitUntil(30_000) {
             model.documents.value.any { it.title.startsWith("Scan ") } || model.error.value != null
@@ -555,6 +566,7 @@ class ScannerUiTest {
 
     @Test
     fun expiredTrialOffersTheUnlockForNewPagesButKeepsExport() {
+        assumeTrue("Access cannot lapse in this build", trialApplies)
         ui.activity.application
             .getSharedPreferences("seven-trial", 0)
             .edit()

@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onLongClick
@@ -106,6 +107,7 @@ class ScannerNav(
     private val keys: MutableList<String>,
     val snackbar: SnackbarHostState,
     private val scope: kotlinx.coroutines.CoroutineScope,
+    private val undoLabel: String,
 ) {
     /** A snackbar that outlives the screen that raised it, with an optional Undo. */
     fun tell(message: String, undo: (suspend () -> Unit)? = null) {
@@ -113,7 +115,7 @@ class ScannerNav(
             val result =
                 snackbar.showSnackbar(
                     message,
-                    actionLabel = undo?.let { "Undo" },
+                    actionLabel = undo?.let { undoLabel },
                     duration = SnackbarDuration.Short,
                 )
             if (result == SnackbarResult.ActionPerformed) undo?.invoke()
@@ -152,7 +154,9 @@ fun ScannerApp(model: ScannerModel = viewModel()) {
         }
     val snackbar = remember { SnackbarHostState() }
     val appScope = rememberCoroutineScope()
-    val nav = remember(keys, snackbar) { ScannerNav(keys, snackbar, appScope) }
+    val undoLabel = stringResource(R.string.undo)
+    val nav =
+        remember(keys, snackbar, undoLabel) { ScannerNav(keys, snackbar, appScope, undoLabel) }
     val error by model.error.collectAsStateWithLifecycle()
     val notice by model.notice.collectAsStateWithLifecycle()
     val unsaved by model.unsavedCapture.collectAsStateWithLifecycle()
@@ -199,14 +203,14 @@ fun ScannerApp(model: ScannerModel = viewModel()) {
     notice?.takeIf { error == null }?.let {
         AlertDialog(
             onDismissRequest = { model.notice.value = null },
-            title = { Text("Scan saved") },
+            title = { Text(stringResource(R.string.scan_saved)) },
             text = { Text(it) },
             confirmButton = {
                 TextButton(
                     onClick = { model.notice.value = null },
                     modifier = Modifier.testTag("scanner.notice.ok"),
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.ok))
                 }
             },
         )
@@ -216,14 +220,14 @@ fun ScannerApp(model: ScannerModel = viewModel()) {
             // Unsaved scanned pages leave only by being saved or by an explicit discard.
             AlertDialog(
                 onDismissRequest = {},
-                title = { Text("Could not complete") },
+                title = { Text(stringResource(R.string.could_not_complete)) },
                 text = { Text(it) },
                 confirmButton = {
                     TextButton(
                         onClick = { model.retryCapture() },
                         modifier = Modifier.testTag("scanner.capture.retry"),
                     ) {
-                        Text("Try again")
+                        Text(stringResource(R.string.try_again))
                     }
                 },
                 dismissButton = {
@@ -231,7 +235,10 @@ fun ScannerApp(model: ScannerModel = viewModel()) {
                         onClick = { model.discardCapture() },
                         modifier = Modifier.testTag("scanner.capture.discard"),
                     ) {
-                        Text("Discard pages", color = MaterialTheme.colorScheme.error)
+                        Text(
+                            stringResource(R.string.discard_pages),
+                            color = MaterialTheme.colorScheme.error,
+                        )
                     }
                 },
             )
@@ -239,14 +246,14 @@ fun ScannerApp(model: ScannerModel = viewModel()) {
     else error?.let {
         AlertDialog(
             onDismissRequest = { model.error.value = null },
-            title = { Text("Could not complete") },
+            title = { Text(stringResource(R.string.could_not_complete)) },
             text = { Text(it) },
             confirmButton = {
                 TextButton(
                     onClick = { model.error.value = null },
                     modifier = Modifier.testTag("scanner.error.ok"),
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.ok))
                 }
             },
         )
@@ -264,7 +271,9 @@ fun ScannerTopBar(
         title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         navigationIcon = {
             onBack?.let {
-                IconButton(onClick = it) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
+                IconButton(onClick = it) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back))
+                }
             }
         },
         actions = actions,
@@ -340,25 +349,26 @@ fun LibraryScreen(model: ScannerModel) {
                 },
             )
         }
+    val moved = stringResource(R.string.moved_to_trash)
+    val importFeature = stringResource(R.string.feature_import)
+    val scanFeature = stringResource(R.string.feature_scan)
+    val optionsLabel = stringResource(R.string.options)
     fun trash(document: ScanDocument) =
-        scope.launch {
-            if (model.delete(document))
-                nav.tell("Moved to Recently Deleted") { model.restore(document) }
-        }
+        scope.launch { if (model.delete(document)) nav.tell(moved) { model.restore(document) } }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(nav.snackbar) },
         topBar = {
-            ScannerTopBar("Documents") {
+            ScannerTopBar(stringResource(R.string.library_title)) {
                 Box {
                     IconButton(onClick = { sortMenu = true }) {
-                        Icon(Icons.AutoMirrored.Outlined.Sort, "Sort")
+                        Icon(Icons.AutoMirrored.Outlined.Sort, stringResource(R.string.sort))
                     }
                     DropdownMenu(sortMenu, onDismissRequest = { sortMenu = false }) {
                         listOf(
-                                LibraryOrder.NEWEST to "Newest first",
-                                LibraryOrder.OLDEST to "Oldest first",
-                                LibraryOrder.NAME to "Name",
+                                LibraryOrder.NEWEST to stringResource(R.string.sort_newest),
+                                LibraryOrder.OLDEST to stringResource(R.string.sort_oldest),
+                                LibraryOrder.NAME to stringResource(R.string.sort_name),
                             )
                             .forEach { (value, label) ->
                                 DropdownMenuItem(
@@ -368,14 +378,18 @@ fun LibraryScreen(model: ScannerModel) {
                                         sortMenu = false
                                     },
                                     trailingIcon = {
-                                        if (order == value) Icon(Icons.Outlined.Check, "Selected")
+                                        if (order == value)
+                                            Icon(
+                                                Icons.Outlined.Check,
+                                                stringResource(R.string.sort_selected),
+                                            )
                                     },
                                 )
                             }
                     }
                 }
                 IconButton(onClick = { nav.push(Route.Settings) }) {
-                    Icon(Icons.Outlined.Settings, "Settings")
+                    Icon(Icons.Outlined.Settings, stringResource(R.string.settings))
                 }
             }
         },
@@ -385,35 +399,40 @@ fun LibraryScreen(model: ScannerModel) {
                     { importModifier, scanModifier ->
                         if (camera) {
                             FilledTonalButton(
-                                onClick = { gate.run("Import documents", adders.import) },
+                                onClick = { gate.run(importFeature, adders.import) },
                                 enabled = !busy,
                                 modifier =
                                     importModifier.heightIn(min = 56.dp).testTag("scanner.import"),
                             ) {
                                 Icon(Icons.Outlined.FileOpen, null)
                                 Spacer(Modifier.width(Space.s))
-                                Text("Import")
+                                Text(stringResource(R.string.import_short))
                             }
                             Button(
-                                onClick = { gate.run("Scan documents", adders.scan) },
+                                onClick = { gate.run(scanFeature, adders.scan) },
                                 enabled = !busy,
                                 modifier =
                                     scanModifier.heightIn(min = 56.dp).testTag("scanner.scan"),
                             ) {
                                 Icon(Icons.Outlined.DocumentScanner, null)
                                 Spacer(Modifier.width(Space.s))
-                                Text("Scan")
+                                Text(stringResource(R.string.scan))
                             }
                         } else
                             Button(
-                                onClick = { gate.run("Import documents", adders.import) },
+                                onClick = { gate.run(importFeature, adders.import) },
                                 enabled = !busy,
                                 modifier =
                                     scanModifier.heightIn(min = 56.dp).testTag("scanner.import"),
                             ) {
                                 Icon(Icons.Outlined.FileOpen, null)
                                 Spacer(Modifier.width(Space.s))
-                                Text(if (large) "Import" else "Import images or PDF")
+                                Text(
+                                    stringResource(
+                                        if (large) R.string.import_short
+                                        else R.string.import_images_or_pdf
+                                    )
+                                )
                             }
                     }
                 Box(
@@ -455,7 +474,7 @@ fun LibraryScreen(model: ScannerModel) {
                 }
             if (unreadable > 0)
                 item(span = full) {
-                    ContentCard("Some folders could not be read") {
+                    ContentCard(stringResource(R.string.unreadable_title)) {
                         StatusLine(
                             pluralStringResource(R.plurals.unreadable, unreadable, unreadable),
                             tint = MaterialTheme.colorScheme.error,
@@ -482,7 +501,7 @@ fun LibraryScreen(model: ScannerModel) {
             if (!camera)
                 item(span = full) {
                     Text(
-                        "Camera scanning is unavailable here. You can import documents instead.",
+                        stringResource(R.string.camera_unavailable),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -491,10 +510,11 @@ fun LibraryScreen(model: ScannerModel) {
                 if (loaded)
                     item(span = full) {
                         EmptyState(
-                            "No documents yet",
-                            if (camera)
-                                "Scans you save appear here, newest first. Tap Scan to start."
-                            else "Documents you import appear here, newest first.",
+                            stringResource(R.string.library_empty_title),
+                            stringResource(
+                                if (camera) R.string.library_empty_camera
+                                else R.string.library_empty_import
+                            ),
                             Modifier.padding(vertical = Space.xxl),
                             icon = Icons.Outlined.DocumentScanner,
                         )
@@ -502,7 +522,7 @@ fun LibraryScreen(model: ScannerModel) {
             } else {
                 item(span = full) {
                     SearchInput(
-                        "Search names, notes and text",
+                        stringResource(R.string.search_hint),
                         Modifier.testTag("scanner.search"),
                         state = search,
                     )
@@ -511,11 +531,13 @@ fun LibraryScreen(model: ScannerModel) {
                     Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text(
-                                when (order) {
-                                    LibraryOrder.NEWEST -> "Recent"
-                                    LibraryOrder.OLDEST -> "Oldest first"
-                                    LibraryOrder.NAME -> "By name"
-                                },
+                                stringResource(
+                                    when (order) {
+                                        LibraryOrder.NEWEST -> R.string.heading_recent
+                                        LibraryOrder.OLDEST -> R.string.heading_oldest
+                                        LibraryOrder.NAME -> R.string.heading_by_name
+                                    }
+                                ),
                                 Modifier.weight(1f).semantics { heading() },
                                 style = MaterialTheme.typography.titleLarge,
                             )
@@ -527,7 +549,10 @@ fun LibraryScreen(model: ScannerModel) {
                         }
                         if (favoritesOnly || documents.any { it.favorite == true })
                             ConnectedChoice(
-                                listOf(false to "All", true to "Favorites"),
+                                listOf(
+                                    false to stringResource(R.string.filter_all),
+                                    true to stringResource(R.string.favorites),
+                                ),
                                 favoritesOnly,
                             ) {
                                 favoritesOnly = it
@@ -538,22 +563,25 @@ fun LibraryScreen(model: ScannerModel) {
                     item(span = full) {
                         if (query.isEmpty())
                             EmptyState(
-                                "No favorites",
-                                "Star a document to keep it here.",
+                                stringResource(R.string.no_favorites_title),
+                                stringResource(R.string.no_favorites_text),
                                 icon = Icons.Outlined.StarOutline,
                             )
                         else
                             EmptyState(
-                                "No results for “$query”",
-                                "Try another word from the name, notes or text.",
+                                stringResource(R.string.no_results_title, query),
+                                stringResource(R.string.no_results_text),
                                 icon = Icons.Outlined.SearchOff,
                                 action =
-                                    "Clear search" to { search.edit { replace(0, length, "") } },
+                                    stringResource(R.string.clear_search) to
+                                        {
+                                            search.edit { replace(0, length, "") }
+                                        },
                             )
                     }
                 items(visible, key = { it.id }) { document ->
                     var menu by remember { mutableStateOf(false) }
-                    val pages = pageCount(document.pages.size)
+                    val description = cardDescription(document, pageCount(document.pages.size))
                     Box {
                         DocumentCard(
                             document,
@@ -562,14 +590,14 @@ fun LibraryScreen(model: ScannerModel) {
                             },
                             Modifier.fillMaxWidth()
                                 .combinedClickable(
-                                    onLongClickLabel = "Options",
+                                    onLongClickLabel = optionsLabel,
                                     onLongClick = { menu = true },
                                 ) {
                                     nav.push(Route.Document(document.id))
                                 }
                                 .semantics(mergeDescendants = true) {
-                                    contentDescription = cardDescription(document, pages)
-                                    onLongClick("Options") {
+                                    contentDescription = description
+                                    onLongClick(optionsLabel) {
                                         menu = true
                                         true
                                     }
@@ -581,14 +609,20 @@ fun LibraryScreen(model: ScannerModel) {
                             modifier =
                                 Modifier.align(Alignment.TopEnd).testTag("scanner.document.options"),
                         ) {
-                            Icon(Icons.Outlined.MoreVert, "Actions for ${document.title}")
+                            Icon(
+                                Icons.Outlined.MoreVert,
+                                stringResource(R.string.document_actions, document.title),
+                            )
                         }
                         DropdownMenu(menu, onDismissRequest = { menu = false }) {
                             val starred = document.favorite == true
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        if (starred) "Remove from Favorites" else "Add to Favorites"
+                                        stringResource(
+                                            if (starred) R.string.favorite_remove
+                                            else R.string.favorite_add
+                                        )
                                     )
                                 },
                                 leadingIcon = {
@@ -607,7 +641,7 @@ fun LibraryScreen(model: ScannerModel) {
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        "Move to Recently Deleted",
+                                        stringResource(R.string.move_to_trash),
                                         color = MaterialTheme.colorScheme.error,
                                     )
                                 },
@@ -628,15 +662,17 @@ fun LibraryScreen(model: ScannerModel) {
                 }
             }
             item(span = full) {
+                val trashLabel = stringResource(R.string.recently_deleted)
+                val backupLabel = stringResource(R.string.backup_restore)
                 Section(Modifier.padding(top = Space.s)) {
                     item(
-                        "Recently Deleted",
+                        trashLabel,
                         value = deleted.size.takeIf { it > 0 }?.toString(),
                         icon = Icons.Outlined.Delete,
                         onClick = { nav.push(Route.Deleted) },
                     )
                     item(
-                        "Backup & restore",
+                        backupLabel,
                         icon = Icons.Outlined.SettingsBackupRestore,
                         onClick = { nav.push(Route.Backup) },
                     )

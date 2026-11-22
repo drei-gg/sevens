@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,6 +49,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun RecentlyDeletedScreen(model: ScannerModel) {
     val nav = LocalNav.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val deleted by model.deleted.collectAsStateWithLifecycle()
     var permanent by remember { mutableStateOf<ScanDocument?>(null) }
@@ -57,18 +59,18 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
         scope.launch {
             val restored = model.restore(document)
             working = false
-            if (restored) nav.tell("Restored “${document.title}”")
+            if (restored) nav.tell(resources.getString(R.string.restored_named, document.title))
         }
     }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(nav.snackbar) },
-        topBar = { ScannerTopBar("Recently Deleted", onBack = nav::pop) },
+        topBar = { ScannerTopBar(stringResource(R.string.recently_deleted), onBack = nav::pop) },
     ) { padding ->
         if (deleted.isEmpty())
             EmptyState(
-                "Nothing in Recently Deleted",
-                "Documents you delete wait here until you restore them or delete them permanently.",
+                stringResource(R.string.trash_empty_title),
+                stringResource(R.string.trash_empty_text),
                 Modifier.padding(padding).padding(top = Space.xxl),
                 icon = Icons.Outlined.Delete,
             )
@@ -86,7 +88,7 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
                         SegmentedListItem(
                             onClick = { menu = true },
                             onLongClick = { menu = true },
-                            onLongClickLabel = "Options",
+                            onLongClickLabel = stringResource(R.string.options),
                             enabled = !working,
                             shapes = ListItemDefaults.segmentedShapes(index, deleted.size),
                             modifier = Modifier.testTag("trash.row"),
@@ -117,12 +119,15 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
                                         enabled = !working,
                                         modifier = Modifier.testTag("trash.restore"),
                                     ) {
-                                        Text("Restore")
+                                        Text(stringResource(R.string.restore))
                                     }
                                     IconButton(onClick = { menu = true }, enabled = !working) {
                                         Icon(
                                             Icons.Outlined.MoreVert,
-                                            "Actions for ${document.title}",
+                                            stringResource(
+                                                R.string.document_actions,
+                                                document.title,
+                                            ),
                                         )
                                     }
                                 }
@@ -132,7 +137,7 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
                         }
                         DropdownMenu(menu, onDismissRequest = { menu = false }) {
                             DropdownMenuItem(
-                                text = { Text("Restore") },
+                                text = { Text(stringResource(R.string.restore)) },
                                 leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Undo, null) },
                                 onClick = {
                                     menu = false
@@ -143,7 +148,7 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        "Delete permanently",
+                                        stringResource(R.string.delete_permanently),
                                         color = MaterialTheme.colorScheme.error,
                                     )
                                 },
@@ -165,7 +170,7 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
                 }
                 item {
                     Text(
-                        "Deleted documents stay on this phone until you restore or permanently delete them. Open a document’s menu to delete it for good. They are not a backup; export important copies.",
+                        stringResource(R.string.trash_footer),
                         Modifier.padding(top = Space.s, start = Space.m, end = Space.m),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -176,8 +181,8 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
     permanent?.let { document ->
         AlertDialog(
             onDismissRequest = { permanent = null },
-            title = { Text("Delete “${document.title}” permanently?") },
-            text = { Text("This cannot be undone.") },
+            title = { Text(stringResource(R.string.delete_permanently_title, document.title)) },
+            text = { Text(stringResource(R.string.cannot_undo)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -190,10 +195,15 @@ fun RecentlyDeletedScreen(model: ScannerModel) {
                     },
                     modifier = Modifier.testTag("trash.confirm"),
                 ) {
-                    Text("Delete permanently", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(R.string.delete_permanently),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             },
-            dismissButton = { TextButton(onClick = { permanent = null }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { permanent = null }) { Text(stringResource(R.string.cancel)) }
+            },
         )
     }
 }
@@ -233,16 +243,18 @@ fun BackupScreen(model: ScannerModel) {
                     model.repository.io {
                         val out =
                             context.contentResolver.openOutputStream(target, "wt")
-                                ?: throw IllegalStateException("That location can’t be written to.")
+                                ?: throw IllegalStateException(
+                                    resources.getString(R.string.error_unwritable)
+                                )
                         out.use { exportBackup(it) }
                     }
-                    report("Backup saved.", false)
+                    report(resources.getString(R.string.backup_saved), false)
                 } catch (e: Exception) {
                     runCatching {
                         DocumentsContract.deleteDocument(context.contentResolver, target)
                     }
                     report(
-                        "Backup could not be completed. Your library is unchanged. " + describe(e),
+                        resources.getString(R.string.backup_failed, describe(resources, e)),
                         true,
                     )
                 }
@@ -260,7 +272,9 @@ fun BackupScreen(model: ScannerModel) {
                     model.repository.io {
                         val descriptor =
                             context.contentResolver.openFileDescriptor(source, "r")
-                                ?: throw IllegalStateException("This file couldn’t be opened.")
+                                ?: throw IllegalStateException(
+                                    resources.getString(R.string.error_unopenable)
+                                )
                         descriptor.use { fd ->
                             val length = fd.statSize
                             if (length < 0)
@@ -271,11 +285,13 @@ fun BackupScreen(model: ScannerModel) {
                         }
                     }
                 model.reload()
-                report("Restored ${documentCount(resources, count)} as copies.", false)
+                report(
+                    resources.getString(R.string.restored_copies, documentCount(resources, count)),
+                    false,
+                )
             } catch (e: Exception) {
                 report(
-                    "This backup could not be restored. Your existing documents are unchanged. " +
-                        describe(e),
+                    resources.getString(R.string.restore_failed, describe(resources, e)),
                     true,
                 )
             }
@@ -284,7 +300,7 @@ fun BackupScreen(model: ScannerModel) {
     }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { ScannerTopBar("Backup & restore", onBack = nav::pop) },
+        topBar = { ScannerTopBar(stringResource(R.string.backup_restore), onBack = nav::pop) },
     ) { padding ->
         Column(
             Modifier.padding(padding)
@@ -296,10 +312,10 @@ fun BackupScreen(model: ScannerModel) {
         ) {
             val tiles =
                 listOf(
-                    "Documents" to documents.size,
-                    "Pages" to pages,
-                    "Favorites" to documents.count { it.favorite == true },
-                    "Recently Deleted" to deleted.size,
+                    stringResource(R.string.library_title) to documents.size,
+                    stringResource(R.string.stat_pages) to pages,
+                    stringResource(R.string.favorites) to documents.count { it.favorite == true },
+                    stringResource(R.string.recently_deleted) to deleted.size,
                 )
             val perRow = if (largeText()) 1 else 2
             Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
@@ -312,7 +328,7 @@ fun BackupScreen(model: ScannerModel) {
                 }
             }
             Text(
-                "One portable file holds your documents, original pages, adjustments, notes and Recently Deleted. Save it on this phone, a memory card or USB drive, or a storage provider you choose.",
+                stringResource(R.string.backup_intro),
                 style = MaterialTheme.typography.bodyLarge,
             )
             Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
@@ -325,7 +341,7 @@ fun BackupScreen(model: ScannerModel) {
                     if (working) LoadingIndicator(Modifier.size(24.dp))
                     else Icon(Icons.Outlined.Backup, null)
                     Spacer(Modifier.width(Space.s))
-                    Text(if (working) "Working…" else "Export backup")
+                    Text(stringResource(if (working) R.string.working else R.string.export_backup))
                 }
                 FilledTonalButton(
                     onClick = { open.launch(arrayOf("*/*")) },
@@ -335,7 +351,7 @@ fun BackupScreen(model: ScannerModel) {
                 ) {
                     Icon(Icons.Outlined.Restore, null)
                     Spacer(Modifier.width(Space.s))
-                    Text("Restore from backup")
+                    Text(stringResource(R.string.restore_from_backup))
                 }
             }
             message?.let {
@@ -350,8 +366,8 @@ fun BackupScreen(model: ScannerModel) {
             }
             Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                 listOf(
-                        "Restore adds copies and never overwrites your current documents. Recently Deleted items remain deleted. Each backup supports up to 1 GB and 1,000 documents.",
-                        "No automatic uploads or Scanner account. Cloud storage, if you choose it, is provided by your storage provider.",
+                        stringResource(R.string.backup_note_restore),
+                        stringResource(R.string.backup_note_cloud),
                     )
                     .forEach {
                         Text(
@@ -366,8 +382,8 @@ fun BackupScreen(model: ScannerModel) {
     candidate?.let { source ->
         AlertDialog(
             onDismissRequest = { candidate = null },
-            title = { Text("Restore copies from this backup?") },
-            text = { Text("Your current documents stay as they are.") },
+            title = { Text(stringResource(R.string.restore_confirm_title)) },
+            text = { Text(stringResource(R.string.restore_confirm_text)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -376,10 +392,12 @@ fun BackupScreen(model: ScannerModel) {
                     },
                     modifier = Modifier.testTag("backup.confirm"),
                 ) {
-                    Text("Add restored copies")
+                    Text(stringResource(R.string.restore_confirm))
                 }
             },
-            dismissButton = { TextButton(onClick = { candidate = null }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { candidate = null }) { Text(stringResource(R.string.cancel)) }
+            },
         )
     }
 }
@@ -393,9 +411,24 @@ const val BACKUP_NAME = "Scanner backup.scannerbackup"
 fun SettingsScreen(model: ScannerModel) {
     val nav = LocalNav.current
     val appearance by model.appearance.collectAsStateWithLifecycle()
+    val backupLabel = stringResource(R.string.backup_restore)
+    val trashLabel = stringResource(R.string.recently_deleted)
+    val themeLabel = stringResource(R.string.appearance_theme)
+    val themes =
+        listOf(
+            "system" to stringResource(R.string.theme_system),
+            "light" to stringResource(R.string.theme_light),
+            "dark" to stringResource(R.string.theme_dark),
+        )
+    val onPhone = stringResource(R.string.privacy_on_phone)
+    val onPhoneText = stringResource(R.string.privacy_on_phone_text)
+    val cameraScanning = stringResource(R.string.camera_scanning)
+    val engineNote = stringResource(R.string.scanner_engine_note)
+    val searchableText = stringResource(R.string.searchable_text)
+    val searchableNote = stringResource(R.string.searchable_text_note)
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { ScannerTopBar("Settings", onBack = nav::pop) },
+        topBar = { ScannerTopBar(stringResource(R.string.settings), onBack = nav::pop) },
     ) { padding ->
         Column(
             Modifier.padding(padding)
@@ -405,25 +438,25 @@ fun SettingsScreen(model: ScannerModel) {
                 .padding(horizontal = Space.m, vertical = Space.s),
             verticalArrangement = Arrangement.spacedBy(Space.l),
         ) {
-            Section(title = "Your documents") {
+            Section(title = stringResource(R.string.your_documents)) {
                 item(
-                    "Backup & restore",
+                    backupLabel,
                     icon = Icons.Outlined.SettingsBackupRestore,
                     onClick = { nav.push(Route.Backup) },
                 )
                 item(
-                    "Recently Deleted",
+                    trashLabel,
                     icon = Icons.Outlined.Delete,
                     onClick = { nav.push(Route.Deleted) },
                 )
             }
-            Section(title = "Appearance") {
+            Section(title = stringResource(R.string.appearance)) {
                 row { shapes ->
                     SegmentedListItem(shapes) {
                         DropdownField(
-                            "Theme",
+                            themeLabel,
                             appearance,
-                            listOf("system" to "System", "light" to "Light", "dark" to "Dark"),
+                            themes,
                             Modifier.fillMaxWidth().testTag("settings.theme"),
                         ) {
                             model.setAppearance(it)
@@ -431,22 +464,12 @@ fun SettingsScreen(model: ScannerModel) {
                     }
                 }
             }
-            Section(title = "Privacy") {
+            Section(title = stringResource(R.string.privacy)) {
+                item(onPhone, supporting = onPhoneText, icon = Icons.Outlined.Lock)
+                item(cameraScanning, supporting = engineNote, icon = Icons.Outlined.CameraAlt)
                 item(
-                    "On this phone",
-                    supporting =
-                        "Scans and text recognition are processed on your phone. Files you export or back up go only where you choose. No Scanner account or servers.",
-                    icon = Icons.Outlined.Lock,
-                )
-                item(
-                    "Camera scanning",
-                    supporting = SCANNER_ENGINE_NOTE,
-                    icon = Icons.Outlined.CameraAlt,
-                )
-                item(
-                    "Searchable text",
-                    supporting =
-                        "Searchable PDF exports include recognized text. Review important text for recognition errors.",
+                    searchableText,
+                    supporting = searchableNote,
                     icon = Icons.Outlined.DocumentScanner,
                 )
             }

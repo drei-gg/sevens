@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -158,7 +159,7 @@ fun PageImage(
                 failed ->
                     Icon(
                         Icons.Outlined.WarningAmber,
-                        "Page unavailable",
+                        stringResource(R.string.page_unavailable),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 else -> Spacer(Modifier.fillMaxSize())
@@ -251,14 +252,14 @@ fun DocumentCard(document: ScanDocument, firstPage: File?, modifier: Modifier = 
 }
 
 /** The words TalkBack reads for a card: name, then pages, date and favorite. */
+@Composable
 fun cardDescription(document: ScanDocument, pages: String): String =
-    listOfNotNull(
-            document.title,
-            pages,
-            day(document.createdMillis),
-            if (document.favorite == true) "Favorite" else null,
-        )
-        .joinToString(", ")
+    stringResource(
+        if (document.favorite == true) R.string.document_card_favorite else R.string.document_card,
+        document.title,
+        pages,
+        day(document.createdMillis),
+    )
 
 /** A status line: the colour goes on the icon, the words stay on-surface (polish guide §3.1). */
 @Composable
@@ -281,8 +282,9 @@ fun StatusLine(
 /** A labelled number on a card: Backup's summary. */
 @Composable
 fun StatTile(title: String, value: String, modifier: Modifier = Modifier) {
+    val description = stringResource(R.string.stat_tile, title, value)
     Surface(
-        modifier.semantics(mergeDescendants = true) { contentDescription = "$title, $value" },
+        modifier.semantics(mergeDescendants = true) { contentDescription = description },
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surface,
     ) {
@@ -330,21 +332,15 @@ fun Modifier.readable(): Modifier =
         .widthIn(max = ScannerMetrics.contentWidth)
 
 /**
- * Haptics that confirm, reject and tick (polish guide §3.8), with the older constants before
- * Android 11 / 14.
+ * Haptics that confirm, reject and tick (polish guide §3.8); the segment tick is Android 14's, with
+ * the clock tick before it.
  */
 fun android.view.View.confirm() {
-    performHapticFeedback(
-        if (android.os.Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.CONFIRM
-        else android.view.HapticFeedbackConstants.VIRTUAL_KEY
-    )
+    performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
 }
 
 fun android.view.View.reject() {
-    performHapticFeedback(
-        if (android.os.Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.REJECT
-        else android.view.HapticFeedbackConstants.LONG_PRESS
-    )
+    performHapticFeedback(android.view.HapticFeedbackConstants.REJECT)
 }
 
 fun android.view.View.tick() {

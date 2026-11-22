@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android 11 and earlier: the trial start and Scanner's preferences. The library itself can exceed
-     Auto Backup's 25 MB quota, so it travels by device transfer (Android 12+) or a .scannerbackup. -->
+<!-- Android 11, the oldest supported: the trial start and Scanner's preferences. The library itself
+     can exceed Auto Backup's 25 MB quota, so it travels by device transfer (Android 12+) or a
+     .scannerbackup. -->
 <full-backup-content>
     <include domain="sharedpref" path="seven-trial.xml"/>
     <include domain="sharedpref" path="scanner.xml"/>

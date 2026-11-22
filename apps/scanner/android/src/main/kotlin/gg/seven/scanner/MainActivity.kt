@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
                     uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or if (dark) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
                 }
             CompositionLocalProvider(LocalConfiguration provides configuration) {
-                SevenTheme { SevenRoot(model.store, ScannerContent) { ScannerApp(model) } }
+                SevenTheme { SevenRoot(model.store, scannerContent()) { ScannerApp(model) } }
             }
         }
     }

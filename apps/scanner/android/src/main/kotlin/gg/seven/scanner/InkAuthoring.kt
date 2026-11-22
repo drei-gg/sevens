@@ -7,6 +7,7 @@ import android.graphics.Path
 import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -22,11 +23,12 @@ import androidx.ink.strokes.Stroke
 import gg.seven.scanner.core.*
 
 internal val InkColor.title
+    @StringRes
     get() =
         when (this) {
-            InkColor.BLACK -> "Black"
-            InkColor.RED -> "Red"
-            InkColor.BLUE -> "Blue"
+            InkColor.BLACK -> R.string.ink_black
+            InkColor.RED -> R.string.ink_red
+            InkColor.BLUE -> R.string.ink_blue
         }
 internal val InkColor.argb
     get() =
@@ -114,7 +116,7 @@ private class InkSurface(context: Context) : FrameLayout(context) {
         clipChildren = true
         addView(finished, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         addView(strokes, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        contentDescription = "Ink canvas. Draw a stroke; use Undo or Clear ink to remove it."
+        contentDescription = context.getString(R.string.ink_canvas)
         strokes.addFinishedStrokesListener(
             object : InProgressStrokesFinishedListener {
                 override fun onStrokesFinished(strokes: Map<InProgressStrokeId, Stroke>) {
@@ -141,8 +143,7 @@ private class InkSurface(context: Context) : FrameLayout(context) {
                                     )
                                 )
                             } catch (_: Exception) {
-                                draft.failure =
-                                    "This stroke is too long or outside the supported canvas. Your previous marks are kept; try a shorter stroke."
+                                draft.failure = Words { it.getString(R.string.ink_stroke_rejected) }
                             }
                         }
                         finished.invalidate()
