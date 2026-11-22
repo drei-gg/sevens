@@ -16,7 +16,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "SevensAndroid"
 
-include(":core", ":sevenkit", ":billing", ":fast", ":fast-wire", ":wear")
+include(":core", ":sevenkit", ":sevenocr", ":billing", ":fast", ":fast-wire", ":wear")
 
 project(":fast").projectDir = file("../apps/fast/android")
 
@@ -31,3 +31,7 @@ for (app in listOf("qr", "alarm", "scanner", "cleaner", "vault", "bloom")) {
     project(":$app").projectDir = file("../apps/$app/android")
     project(":$app-core").projectDir = file("../apps/$app/android/core")
 }
+
+include(":bloom-wear", ":bloom-wire")
+project(":bloom-wear").projectDir = file("../apps/bloom/wear")
+project(":bloom-wire").projectDir = file("../apps/bloom/wear/wire")

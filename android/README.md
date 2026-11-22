@@ -1,10 +1,12 @@
 # Android baseline
 
-Native Kotlin / Compose, Android 8+ (API 26), compile/target API 36. JDK 21 and Android SDK 36 are required. The checked-in Gradle 8.14 wrapper verifies its distribution checksum. Plugin/library versions are pinned; resolved dependency locks are checked in. Run from the repository root, or open `android/` in Android Studio.
+Native Kotlin / Compose, Android 8+ (API 26), compile API 37 / target API 36. JDK 21 and Android SDK 37 are required. The checked-in Gradle 9.9.1 wrapper verifies its distribution checksum. Plugin/library versions are pinned; resolved dependency locks are checked in. Run from the repository root, or open `android/` in Android Studio.
 
 ## Porting contract
 
-1. iOS wins: port its chosen behavior, data contracts, edge cases and visual intent to Kotlin. Document platform differences rather than silently redesigning the product.
+The [Android interaction guidelines](UI_GUIDELINES.md) consolidate Material 3 Expressive component choices, accessibility/state rules, and the per-screen evidence required for UI iterations.
+
+1. iOS is the capability and behavior reference. Preserve data contracts and edge cases, including widget availability; use native Material 3 Expressive controls and Android interaction conventions instead of reproducing iOS presentation (Drei, 2026-11-17). Document intentional platform differences.
 2. Check the iOS library choice first. Prefer its Android counterpart, then another reputable, license-compatible library, then custom code when necessary.
 3. Native controls where they work. New UI controls require a concrete UX benefit. Material handles navigation, forms, dialogs, switches, buttons and pickers. Kizitonwose Calendar handles month/heatmap layout and paging; our day content shows fasting history. Vico is the Android counterpart to Swift Charts and owns chart rendering, axes, scrolling and zoom. The timer ring is an app-specific visual, not a replacement for a standard control.
 4. Public code and generic resources stay unbranded. Private assets are Gradle resource overlays; building never copies them into tracked source.
@@ -68,6 +70,8 @@ The free trial is explicit and device-local. Backward clock changes do not exten
 
 ## Verification
 
+Changed Compose workflows run the Accessibility Test Framework through `ui-test-junit4-accessibility` (AndroidX, Apache-2.0), backed by Google’s [Accessibility Test Framework](https://github.com/google/Accessibility-Test-Framework-for-Android) (Apache-2.0). These are Android-test dependencies only; they are not shipped in the apps. Keep their resolved dependencies locked. Automated checks complement the visual and service checks in [UI_GUIDELINES.md](UI_GUIDELINES.md).
+
 ```sh
 android/gradlew -p android :core:test :fast:lintGenericDebug :fast:assembleGenericDebug
 # With one emulator/device connected:
@@ -79,6 +83,8 @@ scripts/check-android-variants
 ```
 
 The `seven.android-app` Gradle convention supplies flavors, signing gates, version flags, SDK levels, shrinker and lint defaults for future app modules. `sevenkit` supplies theme/access contracts. `billing` supplies the isolated Play implementation. `core` is Fast's Rust core seen from Kotlin: UniFFI bindings generated from `apps/fast/core` at build time plus a small façade (`Fast.kt`). Building it needs Rust, the Android targets and cargo-ndk (`apps/fast/core/README.md`). Other apps get theirs from `seven.rust-core` (below).
+
+`sevenocr` supplies Scanner and Vault’s bundled English recognition engine. It owns pinned Tesseract/JavaCPP dependencies, the model-fetch checksum and consumer shrinker rules. Consuming APK modules keep `traineddata` uncompressed for `AssetManager.openFd`; recognition itself has no network dependency.
 
 ## The shared base: adding a Seven
 
@@ -104,7 +110,7 @@ scripts/android qr generic debug
 
 Fast uses AndroidX `AtomicFile` with serialized IO; a failed write does not publish state. A corrupt/newer archive remains intact and blocks edits. JSON import validates and previews a stable-ID merge, keeping local settings. CSV includes every record type. Reminders use Android's inexact, idle-capable alarms and reconcile after boot, clock/timezone changes, app updates and edits; delayed water reminders outside the chosen window are dropped. Permission denial does not affect tracking.
 
-Android provides a display-only home-screen timer widget and optional ongoing timer notification using native RemoteViews / NotificationCompat. Health Connect imports available weight records from the last 30 days only after explicit permission and preview, skipping already imported sample IDs; no writes or background reads. Physical Health permission/data and widget/notification behavior require device acceptance. Cross-device sync is not part of this phone baseline; the Wear OS companion is below.
+Android provides a display-only Glance fasting timer widget (home screen and supporting lock-screen hosts) and an optional ongoing timer notification using native Chronometer / NotificationCompat. The widget has compact/wide layouts, launcher previews and a Settings pin action; it refreshes on saved changes, at the chosen goal with an inexact alarm, and on the launcher’s 30-minute schedule. Health Connect imports available weight records from the last 30 days only after explicit permission and preview, skipping already imported sample IDs; no writes or background reads. Physical Health permission/data and widget/notification behavior require device acceptance. Cross-device sync is not part of this phone baseline; the Wear OS companion is below.
 
 ## Wear OS companion
 
@@ -124,3 +130,11 @@ Android provides a display-only home-screen timer widget and optional ongoing ti
 android/gradlew -p android :fast-wire:test :fast:testPersonalDebugUnitTest :wear:lintGenericDebug :wear:assembleGenericDebug
 android/gradlew -p android :wear:assemblePersonalRelease -Psevens.brandDir=/private/sevens-brand
 ```
+
+## Material 3 Expressive and widgets — 2026-11-17
+
+SevenKit owns accessible date/time picker fields, clock/keyboard time entry, exposed dropdowns, connected single-choice groups with a wrapping large-text fallback, inline search with clear/IME behavior, and launcher pin requests. Apps keep the fixed paper/ink scheme. QR uses a Material floating toolbar for scan sources and torch; primary actions use Expressive shape feedback.
+
+Bloom adds its opt-in Glance home-screen widget. The Rust dashboard provides the cycle day and reminder time; discreet mode redacts the day and disabled mode shows only a generic prompt. No journal or contact text is stored in Glance state. Widget refresh generations are persisted because `update()` can reuse an active Glance composition.
+
+Widget instrumentation binds real `AppWidgetHost` views and checks ticking, committed changes and privacy transitions. Device launcher placement, background/Doze timing and lock-screen hosting still require device-specific acceptance.

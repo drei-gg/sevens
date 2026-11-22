@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bloom's repeatable Apple build. Two simulator slots authorized by Drei, 2026-11-16.
+# Bloom's repeatable Apple build. Use the shared simulator from the current workspace contract.
 # One source copy and one DerivedData directory for this app; never shuts down a simulator.
 set -euo pipefail
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
@@ -33,10 +33,10 @@ fi
 if [ "$cmd" = device ]; then
   destination='generic/platform=iOS'
 else
-  exec 8>"$HOME/.cache/sevens/vm-sim2.lock"
+  exec 8>"$HOME/.cache/sevens/vm-sim.lock"
   flock 8
-  ssh tahoe 'SIM_SLOT=2 ~/bin/sim-ensure --wait'
-  sim=$(ssh tahoe 'SIM_SLOT=2 ~/bin/sim-ensure --print')
+  ssh tahoe '~/bin/sim-ensure --wait'
+  sim=$(ssh tahoe '~/bin/sim-ensure --print')
   destination="platform=iOS Simulator,id=$sim"
 fi
 base="xcodebuild -project apps/bloom/Bloom.xcodeproj -scheme Bloom -derivedDataPath \$HOME/src/dd-personal-bloom -destination '$destination' -parallel-testing-enabled NO SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES CODE_SIGNING_ALLOWED=NO"

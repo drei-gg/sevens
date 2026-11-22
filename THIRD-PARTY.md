@@ -20,6 +20,7 @@ Zlib, Unicode, GPL-3.0-compatible). Nothing that collects data or phones home is
 | base64 | https://github.com/marshallpierce/rust-base64 | MIT OR Apache-2.0 | 0.22.1 | QR, Cleaner and Vault cores: binary fields in JSON, as Swift's `Data` encodes them |
 | caseless | https://github.com/unicode-rs/rust-caseless | MIT | 0.2.2 | Vault core: Unicode case folding for search and name order |
 | PhoneNumberKit | https://github.com/PhoneNumberKit/PhoneNumberKit | MIT | 5.0.14 (ff40a615c71bf3e1785562c86f7e38bdea29660a) | Contact phone candidate normalization; bundled libphonenumber metadata, no network client |
+| hound | https://github.com/ruuda/hound | Apache-2.0 | 3.5.1 | Alarm core: parse, validate and normalize bounded PCM WAV imports |
 | thiserror | https://github.com/dtolnay/thiserror | MIT OR Apache-2.0 | 2.0.21 | Rust cores: error types |
 | age | https://github.com/str4d/rage | MIT OR Apache-2.0 | 0.12.1 | Vault core, format version 2: the age file format (age-encryption.org/v1) for vault envelopes, the encrypted index and every original, on iPhone and Android |
 | age-core | https://github.com/str4d/rage | MIT OR Apache-2.0 | 0.12.0 | Vault core: age's stanza and file-key primitives (a dependency of age) |
@@ -58,14 +59,16 @@ Versions are pinned in `android/buildSrc/build.gradle.kts` and module build file
 | --- | --- | --- | --- |
 | Kotlin / standard library / compiler plugins | 2.2.21 | Apache-2.0, https://github.com/JetBrains/kotlin | Language and Compose compilation |
 | JNA | 5.17.0 | Apache-2.0 (dual-licensed with LGPL-2.1), https://github.com/java-native-access/jna | Calls into the Rust core from Kotlin (UniFFI's runtime) |
+| AndroidX Ink authoring / brush / strokes | 1.0.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support/+/androidx-main/ink/ | Scanner native finger/stylus stroke input; portable geometry in scanner-core. Apple uses system PencilKit. |
 | AndroidX Compose Material 3 | 1.5.0-rc01 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Material 3 Expressive components on the phone (pinned above the Compose BOM, which still selects 1.4) |
-| AndroidX Glance app widget / Glance Material 3 | 1.2.0 / 1.2.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Home-screen timer widget in the app's colours |
+| AndroidX Glance app widget / Glance Material 3 | 1.2.0 / 1.2.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Fast timer, Bloom privacy-filtered and Alarm saved-schedule home-screen widgets in the app's colours |
+| AndroidX WorkManager | 2.11.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Fast, Bloom and Alarm widget worker runtime; explicitly aligned instead of Glance's old transitive default |
 | kotlinx.coroutines | resolved AndroidX dependency | Apache-2.0, https://github.com/Kotlin/kotlinx.coroutines | Lifecycle, state flows and serialized storage work |
 | AndroidX Compose | BOM 2025.12.01 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Native Material controls, adaptive layouts, accessibility |
 | AndroidX Activity / Lifecycle / Core | 1.12.2 / 2.9.4 / 1.17.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Lifecycle, document pickers, AtomicFile and notifications |
 | Vico charts | 2.3.6 | Apache-2.0, https://github.com/patrykandpatrick/vico | Counterpart to Swift Charts; chart rendering, axes, scroll and zoom |
 | Kizitonwose Calendar | 2.9.0 | MIT, https://github.com/kizitonwose/Calendar | Month and heatmap layout, paging and annotated history days |
-| AndroidX Health Connect | 1.1.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Explicit read-only weight import |
+| AndroidX Health Connect | 1.1.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Explicit weight import in Fast and manual menstrual-flow review/share in Bloom |
 | Google Play Billing | 9.1.0 | Android SDK terms, https://developer.android.com/google/play/billing | Store variant only; platform-purchase exception in LICENSE-PLATFORM-EXCEPTION.md |
 | kotlinx.serialization JSON | 1.9.0 | Apache-2.0, https://github.com/Kotlin/kotlinx.serialization | Wear OS wire protocol codec (`apps/fast/wear/wire`), shared by the watch and the phone's personal/store flavors |
 | AndroidX Wear Compose Material 3 / Foundation | 1.7.1 / 1.7.1 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Wear OS app screens |
@@ -86,6 +89,7 @@ Cleaner for Android is on the shared base (the kit and AndroidX pieces above). I
 | libphonenumber | 9.0.43 | Apache-2.0, https://github.com/google/libphonenumber | Contact phone candidate normalization (PhoneNumberKit's counterpart); bundled metadata, no network client |
 | AndroidX ExifInterface | 1.4.2 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Reading, copying and checking capture metadata on compressed copies |
 | Telephoto zoomable | 0.18.0 | Apache-2.0, https://github.com/saket/telephoto | Pinch and double-tap zoom for full-resolution inspection |
+| AndroidX Media3 Transformer / Effect | 1.11.1 | Apache-2.0, https://github.com/androidx/media | Native video clipping, encoding, scaling and MP4 metadata; no remote media input |
 
 MIT copyright and permission text and Apache-2.0 license text ship in the app's notices. The calendar's month layout/state and serialization's schema/default behavior were reviewed before integration. These libraries do not add app networking.
 
@@ -107,7 +111,7 @@ Apache-2.0 license text and the libraries' copyright lines ship in the app's not
 
 ## Android Document Scanner
 
-iOS Scanner uses only Apple frameworks (VisionKit, Vision, PDFKit, Core Image). Their Android counterparts below are pinned in `apps/scanner/android/build.gradle.kts`, with resolved versions in its lockfile; the rules, limits and the `.scannerbackup` format come from the shared Rust core (apps/scanner/core).
+iOS Scanner uses Apple frameworks (VisionKit, Vision, PDFKit, Core Image) and Tim Oliver’s CropViewController 3.3.0 (MIT, https://github.com/TimOliver/TOCropViewController), pinned exactly in its Xcode project and Package.resolved; the license is bundled and shown in Settings → Notices. Their Android counterparts below are pinned in `apps/scanner/android/build.gradle.kts`, with resolved versions in its lockfile; the rules, limits and the `.scannerbackup` format come from the shared Rust core (apps/scanner/core).
 
 | Name | Version | Licence, URL | Used for |
 |---|---|---|---|
@@ -123,7 +127,7 @@ iOS Scanner uses only Apple frameworks (VisionKit, Vision, PDFKit, Core Image). 
 
 Leptonica's and the codecs' licence texts and PDFBox's NOTICE ship in the app's `assets/notices`.
 
-Google's ML Kit document scanner is a Google Play services component, not an open-source library, and is used the way Play Billing is: as a platform exception in the personal and store flavors only. Scanning runs on the device inside Google Play services, which may download its scanner module and adds the INTERNET permission to those flavors' manifests; Scanner itself sends nothing and has no network client. The generic flavor has no Google Play services dependency (`:scanner:dependencies --configuration genericReleaseRuntimeClasspath` shows no `play-services`) and no INTERNET permission; it captures with CameraX and recognizes with Tesseract. Text recognition uses Tesseract in every flavor.
+Google's ML Kit document scanner is a Google Play services component, not an open-source library, and is used the way Play Billing is: as a platform exception in the personal and store flavors only. Scanning runs on the device inside Google Play services, which may download its scanner module and adds the INTERNET permission to those flavors' manifests; Scanner itself sends nothing and has no network client. The generic flavor has no Google Play services dependency (`:scanner:dependencies --configuration genericReleaseRuntimeClasspath` shows no `play-services`) and no INTERNET permission; it captures with CameraX and recognizes with Tesseract. Text recognition uses Tesseract in every flavor. The implementation and bundled model now live in `android/sevenocr`, shared by Scanner and Vault. Vault uses the same versions and licenses listed here and adds no network permission; its iOS image recognition uses the system Vision framework.
 
 ## Android Vault
 
@@ -131,7 +135,7 @@ Versions are pinned in `apps/vault/android/build.gradle.kts`; resolved versions 
 
 | Name | Version | Licence, URL | Used for |
 |---|---|---|---|
-| AndroidX Biometric | 1.1.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | BiometricPrompt with a Keystore crypto object for the opt-in biometric unlock |
+| AndroidX Biometric | 1.1.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Vault's Keystore-backed biometric unlock and Bloom's optional device-authentication UI gate |
 | AndroidX Fragment | 1.9.1 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | FragmentActivity, which hosts BiometricPrompt |
 | AndroidX WorkManager | 2.12.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Delivery opportunities for prepared automatic backups (iOS BGProcessingTask) |
 | AndroidX DocumentFile | 1.1.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Writing backups and exports into a chosen Storage Access Framework folder |
@@ -158,3 +162,16 @@ Pinned in `apps/qr/android/build.gradle.kts`; resolved versions are in `apps/qr/
 Cycle & Health (`apps/bloom`) uses the Alarm core’s calendar scheduling and the pinned UniFFI, serde, serde_json, uuid, Jiff, thiserror, age, sha2 and zeroize crates credited above. age provides passphrase-encrypted portable backups; CryptoKit AES-GCM and Keychain protect the local journal. Apple HealthKit, WatchConnectivity, WidgetKit, Charts and LocalAuthentication are platform frameworks. No Flo code, content or proprietary prediction model is included.
 
 The Android Bloom base uses the existing shared AndroidX Compose/Material, Lifecycle and JNA dependencies credited above. Android Keystore, AES/GCM and AtomicFile provide native local persistence. The Gradle and Cargo lockfiles pin the resolved dependency graphs.
+
+## Cycle & Health Android polish
+
+| Dependency | Version | License / source | Purpose |
+| --- | --- | --- | --- |
+| Kizitonwose Calendar | 2.9.0 | MIT, https://github.com/kizitonwose/Calendar | Annotated period/observation calendar; same dependency as Fast |
+| Vico | 2.3.6 | Apache-2.0, https://github.com/patrykandpatrick/vico | Recorded cycle and temperature charts; same dependency as Fast |
+| AndroidX WorkManager | 2.11.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Local reminder recovery after boot, clock changes and interrupted scheduling; no server or telemetry |
+
+Scanner manual cropping uses CanHub Android-Image-Cropper 4.7.0 (Apache-2.0, https://github.com/CanHub/Android-Image-Cropper), artifact `com.vanniktech:android-image-cropper`. It is embedded as a View inside native Material forms; no crop activity or image upload is used. Shared Rust owns persisted crop geometry.
+
+
+Bloom's Wear companion uses the same pinned AndroidX Wear Compose Material 3/Foundation 1.7.1, Google Play services Wearable 20.0.1, AndroidX Startup 1.1.1 and kotlinx.serialization JSON 1.9.0 dependencies credited above. The phone bridge is confined to personal/store editions; the generic phone remains free of Google Play services. The opt-in payload contains only snapshot version/time/revision, cycle day, scheduled reminder identifiers/time/status and redacted or permitted reminder titles; journal notes, contacts and other health fields are excluded. Android watch requests are limited to scheduled-dose actions. Google Play services transports these between paired devices; no application server or analytics is introduced. Source and resolved dependency locks live in `apps/bloom/wear` and `apps/bloom/wear/wire`.

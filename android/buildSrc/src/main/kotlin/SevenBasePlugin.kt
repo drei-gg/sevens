@@ -33,8 +33,10 @@ class SevenBasePlugin : Plugin<Project> {
                 namespace = "gg.seven.$app"
                 sourceSets.getByName("main").jniLibs.srcDir(crate.resolve("generated/jniLibs"))
                 // gg.seven.flavor.sevenPurchases: local trial, or Play Billing in the store build.
-                for (flavor in listOf("generic", "personal", "store"))
-                    sourceSets.getByName(flavor).java.srcDir(flavors.resolve("$flavor/kotlin"))
+                for (flavor in listOf("generic", "personal", "store")) sourceSets
+                    .getByName(flavor)
+                    .java
+                    .srcDir(flavors.resolve("$flavor/kotlin"))
             }
 
             val rustAndroid =
@@ -57,6 +59,7 @@ class SevenBasePlugin : Plugin<Project> {
                 "implementation"("androidx.core:core-ktx:1.17.0")
                 "androidTestImplementation"(platform("androidx.compose:compose-bom:2026.09.00"))
                 "androidTestImplementation"("androidx.compose.ui:ui-test-junit4")
+                "androidTestImplementation"("androidx.compose.ui:ui-test-junit4-accessibility")
                 "androidTestImplementation"("androidx.test:runner:1.7.0")
                 "androidTestImplementation"("androidx.test.ext:junit:1.3.0")
                 "debugImplementation"("androidx.compose.ui:ui-test-manifest")
