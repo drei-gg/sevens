@@ -18,6 +18,11 @@ pub struct Reminder {
     pub title: String,
     pub body: String,
     pub dose: Option<Occurrence>,
+    /// A time on the clock in whatever zone the phone is in (a dose of a plan that follows the
+    /// phone), not a fixed instant: iOS schedules it as a calendar time so travel moves it without
+    /// the app running. Snoozes, fixed-zone plans and appointments are instants.
+    #[serde(default)]
+    pub floating: bool,
 }
 pub fn dose_id(plan: &str, day: &str) -> Result<String> {
     let id = Uuid::parse_str(plan).map_err(|_| Error::invalid("Invalid plan identifier."))?;
@@ -116,12 +121,9 @@ pub fn reminders(a: &Archive, now: i64, zone: &str) -> Result<Vec<Reminder>> {
         if ["taken", "skipped"].contains(&o.status.as_str()) {
             continue;
         }
-        let at = a
-            .doses
-            .iter()
-            .find(|d| d.id == o.id)
-            .and_then(|d| d.snooze_until)
-            .unwrap_or(o.at);
+        let snoozed = a.doses.iter().find(|d| d.id == o.id).and_then(|d| d.snooze_until);
+        let at = snoozed.unwrap_or(o.at);
+        let fixed = a.plans.iter().find(|p| p.id == o.plan_id).is_some_and(|p| p.fixed_zone);
         if at <= now {
             continue;
         }
@@ -143,6 +145,7 @@ pub fn reminders(a: &Archive, now: i64, zone: &str) -> Result<Vec<Reminder>> {
             title,
             body,
             dose: Some(o),
+            floating: snoozed.is_none() && !fixed,
         });
     }
     for p in a.appointments.iter().filter(|p| p.remind_minutes >= 0) {
@@ -158,6 +161,7 @@ pub fn reminders(a: &Archive, now: i64, zone: &str) -> Result<Vec<Reminder>> {
                 },
                 body: "An appointment or planned event is coming up.".into(),
                 dose: None,
+                floating: false,
             });
         }
     }

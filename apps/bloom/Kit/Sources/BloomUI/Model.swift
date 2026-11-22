@@ -4,6 +4,7 @@ import LocalAuthentication
 import SevenCompanion
 import SevenKit
 import SwiftUI
+import SevenSchedule
 import UserNotifications
 import WidgetKit
 
@@ -314,53 +315,33 @@ actor BloomNotifications {
       UNNotificationCategory(identifier: "bloom.dose", actions: actions, intentIdentifiers: [])
     ])
   }
+  /// The pending queue, on SevenKit's notification scheduler: it owns every `bloom.` identifier,
+  /// runs one reconcile at a time, keeps the queue within iOS's limit and never empties it when an
+  /// add fails.
+  private let scheduler = NotificationScheduler(prefix: "bloom.")
+
   func reconcile(_ reminders: [Reminder], doses: [Dose]) async -> String {
-    let center = UNUserNotificationCenter.current()
-    let settings = await center.notificationSettings()
-    guard
-      settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional
-    else { return "Notifications are not allowed. Open Settings to enable reminders." }
-    let wanted = Set(reminders.map(\.id))
-    let existing = await center.pendingNotificationRequests()
-    center.removePendingNotificationRequests(
-      withIdentifiers: existing.filter {
-        $0.identifier.hasPrefix("bloom.") && !wanted.contains($0.identifier)
-      }.map(\.identifier))
-    var successful = Set<String>()
-    var errors = 0
-    for reminder in reminders {
-      let content = UNMutableNotificationContent()
-      content.title = reminder.title
-      content.body = reminder.body
-      content.sound = .default
-      if let dose = reminder.dose {
-        content.categoryIdentifier = "bloom.dose"
-        content.userInfo["dose"] = (try? BloomCodec.encode(dose))?.base64EncodedString()
-      }
-      let interval = max(1, Double(reminder.at) - Date().timeIntervalSince1970)
-      let request = UNNotificationRequest(
-        identifier: reminder.id, content: content,
-        trigger: UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false))
-      do {
-        try await center.add(request)
-        successful.insert(reminder.id)
-      } catch { errors += 1 }
+    let wanted = reminders.map { reminder in
+      var userInfo: [String: String] = [:]
+      if let dose = reminder.dose { userInfo["dose"] = (try? BloomCodec.encode(dose))?.base64EncodedString() }
+      let at = Date(timeIntervalSince1970: Double(reminder.at))
+      // A dose of a plan that follows the phone is a time on its clock: scheduled as a calendar time
+      // it moves with travel even if the app is not opened. Everything else is an instant.
+      let trigger: NotificationTrigger =
+        reminder.floating == true
+        ? .wallClock(Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: at), repeats: false)
+        : .at(at)
+      return ScheduledNotification(
+        id: reminder.id, title: reminder.title, body: reminder.body,
+        category: reminder.dose == nil ? nil : "bloom.dose", userInfo: userInfo, trigger: trigger)
     }
-    if errors == 0 {
-      let old = await center.pendingNotificationRequests()
-      center.removePendingNotificationRequests(
-        withIdentifiers: old.filter {
-          $0.identifier.hasPrefix("bloom.") && !successful.contains($0.identifier)
-        }.map(\.identifier))
-    }
-    center.removeDeliveredNotifications(
-      withIdentifiers: doses.filter { dose in dose.status != "snoozed" }.map { dose in
-        "bloom.dose.\(dose.id)"
-      })
-    if errors > 0 {
+    let recorded = doses.filter { dose in dose.status != "snoozed" }.map { dose in "bloom.dose.\(dose.id)" }
+    let outcome = await scheduler.reconcile(wanted, removeDelivered: recorded)
+    guard outcome.allowed else { return "Notifications are not allowed. Open Settings to enable reminders." }
+    if outcome.failed > 0 {
       return
-        "\(errors) reminders could not be scheduled. Open the app to retry. Reminder coverage is incomplete."
+        "\(outcome.failed) reminders could not be scheduled. Open the app to retry. Reminder coverage is incomplete."
     }
-    return "\(successful.count) reminders scheduled. Open the app regularly to extend coverage."
+    return "\(outcome.scheduled) reminders scheduled. Open the app regularly to extend coverage."
   }
 }

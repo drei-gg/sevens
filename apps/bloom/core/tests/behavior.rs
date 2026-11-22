@@ -579,3 +579,31 @@ fn rolling_delivery_is_not_capped_by_apples_pending_queue_limit() {
     .unwrap();
     assert_eq!(due.as_array().unwrap().len(), 70);
 }
+#[test]
+fn doses_that_follow_the_phone_are_wall_clock_times() {
+    let mut a = Archive::default();
+    a.plans.push(plan());
+    let r = schedule::reminders(&a, NOW, "UTC").unwrap();
+    assert!(!r.is_empty() && r.iter().all(|r| r.floating), "a plan that follows the phone floats");
+    a.plans[0].fixed_zone = true;
+    assert!(schedule::reminders(&a, NOW, "UTC").unwrap().iter().all(|r| !r.floating), "a fixed-zone plan is an instant");
+    a.plans[0].fixed_zone = false;
+    let first = &schedule::reminders(&a, NOW, "UTC").unwrap()[0];
+    let o = first.dose.clone().unwrap();
+    a.doses.push(Dose {
+        id: o.id.clone(),
+        plan_id: o.plan_id.clone(),
+        day: o.day.clone(),
+        scheduled: o.at,
+        status: "snoozed".into(),
+        recorded: NOW,
+        snooze_until: Some(o.at + 600),
+        notes: String::new(),
+    });
+    let snoozed = schedule::reminders(&a, NOW, "UTC").unwrap();
+    let again = snoozed.iter().find(|r| r.id == first.id).unwrap();
+    assert!(!again.floating, "a snooze is an instant");
+    // Old payloads without the field still decode.
+    let old: schedule::Reminder = serde_json::from_str(r#"{"id":"bloom.x","at":1,"title":"t","body":"b","dose":null}"#).unwrap();
+    assert!(!old.floating);
+}

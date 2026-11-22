@@ -24,6 +24,7 @@ var targets: [Target] = [
       dependencies: [
         "BloomCore", "BloomSurfaces", .product(name: "SevenKit", package: "SevenKit"),
         .product(name: "SevenCompanion", package: "SevenKit"),
+        .product(name: "SevenSchedule", package: "SevenKit"),
       ]),
   ]
 #endif

@@ -220,6 +220,8 @@ pub fn full_dashboard(a: &Archive, now: i64, zone: &str) -> Result<Dashboard> {
                         },
                         body: "Your period may begin soon. This is an estimate.".into(),
                         dose: None,
+                        // 09:00 on the phone's clock, wherever it is.
+                        floating: true,
                     });
                 }
             }

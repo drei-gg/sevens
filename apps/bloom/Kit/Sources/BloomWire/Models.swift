@@ -175,6 +175,9 @@ public struct Reminder: Codable, Sendable, Identifiable {
   public var title: String
   public var body: String
   public var dose: Occurrence?
+  /// A time on the phone's clock rather than a fixed instant (the core decides; absent in older
+  /// payloads, which were instants).
+  public var floating: Bool?
 }
 public struct Cycle: Codable, Sendable, Identifiable {
   public var id: String { start }
