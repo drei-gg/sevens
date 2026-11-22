@@ -18,7 +18,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
-/** The screens' model: the shared [AlarmEngine], the store, and the drafts that survive rotation. */
+/**
+ * The screens' model: the shared [AlarmEngine], the store, and the drafts that survive rotation.
+ */
 class AlarmModel(app: Application) : AndroidViewModel(app) {
     val engine = app.engine
     val store =
@@ -40,6 +42,39 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
 
     val note = MutableStateFlow<Note?>(null)
     val importPreview = MutableStateFlow<LoopArchive?>(null)
+    private var pendingTemplate: ByteArray? = null
+
+    fun prepareTemplate(routine: Routine, ready: () -> Unit) = run {
+        try {
+            pendingTemplate = core { routineTemplate(routine) }
+            ready()
+        } catch (e: Exception) {
+            error.value = e.sentence
+        }
+    }
+
+    fun exportTemplate(uri: Uri?) {
+        if (uri == null) {
+            pendingTemplate = null
+            return
+        }
+        val bytes =
+            pendingTemplate
+                ?: kotlin.run {
+                    engine.error.value = "Choose the routine again to save a template."
+                    return
+                }
+        run {
+            try {
+                write(uri, bytes)
+                if (pendingTemplate === bytes) pendingTemplate = null
+                note.value =
+                    Note("Routine template saved. Import it from Settings on either platform.")
+            } catch (e: Exception) {
+                error.value = e.sentence
+            }
+        }
+    }
 
     init {
         // iOS presents expiry in Settings only, never as a sheet that could cover a ringing alarm
@@ -82,26 +117,35 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun deleteEvent(event: LoopEvent) = run {
-        if (mutate { a -> a.copy(events = a.events.filter { it.id != event.id }) })
+    fun deleteEvent(event: LoopEvent, onDeleted: () -> Unit = {}) = run {
+        if (mutate { a -> a.copy(events = a.events.filter { it.id != event.id }) }) {
+            onDeleted()
             note.value =
                 Note("Record deleted") {
-                    this@AlarmModel.run { mutate { a -> if (a.events.any { it.id == event.id }) a else a.copy(events = a.events + event) } }
+                    this@AlarmModel.run {
+                        mutate { a ->
+                            if (a.events.any { it.id == event.id }) a
+                            else a.copy(events = a.events + event)
+                        }
+                    }
                 }
+        }
     }
 
     fun saveEvent(event: LoopEvent, onSaved: () -> Unit) = run {
         // Corrections are marked as manually recorded.
         val saved = event.copy(kind = EventKind.MANUAL)
-        if (mutate { a -> a.copy(events = a.events.map { if (it.id == saved.id) saved else it }) }) onSaved()
+        if (mutate { a -> a.copy(events = a.events.map { if (it.id == saved.id) saved else it }) })
+            onSaved()
     }
 
     // MARK: files
 
     private suspend fun write(uri: Uri, bytes: ByteArray) =
         withContext(Dispatchers.IO) {
-            getApplication<Application>().contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
-                ?: throw LoopFailure("Couldn’t open that file.")
+            getApplication<Application>().contentResolver.openOutputStream(uri, "wt")?.use {
+                it.write(bytes)
+            } ?: throw LoopFailure("Couldn’t open that file.")
         }
 
     private fun export(uri: Uri, done: String, bytes: suspend AlarmEngine.() -> ByteArray) = run {
@@ -113,24 +157,29 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun exportBackup(uri: Uri) = export(uri, "Backup saved") { core { backupEncode(archive.value) } }
+    fun exportBackup(uri: Uri) =
+        export(uri, "Backup saved") { core { backupEncode(archive.value) } }
 
-    fun exportCsv(uri: Uri) = export(uri, "History saved") { backupCsv(archive.value).toByteArray() }
+    fun exportCsv(uri: Uri) =
+        export(uri, "History saved") { backupCsv(archive.value).toByteArray() }
 
-    fun exportDiagnostics(uri: Uri) = export(uri, "Diagnostics saved") { diagnostics().toByteArray() }
+    fun exportDiagnostics(uri: Uri) =
+        export(uri, "Diagnostics saved") { diagnostics().toByteArray() }
 
     fun previewImport(uri: Uri) = run {
         try {
             val bytes =
                 withContext(Dispatchers.IO) {
-                    getApplication<Application>().contentResolver.openInputStream(uri)?.use { input ->
+                    getApplication<Application>().contentResolver.openInputStream(uri)?.use { input
+                        ->
                         val out = ByteArrayOutputStream()
                         val buffer = ByteArray(8192)
                         while (true) {
                             val read = input.read(buffer)
                             if (read < 0) break
                             out.write(buffer, 0, read)
-                            if (out.size() > maxBackupBytes) throw LoopFailure("This backup is larger than 32 MB.")
+                            if (out.size() > maxBackupBytes)
+                                throw LoopFailure("This backup is larger than 32 MB.")
                         }
                         out.toByteArray()
                     } ?: throw LoopFailure("Couldn’t open that file.")
@@ -144,7 +193,8 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
     fun confirmImport() = run {
         val incoming = importPreview.value ?: return@run
         importPreview.value = null
-        if (mutate { core { backupMerge(incoming, it) } }) note.value = Note("Backup imported. New routines are off.")
+        if (mutate { core { backupMerge(incoming, it) } })
+            note.value = Note("Backup imported. New routines are off.")
     }
 
     /**
@@ -162,10 +212,15 @@ class AlarmModel(app: Application) : AndroidViewModel(app) {
         val report =
             sortedMapOf<String, Any?>(
                 "formatVersion" to 1,
-                "generatedAt" to DateTimeFormatter.ISO_INSTANT.format(Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS)),
+                "generatedAt" to
+                    DateTimeFormatter.ISO_INSTANT.format(
+                        Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
+                    ),
                 "appVersion" to (info.versionName ?: "Unknown"),
-                "build" to androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(info).toString(),
-                "operatingSystem" to "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
+                "build" to
+                    androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(info).toString(),
+                "operatingSystem" to
+                    "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
                 "previewMode" to engine.isPreview,
                 "alarmPermission" to engine.driver.status,
                 "routineCount" to archive.routines.size,

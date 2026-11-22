@@ -6,14 +6,19 @@ import AlarmCore
 import AlarmKit
 import AppIntents
 import UserNotifications
+import WidgetKit
 
 @MainActor public protocol AlarmDriver {
     func request() async throws
     func identifiers() async throws -> Set<UUID>
+    func widgetIdentifiers() async throws -> Set<UUID>
     func schedule(_ registration: Registration) async throws
     func cancel(_ registration: Registration) async throws
     func stop(_ registration: Registration) async throws
     var status: String { get }
+}
+public extension AlarmDriver {
+    func widgetIdentifiers() async throws -> Set<UUID> { try await identifiers() }
 }
 @MainActor public final class NativeAlarmDriver: AlarmDriver {
     public init() {}
@@ -26,6 +31,13 @@ import UserNotifications
         let alarms = try AlarmManager.shared.alarms
         let reminders = await UNUserNotificationCenter.current().pendingNotificationRequests()
         return Set(alarms.map(\.id) + reminders.compactMap { UUID(uuidString:$0.identifier) })
+    }
+    public func widgetIdentifiers() async throws -> Set<UUID> {
+        let alarms = AlarmManager.shared.authorizationState == .authorized ? try AlarmManager.shared.alarms.map(\.id) : []
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        let notifications = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional
+            ? await UNUserNotificationCenter.current().pendingNotificationRequests().compactMap { UUID(uuidString: $0.identifier) } : []
+        return Set(alarms + notifications)
     }
     public func schedule(_ r: Registration) async throws {
         if r.routine.delivery == .reminder {
@@ -50,7 +62,7 @@ import UserNotifications
         }
         let alert = AlarmPresentation.Alert(title:LocalizedStringResource(stringLiteral:r.routine.name),secondaryButton:AlarmButton(text:"Open",textColor:.white,systemImageName:"arrow.up.right"),secondaryButtonBehavior:.custom)
         let attributes = AlarmAttributes<LoopMetadata>(presentation:AlarmPresentation(alert:alert),metadata:LoopMetadata(),tintColor:.accentColor)
-        let configuration = AlarmManager.AlarmConfiguration(schedule:schedule,attributes:attributes,stopIntent:StopLoopIntent(id:r.id.uuidString),secondaryIntent:OpenLoopIntent(id:r.id.uuidString),sound:(r.routine.tone ?? .system) == .system ? .default : .named("alarm-\(r.routine.tone!.rawValue).wav"))
+        let configuration = AlarmManager.AlarmConfiguration(schedule:schedule,attributes:attributes,stopIntent:StopLoopIntent(id:r.id.uuidString),secondaryIntent:OpenLoopIntent(id:r.id.uuidString),sound:ImportedSounds.live.soundName(r.routine).map { .named($0) } ?? .default)
         do { _ = try await AlarmManager.shared.schedule(id:r.id,configuration:configuration) }
         catch {
             // An edit keeps its ID. If AlarmKit refuses an ID it already holds, replace that alarm once;
@@ -112,6 +124,9 @@ public struct StopLoopIntent: LiveActivityIntent {
     public private(set) var busy = false
     public var error: String?
     public var loadError: String?
+    public var widgetError: String?
+    public private(set) var widgetSnapshot: AlarmWidgetSnapshot?
+    @ObservationIgnored private var widgetReload: Task<Void, Never>?
     public var scheduling = "Checking alarm registrations…"
     public var previewMission: Routine?
     public var mission: Registration?
@@ -152,10 +167,48 @@ public struct StopLoopIntent: LiveActivityIntent {
                     if back % 2 == 0 { seed.events.append(LoopEvent(routine:loop,kind:.manual,date:at.addingTimeInterval(5 * 3600),note:back == 2 ? "Stretched and refilled water" : "")) }
                 }
             }
-            let model = AlarmModel(store:store,repository:LoopRepository(file:args.contains("-alarm.demo") ? nil : file,seed:seed),driver:PreviewAlarmDriver()); model.isPreview = true; return model
+            if args.contains("-alarm.sound") {
+                if let source = Bundle.main.url(forResource: "alarm-chime", withExtension: "wav"), let sound = try? ImportedSounds.live.load(source) {
+                    var routine = Routine(); routine.name = "Imported sound"; routine.enabled = false; routine.tone = .pulse; routine.importedSound = sound
+                    seed.routines = [routine]
+                    if args.contains("-alarm.sound-missing") { try? FileManager.default.removeItem(at: ImportedSounds.live.file(sound)) }
+                }
+            }
+            let model = AlarmModel(store:store,repository:LoopRepository(file:(args.contains("-alarm.demo") || args.contains("-alarm.sound")) ? nil : file,seed:seed),driver:PreviewAlarmDriver()); model.isPreview = true; return model
         }
         #endif
         return AlarmModel(store:Store(config:config),repository:LoopRepository(file:base.appendingPathComponent("archive.v1.json")),driver:NativeAlarmDriver())
+    }
+    private func publishWidget(verifiedIDs: Set<UUID> = []) {
+        do {
+            let snapshot = loadError == nil ? try alarmWidgetSnapshot(archive: archive, verifiedIds: Array(verifiedIDs), now: Date(), calendar: CalendarSpec(.current)) : nil
+            widgetSnapshot = snapshot
+            // Unit-test models keep their projection in memory; only the live/UI-test singleton
+            // writes the shared app group. Preview rows remain explicitly simulated in the app.
+            if self === AlarmModel.shared {
+                guard let url = AlarmWidgetStore.url(group: Bundle.main.object(forInfoDictionaryKey: "SevensAppGroup") as? String) else {
+                    throw LoopFailure.invalid("The widget shared container is unavailable.")
+                }
+                try AlarmWidgetStore.write(snapshot, to: url)
+                widgetReload?.cancel()
+                widgetReload = Task {
+                    do { try await Task.sleep(for: .milliseconds(300)) } catch { return }
+                    WidgetCenter.shared.reloadTimelines(ofKind: "alarm.schedule")
+                }
+            }
+            widgetError = nil
+        } catch {
+            widgetSnapshot = nil
+            if self === AlarmModel.shared, let url = AlarmWidgetStore.url(group: Bundle.main.object(forInfoDictionaryKey: "SevensAppGroup") as? String) {
+                try? AlarmWidgetStore.write(nil, to: url)
+                WidgetCenter.shared.reloadTimelines(ofKind: "alarm.schedule")
+            }
+            widgetError = "The Home Screen widget could not refresh. Open the app for the latest schedule."
+        }
+    }
+    private func publishVerifiedWidget(excluding: Set<UUID> = []) async {
+        do { publishWidget(verifiedIDs: try await driver.widgetIdentifiers().subtracting(excluding)) }
+        catch { publishWidget() }
     }
     public func start() async {
         guard !started else { return }; started = true
@@ -165,9 +218,15 @@ public struct StopLoopIntent: LiveActivityIntent {
     public func reload() async {
         do { archive = try await repository.read(); ready = true; loadError = nil; if let pending = archive.pending { mission = pending } }
         catch { loadError = error.localizedDescription }
+        publishWidget()
     }
     @discardableResult public func mutate(_ change: @Sendable (inout LoopArchive) throws -> Void) async -> Bool {
-        do { archive = try await repository.change(change); return true }
+        do {
+            let before = archive
+            archive = try await repository.change(change)
+            if before.routines != archive.routines || (!syncing && before.installed != archive.installed) { publishWidget() }
+            return true
+        }
         catch { self.error = error.localizedDescription; return false }
     }
     public func save(_ r: Routine) async -> Bool {
@@ -242,6 +301,7 @@ public struct StopLoopIntent: LiveActivityIntent {
                 let desired = try desired()
                 let liveIDs = try await driver.identifiers()
                 var failures: [String] = []
+                var unverified: Set<UUID> = []
                 for row in desired {
                     let old = archive.installed.first { $0.id == row.id }
                     if old == row && liveIDs.contains(row.id) { continue }
@@ -250,7 +310,7 @@ public struct StopLoopIntent: LiveActivityIntent {
                         if old == nil { guard await mutate({ $0.installed.append(row) }) else { throw LoopFailure.invalid("Could not save alarm receipt.") } }
                         try await driver.schedule(row)
                         guard await mutate({ a in a.installed.removeAll { $0.id == row.id }; a.installed.append(row) }) else { throw LoopFailure.invalid("Alarm scheduled, but its receipt could not be updated. Retry before relying on it.") }
-                    } catch { failures.append("\(row.routine.name): \(error.localizedDescription)") }
+                    } catch { unverified.insert(row.id); failures.append("\(row.routine.name): \(error.localizedDescription)") }
                 }
                 let wanted = Set(desired.map(\.id))
                 for row in archive.installed where !wanted.contains(row.id) && failures.isEmpty {
@@ -266,8 +326,9 @@ public struct StopLoopIntent: LiveActivityIntent {
                         _ = await mutate { $0.installed.removeAll { $0.id == row.id } }
                     } catch { failures.append("Could not remove \(row.routine.name): \(error.localizedDescription)") }
                 }
+                await publishVerifiedWidget(excluding: unverified)
                 scheduling = failures.isEmpty ? (isPreview ? driver.status : "\(desired.count) alarm times registered. \(driver.status).") : failures.joined(separator:"\n")
-            } catch { scheduling = error.localizedDescription }
+            } catch { scheduling = error.localizedDescription; publishWidget() }
         } while syncAgain
     }
     public func authorize() async {
@@ -297,7 +358,7 @@ public struct StopLoopIntent: LiveActivityIntent {
         var extra = row; extra.id = ScheduleCompiler.identifier(row.occurrenceID ?? row.id,key:"\(purpose):\(row.snoozes)"); extra.date = Date().addingTimeInterval(Double(minutes)*60); extra.minute = nil; extra.weekdays = []; extra.purpose = purpose; extra.occurrenceID = row.occurrenceID ?? row.id; extra.snoozes = purpose == "snooze" ? row.snoozes + 1 : row.snoozes
         let saved = extra
         guard await mutate({ a in a.installed.removeAll { $0.id == saved.id }; a.installed.append(saved) }) else { throw LoopFailure.invalid("Could not save follow-up alarm.") }
-        do { try await driver.schedule(extra) } catch { _ = await mutate { $0.installed.removeAll { $0.id == saved.id } }; throw error }
+        do { try await driver.schedule(extra); await publishVerifiedWidget() } catch { _ = await mutate { $0.installed.removeAll { $0.id == saved.id } }; throw error }
     }
     public func finish(_ row: Registration, kind: EventKind) async -> Bool {
         guard !busy else { return false }; busy = true; defer { busy = false }
@@ -316,7 +377,7 @@ public struct StopLoopIntent: LiveActivityIntent {
             try await driver.stop(row)
             let event = LoopEvent(routine:row.routine,kind:kind)
             guard await mutate({ a in a.events.append(event); a.pending = nil }) else { return false }
-            mission = nil; return true
+            mission = nil; await publishVerifiedWidget(); return true
         } catch { self.error = error.localizedDescription; return false }
     }
     public func manual(_ r: Routine, date: Date) async { let e = LoopEvent(routine:r,kind:.manual,date:date); _ = await mutate { $0.events.append(e) } }

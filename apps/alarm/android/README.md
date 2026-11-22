@@ -16,9 +16,9 @@ See the shared [Android build guide](../../../android/README.md) for the generic
 
 - AlarmKit's system alert becomes the app's ringing screen and notification. Open stops the sound before the mission, as AlarmKit's Open does.
 - DataScanner becomes CameraX with ZXing (Apache-2.0) in every flavor; Swift Charts becomes Vico. Shake uses the linear accelerometer through the core's counter; Walk uses the step detector with the activity-recognition permission.
-- Material 3 Expressive replaces the SwiftUI screens: a navigation bar (a rail on wide screens) for the four tabs, full-screen forms for the editors, Material's clock-face time picker where iOS has a wheel, round day toggles, − and + rows where iOS has steppers, a bottom sheet for the custom nap, long-press menus and TalkBack actions where iOS has context menus and swipe actions, a snackbar with Undo after deleting a record.
+- Material 3 Expressive replaces the SwiftUI screens: a navigation bar (a rail on wide screens) for the four tabs, full-screen forms for the editors, Material's clock-face time picker where iOS has a wheel, connected day toggles and validated numeric entry, a bottom sheet for the custom nap, long-press menus and TalkBack actions where iOS has context menus and swipe actions, a snackbar with Undo after deleting a record.
 - The trial-ended sheet is never shown: iOS presents expiry only in Settings, never over a ringing alarm or a mission.
-- No widget or ongoing notification beyond the ringing one: iOS has neither.
+- Saved schedule is a native Glance Material 3 Home Screen widget, matching the new iOS WidgetKit capability. It displays a minimal persisted projection and opens the app; no mutation or scheduling runs from the widget. Missing/unverified schedules and snapshots older than 24 hours are explicit. Add it through Settings or the launcher picker. No ongoing notification beyond the ringing one.
 
 ## Verification
 

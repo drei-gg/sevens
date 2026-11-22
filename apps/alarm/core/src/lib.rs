@@ -16,7 +16,9 @@ mod delivery;
 mod model;
 mod schedule;
 mod text;
+mod templates;
 mod time;
+mod widget;
 
 pub use challenges::*;
 pub use codec::*;
@@ -24,6 +26,8 @@ pub use delivery::*;
 pub use model::*;
 pub use schedule::*;
 pub use time::*;
+pub use templates::*;
+pub use widget::*;
 
 pub use uuid::Uuid;
 
@@ -38,3 +42,6 @@ uniffi::custom_type!(Uuid, String, {
 pub fn core_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
+
+mod sound;
+pub use sound::*;

@@ -1,10 +1,10 @@
 package gg.seven.alarm
 
+import android.Manifest
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -15,20 +15,38 @@ import java.time.Instant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class AlarmApplication : Application() {
-    /** Where the archive lives: device-protected storage, so alarms can be restored and ring after a reboot before the first unlock. */
+    /**
+     * Where the archive lives: device-protected storage, so alarms can be restored and ring after a
+     * reboot before the first unlock.
+     */
     val archiveFile: File
         get() = File(createDeviceProtectedStorageContext().filesDir, "AlarmLoops/archive.v1.json")
 
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    private val widgetRefresh = kotlinx.coroutines.flow.MutableStateFlow(0L)
     private var current: AlarmEngine? = null
 
     /** One engine per process; tests swap in an in-memory one before the activity starts. */
     var engine: AlarmEngine
-        get() = current ?: synchronized(this) { current ?: AlarmEngine(ArchiveRepository(archiveFile), NativeAlarmDriver(this)).also { current = it } }
+        get() =
+            current
+                ?: synchronized(this) {
+                    current
+                        ?: AlarmEngine(
+                                ArchiveRepository(archiveFile),
+                                NativeAlarmDriver(this),
+                                widgetSink = { snapshot ->
+                                    AlarmWidgetStore.write(this, snapshot)
+                                    widgetRefresh.value += 1
+                                },
+                            )
+                            .also { current = it }
+                }
         set(value) {
             current = value
         }
@@ -36,6 +54,12 @@ class AlarmApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Ringing.createChannels(this)
+        scope.launch {
+            widgetRefresh.collectLatest {
+                kotlinx.coroutines.delay(300)
+                AlarmGlanceWidget.refresh(this@AlarmApplication)
+            }
+        }
     }
 }
 
@@ -56,8 +80,7 @@ private fun BroadcastReceiver.work(context: Context, block: suspend (AlarmEngine
 
 /**
  * A registration's time has come: ring it (alarms) or post it (quiet reminders), and arm its next
- * week. Runs from AlarmManager, so it may start the ringing foreground service from the
- * background.
+ * week. Runs from AlarmManager, so it may start the ringing foreground service from the background.
  */
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -72,7 +95,14 @@ class AlarmReceiver : BroadcastReceiver() {
             }
             if (row.date == null) runCatching { engine.driver.schedule(row) } // next week's ring
             else engine.driver.cancel(row) // a one-off rings once
-            if (row.routine.delivery == Delivery.ALARM) RingingService.ring(context, row.id, row.routine.name, row.routine.tone ?: gg.seven.alarm.core.AlarmTone.SYSTEM)
+            if (row.routine.delivery == Delivery.ALARM)
+                RingingService.ring(
+                    context,
+                    row.id,
+                    row.routine.name,
+                    row.routine.tone ?: gg.seven.alarm.core.AlarmTone.SYSTEM,
+                    row.routine.importedSound,
+                )
             else Reminders.post(context, row)
             engine.synchronize()
         }
@@ -88,8 +118,11 @@ class RestoreReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val rearm =
             when (intent.action) {
-                Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED -> true
-                Intent.ACTION_LOCKED_BOOT_COMPLETED, Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED -> false
+                Intent.ACTION_TIME_CHANGED,
+                Intent.ACTION_TIMEZONE_CHANGED -> true
+                Intent.ACTION_LOCKED_BOOT_COMPLETED,
+                Intent.ACTION_BOOT_COMPLETED,
+                Intent.ACTION_MY_PACKAGE_REPLACED -> false
                 "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" -> false
                 else -> return
             }
@@ -117,7 +150,8 @@ object Reminders {
                 context,
                 0,
                 Intent(context, MainActivity::class.java),
-                android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT,
+                android.app.PendingIntent.FLAG_IMMUTABLE or
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT,
             )
         val notification =
             NotificationCompat.Builder(context, Ringing.REMINDER_CHANNEL)
@@ -129,7 +163,13 @@ object Reminders {
                 .setAutoCancel(true)
                 .setContentIntent(open)
                 .build()
-        if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
-        NotificationManagerCompat.from(context).notify(row.id.toString(), NativeAlarmDriver.REMINDER_NOTIFICATION, notification)
+        if (
+            Build.VERSION.SDK_INT >= 33 &&
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                    PackageManager.PERMISSION_GRANTED
+        )
+            return
+        NotificationManagerCompat.from(context)
+            .notify(row.id.toString(), NativeAlarmDriver.REMINDER_NOTIFICATION, notification)
     }
 }

@@ -64,18 +64,23 @@ object Ringing {
     fun createChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
-            NotificationChannel(ALARM_CHANNEL, "Alarms", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "The alarm while it rings. The app plays its tone at alarm volume."
-                setSound(null, null)
-                enableVibration(false)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                setBypassDnd(true)
-            }
+            NotificationChannel(ALARM_CHANNEL, "Alarms", NotificationManager.IMPORTANCE_HIGH)
+                .apply {
+                    description =
+                        "The alarm while it rings. The app plays its tone at alarm volume."
+                    setSound(null, null)
+                    enableVibration(false)
+                    lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                    setBypassDnd(true)
+                }
         )
         manager.createNotificationChannel(
-            NotificationChannel(REMINDER_CHANNEL, "Quiet reminders", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Loops delivered as reminders instead of alarms."
-            }
+            NotificationChannel(
+                    REMINDER_CHANNEL,
+                    "Quiet reminders",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                )
+                .apply { description = "Loops delivered as reminders instead of alarms." }
         )
     }
 
@@ -83,10 +88,16 @@ object Ringing {
     fun openIntent(context: Context, id: UUID) =
         Intent(context, MainActivity::class.java)
             .putExtra(EXTRA_OPEN, id.toString())
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            .addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+            )
 }
 
-/** The tones: the system's alarm sound or one of the three bundled with the app (shared with iOS). */
+/**
+ * The tones: the system's alarm sound or one of the three bundled with the app (shared with iOS).
+ */
 object Tones {
     fun asset(tone: AlarmTone): String? =
         when (tone) {
@@ -101,28 +112,66 @@ object Tones {
      * "Preview uses media volume"). The system sound falls back to the chime when the phone has
      * none (or can't read it before the first unlock).
      */
-    fun player(context: Context, tone: AlarmTone, ringing: Boolean): MediaPlayer {
-        val player = MediaPlayer()
-        player.setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(if (ringing) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
-        )
-        val system = if (tone == AlarmTone.SYSTEM) RingtoneManager.getActualDefaultRingtoneUri(context, RingtoneManager.TYPE_ALARM) else null
-        val loaded =
-            system != null && runCatching { player.setDataSource(context, system) }.isSuccess
-        if (!loaded) context.assets.openFd(asset(tone) ?: "alarm-chime.wav").use { player.setDataSource(it.fileDescriptor, it.startOffset, it.length) }
-        player.isLooping = ringing
-        player.prepare()
-        return player
+    fun player(
+        context: Context,
+        tone: AlarmTone,
+        ringing: Boolean,
+        imported: gg.seven.alarm.core.ImportedSound? = null,
+    ): MediaPlayer {
+        fun prepare(source: (MediaPlayer) -> Unit): MediaPlayer {
+            val player = MediaPlayer()
+            try {
+                player.setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(
+                            if (ringing) AudioAttributes.USAGE_ALARM
+                            else AudioAttributes.USAGE_MEDIA
+                        )
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+                source(player)
+                player.isLooping = ringing
+                player.prepare()
+                return player
+            } catch (error: Exception) {
+                player.release()
+                throw error
+            }
+        }
+        if (imported != null) {
+            try {
+                return prepare { it.setDataSource(SoundFiles(context).file(imported).path) }
+            } catch (error: Exception) {
+                if (!ringing)
+                    throw IllegalStateException(
+                        "This imported sound cannot be played. Re-import it or use the fallback tone.",
+                        error,
+                    )
+            }
+        }
+        if (tone == AlarmTone.SYSTEM) {
+            val uri =
+                RingtoneManager.getActualDefaultRingtoneUri(context, RingtoneManager.TYPE_ALARM)
+            if (uri != null)
+                runCatching { prepare { it.setDataSource(context, uri) } }
+                    .getOrNull()
+                    ?.let {
+                        return it
+                    }
+        }
+        return prepare { player ->
+            context.assets.openFd(asset(tone) ?: "alarm-chime.wav").use {
+                player.setDataSource(it.fileDescriptor, it.startOffset, it.length)
+            }
+        }
     }
 }
 
 /**
  * Rings an alarm: its tone at alarm volume, looping, with vibration, under a high-priority
- * notification whose full-screen intent shows [RingingActivity] over the lock screen. Stop and
- * Open are on the notification and the screen. Goes quiet after [Ringing.TIMEOUT_MILLIS].
+ * notification whose full-screen intent shows [RingingActivity] over the lock screen. Stop and Open
+ * are on the notification and the screen. Goes quiet after [Ringing.TIMEOUT_MILLIS].
  */
 class RingingService : Service() {
     private var player: MediaPlayer? = null
@@ -144,18 +193,43 @@ class RingingService : Service() {
         }
         val name = intent.getStringExtra(EXTRA_NAME).orEmpty()
         val now = RingingNow(id, name, Instant.now())
-        val type = if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED else 0
+        val type =
+            if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED
+            else 0
         ServiceCompat.startForeground(this, Ringing.RINGING_NOTIFICATION, notification(now), type)
         Ringing.current.value = now
         release()
-        val tone = intent.getStringExtra(EXTRA_TONE)?.let { runCatching { AlarmTone.valueOf(it) }.getOrNull() } ?: AlarmTone.SYSTEM
+        val tone =
+            intent.getStringExtra(EXTRA_TONE)?.let {
+                runCatching { AlarmTone.valueOf(it) }.getOrNull()
+            } ?: AlarmTone.SYSTEM
         val audio = getSystemService(AudioManager::class.java)
         focus =
             AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-                .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build())
+                .setAudioAttributes(
+                    AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build()
+                )
                 .build()
                 .also { audio.requestAudioFocus(it) }
-        player = runCatching { Tones.player(this, tone, ringing = true).also { it.start() } }.getOrNull()
+        val imported =
+            intent.getStringExtra(EXTRA_SOUND)?.let { value ->
+                runCatching {
+                        gg.seven.alarm.core.ImportedSound(UUID.fromString(value), "Imported sound")
+                    }
+                    .getOrNull()
+            }
+        player =
+            runCatching {
+                    val next = Tones.player(this, tone, ringing = true, imported = imported)
+                    try {
+                        next.start()
+                        next
+                    } catch (error: Exception) {
+                        next.release()
+                        throw error
+                    }
+                }
+                .getOrNull()
         vibrate()
         handler.removeCallbacks(timeout)
         handler.postDelayed(timeout, Ringing.TIMEOUT_MILLIS)
@@ -163,15 +237,25 @@ class RingingService : Service() {
     }
 
     private fun vibrator(): Vibrator =
-        if (Build.VERSION.SDK_INT >= 31) getSystemService(VibratorManager::class.java).defaultVibrator
+        if (Build.VERSION.SDK_INT >= 31)
+            getSystemService(VibratorManager::class.java).defaultVibrator
         else @Suppress("DEPRECATION") getSystemService(Vibrator::class.java)
 
     private fun vibrate() {
         val effect = VibrationEffect.createWaveform(longArrayOf(0, 600, 400), 0)
-        if (Build.VERSION.SDK_INT >= 33) vibrator().vibrate(effect, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_ALARM))
+        if (Build.VERSION.SDK_INT >= 33)
+            vibrator()
+                .vibrate(
+                    effect,
+                    VibrationAttributes.createForUsage(VibrationAttributes.USAGE_ALARM),
+                )
         else
             @Suppress("DEPRECATION")
-            vibrator().vibrate(effect, AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build())
+            vibrator()
+                .vibrate(
+                    effect,
+                    AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build(),
+                )
     }
 
     private fun notification(now: RingingNow): Notification {
@@ -180,10 +264,18 @@ class RingingService : Service() {
             PendingIntent.getActivity(
                 this,
                 0,
-                Intent(this, RingingActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION),
+                Intent(this, RingingActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION),
                 immutable,
             )
-        val stop = PendingIntent.getBroadcast(this, 0, Intent(this, StopReceiver::class.java).setData(NativeAlarmDriver.fireIntent(this, now.id).data), immutable)
+        val stop =
+            PendingIntent.getBroadcast(
+                this,
+                0,
+                Intent(this, StopReceiver::class.java)
+                    .setData(NativeAlarmDriver.fireIntent(this, now.id).data),
+                immutable,
+            )
         val open = PendingIntent.getActivity(this, 1, Ringing.openIntent(this, now.id), immutable)
         return NotificationCompat.Builder(this, Ringing.ALARM_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_alarm)
@@ -225,19 +317,28 @@ class RingingService : Service() {
         private const val EXTRA_ID = "id"
         private const val EXTRA_NAME = "name"
         private const val EXTRA_TONE = "tone"
+        private const val EXTRA_SOUND = "sound"
         private const val ACTION_SILENCE = "gg.seven.alarm.SILENCE"
 
-        fun ring(context: Context, id: UUID, name: String, tone: AlarmTone) {
+        fun ring(
+            context: Context,
+            id: UUID,
+            name: String,
+            tone: AlarmTone,
+            imported: gg.seven.alarm.core.ImportedSound? = null,
+        ) {
             context.startForegroundService(
                 Intent(context, RingingService::class.java)
                     .putExtra(EXTRA_ID, id.toString())
                     .putExtra(EXTRA_NAME, name)
                     .putExtra(EXTRA_TONE, tone.name)
+                    .putExtra(EXTRA_SOUND, imported?.id?.toString())
             )
         }
 
         fun silence(context: Context) {
-            if (Ringing.current.value != null) context.stopService(Intent(context, RingingService::class.java))
+            if (Ringing.current.value != null)
+                context.stopService(Intent(context, RingingService::class.java))
         }
     }
 }
@@ -254,7 +355,10 @@ class RingingActivity : ComponentActivity() {
             setTurnScreenOn(true)
         } else
             @Suppress("DEPRECATION")
-            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
+            window.addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                    android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            )
         enableEdgeToEdge()
         setContent {
             SevenTheme {
@@ -264,9 +368,11 @@ class RingingActivity : ComponentActivity() {
                     RingingScreen(
                         ringing,
                         onStop = {
-                            RingingService.silence(this)
                             val app = application as AlarmApplication
-                            app.scope.launch { runCatching { app.engine.dismissNative(ringing.id) } }
+                            RingingService.silence(this)
+                            app.scope.launch {
+                                runCatching { app.engine.dismissNative(ringing.id) }
+                            }
                             finish()
                         },
                         onOpen = {
@@ -306,12 +412,22 @@ class RingingActivity : ComponentActivity() {
 private fun RingingScreen(now: RingingNow, onStop: () -> Unit, onOpen: () -> Unit) {
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Column(
-            Modifier.padding(padding).fillMaxSize().padding(horizontal = Space.l, vertical = Space.xl),
+            Modifier.padding(padding)
+                .fillMaxSize()
+                .padding(horizontal = Space.l, vertical = Space.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.weight(1f))
-            Text("Alarm", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            ClockText(ClockFormat.parts(now.since), Modifier.padding(vertical = Space.s), role = ClockRole.Display)
+            Text(
+                "Alarm",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            ClockText(
+                ClockFormat.parts(now.since),
+                Modifier.padding(vertical = Space.s),
+                role = ClockRole.Display,
+            )
             Text(
                 now.name,
                 Modifier.semantics { heading() },
@@ -319,9 +435,22 @@ private fun RingingScreen(now: RingingNow, onStop: () -> Unit, onOpen: () -> Uni
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.weight(1.4f))
-            Column(Modifier.widthIn(max = 420.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Space.ms)) {
-                Button(onClick = onOpen, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("ringing-open")) { Text("Open") }
-                OutlinedButton(onClick = onStop, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("ringing-stop")) { Text("Stop") }
+            Column(
+                Modifier.widthIn(max = 420.dp).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(Space.ms),
+            ) {
+                Button(
+                    onClick = onOpen,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("ringing-open"),
+                ) {
+                    Text("Open")
+                }
+                OutlinedButton(
+                    onClick = onStop,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("ringing-stop"),
+                ) {
+                    Text("Stop")
+                }
             }
             Text(
                 "Open starts the alarm’s mission. Stop records a dismissal.",

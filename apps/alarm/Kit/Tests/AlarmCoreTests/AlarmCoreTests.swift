@@ -6,6 +6,22 @@ import Testing
 /// every former Swift test under its Swift name). Here: the native store around the core, and a
 /// façade that converts without changing anything.
 struct AlarmCoreTests {
+    @Test func routineTemplatePersistsWithoutArmingOrReplacingOriginal() async throws {
+        let original = Routine()
+        let template = try BackupCodec.decode(Data(try routineTemplate(routine: original)))
+        #expect(template.routines.count == 1)
+        #expect(!template.routines[0].enabled)
+        #expect(template.routines[0].id != original.id)
+        #expect(template.events.isEmpty && template.installed.isEmpty && template.pending == nil)
+        let file = temporary(); defer { try? FileManager.default.removeItem(at: file) }
+        let repo = LoopRepository(file: file)
+        _ = try await repo.change { $0.routines = [original] }
+        let imported = try await repo.change { $0 = try BackupCodec.merge(template, into: $0) }
+        #expect(imported.routines.count == 2)
+        #expect(imported.routines[0] == original)
+        #expect(try await LoopRepository(file: file).read() == imported)
+        #expect(try BackupCodec.merge(template, into: imported) == imported)
+    }
     func calendar(_ zone: String = "UTC") -> Calendar { var c = Calendar(identifier:.gregorian); c.timeZone = TimeZone(identifier:zone)!; return c }
     func date(_ s: String) -> Date { ISO8601DateFormatter().date(from:s)! }
     func temporary() -> URL { FileManager.default.temporaryDirectory.appendingPathComponent("alarm-\(UUID().uuidString).json") }

@@ -1,4 +1,8 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
+@file:OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalLayoutApi::class,
+)
 
 package gg.seven.alarm
 
@@ -6,11 +10,10 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.view.View
-import androidx.core.net.toUri
 import android.os.Build
 import android.provider.Settings
 import android.view.HapticFeedbackConstants
+import android.view.View
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -23,16 +26,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.alarm.core.RoutineKind
 import gg.seven.kit.EmptyState
@@ -64,7 +68,12 @@ fun AlarmApp(model: AlarmModel) {
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(note) {
         val shown = note ?: return@LaunchedEffect
-        val result = snackbar.showSnackbar(shown.text, actionLabel = if (shown.undo != null) "Undo" else null, duration = SnackbarDuration.Short)
+        val result =
+            snackbar.showSnackbar(
+                shown.text,
+                actionLabel = if (shown.undo != null) "Undo" else null,
+                duration = SnackbarDuration.Short,
+            )
         if (result == SnackbarResult.ActionPerformed) shown.undo?.invoke()
         model.note.value = null
     }
@@ -91,10 +100,15 @@ fun AlarmApp(model: AlarmModel) {
                 if (show) LoadingIndicator()
             }
         else -> {
-            val wide = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } >= 600.dp
+            val wide =
+                with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } >=
+                    600.dp
             Row(Modifier.fillMaxSize()) {
                 if (wide)
-                    NavigationRail(containerColor = MaterialTheme.colorScheme.background, modifier = Modifier.safeDrawingPadding()) {
+                    NavigationRail(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        modifier = Modifier.safeDrawingPadding(),
+                    ) {
                         Spacer(Modifier.weight(1f))
                         Tab.entries.forEach { item ->
                             NavigationRailItem(
@@ -114,9 +128,11 @@ fun AlarmApp(model: AlarmModel) {
                     snackbarHost = { SnackbarHost(snackbar) },
                     bottomBar = {
                         if (!wide)
-                            NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
+                            ShortNavigationBar(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            ) {
                                 Tab.entries.forEach { item ->
-                                    NavigationBarItem(
+                                    ShortNavigationBarItem(
                                         selected = tab == item,
                                         onClick = { tab = item },
                                         icon = { Icon(item.icon, null) },
@@ -127,7 +143,10 @@ fun AlarmApp(model: AlarmModel) {
                             }
                     },
                 ) { padding ->
-                    Box(Modifier.padding(padding).consumeWindowInsets(padding).fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    Box(
+                        Modifier.padding(padding).consumeWindowInsets(padding).fillMaxSize(),
+                        contentAlignment = Alignment.TopCenter,
+                    ) {
                         Box(Modifier.widthIn(max = 672.dp).fillMaxSize()) {
                             when (tab) {
                                 Tab.Alarms -> RoutinesScreen(model, RoutineKind.ALARM)
@@ -143,7 +162,8 @@ fun AlarmApp(model: AlarmModel) {
     }
     draft?.let { RoutineEditor(model, it) }
     preview?.let { MissionScreen(model, it, null) { engine.previewMission.value = null } }
-    // A real mission covers everything and can't be dismissed by back (iOS interactiveDismissDisabled).
+    // A real mission covers everything and can't be dismissed by back (iOS
+    // interactiveDismissDisabled).
     mission?.let { MissionScreen(model, it.routine, it) {} }
     error?.let { message ->
         AlertDialog(
@@ -160,24 +180,33 @@ fun AlarmApp(model: AlarmModel) {
 /** The time now, refreshed every [period] milliseconds (iOS TimelineView(.periodic)). */
 @Composable
 fun rememberNow(period: Long = 30_000): Instant {
-    val now by produceState(Instant.now()) {
-        while (true) {
-            value = Instant.now()
-            delay(period)
+    val now by
+        produceState(Instant.now()) {
+            while (true) {
+                value = Instant.now()
+                delay(period)
+            }
         }
-    }
     return now
 }
 
-/** Whether text is at an accessibility size, where layouts stack instead of sitting side by side. */
-@Composable
-fun largeText(): Boolean = LocalDensity.current.fontScale >= 1.5f
+/**
+ * Whether text is at an accessibility size, where layouts stack instead of sitting side by side.
+ */
+@Composable fun largeText(): Boolean = LocalDensity.current.fontScale >= 1.5f
 
 /** The one filled button on a screen, full width up to a comfortable measure. */
 @Composable
-fun PrimaryButton(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, onClick: () -> Unit) {
+fun PrimaryButton(
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
     Button(
         onClick = onClick,
+        shapes = ButtonDefaults.shapesFor(56.dp),
         enabled = enabled,
         modifier = modifier.widthIn(max = 420.dp).fillMaxWidth().heightIn(min = 56.dp),
         contentPadding = ButtonDefaults.contentPaddingFor(56.dp),
@@ -195,7 +224,14 @@ fun PrimaryButton(text: String, modifier: Modifier = Modifier, icon: ImageVector
  * exact.
  */
 @Composable
-fun StepRow(label: String, value: Int, range: IntRange, modifier: Modifier = Modifier, step: Int = 1, onChange: (Int) -> Unit) {
+fun StepRow(
+    label: String,
+    value: Int,
+    range: IntRange,
+    modifier: Modifier = Modifier,
+    step: Int = 1,
+    onChange: (Int) -> Unit,
+) {
     val view = LocalView.current
     fun set(next: Int) {
         val clamped = next.coerceIn(range)
@@ -210,11 +246,19 @@ fun StepRow(label: String, value: Int, range: IntRange, modifier: Modifier = Mod
         horizontalArrangement = Arrangement.spacedBy(Space.s),
     ) {
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge.numeric())
-        FilledTonalIconButton(onClick = { set(value - step) }, enabled = value > range.first, modifier = Modifier.testTag("$label-minus")) {
-            Icon(Icons.Outlined.Remove, "Decrease")
+        FilledTonalIconButton(
+            onClick = { set(value - step) },
+            enabled = value > range.first,
+            modifier = Modifier.testTag("$label-minus"),
+        ) {
+            Icon(Icons.Outlined.Remove, "Decrease $label")
         }
-        FilledTonalIconButton(onClick = { set(value + step) }, enabled = value < range.last, modifier = Modifier.testTag("$label-plus")) {
-            Icon(Icons.Outlined.Add, "Increase")
+        FilledTonalIconButton(
+            onClick = { set(value + step) },
+            enabled = value < range.last,
+            modifier = Modifier.testTag("$label-plus"),
+        ) {
+            Icon(Icons.Outlined.Add, "Increase $label")
         }
     }
 }
@@ -233,7 +277,12 @@ fun Heading(text: String, modifier: Modifier = Modifier) {
 /** An explanation under a group (iOS section footer). */
 @Composable
 fun Footer(text: String, modifier: Modifier = Modifier) {
-    Text(text, modifier.padding(horizontal = Space.m), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(
+        text,
+        modifier.padding(horizontal = Space.m),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 /**
@@ -245,7 +294,10 @@ fun WeekdayPicker(days: List<Int>, modifier: Modifier = Modifier, onChange: (Lis
     val view = LocalView.current
     var presets by remember { mutableStateOf(false) }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.xs), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Space.xs),
+            verticalArrangement = Arrangement.spacedBy(Space.xs),
+        ) {
             WeekOrder.days.forEach { day ->
                 val on = day in days
                 ToggleButton(
@@ -257,7 +309,10 @@ fun WeekdayPicker(days: List<Int>, modifier: Modifier = Modifier, onChange: (Lis
                     },
                     shapes = ToggleButtonShapes(CircleShape, CircleShape, CircleShape),
                     contentPadding = PaddingValues(0.dp),
-                    modifier = Modifier.size(48.dp).semantics { contentDescription = WeekOrder.name(day) }.testTag("day-$day"),
+                    modifier =
+                        Modifier.size(48.dp)
+                            .semantics { contentDescription = WeekOrder.name(day) }
+                            .testTag("day-$day"),
                 ) {
                     Text(WeekOrder.letter(day), textAlign = TextAlign.Center)
                 }
@@ -266,15 +321,20 @@ fun WeekdayPicker(days: List<Int>, modifier: Modifier = Modifier, onChange: (Lis
         Box {
             TextButton(onClick = { presets = true }) { Text("Choose days") }
             DropdownMenu(presets, onDismissRequest = { presets = false }) {
-                listOf("Every day" to listOf(1, 2, 3, 4, 5, 6, 7), "Weekdays" to listOf(2, 3, 4, 5, 6), "Weekends" to listOf(1, 7)).forEach { (label, preset) ->
-                    DropdownMenuItem(
-                        text = { Text(label) },
-                        onClick = {
-                            onChange(preset)
-                            presets = false
-                        },
+                listOf(
+                        "Every day" to listOf(1, 2, 3, 4, 5, 6, 7),
+                        "Weekdays" to listOf(2, 3, 4, 5, 6),
+                        "Weekends" to listOf(1, 7),
                     )
-                }
+                    .forEach { (label, preset) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                onChange(preset)
+                                presets = false
+                            },
+                        )
+                    }
             }
         }
     }
@@ -282,8 +342,8 @@ fun WeekdayPicker(days: List<Int>, modifier: Modifier = Modifier, onChange: (Lis
 
 /**
  * Asks for what alarms need, in order: notifications (the ringing screen and reminders), exact
- * alarms, then full-screen alarms over the lock screen. Anything Android already allows is
- * skipped. [onDone] runs after the last step; the app re-checks when it resumes.
+ * alarms, then full-screen alarms over the lock screen. Anything Android already allows is skipped.
+ * [onDone] runs after the last step; the app re-checks when it resumes.
  */
 @Composable
 fun rememberAllowAlarms(onDone: () -> Unit): () -> Unit {
@@ -297,9 +357,11 @@ fun rememberAllowAlarms(onDone: () -> Unit): () -> Unit {
         val intent =
             when {
                 exact -> Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, app)
-                fullScreen && Build.VERSION.SDK_INT >= 34 -> Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, app)
+                fullScreen && Build.VERSION.SDK_INT >= 34 ->
+                    Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, app)
                 !driver.notificationsAllowed ->
-                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                 else -> null
             }
         intent?.let { runCatching { context.startActivity(it) } }
@@ -314,7 +376,8 @@ fun rememberAllowAlarms(onDone: () -> Unit): () -> Unit {
         if (
             Build.VERSION.SDK_INT >= 33 &&
                 !prefs.getBoolean("asked", false) &&
-                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                    PackageManager.PERMISSION_GRANTED
         )
             launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
         else settings()
@@ -324,13 +387,22 @@ fun rememberAllowAlarms(onDone: () -> Unit): () -> Unit {
 /** Haptics that confirm (polish guide §3.8), on the constants each Android version has. */
 object Haptics {
     fun confirm(view: View) =
-        view.performHapticFeedback(if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.VIRTUAL_KEY)
+        view.performHapticFeedback(
+            if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.CONFIRM
+            else HapticFeedbackConstants.VIRTUAL_KEY
+        )
 
     fun reject(view: View) =
-        view.performHapticFeedback(if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.REJECT else HapticFeedbackConstants.LONG_PRESS)
+        view.performHapticFeedback(
+            if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.REJECT
+            else HapticFeedbackConstants.LONG_PRESS
+        )
 
     fun select(view: View) =
-        view.performHapticFeedback(if (Build.VERSION.SDK_INT >= 34) HapticFeedbackConstants.SEGMENT_TICK else HapticFeedbackConstants.CLOCK_TICK)
+        view.performHapticFeedback(
+            if (Build.VERSION.SDK_INT >= 34) HapticFeedbackConstants.SEGMENT_TICK
+            else HapticFeedbackConstants.CLOCK_TICK
+        )
 
     fun tick(view: View) = view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
 }

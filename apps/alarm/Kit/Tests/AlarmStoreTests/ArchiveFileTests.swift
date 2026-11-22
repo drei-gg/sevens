@@ -29,6 +29,15 @@ struct ArchiveFileTests {
         #expect(!FileManager.default.fileExists(atPath: file.path))
         #expect(try await repo.read().isEmpty)
     }
+    @Test func oversizedEncodedChangeDoesNotPublishOrReplace() async throws {
+        let file = temporary(); defer { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }
+        let repo = store(file)
+        _ = try await repo.change { $0 = ["wake"] }
+        let before = try Data(contentsOf: file)
+        await #expect(throws: Refused.self) { try await repo.change { $0 = [String(repeating: "a", count: 100)] } }
+        #expect(try await repo.read() == ["wake"])
+        #expect(try Data(contentsOf: file) == before)
+    }
     @Test func unreadableAndOversizedFilesAreKept() async throws {
         let file = temporary(); defer { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }
         try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)

@@ -1,0 +1,9 @@
+<!-- Launcher RemoteViews has no Activity window background; it needs its own surface. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:context="android.appwidget.AppWidgetHostView" tools:ignore="Overdraw"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical"
+    android:background="?android:attr/colorBackground" android:padding="16dp">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="@string/alarm_widget_title" android:textSize="20sp" android:textColor="?android:attr/textColorPrimary" />
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="@string/alarm_widget_open" android:textSize="16sp" android:textColor="?android:attr/textColorSecondary" />
+</LinearLayout>

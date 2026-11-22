@@ -69,23 +69,40 @@ fun HistoryScreen(model: AlarmModel) {
     fun dayOf(e: LoopEvent) = e.date.atZone(zone).toLocalDate()
     val events =
         archive.events
-            .filter { (query.isEmpty() || it.name.contains(query, true) || it.note.contains(query, true)) && (!filter || dayOf(it) == day) }
+            .filter {
+                (query.isEmpty() ||
+                    it.name.contains(query, true) ||
+                    it.note.contains(query, true)) && (!filter || dayOf(it) == day)
+            }
             .sortedByDescending { it.date }
     val days = events.groupBy(::dayOf).toSortedMap(compareByDescending { it })
-    LazyColumn(Modifier.fillMaxSize().testTag("history"), contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.s), verticalArrangement = Arrangement.spacedBy(Space.s)) {
+    LazyColumn(
+        Modifier.fillMaxSize().testTag("history"),
+        contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.s),
+        verticalArrangement = Arrangement.spacedBy(Space.s),
+    ) {
         item(key = "search") { SearchInput("Find a routine or note", state = search) }
-        if (archive.events.isNotEmpty() && query.isEmpty()) item(key = "summary") { Summary(archive.events) }
+        if (archive.events.isNotEmpty() && query.isEmpty())
+            item(key = "summary") { Summary(archive.events) }
         item(key = "filter") {
-            Section(Modifier.padding(top = Space.s), footer = "Only recorded actions appear here. An alarm being scheduled doesn’t prove you heard it or did the activity.") {
+            Section(
+                Modifier.padding(top = Space.s),
+                footer =
+                    "Only recorded actions appear here. An alarm being scheduled doesn’t prove you heard it or did the activity.",
+            ) {
                 switch("Show one day", filter) { filter = it }
             }
-            if (filter) DateField("Day", day, Modifier.padding(top = Space.s)) { dayEpoch = minOf(it, LocalDate.now()).toEpochDay() }
+            if (filter)
+                DateField("Day", day, Modifier.padding(top = Space.s)) {
+                    dayEpoch = minOf(it, LocalDate.now()).toEpochDay()
+                }
         }
         if (events.isEmpty())
             item(key = "empty") {
                 gg.seven.kit.EmptyState(
                     if (query.isEmpty()) "No recorded actions" else "No results for “$query”",
-                    if (query.isEmpty()) "Completed missions, snoozes and check-ins appear here." else "Try another name or note.",
+                    if (query.isEmpty()) "Completed missions, snoozes and check-ins appear here."
+                    else "Try another name or note.",
                     icon = Icons.Outlined.CalendarMonth,
                 )
             }
@@ -95,15 +112,34 @@ fun HistoryScreen(model: AlarmModel) {
                 SegmentedListItem(
                     onClick = { model.eventDraft.value = event },
                     shapes = ListItemDefaults.segmentedShapes(index, group.size),
-                    modifier = Modifier.padding(bottom = ListItemDefaults.SegmentedGap).testTag("event-${event.name}"),
-                    leadingContent = { Icon(event.kind.icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    modifier =
+                        Modifier.padding(bottom = ListItemDefaults.SegmentedGap)
+                            .testTag("event-${event.name}"),
+                    leadingContent = {
+                        Icon(
+                            event.kind.icon,
+                            null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
                     supportingContent = {
                         Column {
                             Text(event.kind.title)
-                            if (event.note.isNotEmpty()) Text(event.note, maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
+                            if (event.note.isNotEmpty())
+                                Text(
+                                    event.note,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
                         }
                     },
-                    trailingContent = { Text(ClockFormat.time(event.date), style = MaterialTheme.typography.bodyMedium.numeric()) },
+                    trailingContent = {
+                        Text(
+                            ClockFormat.time(event.date),
+                            style = MaterialTheme.typography.bodyMedium.numeric(),
+                        )
+                    },
                 ) {
                     Text(event.name)
                 }
@@ -122,7 +158,10 @@ private fun dayTitle(day: LocalDate): String {
     }
 }
 
-/** Two tiles for the last seven days and a bar a day in the time hue (Vico, the Swift Charts counterpart). */
+/**
+ * Two tiles for the last seven days and a bar a day in the time hue (Vico, the Swift Charts
+ * counterpart).
+ */
 @Composable
 private fun Summary(all: List<LoopEvent>) {
     val zone = ZoneId.systemDefault()
@@ -136,11 +175,21 @@ private fun Summary(all: List<LoopEvent>) {
             StatTile("Last 7 days", "${recent.size}", "recorded actions", m)
             StatTile("Missions", "$missions", "completed", m)
         }
-        if (largeText()) Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) { tiles(Modifier.fillMaxWidth()) }
-        else Row(horizontalArrangement = Arrangement.spacedBy(Space.ms)) { tiles(Modifier.weight(1f)) }
+        if (largeText())
+            Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
+                tiles(Modifier.fillMaxWidth())
+            }
+        else
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.ms)) {
+                tiles(Modifier.weight(1f))
+            }
         Surface(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.large) {
             Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                Text("Recorded each day", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Recorded each day",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 WeekChart(counts)
             }
         }
@@ -149,11 +198,26 @@ private fun Summary(all: List<LoopEvent>) {
 
 @Composable
 private fun StatTile(title: String, value: String, detail: String, modifier: Modifier) {
-    Surface(modifier, color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.large) {
-        Column(Modifier.padding(Space.ms).heightIn(min = 64.dp).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-            Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Surface(
+        modifier,
+        color = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.large,
+    ) {
+        Column(
+            Modifier.padding(Space.ms).heightIn(min = 64.dp).semantics(mergeDescendants = true) {},
+            verticalArrangement = Arrangement.spacedBy(Space.xs),
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Text(value, style = MaterialTheme.typography.titleLarge.numeric())
-            Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -162,10 +226,18 @@ private fun StatTile(title: String, value: String, detail: String, modifier: Mod
 private fun WeekChart(counts: List<Pair<LocalDate, Int>>) {
     val producer = remember { CartesianChartModelProducer() }
     LaunchedEffect(counts) {
-        producer.runTransaction { columnSeries { series(x = counts.map { it.first.toEpochDay() }, y = counts.map { it.second }) } }
+        producer.runTransaction {
+            columnSeries {
+                series(x = counts.map { it.first.toEpochDay() }, y = counts.map { it.second })
+            }
+        }
     }
     val days = remember {
-        CartesianValueFormatter { _, value, _ -> LocalDate.ofEpochDay(value.toLong()).dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()) }
+        CartesianValueFormatter { _, value, _ ->
+            LocalDate.ofEpochDay(value.toLong())
+                .dayOfWeek
+                .getDisplayName(TextStyle.NARROW, Locale.getDefault())
+        }
     }
     val counted = remember { CartesianValueFormatter { _, value, _ -> value.toInt().toString() } }
     ProvideVicoTheme(rememberM3VicoTheme(columnCartesianLayerColors = listOf(SevenColors.time))) {
@@ -173,8 +245,13 @@ private fun WeekChart(counts: List<Pair<LocalDate, Int>>) {
             chart =
                 rememberCartesianChart(
                     rememberColumnCartesianLayer(),
-                    startAxis = VerticalAxis.rememberStart(valueFormatter = counted, itemPlacer = remember { VerticalAxis.ItemPlacer.step({ 1.0 }) }),
-                    bottomAxis = HorizontalAxis.rememberBottom(valueFormatter = days, guideline = null),
+                    startAxis =
+                        VerticalAxis.rememberStart(
+                            valueFormatter = counted,
+                            itemPlacer = remember { VerticalAxis.ItemPlacer.step({ 1.0 }) },
+                        ),
+                    bottomAxis =
+                        HorizontalAxis.rememberBottom(valueFormatter = days, guideline = null),
                 ),
             modelProducer = producer,
             animationSpec = null,
@@ -182,7 +259,10 @@ private fun WeekChart(counts: List<Pair<LocalDate, Int>>) {
             modifier =
                 Modifier.fillMaxWidth().height(140.dp).clearAndSetSemantics {
                     contentDescription =
-                        "Recorded actions per day, last seven days: " + counts.joinToString(", ") { (d, n) -> "${d.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())} $n" }
+                        "Recorded actions per day, last seven days: " +
+                            counts.joinToString(", ") { (d, n) ->
+                                "${d.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())} $n"
+                            }
                 },
         )
     }
@@ -192,7 +272,13 @@ private fun WeekChart(counts: List<Pair<LocalDate, Int>>) {
 @Composable
 private fun EventEditor(model: AlarmModel, event: LoopEvent) {
     var confirmDelete by remember { mutableStateOf(false) }
-    FullScreenForm(title = "Edit record", onClose = { model.eventDraft.value = null }, onSave = { model.saveEvent(event) { model.eventDraft.value = null } }) {
+    val busy by model.engine.busy.collectAsStateWithLifecycle()
+    FullScreenForm(
+        busy = busy,
+        title = "Edit record",
+        onClose = { model.eventDraft.value = null },
+        onSave = { model.saveEvent(event) { model.eventDraft.value = null } },
+    ) {
         Section {
             item("Routine", event.name)
             item("Recorded as", event.kind.title)
@@ -201,9 +287,20 @@ private fun EventEditor(model: AlarmModel, event: LoopEvent) {
             val at = Instant.ofEpochMilli(millis.toLong())
             model.eventDraft.value = event.copy(date = minOf(at, Instant.now()))
         }
-        TextInput("Note", event.note, minLines = 3) { model.eventDraft.value = event.copy(note = it) }
-        Text("Corrections are marked as manually recorded.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        TextButton(onClick = { confirmDelete = true }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error), modifier = Modifier.align(Alignment.Start)) {
+        TextInput("Note", event.note, minLines = 3) {
+            model.eventDraft.value = event.copy(note = it)
+        }
+        Text(
+            "Corrections are marked as manually recorded.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(
+            onClick = { confirmDelete = true },
+            colors =
+                ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            modifier = Modifier.align(Alignment.Start),
+        ) {
             Icon(Icons.Outlined.Delete, null, Modifier.size(ButtonDefaults.IconSize))
             Spacer(Modifier.width(ButtonDefaults.IconSpacing))
             Text("Delete record")
@@ -217,10 +314,12 @@ private fun EventEditor(model: AlarmModel, event: LoopEvent) {
                 TextButton(
                     onClick = {
                         confirmDelete = false
-                        model.eventDraft.value = null
-                        model.deleteEvent(event)
+                        model.deleteEvent(event) { model.eventDraft.value = null }
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
                 ) {
                     Text("Delete")
                 }

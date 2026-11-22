@@ -88,6 +88,14 @@ pub struct TimeSlot {
     pub weekdays: Vec<i32>,
 }
 
+/// A device-local asset reference, not an external path or a promise that a backup contains audio.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
+pub struct ImportedSound {
+    #[serde(with = "upper")]
+    pub id: Uuid,
+    pub name: String,
+}
+
 /// Swift `TimeSlot(minute:weekdays:)` with a fresh identifier.
 #[uniffi::export]
 pub fn new_time_slot(minute: i32, weekdays: Vec<i32>) -> TimeSlot {
@@ -112,6 +120,8 @@ pub struct Routine {
     pub group: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tone: Option<AlarmTone>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub imported_sound: Option<ImportedSound>,
     pub kind: RoutineKind,
     pub enabled: bool,
     pub delivery: Delivery,
@@ -145,6 +155,7 @@ pub fn new_routine(kind: RoutineKind, now: SystemTime) -> Routine {
         reason: None,
         group: None,
         tone: None,
+        imported_sound: None,
         kind,
         enabled: true,
         delivery: if is_loop { Delivery::Reminder } else { Delivery::Alarm },
@@ -184,6 +195,7 @@ fn require(value: bool, message: &str) -> Result<(), LoopError> {
 #[uniffi::export]
 pub fn routine_validate(routine: &Routine) -> Result<(), LoopError> {
     let r = routine;
+    require(r.imported_sound.as_ref().is_none_or(|sound| !trimmed(&sound.name).is_empty() && characters(&sound.name) <= 120), "Keep the imported sound name between 1 and 120 characters.")?;
     require(
         r.reason.as_deref().map(characters).unwrap_or(0) <= 300 && r.group.as_deref().map(characters).unwrap_or(0) <= 60,
         "Keep the reason under 300 characters and the group under 60.",

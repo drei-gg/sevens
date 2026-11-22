@@ -26,8 +26,19 @@ public actor ArchiveFile<Archive: Sendable> {
     public func read() throws -> Archive {
         if !loaded {
             if let file, FileManager.default.fileExists(atPath: file.path) {
-                guard (try file.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0) <= maxBytes else { throw tooLarge }
-                cache = try decode(Data(contentsOf: file))
+                // URL resource values can be cached across a replacement. Bound the actual read,
+                // including a file that grows after opening, rather than trusting cached size.
+                guard maxBytes >= 0 else { throw tooLarge }
+                let input = try FileHandle(forReadingFrom: file)
+                defer { try? input.close() }
+                var bytes = Data()
+                while true {
+                    let chunk = try input.read(upToCount: min(65_535, maxBytes - bytes.count) + 1) ?? Data()
+                    if chunk.isEmpty { break }
+                    bytes.append(chunk)
+                    guard bytes.count <= maxBytes else { throw tooLarge }
+                }
+                cache = try decode(bytes)
             }
             loaded = true
         }
@@ -37,6 +48,7 @@ public actor ArchiveFile<Archive: Sendable> {
     public func change(_ action: @Sendable (inout Archive) throws -> Void) throws -> Archive {
         var next = try read(); try action(&next)
         let bytes = try encode(next)
+        guard bytes.count <= maxBytes else { throw tooLarge }
         if let file { try writer(bytes, file) }
         cache = next; return cache
     }

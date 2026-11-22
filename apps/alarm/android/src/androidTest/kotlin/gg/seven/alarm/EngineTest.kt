@@ -17,15 +17,42 @@ import org.junit.runner.RunWith
 class EngineTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
-    private fun engine(seed: LoopArchive = newLoopArchive()): Pair<AlarmEngine, PreviewAlarmDriver> {
+    private fun engine(
+        seed: LoopArchive = newLoopArchive()
+    ): Pair<AlarmEngine, PreviewAlarmDriver> {
         val driver = PreviewAlarmDriver()
         val engine = AlarmEngine(ArchiveRepository(null, seed), driver, isPreview = true)
         runBlocking { engine.reload() }
         return engine to driver
     }
 
-    private fun alarm(name: String = "Wake up", minute: Int = 420, days: List<Int> = listOf(2, 3, 4, 5, 6)) =
-        newRoutine(RoutineKind.ALARM, Instant.now()).copy(name = name, slots = listOf(newTimeSlot(minute, days)))
+    private fun alarm(
+        name: String = "Wake up",
+        minute: Int = 420,
+        days: List<Int> = listOf(2, 3, 4, 5, 6),
+    ) =
+        newRoutine(RoutineKind.ALARM, Instant.now())
+            .copy(name = name, slots = listOf(newTimeSlot(minute, days)))
+
+    @Test
+    fun unprojectableSchedulesClearThePreviouslyCheckedWidget() = runBlocking {
+        var snapshot: AlarmWidgetSnapshot? = null
+        val engine =
+            AlarmEngine(
+                ArchiveRepository(null),
+                PreviewAlarmDriver(),
+                true,
+                widgetSink = { snapshot = it },
+            )
+        engine.reload()
+        assertNotNull(snapshot)
+        val loop =
+            newRoutine(RoutineKind.LOOP, Instant.now())
+                .copy(slots = (0 until 10).map { newTimeSlot(420 + it * 5, (1..7).toList()) })
+        assertTrue(engine.mutate { it.copy(routines = listOf(loop)) })
+        assertNull(snapshot)
+        assertNotNull(engine.widgetError.value)
+    }
 
     @Test
     fun savingInstallsReceiptsAndDisablingRemovesThem() = runBlocking {
@@ -50,16 +77,25 @@ class EngineTest {
         engine.toggle(r, false, paid = false)
         engine.toggle(r, true, paid = false)
         assertFalse(engine.archive.value.routines.single().enabled)
-        assertEquals("Unlock to re-enable this routine. Existing enabled alarms keep running.", engine.error.value)
+        assertEquals(
+            "Unlock to re-enable this routine. Existing enabled alarms keep running.",
+            engine.error.value,
+        )
     }
 
     @Test
     fun quietRemindersSplitPerWeekday() = runBlocking {
         val (engine, driver) = engine()
-        val loop = newRoutine(RoutineKind.LOOP, Instant.now()).copy(slots = listOf(newTimeSlot(720, listOf(2, 4, 6))))
+        val loop =
+            newRoutine(RoutineKind.LOOP, Instant.now())
+                .copy(slots = listOf(newTimeSlot(720, listOf(2, 4, 6))))
         engine.save(loop, paid = true)
         assertEquals(3, driver.rows.size)
-        assertTrue(driver.rows.values.all { it.weekdays.size == 1 && it.routine.delivery == Delivery.REMINDER })
+        assertTrue(
+            driver.rows.values.all {
+                it.weekdays.size == 1 && it.routine.delivery == Delivery.REMINDER
+            }
+        )
     }
 
     @Test
@@ -97,7 +133,10 @@ class EngineTest {
         assertTrue(check.id in driver.rows)
         // Completing the check doesn't schedule another; it clears the routine's extras.
         assertTrue(engine.finish(check, EventKind.COMPLETED))
-        assertEquals(0, engine.archive.value.installed.count { it.purpose == "followUp" && it.id != check.id })
+        assertEquals(
+            0,
+            engine.archive.value.installed.count { it.purpose == "followUp" && it.id != check.id },
+        )
         engine.clearWakeUpChecks()
         assertTrue(engine.archive.value.installed.none { it.purpose == "followUp" })
     }
@@ -137,7 +176,9 @@ class EngineTest {
 
     @Test
     fun pastOneOffTurnsOffOnSync() = runBlocking {
-        val past = newRoutine(RoutineKind.ALARM, Instant.now()).copy(timing = Timing.ONCE, once = Instant.now().minusSeconds(60))
+        val past =
+            newRoutine(RoutineKind.ALARM, Instant.now())
+                .copy(timing = Timing.ONCE, once = Instant.now().minusSeconds(60))
         val seed = newLoopArchive().copy(routines = listOf(past))
         val (engine, _) = engine(seed)
         engine.synchronize()
@@ -169,7 +210,8 @@ class EngineTest {
         val file = File(context.cacheDir, "corrupt-${UUID.randomUUID()}.json")
         file.writeText("{broken")
         try {
-            val engine = AlarmEngine(ArchiveRepository(file), PreviewAlarmDriver(), isPreview = true)
+            val engine =
+                AlarmEngine(ArchiveRepository(file), PreviewAlarmDriver(), isPreview = true)
             engine.reload()
             assertFalse(engine.ready.value)
             assertNotNull(engine.loadError.value)
@@ -191,7 +233,9 @@ class EngineTest {
             fresh.reload()
             assertEquals("Persisted", fresh.archive.value.routines.single().name)
             // A routine the core refuses is never written.
-            assertFalse(fresh.mutate { a -> a.copy(routines = a.routines.map { it.copy(name = "") }) })
+            assertFalse(
+                fresh.mutate { a -> a.copy(routines = a.routines.map { it.copy(name = "") }) }
+            )
             assertEquals("Persisted", decodeArchive(file.readBytes()).routines.single().name)
         } finally {
             file.delete()
@@ -218,11 +262,19 @@ class EngineTest {
     @Test
     fun clockPartsFollowTheTwelveHourSetting() {
         ClockFormat.h24 = true
-        assertEquals("07:05" to null, ClockFormat.parts(425).let { it.first.filter { c -> c.isDigit() || c == ':' } to it.second })
+        assertEquals(
+            "07:05" to null,
+            ClockFormat.parts(425).let {
+                it.first.filter { c -> c.isDigit() || c == ':' } to it.second
+            },
+        )
         ClockFormat.h24 = false
         val (time, period) = ClockFormat.parts(13 * 60 + 5)
         assertTrue(time.contains("1:05"))
         assertNotNull(period)
-        assertEquals("in less than a minute", ClockFormat.countdown(Instant.now().plusSeconds(30), Instant.now()))
+        assertEquals(
+            "in less than a minute",
+            ClockFormat.countdown(Instant.now().plusSeconds(30), Instant.now()),
+        )
     }
 }

@@ -1,5 +1,50 @@
 import XCTest
 @MainActor final class SmokeTests: XCTestCase {
+    func testImportedSoundPreviewPickerCancelAndMissingFallback() {
+        continueAfterFailure = false
+        let app = XCUIApplication(); app.launchArguments = ["-alarm.ui", "-alarm.reset", "-alarm.sound"]; app.launch()
+        let edit = app.buttons["edit-Imported sound"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 15)); edit.tap()
+        let imported = app.staticTexts["imported-sound"]
+        for _ in 0..<7 { if imported.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(imported.exists)
+        app.buttons["Preview imported sound"].tap()
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Imported sound"; shot.lifetime = .keepAlways; add(shot)
+        app.buttons["import-sound"].tap()
+        let picker = app.navigationBars["FullDocumentManagerViewControllerNavigationBar"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 10)); picker.buttons["Cancel"].tap()
+        XCTAssertTrue(picker.wait(for: \.exists, toEqual: false, timeout: 5))
+        XCTAssertTrue(imported.waitForExistence(timeout: 5))
+        let cancelShot = XCTAttachment(screenshot: app.screenshot()); cancelShot.name = "After picker cancellation"; cancelShot.lifetime = .keepAlways; add(cancelShot)
+        XCTAssertFalse(app.alerts.firstMatch.exists, app.debugDescription)
+        XCTAssertTrue(app.buttons["Use built-in tone"].wait(for: \.isHittable, toEqual: true, timeout: 5))
+        app.buttons["Use built-in tone"].tap(); app.buttons["save-routine"].tap()
+        XCTAssertTrue(edit.waitForExistence(timeout: 10))
+        app.terminate(); app.launchArguments = ["-alarm.ui", "-alarm.reset", "-alarm.sound", "-alarm.sound-missing"]; app.launch()
+        XCTAssertTrue(edit.waitForExistence(timeout: 15)); edit.tap()
+        let missing = app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "This audio file is missing.")).firstMatch
+        for _ in 0..<7 { if missing.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(missing.exists)
+        let missingShot = XCTAttachment(screenshot: app.screenshot()); missingShot.name = "Missing sound fallback"; missingShot.lifetime = .keepAlways; add(missingShot)
+        app.buttons["Use built-in tone"].tap(); app.buttons["save-routine"].tap()
+        XCTAssertTrue(edit.waitForExistence(timeout: 10))
+    }
+    func testRoutineTemplateConsent() {
+        let app = XCUIApplication(); app.launchArguments = ["-alarm.ui", "-alarm.reset"]; app.launch()
+        XCTAssertTrue(app.buttons["add-routine"].waitForExistence(timeout: 15)); app.buttons["add-routine"].tap()
+        app.buttons["save-routine"].tap()
+        let row = app.buttons["edit-Wake up"]
+        XCTAssertTrue(row.waitForExistence(timeout: 8))
+        row.press(forDuration: 1)
+        XCTAssertTrue(app.buttons["Save routine template"].waitForExistence(timeout: 5))
+        app.buttons["Save routine template"].tap()
+        XCTAssertTrue(app.buttons["Save template"].waitForExistence(timeout: 5))
+        let image = XCTAttachment(screenshot: app.screenshot()); image.name = "template-consent"; image.lifetime = .keepAlways; add(image)
+        // Dismiss the native confirmation popover without exporting or mutating the routine.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.8)).tap()
+        XCTAssertTrue(app.switches["routine-Wake up"].exists)
+        XCTAssertFalse(app.buttons["Save template"].exists)
+    }
     func testCustomNapPersists() {
         let app = XCUIApplication(); app.launchArguments = ["-alarm.ui","-alarm.reset"]; app.launch()
         XCTAssertTrue(app.buttons["custom-nap"].waitForExistence(timeout:15)); app.buttons["custom-nap"].tap()

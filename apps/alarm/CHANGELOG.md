@@ -1,5 +1,16 @@
 # Changelog
 
+## 18 November 2026 — imported sounds, not released
+
+- Per-alarm PCM WAV imports on both phones: native picker, owned validated copy, preview, replacement/removal and visible built-in fallback. Shared format/duration/size bounds, cancellation safety, draft-aware cleanup and explicit JSON backup/template audio exclusions. Android also releases failed players and falls back when imported/system audio cannot be prepared.
+
+- Added native Android Glance M3 and iOS WidgetKit Saved schedule widgets, minimal shared projections, expiry and scheduling-attention states. Widgets open the app and never arm alarms.
+
+## Unreleased — routine templates
+
+- Save one reusable routine on iOS or Android, review the included mission data, and import it through Settings on either platform as a disabled copy. History and device scheduling state stay out of the file.
+- Bound Apple archive reads against the actual bytes, including files replaced after their size was cached; oversized writes cannot replace the saved archive.
+
 ## 0.1.0 — Android, 16 November 2026
 
 - Alarm & Loops on Android: Alarms, Loops, History and Settings as on the iPhone, with every mission, naps, groups, wake-up checks, snooze, backups and exports. Alarms are the phone's own alarm clocks, ring over the lock screen with Stop and Open, and come back after a restart or a time-zone change.

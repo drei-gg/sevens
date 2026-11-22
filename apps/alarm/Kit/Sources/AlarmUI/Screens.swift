@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFAudio
+import UniformTypeIdentifiers
 import SevenKit
 import AlarmCore
 
@@ -114,7 +115,10 @@ struct RoutineEditor: View {
     @State private var scanning = false
     @State private var preview = false
     @State private var saveError: String?
-    @State private var tonePlayer: AVAudioPlayer?
+    @State private var soundPreview = SoundPreview()
+    @State private var choosingSound = false
+    @State private var importingSound = false
+    @State private var importTask: Task<Void, Never>?
     private var isNew: Bool { !model.archive.routines.contains { $0.id == routine.id } }
     var body: some View {
         NavigationStack {
@@ -145,9 +149,27 @@ struct RoutineEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Save") { Task { if await model.save(routine) { dismiss() } else { saveError = model.error; model.error = nil } } }.disabled(model.busy).accessibilityIdentifier("save-routine") }
+                ToolbarItem(placement: .confirmationAction) { Button("Save") { Task { if await model.save(routine) { dismiss() } else { saveError = model.error; model.error = nil } } }.disabled(model.busy || importingSound).accessibilityIdentifier("save-routine") }
             }
-            .onDisappear { tonePlayer?.stop() }
+            .onDisappear {
+                soundPreview.stop()
+                if !choosingSound && !scanning && !preview { importTask?.cancel() }
+            }
+            .fileImporter(isPresented: $choosingSound, allowedContentTypes: [.wav]) { result in
+                do {
+                    let url = try result.get()
+                    importingSound = true
+                    importTask = Task {
+                        defer { importingSound = false }
+                        do {
+                            let sound = try await Task.detached(priority: .userInitiated) { try ImportedSounds.live.load(url) }.value
+                            guard !Task.isCancelled else { ImportedSounds.live.discard(sound, unlessUsedBy: model.archive); return }
+                            soundPreview.stop(); routine.importedSound = sound
+                        } catch { if !Task.isCancelled { saveError = error.localizedDescription } }
+                    }
+                } catch let error as CocoaError where error.code == .userCancelled { }
+                catch { saveError = error.localizedDescription }
+            }
             .sheet(isPresented: $scanning) { CodeScanner { routine.code = $0; scanning = false } }
             .sheet(isPresented: $preview) { MissionScreen(routine: routine, row: nil) }
             .alert("Couldn’t save", isPresented: Binding(get: { saveError != nil }, set: { shown in if !shown { saveError = nil } })) { Button("OK", role: .cancel) {} } message: { Text(saveError ?? "") }
@@ -185,13 +207,30 @@ struct RoutineEditor: View {
 
     @ViewBuilder private var alarmSections: some View {
         Section {
-            AlarmTonePicker(tone: Binding(get: { routine.tone ?? .system }, set: { routine.tone = $0 }))
-            if let tone = routine.tone, tone != .system {
-                Button("Preview tone", systemImage: "play.circle") {
-                    do { guard let url = Bundle.main.url(forResource: "alarm-\(tone.rawValue)", withExtension: "wav") else { throw LoopFailure.invalid("This tone isn’t in this build.") }; tonePlayer = try AVAudioPlayer(contentsOf: url); tonePlayer?.play() }
+            if routine.importedSound != nil || (routine.tone != nil && routine.tone != .system) {
+                Button(soundPreview.playing ? "Stop preview" : (routine.importedSound != nil ? "Preview imported sound" : "Preview tone"), systemImage: soundPreview.playing ? "stop.circle" : "play.circle") {
+                    if soundPreview.playing { soundPreview.stop(); return }
+                    do {
+                        soundPreview.stop()
+                        let url: URL
+                        if let sound = routine.importedSound { url = ImportedSounds.live.file(sound) }
+                        else if let tone = routine.tone, let bundled = Bundle.main.url(forResource: "alarm-\(tone.rawValue)", withExtension: "wav") { url = bundled }
+                        else { throw LoopFailure.invalid("This tone isn’t in this build.") }
+                        try soundPreview.play(url)
+                    }
                     catch { saveError = error.localizedDescription }
                 }
             }
+            if let sound = routine.importedSound {
+                Text(sound.name).accessibilityIdentifier("imported-sound")
+                if !ImportedSounds.live.available(sound) { Text("This audio file is missing. The fallback tone will play; import it again to restore your sound.").foregroundStyle(Tokens.danger) }
+                Button("Use built-in tone") { soundPreview.stop(); routine.importedSound = nil }
+            }
+            Button(routine.importedSound == nil ? "Import WAV sound" : "Replace sound", systemImage: "waveform") { soundPreview.stop(); choosingSound = true }.disabled(importingSound).accessibilityIdentifier("import-sound")
+            if importingSound { ProgressView("Importing sound…") }
+            if routine.importedSound != nil { Text("Built-in fallback").textRole(.caption).foregroundStyle(Tokens.muted) }
+            AlarmTonePicker(tone: Binding(get: { routine.tone ?? .system }, set: { routine.tone = $0; soundPreview.stop() }))
+            Text("16-bit PCM WAV, mono or stereo, 8–48 kHz, up to 29 seconds and 6 MB. JSON backups and templates do not include audio. Missing audio uses the fallback tone.").textRole(.caption).foregroundStyle(Tokens.muted)
         } header: { Text("Sound").foregroundStyle(Tokens.muted) } footer: {
             Text("Preview uses media volume. The ringing alarm uses the system alarm volume; this app doesn’t override it.").textRole(.caption)
         }

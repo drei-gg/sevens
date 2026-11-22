@@ -1,6 +1,7 @@
 import SwiftUI
 import SevenKit
 import AlarmCore
+import UniformTypeIdentifiers
 
 /// Alarms and Time loops: the next one big at the top, one way to add, then every routine as a
 /// large time with its switch.
@@ -13,6 +14,9 @@ struct RoutinesScreen: View {
     @State private var search = ""
     @State private var customNap = false
     @State private var napsStarted = 0
+    @State private var template: Routine?
+    @State private var templateDocument = BackupDocument(data: Data())
+    @State private var exportingTemplate = false
 
     private var all: [Routine] { model.archive.routines.filter { $0.kind == kind } }
     var routines: [Routine] {
@@ -64,6 +68,7 @@ struct RoutinesScreen: View {
                         .contextMenu {
                             Button("Edit", systemImage: "pencil") { editing = routine }
                             Button("Duplicate", systemImage: "plus.square.on.square") { Task { await model.duplicate(routine) } }
+                            Button("Save routine template", systemImage: "square.and.arrow.up") { template = routine }
                             if routine.mission != .none { Button("Try mission", systemImage: routine.mission.symbol) { model.previewMission = routine } }
                             Button("Log done", systemImage: "checkmark") { Task { await model.manual(routine, date: Date()) } }
                             Divider()
@@ -82,8 +87,21 @@ struct RoutinesScreen: View {
         .navigationTitle(kind == .alarm ? "Alarms" : "Time loops")
         .modifier(SearchWhenMany(count: all.count, text: $search))
         .sensoryFeedback(.success, trigger: napsStarted)
-        .sheet(item: $editing) { RoutineEditor(routine: $0) }
+        .sheet(item: $editing, onDismiss: { ImportedSounds.live.prune(model.archive) }) { RoutineEditor(routine: $0) }
         .sheet(isPresented: $customNap) { CustomNapSheet() }
+        .confirmationDialog("Save a routine template? Includes its name, reason, times and mission phrase or scanned code. No history, delivery status or app defaults. Import from Settings; the new copy starts turned off. Imported audio files are not included.", isPresented: Binding(get: { template != nil }, set: { if !$0 { template = nil } }), titleVisibility: .visible) {
+            Button("Save template") {
+                guard let routine = template else { return }
+                do {
+                    templateDocument = BackupDocument(data: Data(try LoopFailure.sentence { try routineTemplate(routine: routine) }))
+                    exportingTemplate = true
+                } catch { model.error = error.localizedDescription }
+                template = nil
+            }
+        }
+        .fileExporter(isPresented: $exportingTemplate, document: templateDocument, contentType: .json, defaultFilename: "routine-template") {
+            if case let .failure(error) = $0 { model.error = error.localizedDescription }
+        }
         .confirmationDialog("Delete this routine? History will stay.", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
             Button("Delete routine", role: .destructive) { if let r = deleting { Task { await model.delete(r) } }; deleting = nil }
         }

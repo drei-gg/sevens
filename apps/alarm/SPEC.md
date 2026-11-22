@@ -2,7 +2,7 @@
 
 Development 0.1 · 11 November 2026
 
-Wake-up missions and time loops. Seven-day trial, then a one-time unlock through SevenKit. Public builds use the neutral name **Alarm & Loops**. Native SwiftUI, iOS 26.1+, Foundation AlarmCore, Apple-only AlarmUI. No backend, accounts, advertising, analytics or third-party dependencies.
+Wake-up missions and time loops. Seven-day trial, then a one-time unlock through SevenKit. Public builds use the neutral name **Alarm & Loops**. Native SwiftUI, iOS 26.1+, Foundation AlarmCore, Apple-only AlarmUI. No backend, accounts, advertising or analytics. Pinned dependencies and notices are listed in THIRD-PARTY.md.
 
 ## Alarms and time loops
 
@@ -46,8 +46,24 @@ Alarms, Loops, History and Settings. Native controls in the Sevens' look (SevenK
 
 Implemented local development scope: weekly/one-off/window schedules, eight missions, in-app snooze and one follow-up, history, backup/import/export and SevenKit integration. Native alarm delivery and mission actions require physical iPhone acceptance; a simulator build is not that evidence. Camera scanning is unavailable on unsupported hardware/simulator.
 
-Skip-next, date-specific overrides, independently moved weekday times within a shared slot, user-imported audio, completion-relative schedules, multistage timer sequences, template sharing, widgets and a Watch app are not implemented. Per-slot weekday inclusion/exclusion is implemented and covers the original Time Loops example. Fasting and its journal remain in Fast Tracker. The Android app (`android/`, its README lists the platform differences) runs on the same core.
+A routine can be saved as a reusable JSON template from its actions. Both platforms show a disclosure before exporting its name, schedule, reason and mission phrase/code. Templates contain one disabled routine with fresh identifiers, no history, installed alarms or app defaults. Import through Settings uses the existing dormant backup merge; reimporting the same file does not duplicate it. Exporting never arms or changes the original routine.
+
+Skip-next, date-specific overrides, independently moved weekday times within a shared slot, completion-relative schedules, multistage timer sequences and a Watch app are not implemented. Per-slot weekday inclusion/exclusion is implemented and covers the original Time Loops example. Fasting and its journal remain in Fast Tracker. The Android app (`android/`, its README lists the platform differences) runs on the same core.
+
+## Home Screen widgets
+
+Both phones provide a read-only Saved schedule widget: upcoming alarms, quiet loops, snoozes and wake-up checks, with their date and routine name. Android uses Jetpack Glance Material 3 and a native launcher pin action; iOS uses WidgetKit small/medium families. Tapping opens the app; no widget action creates, edits or arms an alarm.
+
+The shared Rust projection contains no mission phrase/code, reason, group, history, receipt IDs or entitlement. It is published from persisted state. Native identifiers and matching receipts are checked after reconciliation; failed replacements and blocked permissions remain unverified. A missing registration or failed cancellation says to check scheduling. A registration is never presented as proof of audible delivery or task completion. Snapshots expire after 24 hours without an app check, on clock rollback or a changed time zone; a bounded timeline expires before omitted events could look like an empty schedule. Both platform files are excluded from backup. The iOS app group and Android launcher updates carry only this projection.
+
+Widget refresh is system scheduled and can be delayed. Android refreshes after app/receiver changes and periodically through the launcher; iOS receives predicted timeline transitions and reload requests after changes. These display updates do not replenish or replace the native alarm schedule. Physical launcher, permission-revocation, locked-device and delivery acceptance remain separate from emulator tests.
 
 ## Verification
 
 Portable tests cover the exact MWF case, shared edits, overlap deduplication, overnight rollover, DST gaps/folds, invalid bounds, mission matching, backup merge, atomic-write failure, corrupt/future files and CSV escaping. Apple model tests exercise reconciliation, retry, expiry continuity and split reminder weekdays. UI tests exercise creation/relaunch and light/dark screen tours. Actual results are recorded separately; test source alone is not a passing result.
+
+### Imported sounds (local, unreleased)
+
+Each alarm can select an owned PCM WAV clip through the system file picker, preview it at media volume, replace it, or return to its built-in tone. Shared Rust/Hound validation accepts 16-bit mono/stereo PCM at 8–48 kHz, up to 29 seconds and 6 MiB; it reads every sample and rewrites a canonical WAV without metadata. Longer or malformed clips fail without trimming or replacing the previous selection. The 29-second limit is our conservative cross-platform policy, not a measured AlarmKit delivery guarantee.
+
+The selected built-in tone remains the fallback. Android owns files in device-protected storage and uses them at alarm volume, falling back for missing/unplayable files. Apple stores files in Library/Sounds for AlarmKit named sounds and uses the built-in fallback when a file is missing at scheduling time. Missing files are disclosed in the editor. JSON backups/templates preserve local sound-reference metadata but do not carry audio; imports remain disabled. Sound storage is capped at 128 MiB; closing an editor removes unused owned files while preserving saved, installed and pending schedules and Android rotation drafts. No changes to quiet-reminder sound policy or global new-alarm defaults. Physical locked-phone/OEM/AlarmKit delivery remains acceptance work.

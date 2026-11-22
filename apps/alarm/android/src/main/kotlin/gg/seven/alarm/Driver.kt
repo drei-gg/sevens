@@ -7,9 +7,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import androidx.core.net.toUri
 import android.os.Build
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.net.toUri
 import gg.seven.alarm.core.CalendarSpec
 import gg.seven.alarm.core.Delivery
 import gg.seven.alarm.core.Registration
@@ -24,12 +24,15 @@ import java.util.UUID
 /** This device's calendar for the core: its zone and first weekday (1 Sunday … 7 Saturday). */
 fun deviceCalendar(): CalendarSpec {
     val first = WeekFields.of(Locale.getDefault()).firstDayOfWeek
-    return CalendarSpec(ZoneId.systemDefault().id, if (first == DayOfWeek.SUNDAY) 1 else first.value + 1)
+    return CalendarSpec(
+        ZoneId.systemDefault().id,
+        if (first == DayOfWeek.SUNDAY) 1 else first.value + 1,
+    )
 }
 
 /**
- * The system side of a registration (iOS `AlarmDriver`). Android has no repeating weekly alarm
- * and no list of what is set, so [schedule] arms the registration's next ring (the core's
+ * The system side of a registration (iOS `AlarmDriver`). Android has no repeating weekly alarm and
+ * no list of what is set, so [schedule] arms the registration's next ring (the core's
  * `registrationNext`) and the receiver re-arms it when it rings; [isLive] asks whether its pending
  * intent still exists.
  */
@@ -38,6 +41,9 @@ interface AlarmDriver {
     val status: String
 
     fun isLive(row: Registration): Boolean
+
+    /** A widget also reflects permissions at the last app check; this is never delivery proof. */
+    fun widgetIsLive(row: Registration): Boolean = isLive(row)
 
     /** Arms the registration's next ring; throws [LoopFailure] with what to do when it can't. */
     fun schedule(row: Registration)
@@ -65,8 +71,11 @@ class NativeAlarmDriver(private val context: Context) : AlarmDriver {
     private val notificationsAsked
         get() =
             Build.VERSION.SDK_INT < 33 ||
-                context.getSharedPreferences("alarm-permissions", Context.MODE_PRIVATE).getBoolean("asked", false) ||
-                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                context
+                    .getSharedPreferences("alarm-permissions", Context.MODE_PRIVATE)
+                    .getBoolean("asked", false) ||
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED
 
     override val status: String
         get() =
@@ -80,11 +89,19 @@ class NativeAlarmDriver(private val context: Context) : AlarmDriver {
 
     override fun isLive(row: Registration) = pending(row.id, PendingIntent.FLAG_NO_CREATE) != null
 
+    override fun widgetIsLive(row: Registration): Boolean =
+        isLive(row) &&
+            notificationsAllowed &&
+            (row.routine.delivery == Delivery.REMINDER || (exactAllowed && fullScreenAllowed))
+
     override fun schedule(row: Registration) {
         if (row.routine.delivery == Delivery.REMINDER) {
-            if (!notificationsAllowed) throw LoopFailure("Allow notifications in Settings to deliver quiet reminders.")
-        } else if (!exactAllowed) throw LoopFailure("Allow alarms in Settings before relying on this schedule.")
+            if (!notificationsAllowed)
+                throw LoopFailure("Allow notifications in Settings to deliver quiet reminders.")
+        } else if (!exactAllowed)
+            throw LoopFailure("Allow alarms in Settings before relying on this schedule.")
         val next = registrationNext(row, Instant.now(), deviceCalendar())
+        val existed = pending(row.id, PendingIntent.FLAG_NO_CREATE) != null
         val operation = pending(row.id, PendingIntent.FLAG_UPDATE_CURRENT)!!
         if (next == null) {
             // A one-off whose time has passed: nothing is left to ring.
@@ -93,23 +110,33 @@ class NativeAlarmDriver(private val context: Context) : AlarmDriver {
             return
         }
         val at = next.toEpochMilli()
-        when {
-            row.routine.delivery == Delivery.ALARM -> {
-                // A real alarm clock: exact in Doze, shown as the next alarm in the status bar and
-                // on the lock screen; tapping that opens the app.
-                val show =
-                    PendingIntent.getActivity(
-                        context,
-                        0,
-                        Intent(context, MainActivity::class.java),
-                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-                    )
-                alarms.setAlarmClock(AlarmManager.AlarmClockInfo(at, show), operation)
+        try {
+            when {
+                row.routine.delivery == Delivery.ALARM -> {
+                    // A real alarm clock: exact in Doze, shown as the next alarm in the status bar
+                    // and
+                    // on the lock screen; tapping that opens the app.
+                    val show =
+                        PendingIntent.getActivity(
+                            context,
+                            0,
+                            Intent(context, MainActivity::class.java),
+                            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                        )
+                    alarms.setAlarmClock(AlarmManager.AlarmClockInfo(at, show), operation)
+                }
+                // Quiet reminders are notifications: exact while idle when allowed, otherwise as
+                // close
+                // as Android lets an idle phone wake.
+                exactAllowed ->
+                    alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
+                else -> alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
             }
-            // Quiet reminders are notifications: exact while idle when allowed, otherwise as close
-            // as Android lets an idle phone wake.
-            exactAllowed -> alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
-            else -> alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
+        } catch (error: Exception) {
+            // A newly created PendingIntent is not evidence that setAlarmClock succeeded. Keep
+            // pre-existing registrations on replacement failure, but discard a new orphan token.
+            if (!existed) operation.cancel()
+            throw error
         }
     }
 
@@ -122,11 +149,17 @@ class NativeAlarmDriver(private val context: Context) : AlarmDriver {
     }
 
     override fun stop(row: Registration) {
-        if (row.routine.delivery == Delivery.ALARM && Ringing.current.value?.id == row.id) RingingService.silence(context)
+        if (row.routine.delivery == Delivery.ALARM && Ringing.current.value?.id == row.id)
+            RingingService.silence(context)
     }
 
     private fun pending(id: UUID, flag: Int): PendingIntent? =
-        PendingIntent.getBroadcast(context, 0, fireIntent(context, id), flag or PendingIntent.FLAG_IMMUTABLE)
+        PendingIntent.getBroadcast(
+            context,
+            0,
+            fireIntent(context, id),
+            flag or PendingIntent.FLAG_IMMUTABLE,
+        )
 
     companion object {
         const val REMINDER_NOTIFICATION = 7

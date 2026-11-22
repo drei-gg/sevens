@@ -15,8 +15,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -34,14 +32,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -56,8 +52,8 @@ import gg.seven.alarm.core.*
 import gg.seven.kit.SevenColors
 import gg.seven.kit.Space
 import gg.seven.kit.numeric
-import kotlinx.coroutines.delay
 import kotlin.math.sqrt
+import kotlinx.coroutines.delay
 
 /**
  * The mission that wakes you (iOS MissionScreen): the routine and your reason big, the task in the
@@ -86,7 +82,13 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
     }
     Dialog(
         onDismissRequest = { if (row == null) onClose() },
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false, dismissOnBackPress = row == null, dismissOnClickOutside = false),
+        properties =
+            DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false,
+                dismissOnBackPress = row == null,
+                dismissOnClickOutside = false,
+            ),
     ) {
         if (row != null) BackHandler {}
         Scaffold(
@@ -94,35 +96,82 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
             topBar = {
                 TopAppBar(
                     title = { Text(if (row == null) "Try mission" else "Wake up") },
-                    navigationIcon = { if (row == null) IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, "Close") } },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+                    navigationIcon = {
+                        if (row == null)
+                            IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, "Close") }
+                    },
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background
+                        ),
                 )
             },
         ) { padding ->
             Column(
-                Modifier.padding(padding).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(Space.l),
+                Modifier.padding(padding)
+                    .consumeWindowInsets(padding)
+                    .fillMaxSize()
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(Space.l),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Space.l),
             ) {
-                Column(Modifier.widthIn(max = 520.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                    Icon(if (complete) Icons.Outlined.CheckCircle else Icons.Outlined.WbSunny, null, Modifier.size(56.dp), tint = SevenColors.time)
-                    Text(if (complete) "Done." else routine.name, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-                    if (!complete) routine.reason?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center) }
-                    if (row == null) Text("Mission preview. No alarm will ring.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(
+                    Modifier.widthIn(max = 520.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Space.s),
+                ) {
+                    Icon(
+                        if (complete) Icons.Outlined.CheckCircle else Icons.Outlined.WbSunny,
+                        null,
+                        Modifier.size(56.dp),
+                        tint = SevenColors.time,
+                    )
+                    Text(
+                        if (complete) "Done." else routine.name,
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center,
+                    )
+                    if (!complete)
+                        routine.reason
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let {
+                                Text(
+                                    it,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                    if (row == null)
+                        Text(
+                            "Mission preview. No alarm will ring.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                 }
                 if (!complete) {
-                    Box(Modifier.widthIn(max = 520.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier.widthIn(max = 520.dp).fillMaxWidth(),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Mission(routine, onFeedback = { feedback = it }, onComplete = ::finish)
                     }
                     if (feedback.isNotEmpty())
                         Text(
                             feedback,
-                            Modifier.testTag("mission-feedback").semantics { liveRegion = LiveRegionMode.Polite },
+                            Modifier.testTag("mission-feedback").semantics {
+                                liveRegion = LiveRegionMode.Polite
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                         )
-                    Column(Modifier.widthIn(max = 420.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.ms)) {
+                    Column(
+                        Modifier.widthIn(max = 420.dp).fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(Space.ms),
+                    ) {
                         if (row != null && row.snoozes < routine.snoozeLimit)
                             FilledTonalButton(
                                 onClick = {
@@ -133,14 +182,26 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
                                         }
                                     }
                                 },
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("snooze"),
+                                modifier =
+                                    Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("snooze"),
                             ) {
-                                Icon(Icons.Outlined.Snooze, null, Modifier.size(ButtonDefaults.IconSize))
+                                Icon(
+                                    Icons.Outlined.Snooze,
+                                    null,
+                                    Modifier.size(ButtonDefaults.IconSize),
+                                )
                                 Spacer(Modifier.width(ButtonDefaults.IconSpacing))
                                 Text("Snooze ${ClockFormat.minutes(routine.snoozeMinutes)}")
                             }
                         if (row != null)
-                            TextButton(onClick = { emergency = true }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error), modifier = Modifier.testTag("emergency-stop")) {
+                            TextButton(
+                                onClick = { emergency = true },
+                                colors =
+                                    ButtonDefaults.textButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    ),
+                                modifier = Modifier.testTag("emergency-stop"),
+                            ) {
                                 Text("Emergency stop")
                             }
                     }
@@ -157,7 +218,10 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
                             emergency = false
                             if (row != null) model.run { finish(row, EventKind.EMERGENCY_STOP) }
                         },
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        colors =
+                            ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
                     ) {
                         Text("Stop alarm")
                     }
@@ -197,13 +261,23 @@ private fun ArithmeticMission(count: Int, onFeedback: (String) -> Unit, onComple
             if (solved >= count) onComplete() else challenge = newArithmeticChallenge()
         } else onFeedback("Try that one again.")
     }
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.m)) {
-        Text("Question ${solved + 1} of $count", style = MaterialTheme.typography.labelLarge.numeric(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        Text(
+            "Question ${solved + 1} of $count",
+            style = MaterialTheme.typography.labelLarge.numeric(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         AnimatedContent(challenge, label = "sum") { c ->
             Text(
                 "${c.left} + ${c.right}",
                 Modifier.semantics { contentDescription = "${c.left} plus ${c.right}" },
-                style = MaterialTheme.typography.displayLarge.numeric().copy(fontWeight = FontWeight.Bold),
+                style =
+                    MaterialTheme.typography.displayLarge
+                        .numeric()
+                        .copy(fontWeight = FontWeight.Bold),
             )
         }
         OutlinedTextField(
@@ -212,8 +286,13 @@ private fun ArithmeticMission(count: Int, onFeedback: (String) -> Unit, onComple
             Modifier.widthIn(max = 240.dp).testTag("mission-answer"),
             label = { Text("Answer") },
             singleLine = true,
-            textStyle = MaterialTheme.typography.titleLarge.numeric().copy(textAlign = TextAlign.Center),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+            textStyle =
+                MaterialTheme.typography.titleLarge.numeric().copy(textAlign = TextAlign.Center),
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = androidx.compose.ui.text.input.ImeAction.Done,
+                ),
             keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { check() }),
         )
         PrimaryButton("Check answer", Modifier.testTag("check-answer"), onClick = ::check)
@@ -223,54 +302,101 @@ private fun ArithmeticMission(count: Int, onFeedback: (String) -> Unit, onComple
 @Composable
 private fun TypingMission(phrase: String, onFeedback: (String) -> Unit, onComplete: () -> Unit) {
     var answer by remember { mutableStateOf("") }
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.m)) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
         Text(phrase, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
         OutlinedTextField(
             answer,
             { answer = it },
             Modifier.fillMaxWidth().testTag("mission-phrase"),
             label = { Text("Type the phrase") },
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false),
+            keyboardOptions =
+                KeyboardOptions(
+                    capitalization = KeyboardCapitalization.None,
+                    autoCorrectEnabled = false,
+                ),
         )
-        PrimaryButton("Check phrase") { if (missionCheckPhrase(answer, phrase)) onComplete() else onFeedback("The phrase doesn’t match yet.") }
+        PrimaryButton("Check phrase") {
+            if (missionCheckPhrase(answer, phrase)) onComplete()
+            else onFeedback("The phrase doesn’t match yet.")
+        }
     }
 }
 
 @Composable
 private fun CodeMission(expected: String, onFeedback: (String) -> Unit, onComplete: () -> Unit) {
     var scanning by remember { mutableStateOf(false) }
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.m)) {
-        Icon(Icons.Outlined.QrCodeScanner, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("Go to your saved code and scan it.", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        Icon(
+            Icons.Outlined.QrCodeScanner,
+            null,
+            Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            "Go to your saved code and scan it.",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+        )
         PrimaryButton("Scan code", icon = Icons.Outlined.QrCodeScanner) { scanning = true }
     }
     if (scanning)
         CodeScanner(onClose = { scanning = false }) { value ->
             scanning = false
             // Compared as data, never opened.
-            if (missionCheckCode(value, expected)) onComplete() else onFeedback("That’s a different code.")
+            if (missionCheckCode(value, expected)) onComplete()
+            else onFeedback("That’s a different code.")
         }
 }
 
-/** A square tile for the memory and number missions: card on paper, ink while lit, muted once done. */
+/**
+ * A square tile for the memory and number missions: card on paper, ink while lit, muted once done.
+ */
 @Composable
-private fun MissionTile(text: String, modifier: Modifier = Modifier, lit: Boolean = false, done: Boolean = false, enabled: Boolean = true, label: String, onClick: () -> Unit) {
+private fun MissionTile(
+    text: String,
+    modifier: Modifier = Modifier,
+    lit: Boolean = false,
+    done: Boolean = false,
+    enabled: Boolean = true,
+    label: String,
+    onClick: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
-    Box(
-        modifier
-            .heightIn(min = 68.dp)
-            .background(if (lit) colors.primary else colors.surface, MaterialTheme.shapes.medium)
-            .border(1.dp, colors.outlineVariant, MaterialTheme.shapes.medium)
-            .clickable(enabled = enabled, onClick = onClick)
-            .clearAndSetSemantics {
+    FilledTonalButton(
+        onClick = onClick,
+        enabled = enabled,
+        shapes = ButtonDefaults.shapes(),
+        colors =
+            ButtonDefaults.filledTonalButtonColors(
+                containerColor = if (lit) colors.primary else colors.surfaceContainer,
+                contentColor = if (lit) colors.onPrimary else colors.onSurface,
+                disabledContainerColor =
+                    when {
+                        lit -> colors.primary
+                        done -> colors.secondaryContainer
+                        else -> colors.surfaceContainer
+                    },
+                disabledContentColor =
+                    when {
+                        lit -> colors.onPrimary
+                        done -> colors.onSecondaryContainer
+                        else -> colors.onSurfaceVariant
+                    },
+            ),
+        modifier =
+            modifier.heightIn(min = 68.dp).semantics {
                 contentDescription = label
-                role = Role.Button
-                if (!enabled) disabled()
-                else onClick { onClick(); true }
+                stateDescription = if (lit) "Highlighted" else if (done) "Completed" else "Ready"
             },
-        contentAlignment = Alignment.Center,
+        contentPadding = PaddingValues(8.dp),
     ) {
-        Text(text, style = MaterialTheme.typography.headlineMedium.numeric(), color = if (lit) colors.onPrimary else if (done) colors.onSurfaceVariant else colors.onSurface)
+        Text(text, style = MaterialTheme.typography.headlineMedium.numeric())
     }
 }
 
@@ -288,7 +414,9 @@ private fun TileGrid(count: Int, tile: @Composable RowScope.(Int) -> Unit) {
 
 @Composable
 private fun MemoryMission(level: Int, onComplete: () -> Unit) {
-    var sequence by remember { mutableStateOf(SequenceChallenge(List(level + 2) { (0 until 9).random() })) }
+    var sequence by remember {
+        mutableStateOf(SequenceChallenge(List(level + 2) { (0 until 9).random() }))
+    }
     var highlighted by remember { mutableStateOf<Int?>(null) }
     var showing by remember { mutableStateOf(true) }
     var completed by remember { mutableStateOf(false) }
@@ -309,8 +437,16 @@ private fun MemoryMission(level: Int, onComplete: () -> Unit) {
         showing = false
         message = "Your turn. Repeat the order."
     }
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.m)) {
-        Text(message, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        Text(
+            message,
+            Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+        )
         TileGrid(9) { tile ->
             MissionTile(
                 "${tile + 1}",
@@ -343,12 +479,26 @@ private fun NumberOrderMission(level: Int, onComplete: () -> Unit) {
     val tiles = remember { (1..(level * 3 + 3)).shuffled() }
     var next by remember { mutableIntStateOf(1) }
     var message by remember { mutableStateOf("Tap the numbers from smallest to largest.") }
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.m)) {
-        Text(message, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        Text(
+            message,
+            Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+        )
         TileGrid(tiles.size) { index ->
             val number = tiles[index]
             val done = number < next
-            MissionTile(if (done) "✓" else "$number", Modifier.weight(1f).testTag("order-$number"), done = done, enabled = !done, label = if (done) "Completed $number" else "Number $number") {
+            MissionTile(
+                if (done) "✓" else "$number",
+                Modifier.weight(1f).testTag("order-$number"),
+                done = done,
+                enabled = !done,
+                label = if (done) "Completed $number" else "Number $number",
+            ) {
                 if (number == next) {
                     next += 1
                     message = "Next: $next"
@@ -360,8 +510,8 @@ private fun NumberOrderMission(level: Int, onComplete: () -> Unit) {
 }
 
 /**
- * The game's own inks, each clearing 4.5:1 on paper and card in both themes (the iOS values).
- * They are the content of the game, not accents or status.
+ * The game's own inks, each clearing 4.5:1 on paper and card in both themes (the iOS values). They
+ * are the content of the game, not accents or status.
  */
 @Composable
 private fun ColorWord.ink(): Color {
@@ -388,12 +538,27 @@ private fun ColorWordMission(level: Int, onComplete: () -> Unit) {
     var message by remember { mutableStateOf("Choose the ink color, not the word.") }
     val target = level + 2
     val (word, ink) = round
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.m)) {
-        Text("$solved of $target", style = MaterialTheme.typography.labelLarge.numeric(), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(message, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        Text(
+            "$solved of $target",
+            style = MaterialTheme.typography.labelLarge.numeric(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            message,
+            Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+        )
         Text(
             word.label.uppercase(),
-            Modifier.semantics { contentDescription = "The word ${word.label}, printed in ${ink.label}" }.testTag("color-word"),
+            Modifier.semantics {
+                    contentDescription = "The word ${word.label}, printed in ${ink.label}"
+                }
+                .testTag("color-word"),
             style = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Bold),
             color = ink.ink(),
         )
@@ -412,7 +577,10 @@ private fun ColorWordMission(level: Int, onComplete: () -> Unit) {
                             } else message = "Look at the ink, not the word."
                         },
                         enabled = solved < target,
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("color-${answer.name}"),
+                        modifier =
+                            Modifier.weight(1f)
+                                .heightIn(min = 48.dp)
+                                .testTag("color-${answer.name}"),
                     ) {
                         Text(answer.label)
                     }
@@ -429,11 +597,12 @@ private fun ColorWordMission(level: Int, onComplete: () -> Unit) {
 }
 
 /**
- * Shakes or steps, counted only after the person starts and stopped when they leave the mission
- * or the app goes to the background (iOS MovementTracker). Shakes come from the linear
- * accelerometer through the core's counter; steps from the step detector.
+ * Shakes or steps, counted only after the person starts and stopped when they leave the mission or
+ * the app goes to the background (iOS MovementTracker). Shakes come from the linear accelerometer
+ * through the core's counter; steps from the step detector.
  */
-private class MovementTracker(context: Context, private val mode: MissionKind) : SensorEventListener {
+private class MovementTracker(context: Context, private val mode: MissionKind) :
+    SensorEventListener {
     private val sensors = context.getSystemService(SensorManager::class.java)
     private var counter = ShakeCounter()
     private var baseline: Float? = null
@@ -448,13 +617,23 @@ private class MovementTracker(context: Context, private val mode: MissionKind) :
         count = 0
         message = ""
         val sensor =
-            if (mode == MissionKind.WALK) sensors?.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR) ?: sensors?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
+            if (mode == MissionKind.WALK)
+                sensors?.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
+                    ?: sensors?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
             else sensors?.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
         if (sensor == null) {
-            message = if (mode == MissionKind.WALK) "Step counting is unavailable on this device." else "Motion sensing is unavailable on this device."
+            message =
+                if (mode == MissionKind.WALK) "Step counting is unavailable on this device."
+                else "Motion sensing is unavailable on this device."
             return
         }
-        running = sensors.registerListener(this, sensor, if (mode == MissionKind.WALK) SensorManager.SENSOR_DELAY_NORMAL else SensorManager.SENSOR_DELAY_GAME)
+        running =
+            sensors.registerListener(
+                this,
+                sensor,
+                if (mode == MissionKind.WALK) SensorManager.SENSOR_DELAY_NORMAL
+                else SensorManager.SENSOR_DELAY_GAME,
+            )
         if (!running) message = "Motion sensing is unavailable on this device."
     }
 
@@ -475,7 +654,10 @@ private class MovementTracker(context: Context, private val mode: MissionKind) :
             else -> {
                 // The core counts in g, as iOS's userAcceleration is.
                 val (x, y, z) = event.values
-                counter.sample(sqrt((x * x + y * y + z * z).toDouble()) / SensorManager.GRAVITY_EARTH, event.timestamp / 1e9)
+                counter.sample(
+                    sqrt((x * x + y * y + z * z).toDouble()) / SensorManager.GRAVITY_EARTH,
+                    event.timestamp / 1e9,
+                )
                 count = counter.count().toInt()
             }
         }
@@ -491,7 +673,9 @@ private fun MovementMission(mode: MissionKind, target: Int, onComplete: () -> Un
     var finished by remember { mutableStateOf(false) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_PAUSE) tracker.stop() }
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) tracker.stop()
+        }
         lifecycle.addObserver(observer)
         onDispose {
             lifecycle.removeObserver(observer)
@@ -507,32 +691,79 @@ private fun MovementMission(mode: MissionKind, target: Int, onComplete: () -> Un
     }
     val permission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) tracker.start() else tracker.message = "Allow physical activity in Settings to count steps."
+            if (granted) tracker.start()
+            else tracker.message = "Allow physical activity in Settings to count steps."
         }
     val shown = minOf(tracker.count, target)
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Space.m)) {
-        Icon(if (mode == MissionKind.WALK) Icons.AutoMirrored.Outlined.DirectionsWalk else Icons.Outlined.Vibration, null, Modifier.size(56.dp), tint = SevenColors.time)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        Icon(
+            if (mode == MissionKind.WALK) Icons.AutoMirrored.Outlined.DirectionsWalk
+            else Icons.Outlined.Vibration,
+            null,
+            Modifier.size(56.dp),
+            tint = SevenColors.time,
+        )
         Row(
-            Modifier.clearAndSetSemantics { contentDescription = if (mode == MissionKind.WALK) "$shown of $target steps" else "$shown of $target shakes" },
+            Modifier.clearAndSetSemantics {
+                contentDescription =
+                    if (mode == MissionKind.WALK) "$shown of $target steps"
+                    else "$shown of $target shakes"
+            },
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(Space.xs),
         ) {
-            AnimatedContent(shown, label = "count") { Text("$it", style = MaterialTheme.typography.displayLarge.numeric().copy(fontWeight = FontWeight.Bold)) }
+            AnimatedContent(shown, label = "count") {
+                Text(
+                    "$it",
+                    style =
+                        MaterialTheme.typography.displayLarge
+                            .numeric()
+                            .copy(fontWeight = FontWeight.Bold),
+                )
+            }
             Text("/ $target", style = MaterialTheme.typography.titleLarge.numeric())
         }
-        LinearProgressIndicator(progress = { shown / target.toFloat() }, modifier = Modifier.fillMaxWidth().clearAndSetSemantics {}, color = SevenColors.time)
+        LinearProgressIndicator(
+            progress = { shown / target.toFloat() },
+            modifier = Modifier.fillMaxWidth().clearAndSetSemantics {},
+            color = SevenColors.time,
+        )
         Text(
-            if (mode == MissionKind.WALK) "Take a short walk with your phone. Only steps after you start count." else "Hold your phone securely and shake it back and forth.",
+            if (mode == MissionKind.WALK)
+                "Take a short walk with your phone. Only steps after you start count."
+            else "Hold your phone securely and shake it back and forth.",
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
         )
-        if (tracker.message.isNotEmpty()) Text(tracker.message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (tracker.message.isNotEmpty())
+            Text(
+                tracker.message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         if (!tracker.running && !finished)
-            PrimaryButton("Start challenge", Modifier.testTag("start-challenge"), icon = Icons.Outlined.PlayArrow) {
-                if (mode == MissionKind.WALK && Build.VERSION.SDK_INT >= 29 && context.checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED)
+            PrimaryButton(
+                "Start challenge",
+                Modifier.testTag("start-challenge"),
+                icon = Icons.Outlined.PlayArrow,
+            ) {
+                if (
+                    mode == MissionKind.WALK &&
+                        Build.VERSION.SDK_INT >= 29 &&
+                        context.checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION) !=
+                            PackageManager.PERMISSION_GRANTED
+                )
                     permission.launch(Manifest.permission.ACTIVITY_RECOGNITION)
                 else tracker.start()
             }
-        Text("Motion stays on this phone and stops when you leave this challenge.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Text(
+            "Motion stays on this phone and stops when you leave this challenge.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
 }

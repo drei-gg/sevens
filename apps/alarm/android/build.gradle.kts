@@ -12,6 +12,11 @@ configure<com.android.build.api.dsl.ApplicationExtension> {
 }
 
 dependencies {
+    "implementation"("androidx.glance:glance-appwidget:1.2.0")
+    "implementation"("androidx.glance:glance-material3:1.2.0")
+    // Match Fast/Bloom: Glance's old transitive WorkManager/Room cannot construct
+    // WorkDatabase after release shrinking. Keep the supported worker runtime explicit.
+    "implementation"("androidx.work:work-runtime-ktx:2.11.0")
     // Scan-a-code mission, every flavor: CameraX for the camera, ZXing (Java) to decode.
     "implementation"("androidx.camera:camera-camera2:1.6.2")
     "implementation"("androidx.camera:camera-lifecycle:1.6.2")

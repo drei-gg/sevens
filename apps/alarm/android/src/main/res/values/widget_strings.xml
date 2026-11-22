@@ -1,0 +1,5 @@
+<resources>
+    <string name="alarm_widget_description">Upcoming saved alarms and loops. Includes routine names. Open the app to check scheduling; this does not confirm delivery.</string>
+    <string name="alarm_widget_title">Saved schedule</string>
+    <string name="alarm_widget_open">Open to refresh</string>
+</resources>

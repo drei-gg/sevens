@@ -37,9 +37,16 @@ struct SettingsScreen: View {
                 Text("Uses your selected tone and the system alarm volume. Test on your phone before relying on an alarm. iOS provides its own Stop control.").textRole(.caption)
             }
             Section {
+                Text("Add Saved schedule from the Home Screen widget gallery.")
+                if let error = model.widgetError { Text(error).foregroundStyle(Tokens.danger) }
+            } header: { Text("Home Screen widget").foregroundStyle(Tokens.muted) } footer: {
+                Text("Shows upcoming saved alarms and loops, including routine names. Refreshes after changes and expires after a day without an app check. A schedule is not proof of delivery.").textRole(.caption)
+            }
+            Section {
                 NavigationLink("New alarm defaults") { AlarmDefaultsEditor(defaults: model.archive.alarmDefaults ?? AlarmDefaults()) }
             } header: { Text("Less setup").foregroundStyle(Tokens.muted) }
             Section {
+                Text("JSON backups retain sound selections but not audio files. Re-import missing sounds or use their built-in fallback.").textRole(.caption)
                 Button("Export JSON backup", systemImage: "square.and.arrow.up") { do { document = BackupDocument(data: try BackupCodec.encode(model.archive)); exportType = .json; exportName = "alarm-loops-backup"; exporting = true } catch { model.error = error.localizedDescription } }
                 Button("Export history CSV", systemImage: "tablecells") { document = BackupDocument(data: Data(BackupCodec.csv(model.archive).utf8)); exportType = .commaSeparatedText; exportName = "alarm-loops-history"; exporting = true }
                 Button("Import backup", systemImage: "square.and.arrow.down") { importing = true }
@@ -53,7 +60,7 @@ struct SettingsScreen: View {
             }
             AboutSection(onShowBeforeYouBuy: { before = true }, notStartedStatus: "Free trial not started. Existing alarms and history remain available.")
             Section {
-                AboutVersionRow(); AboutLicenseRow(repositoryURL: URL(string: "https://github.com/drei-gg/sevens")!); AboutNoticesRow(notices: ["Apple frameworks and SevenKit. No third-party libraries."])
+                AboutVersionRow(); AboutLicenseRow(repositoryURL: URL(string: "https://github.com/drei-gg/sevens")!); AboutNoticesRow(notices: ["Shared Rust core and SevenKit. Full dependency inventory: https://github.com/drei-gg/sevens/blob/main/THIRD-PARTY.md", Bundle.module.url(forResource: "Hound", withExtension: "txt").flatMap { url in try? String(contentsOf: url, encoding: .utf8) } ?? "Hound 3.5.1, Apache-2.0."])
             } header: { Text("About").foregroundStyle(Tokens.muted) } footer: {
                 Text("Only Apple handles purchase and restore requests. Scanned mission codes stay on this phone and are never opened as links.").textRole(.caption)
             }
