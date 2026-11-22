@@ -51,15 +51,10 @@ pub fn as_swift_date(t: SystemTime) -> SystemTime {
     from_reference_seconds(reference_seconds(t))
 }
 
-/// The bundled IANA database, the same on every platform, so a wall-clock time never depends on
-/// which tzdata a phone happens to ship.
-fn database() -> &'static jiff::tz::TimeZoneDatabase {
-    static DB: std::sync::OnceLock<jiff::tz::TimeZoneDatabase> = std::sync::OnceLock::new();
-    DB.get_or_init(jiff::tz::TimeZoneDatabase::bundled)
-}
-
+/// The zone from the bundled IANA database (`seven-schedule`), the same on every platform, so a
+/// wall-clock time never depends on which tzdata a phone happens to ship.
 pub(crate) fn zone(spec: &CalendarSpec) -> TimeZone {
-    database().get(&spec.time_zone_id).unwrap_or(TimeZone::UTC)
+    seven_schedule::zone(&spec.time_zone_id)
 }
 
 pub(crate) fn timestamp(t: SystemTime) -> Option<Timestamp> {
@@ -73,7 +68,7 @@ pub(crate) fn system_time(ts: Timestamp) -> SystemTime {
 /// Whether the bundled database knows `identifier`.
 #[uniffi::export]
 pub fn time_zone_known(identifier: String) -> bool {
-    database().get(&identifier).is_ok()
+    seven_schedule::zone_known(&identifier)
 }
 
 /// Serde: `SystemTime` as Foundation's default `Date` encoding, seconds since 2001.
@@ -141,5 +136,5 @@ pub(crate) mod upper_opt {
 }
 
 pub(crate) fn uuid_string(id: &uuid::Uuid) -> String {
-    id.hyphenated().to_string().to_uppercase()
+    seven_schedule::uuid_string(id)
 }

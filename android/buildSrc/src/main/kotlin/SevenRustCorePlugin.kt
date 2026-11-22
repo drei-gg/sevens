@@ -28,6 +28,8 @@ class SevenRustCorePlugin : Plugin<Project> {
                     description = "Generates the Kotlin bindings for the $app Rust core."
                     commandLine(repository.resolve("scripts/rust-core"), app, "bindings")
                     inputs.dir(crate.resolve("src"))
+                    // Shared Rust the crates depend on by path (crates/seven-schedule).
+                    inputs.dir(repository.resolve("crates"))
                     inputs.files(
                         crate.resolve("Cargo.toml"),
                         crate.resolve("Cargo.lock"),

@@ -1,8 +1,9 @@
-//! Which reminders should exist right now. Scheduling them stays with each platform.
+//! Which reminders should exist right now, and when each is next due. Delivering them stays with
+//! each platform (SevenKit's schedulers).
 
 use crate::archive::FastArchive;
 use crate::model::fast_goal_date;
-use crate::time::add_seconds;
+use crate::time::{CalendarSpec, add_seconds};
 use crate::water::water_reminder_hours;
 use std::time::SystemTime;
 
@@ -79,4 +80,51 @@ pub fn reminder_events(archive: &FastArchive, now: SystemTime) -> Vec<ReminderEv
         }
     }
     result
+}
+
+/// A reminder and the next moment it is due.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct ReminderTime {
+    pub id: String,
+    pub kind: ReminderKind,
+    pub at: SystemTime,
+    /// The latest moment a late delivery may still show it. A water prompt is only useful near its
+    /// hour, so it lapses after 30 minutes; everything else after a day.
+    pub post_until: SystemTime,
+}
+
+/// Every reminder in [`reminder_events`] with the next moment it is due strictly after `now`: a
+/// one-off at its date, a repeating one at its next wall-clock time in `calendar`'s zone (weekly on
+/// its weekday, water every day). Wall-clock times follow Foundation, as iOS's calendar triggers
+/// do: a time skipped by a daylight-saving gap is due when the gap ends, a repeated time the first
+/// time.
+#[uniffi::export]
+pub fn reminder_schedule(archive: &FastArchive, now: SystemTime, calendar: CalendarSpec) -> Vec<ReminderTime> {
+    let tz = seven_schedule::zone(&calendar.time_zone_id);
+    let Ok(after) = seven_schedule::jiff::Timestamp::try_from(now) else { return vec![] };
+    reminder_events(archive, now)
+        .into_iter()
+        .filter_map(|e| {
+            let at = match e.date {
+                Some(date) => date,
+                None => {
+                    let minute = e.hour.unwrap_or(0) * 60 + e.minute.unwrap_or(0);
+                    let next = match e.weekday {
+                        Some(day) => seven_schedule::next_weekly(after, minute, day, &tz),
+                        None => seven_schedule::next_daily(after, minute, &tz),
+                    }?;
+                    SystemTime::from(next)
+                }
+            };
+            let grace = if e.kind == ReminderKind::Water { 30.0 * 60.0 } else { 86_400.0 };
+            Some(ReminderTime { id: e.id, kind: e.kind, at, post_until: add_seconds(at, grace) })
+        })
+        .collect()
+}
+
+/// The reminders that came due after `after` and by `now`: what a late or replayed wake should
+/// consider showing. Each still carries its `post_until`; the platform skips ones that lapsed.
+#[uniffi::export]
+pub fn reminders_due(archive: &FastArchive, after: SystemTime, now: SystemTime, calendar: CalendarSpec) -> Vec<ReminderTime> {
+    reminder_schedule(archive, after, calendar).into_iter().filter(|r| r.at <= now).collect()
 }

@@ -1,0 +1,11 @@
+[package]
+name = "seven-schedule"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+description = "The Sevens' shared schedule rules: wall-clock times in a named time zone, read like Foundation, and stable identifiers. Plain Rust; each app's core wraps it in its own UniFFI exports."
+publish = false
+
+[dependencies]
+uuid = { version = "=1.29.2", features = ["v4"] }
+jiff = { version = "=0.2.43", default-features = false, features = ["std", "alloc", "tzdb-bundle-always"] }

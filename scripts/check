@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The whole local check: everything GitHub CI used to run, on this machine. Nothing is uploaded.
 # usage: scripts/check [--no-android] [--apple]
-#   default       rules (G6, G7), cargo test for every Rust core, swift test for every Swift package
+#   default       rules (G6, G7), cargo test for every Rust core and shared crate, swift test for every Swift package
 #                 (Linux container via scripts/test-linux), and the Android baseline (Fast and Bloom:
 #                 core tests, lint, debug and release builds, then scripts/check-android-variants)
 #   --no-android  skip the Android baseline (the slowest part)
@@ -41,6 +41,7 @@ step rules scripts/check-rules
 for app in fast qr alarm scanner cleaner vault bloom; do
   step "rust/$app" scripts/rust-core "$app" test
 done
+step rust/seven-schedule sh -c 'cd crates/seven-schedule && cargo test'
 for pkg in SevenKit apps/fast/Kit apps/qr/Kit apps/alarm/Kit apps/scanner/Kit apps/cleaner/Kit apps/bloom/Kit; do
   step "swift/$(basename "${pkg%/Kit}")" scripts/test-linux "$pkg"
 done

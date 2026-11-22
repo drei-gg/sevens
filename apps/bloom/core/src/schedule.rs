@@ -1,6 +1,5 @@
 use crate::{Error, Result, ensure, model::*, time};
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, UNIX_EPOCH};
 use uuid::Uuid;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Occurrence {
@@ -22,7 +21,7 @@ pub struct Reminder {
 }
 pub fn dose_id(plan: &str, day: &str) -> Result<String> {
     let id = Uuid::parse_str(plan).map_err(|_| Error::invalid("Invalid plan identifier."))?;
-    Ok(alarm_core::schedule_identifier(id, format!("bloom-dose:{day}")).to_string())
+    Ok(seven_schedule::identifier(id, &format!("bloom-dose:{day}")).to_string())
 }
 pub fn phase(p: &Plan, day: &str) -> Result<Option<&'static str>> {
     let n = time::distance(&p.start, day)?;
@@ -72,33 +71,21 @@ pub fn occurrences(a: &Archive, now: i64, zone: &str, days: i32) -> Result<Vec<O
     )?;
     let mut out = vec![];
     for p in a.plans.iter().filter(|p| p.enabled) {
-        let start = UNIX_EPOCH + Duration::from_secs((now - 172_800) as u64);
-        let mut r = alarm_core::new_routine(alarm_core::RoutineKind::Loop, start);
-        r.id = Uuid::parse_str(&p.id).map_err(|_| Error::invalid("Invalid plan ID."))?;
-        r.slots = vec![alarm_core::new_time_slot(
-            p.minute,
-            if p.pattern == "weekly" {
-                p.weekdays.clone()
-            } else {
-                vec![1, 2, 3, 4, 5, 6, 7]
-            },
-        )];
+        // Two days back, so a dose whose day began before `now` (or before a zone change) is still
+        // found; `days + 2` forward to match.
+        let start = jiff::Timestamp::from_second(now - 172_800).map_err(|_| Error::invalid("Invalid schedule date."))?;
+        Uuid::parse_str(&p.id).map_err(|_| Error::invalid("Invalid plan ID."))?;
+        let weekdays = if p.pattern == "weekly" { p.weekdays.clone() } else { vec![1, 2, 3, 4, 5, 6, 7] };
+        // The checks this had while it went through Alarm's routine validation, kept as they were.
+        let distinct = weekdays.iter().collect::<std::collections::HashSet<_>>().len() == weekdays.len();
+        ensure(
+            (0..1440).contains(&p.minute) && !weekdays.is_empty() && distinct && weekdays.iter().all(|d| (1..=7).contains(d)),
+            "Could not calculate the reminder schedule.",
+        )?;
         let z = if p.fixed_zone { &p.zone } else { zone };
-        let dates = alarm_core::schedule_occurrences(
-            &r,
-            start,
-            days + 2,
-            alarm_core::CalendarSpec {
-                time_zone_id: z.into(),
-                first_weekday: 1,
-            },
-        )
-        .map_err(|_| Error::invalid("Could not calculate the reminder schedule."))?;
+        let dates = seven_schedule::weekly_occurrences(p.minute, &weekdays, start, days + 2, &seven_schedule::zone(z));
         for date in dates {
-            let at = date
-                .duration_since(UNIX_EPOCH)
-                .map_err(|_| Error::invalid("Invalid schedule date."))?
-                .as_secs() as i64;
+            let at = date.as_second();
             let day = time::today(at, z)?;
             if let Some(phase) = phase(p, &day)? {
                 let id = dose_id(&p.id, &day)?;

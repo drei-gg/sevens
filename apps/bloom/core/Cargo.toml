@@ -18,7 +18,7 @@ required-features = ["bindgen"]
 bindgen = ["uniffi/cli"]
 
 [dependencies]
-alarm-core = { path = "../../alarm/core" }
+seven-schedule = { path = "../../../crates/seven-schedule" }
 uniffi = "=0.32.2"
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = "=1.0.154"

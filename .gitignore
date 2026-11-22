@@ -29,6 +29,7 @@ local.properties
 
 # Rust cores: build outputs
 apps/*/core/target/
+crates/*/target/
 apps/*/core/generated/
 apps/*/Kit/Generated/
 apps/*/Kit/Sources/*/Generated/

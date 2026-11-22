@@ -8,9 +8,9 @@ remote=src/sevens-personal-bloom
 mkdir -p "$HOME/.cache/sevens/logs"
 exec 9>"$HOME/.cache/sevens/bloom-build.lock"
 flock 9
-ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe "mkdir -p $remote/apps/bloom $remote/apps/alarm/core"
+ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe "rm -rf $remote/apps/alarm; mkdir -p $remote/apps/bloom $remote/crates"   # Bloom used alarm-core until 2026-11-22
 rsync -a --delete --exclude .build --exclude target --exclude android --exclude generated/jniLibs --exclude generated/kotlin --exclude xcuserdata --exclude '*.xcresult' "$root/apps/bloom/" "tahoe:$remote/apps/bloom/"
-rsync -a --delete --exclude target --exclude generated "$root/apps/alarm/core/" "tahoe:$remote/apps/alarm/core/"
+rsync -a --delete --exclude target "$root/crates/" "tahoe:$remote/crates/"
 rsync -a --delete --exclude .build "$root/SevenKit/" "tahoe:$remote/SevenKit/"
 # Optional private overlay, applied only to the stable guest build copy.
 if [ -n "${SEVENS_BRAND_DIR:-}" ] && [ "$cmd" != core ]; then

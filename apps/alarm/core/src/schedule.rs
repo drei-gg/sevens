@@ -1,24 +1,18 @@
 //! Swift `ScheduleCompiler`: routines into native alarm registrations, and the dates they ring.
 
 use crate::model::*;
-use crate::time::{CalendarSpec, system_time, timestamp, uuid_string, zone};
-use jiff::civil::{Date, DateTime, Weekday};
-use jiff::tz::{AmbiguousOffset, TimeZone};
-use jiff::{Timestamp, ToSpan};
+use crate::time::{CalendarSpec, system_time, timestamp, zone};
+use jiff::Timestamp;
+use jiff::tz::TimeZone;
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::SystemTime;
 use uuid::Uuid;
 
-/// A stable UUID in the routine namespace: two 64-bit FNV-1a passes over
-/// `"<UPPERCASE ROUTINE UUID>:<key>"`, so a registration keeps its identifier across edits and
-/// on both platforms.
+/// A stable UUID in the routine namespace (`seven_schedule::identifier`), so a registration keeps
+/// its identifier across edits and on both platforms.
 #[uniffi::export]
 pub fn schedule_identifier(routine: Uuid, key: String) -> Uuid {
-    let text = format!("{}:{}", uuid_string(&routine), key);
-    let hash = |seed: u64| text.bytes().fold(seed, |h, b| (h ^ b as u64).wrapping_mul(1_099_511_628_211));
-    let a = hash(14_695_981_039_346_656_037);
-    let b = hash(7_809_847_782_465_536_322);
-    Uuid::from_u128(((a as u128) << 64) | b as u128)
+    seven_schedule::identifier(routine, &key)
 }
 
 /// Swift `ScheduleCompiler.registrations`: validates, then one registration per distinct minute
@@ -73,7 +67,7 @@ pub fn schedule_occurrences(routine: &Routine, now: SystemTime, days: i32, calen
     let registrations = schedule_registrations(routine, now)?;
     let tz = zone(&calendar);
     let Some(start) = timestamp(now) else { return Ok(vec![]) };
-    let Some(limit) = start.to_zoned(tz.clone()).checked_add(days.days()).ok().map(|z| z.timestamp()) else { return Ok(vec![]) };
+    let Some(limit) = seven_schedule::calendar_limit(start, days, &tz) else { return Ok(vec![]) };
     let mut dates = BTreeSet::new();
     for registration in &registrations {
         if let Some(date) = registration.date {
@@ -83,52 +77,12 @@ pub fn schedule_occurrences(routine: &Routine, now: SystemTime, days: i32, calen
             continue;
         }
         let Some(minute) = registration.minute else { continue };
-        for &weekday in &registration.weekdays {
-            let mut cursor = start;
-            for _ in 0..(days / 7 + 2) {
-                match next_date(cursor, minute, weekday, &tz) {
-                    Some(next) if next <= limit => {
-                        dates.insert(system_time(next));
-                        cursor = next;
-                    }
-                    _ => break,
-                }
-            }
-        }
+        dates.extend(seven_schedule::weekly_occurrences(minute, &registration.weekdays, start, days, &tz).into_iter().map(system_time));
     }
     Ok(dates.into_iter().collect())
 }
 
 /// The first instant strictly after `after` at `minute` past midnight on Foundation `weekday`.
 pub(crate) fn next_date(after: Timestamp, minute: i32, weekday: i32, tz: &TimeZone) -> Option<Timestamp> {
-    let today: Date = after.to_zoned(tz.clone()).date();
-    for offset in 0..=8 {
-        let day = today.checked_add(offset.days()).ok()?;
-        if foundation_weekday(day.weekday()) != weekday {
-            continue;
-        }
-        let wall = DateTime::new(day.year(), day.month(), day.day(), (minute / 60) as i8, (minute % 60) as i8, 0, 0).ok()?;
-        if let Some(t) = resolve(wall, tz).filter(|t| *t > after) {
-            return Some(t);
-        }
-    }
-    None
-}
-
-fn resolve(wall: DateTime, tz: &TimeZone) -> Option<Timestamp> {
-    let ambiguous = tz.to_ambiguous_timestamp(wall);
-    match ambiguous.offset() {
-        AmbiguousOffset::Unambiguous { offset } => offset.to_timestamp(wall).ok(),
-        // .first: the earlier of the two instants.
-        AmbiguousOffset::Fold { before, .. } => before.to_timestamp(wall).ok(),
-        // .nextTime: the first instant after the skipped hour, which is the transition itself.
-        AmbiguousOffset::Gap { before, .. } => {
-            let past_gap = before.to_timestamp(wall).ok()?.checked_add(1.second()).ok()?;
-            tz.preceding(past_gap).next().map(|transition| transition.timestamp())
-        }
-    }
-}
-
-fn foundation_weekday(day: Weekday) -> i32 {
-    day.to_sunday_one_offset() as i32
+    seven_schedule::next_weekly(after, minute, weekday, tz)
 }

@@ -190,3 +190,10 @@ fn groups_are_trimmed_unique_and_sorted() {
     d.group = Some("  ".into());
     assert_eq!(routine_groups(&[a, b, c, d]), vec!["Away".to_string(), "Training".to_string()]);
 }
+
+#[test]
+fn identifiers_match_the_shared_crate_pins() {
+    // Pinned in crates/seven-schedule/tests/golden.rs; armed alarms on phones carry these.
+    let root = Uuid::parse_str("3F2504E0-4F89-11D3-9A0C-0305E82C3301").unwrap();
+    assert_eq!(schedule_identifier(root, "minute:420".into()).to_string(), "5a4ad36c-48ed-123e-3245-91ccebf9ff5f");
+}

@@ -43,15 +43,10 @@ pub fn add_seconds(t: SystemTime, seconds: f64) -> SystemTime {
     from_millis(millis(t) + seconds * 1_000.0)
 }
 
-/// The bundled IANA database, the same on every platform, so a day's boundaries never depend
-/// on which tzdata a phone happens to ship.
-fn database() -> &'static jiff::tz::TimeZoneDatabase {
-    static DB: std::sync::OnceLock<jiff::tz::TimeZoneDatabase> = std::sync::OnceLock::new();
-    DB.get_or_init(jiff::tz::TimeZoneDatabase::bundled)
-}
-
+/// The zone from the bundled IANA database (`seven-schedule`), the same on every platform, so a
+/// day's boundaries never depend on which tzdata a phone happens to ship.
 pub(crate) fn zone(spec: &CalendarSpec) -> TimeZone {
-    database().get(&spec.time_zone_id).unwrap_or(TimeZone::UTC)
+    seven_schedule::zone(&spec.time_zone_id)
 }
 
 pub(crate) fn zoned(t: SystemTime, tz: &TimeZone) -> Option<Zoned> {
@@ -96,7 +91,7 @@ pub(crate) fn foundation_weekday(day: Weekday) -> i32 {
 }
 
 pub(crate) fn valid_zone(identifier: &str) -> bool {
-    database().get(identifier).is_ok()
+    seven_schedule::zone_known(identifier)
 }
 
 /// Whether the bundled database knows `identifier`, as stored in `FastRecord.time_zone_id`.

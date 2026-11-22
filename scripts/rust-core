@@ -63,18 +63,18 @@ run_apple() {
   if [ "$(uname)" = Darwin ]; then
     (cd "$core" && bash -c "$build")   # on a Mac (CI): build here
   else
-    local remote="src/rust-core-$app" crate="src/rust-core-$app"
-    # QR's crate reads Kit/Sources/QRCore/Data at build time (include_bytes, ../Kit from the crate):
-    # then mirror apps/<app>/core and that folder under one guest folder.
-    local data="$root/apps/$app/Kit/Sources/$core_module/Data"
-    [ -d "$data" ] && crate="$remote/core"
+    # One guest folder per app, mirroring the repository's layout inside it, so path dependencies
+    # resolve as they do here: the crate, the shared crates (crates/, ../../../crates from the core)
+    # and, for QR, Kit/Sources/QRCore/Data (include_bytes, ../Kit from the crate).
+    local remote="src/rust-core-$app" crate="src/rust-core-$app/apps/$app/core"
+    local data="apps/$app/Kit/Sources/$core_module/Data"
     ssh -o BatchMode=yes -o ConnectTimeout=10 tahoe true || { echo "rust-core: tahoe is not reachable" >&2; exit 3; }
-    ssh tahoe "mkdir -p $crate"
-    rsync -a --delete --exclude target --exclude generated/jniLibs --exclude generated/kotlin "$core/" "tahoe:$crate/"
-    if [ -d "$data" ]; then
-      ssh tahoe "mkdir -p $remote/Kit/Sources/$core_module"
-      rsync -a --delete "$data/" "tahoe:$remote/Kit/Sources/$core_module/Data/"
-    fi
+    # Before 2026-11-22 the crate sat at the folder's top (or in core/ for QR): clear that layout once.
+    ssh tahoe "[ ! -f $remote/Cargo.toml ] && [ ! -f $remote/core/Cargo.toml ] || rm -rf $remote; mkdir -p $remote"
+    rsync -a --delete --prune-empty-dirs --exclude target --exclude generated/jniLibs --exclude generated/kotlin \
+      --include "/apps/" --include "/apps/$app/" --include "/apps/$app/core/***" \
+      --include "/apps/$app/Kit/" --include "/apps/$app/Kit/Sources/" --include "/apps/$app/Kit/Sources/$core_module/" \
+      --include "/$data/***" --include "/crates/***" --exclude "*" "$root/" "tahoe:$remote/"
     ssh tahoe "cd $crate; $build"
     rm -rf "$out/apple"; mkdir -p "$out/apple"
     rsync -a "tahoe:$crate/generated/apple/${lib}FFI.xcframework" "$out/apple/"
