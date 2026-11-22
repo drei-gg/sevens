@@ -1,5 +1,6 @@
 package gg.seven.cleaner
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,63 +28,56 @@ import gg.seven.kit.item
 fun CleanerSettings(model: CleanerModel) {
     val saved by model.savedMeasurements.collectAsStateWithLifecycle()
     val busy by model.busy.collectAsStateWithLifecycle()
+    // Section bodies are builders, not composables: their words are read here first.
+    val onDevice = stringResource(R.string.settings_on_device)
+    val onDeviceDetail = stringResource(R.string.settings_on_device_detail)
+    val savedText = stringResource(R.string.settings_saved_measurements, saved)
+    val clearDetail = stringResource(R.string.settings_clear_progress_detail)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Readable(Modifier.padding(vertical = Space.s)) {
             Section(
-                title = "Media library",
-                footer =
-                    "Cleaner never downloads photos or videos. Items that live only in a gallery app’s cloud aren’t part of this list.",
+                title = stringResource(R.string.settings_media_library),
+                footer = stringResource(R.string.settings_media_footer),
             ) {
-                item(
-                    "On-device media",
-                    supporting =
-                        "Photos and videos come from Android’s media library on this phone.",
-                )
+                item(onDevice, supporting = onDeviceDetail)
             }
             Section(
-                title = "Saved scan progress",
-                footer =
-                    "On Android 11 or later, completed comparisons stay on this device. Scan library checks access and changes before continuing. Closing Cleaner pauses work; it does not scan in the background.",
+                title = stringResource(R.string.settings_scan_progress),
+                footer = stringResource(R.string.settings_scan_progress_footer),
             ) {
-                item(
-                    "Saved measurements: $saved",
-                    supporting =
-                        "Clearing progress keeps your media, review decisions and activity history.",
-                )
+                item(savedText, supporting = clearDetail)
                 content {
                     TextButton(
                         onClick = model::clearScanProgress,
                         enabled = !busy,
                         modifier = Modifier.testTag("clear-scan-progress"),
                     ) {
-                        Text("Clear scan progress")
+                        Text(stringResource(R.string.settings_clear_progress))
                     }
                 }
             }
-            Section(title = "Privacy") {
+            Section(title = stringResource(R.string.settings_privacy)) {
                 content {
-                    androidx.compose.material3.Text(
-                        "No Cleaner account, analytics, ads or servers. Your chosen file provider may fetch cloud content when you open a folder."
-                    )
+                    androidx.compose.material3.Text(stringResource(R.string.settings_privacy_detail))
                 }
             }
-            Section(title = "Preservation") {
+            Section(title = stringResource(R.string.settings_preservation)) {
                 content {
                     androidx.compose.material3.Text(
-                        "Compression saves a separate copy. The current still-image profile excludes HDR, RAW, motion photos, transparency and unverified formats."
+                        stringResource(R.string.settings_preservation_compression)
                     )
                 }
                 content {
                     androidx.compose.material3.Text(
-                        "Contact archives contain accessible fields. Notes aren’t read, so archives are labelled partial and destructive merges are not enabled."
+                        stringResource(R.string.settings_preservation_contacts)
                     )
                 }
             }
             Section(
-                title = "Open-source work",
-                footer =
-                    "Built with MediaStore, the Contacts Provider, the Storage Access Framework, ExifInterface and SevenKit. Full texts are under Open-source licenses.",
+                title = stringResource(R.string.settings_open_source),
+                footer = stringResource(R.string.settings_open_source_footer),
             ) {
+                // Library names, versions and licences are names, not translatable copy.
                 item("libphonenumber 9.0.43", supporting = "Google · Apache-2.0")
                 item("Telephoto zoomable 0.18.0", supporting = "Saket Narayan · Apache-2.0")
             }

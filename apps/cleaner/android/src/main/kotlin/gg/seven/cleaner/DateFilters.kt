@@ -1,11 +1,13 @@
 package gg.seven.cleaner
 
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import gg.seven.cleaner.core.*
 import gg.seven.kit.*
 import java.time.Instant
@@ -16,14 +18,18 @@ import java.time.format.FormatStyle
 import java.util.Locale
 
 val MediaDateFilter.title: String
+    @Composable
+    @ReadOnlyComposable
     get() =
-        when (this) {
-            MediaDateFilter.ANY -> "Any date"
-            MediaDateFilter.DAY -> "On a date"
-            MediaDateFilter.MONTH -> "In a month"
-            MediaDateFilter.YEAR -> "In a year"
-            MediaDateFilter.ANNIVERSARY -> "On this day"
-        }
+        stringResource(
+            when (this) {
+                MediaDateFilter.ANY -> R.string.date_any
+                MediaDateFilter.DAY -> R.string.date_day
+                MediaDateFilter.MONTH -> R.string.date_month
+                MediaDateFilter.YEAR -> R.string.date_year
+                MediaDateFilter.ANNIVERSARY -> R.string.date_anniversary
+            }
+        )
 
 private fun LocalDate.civil() = MediaCalendarDate(year, monthValue.toUInt(), dayOfMonth.toUInt())
 
@@ -34,15 +40,24 @@ internal fun matchesDate(
     zone: ZoneId = ZoneId.systemDefault(),
 ): Boolean = mediaDateMatches(mode, value?.atZone(zone)?.toLocalDate()?.civil(), reference.civil())
 
+@Composable
+@ReadOnlyComposable
 internal fun dateSummary(mode: MediaDateFilter, date: LocalDate): String =
     when (mode) {
-        MediaDateFilter.ANY -> "Any date"
+        MediaDateFilter.ANY -> stringResource(R.string.date_any)
         MediaDateFilter.YEAR -> date.year.toString()
-        MediaDateFilter.MONTH ->
-            date.format(DateTimeFormatter.ofPattern("LLLL uuuu", Locale.getDefault()))
+        MediaDateFilter.MONTH -> {
+            // The locale's own month-and-year order and month form, following configuration.
+            val locale = LocalConfiguration.current.locales[0]
+            val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, "LLLLyyyy")
+            date.format(DateTimeFormatter.ofPattern(pattern, locale))
+        }
         MediaDateFilter.DAY -> date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
         MediaDateFilter.ANNIVERSARY ->
-            "On this day: ${date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))}"
+            stringResource(
+                R.string.date_anniversary_summary,
+                date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+            )
     }
 
 @Composable
@@ -50,14 +65,14 @@ fun DateFilterEditor(filters: LibraryFilters, onClose: () -> Unit) {
     var mode by rememberSaveable { mutableStateOf(filters.dateMode) }
     var reference by rememberSaveable { mutableStateOf(filters.date.toString()) }
     FullScreenForm(
-        "Date filter",
+        stringResource(R.string.date_filter_title),
         onClose,
         onSave = {
             filters.dateMode = mode
             filters.date = LocalDate.parse(reference)
             onClose()
         },
-        saveLabel = "Apply",
+        saveLabel = stringResource(R.string.action_apply),
     ) {
         DateFilterFields(
             mode,
@@ -75,11 +90,10 @@ internal fun DateFilterFields(
     onMode: (MediaDateFilter) -> Unit,
     onReference: (LocalDate) -> Unit,
     showReviewNote: Boolean = true,
-    dateMeaning: String =
-        "Uses each file’s library date in this device’s current time zone. Files without a date appear only with Any date.",
+    dateMeaning: String = stringResource(R.string.date_meaning_library),
 ) {
     DropdownField(
-        "Match",
+        stringResource(R.string.date_match),
         mode,
         MediaDateFilter.entries.map { it to it.title },
         Modifier.testTag("cleaner-date-mode"),
@@ -89,9 +103,9 @@ internal fun DateFilterFields(
     if (mode != MediaDateFilter.ANY)
         DateField(
             when (mode) {
-                MediaDateFilter.MONTH -> "Date in the month"
-                MediaDateFilter.YEAR -> "Date in the year"
-                else -> "Reference date"
+                MediaDateFilter.MONTH -> stringResource(R.string.date_reference_month)
+                MediaDateFilter.YEAR -> stringResource(R.string.date_reference_year)
+                else -> stringResource(R.string.date_reference)
             },
             reference,
             Modifier.testTag("cleaner-date-reference"),
@@ -99,14 +113,12 @@ internal fun DateFilterFields(
             onReference(it)
         }
     Text(
-        if (mode == MediaDateFilter.ANNIVERSARY)
-            "The same month and day in earlier years. The reference year and later years are excluded; February 29 is not moved to another day."
+        if (mode == MediaDateFilter.ANNIVERSARY) stringResource(R.string.date_anniversary_note)
         else dateMeaning
     )
     Text(
-        if (showReviewNote)
-            "Dates use the Gregorian calendar. Changing this filter does not change selections or review decisions."
-        else "Dates use the Gregorian calendar."
+        if (showReviewNote) stringResource(R.string.date_gregorian_review)
+        else stringResource(R.string.date_gregorian)
     )
-    TextButton(onClick = { onMode(MediaDateFilter.ANY) }) { Text("Clear date filter") }
+    TextButton(onClick = { onMode(MediaDateFilter.ANY) }) { Text(stringResource(R.string.date_clear)) }
 }

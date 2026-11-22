@@ -50,7 +50,7 @@ class ContactsService(private val context: Context) {
     suspend fun scan(region: String?): ContactSnapshot =
         withContext(Dispatchers.IO) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED)
-                throw blocked("Contacts access was not granted. You can change it in Settings.")
+                throw blocked(context.getString(R.string.contacts_error_no_access))
             val accounts = mutableMapOf<Long, Pair<String?, String?>>()
             resolver.query(
                 ContactsContract.RawContacts.CONTENT_URI,
@@ -59,7 +59,7 @@ class ContactsService(private val context: Context) {
                 null,
                 null,
             )?.use { c -> while (c.moveToNext()) accounts[c.getLong(0)] = c.getString(1) to c.getString(2) }
-                ?: throw blocked("Contacts could not be read. No contacts were changed.")
+                ?: throw blocked(context.getString(R.string.contacts_error_unreadable))
             val rows = mutableMapOf<Long, MutableList<JSONObject>>()
             resolver.query(ContactsContract.Data.CONTENT_URI, DATA_COLUMNS, null, null, "${ContactsContract.Data._ID} ASC")?.use { c ->
                 while (c.moveToNext()) {
@@ -69,18 +69,23 @@ class ContactsService(private val context: Context) {
                     val row = row(c) ?: continue
                     rows.getOrPut(raw) { mutableListOf() } += row
                 }
-            } ?: throw blocked("Contacts could not be read. No contacts were changed.")
+            } ?: throw blocked(context.getString(R.string.contacts_error_unreadable))
             val records = mutableListOf<ContactRecord>()
             val archives = mutableMapOf<String, ByteArray>()
             for ((raw, account) in accounts) {
                 coroutineContext.ensureActive()
                 val data = rows[raw].orEmpty()
-                val container = listOfNotNull(account.first, account.second).joinToString(" · ").ifEmpty { "This phone" }
+                // The container is an identity (account checks, archive coverage), so the
+                // device-local one keeps a fixed key; the screen shows it in the person's language.
+                val container =
+                    listOfNotNull(account.first, account.second).joinToString(" · ").ifEmpty {
+                        LOCAL_CONTAINER
+                    }
                 records += record(raw.toString(), container, data, region)
                 // No silent omission: one archive that fails its check fails the whole export.
                 archives[raw.toString()] = verified(archive(account, data))
             }
-            if (records.size != archives.size) throw blocked("Some contacts could not be archived and verified. No contacts were changed.")
+            if (records.size != archives.size) throw blocked(context.getString(R.string.contacts_error_unverified))
             ContactSnapshot(records, archives, limited = false)
         }
 
@@ -114,7 +119,7 @@ class ContactsService(private val context: Context) {
     private fun verified(bytes: ByteArray): ByteArray {
         val text = String(bytes)
         val back = runCatching { JSONObject(text) }.getOrNull()
-        if (back == null || back.toString() != text) throw blocked("Contact archive failed its round-trip check.")
+        if (back == null || back.toString() != text) throw blocked(context.getString(R.string.contacts_error_round_trip))
         return bytes
     }
 
@@ -178,7 +183,10 @@ class ContactsService(private val context: Context) {
                     if (row.int("data2") == Kinds.Event.TYPE_BIRTHDAY) add("birthday", d1)
                     else add("date", d1, eventLabel(row.int("data2"), row.text("data3")))
                 Kinds.Photo.CONTENT_ITEM_TYPE ->
-                    row.text("data15.base64")?.let { add("photo", "${Base64.decode(it, Base64.NO_WRAP).size} bytes retained in archive") }
+                    row.text("data15.base64")?.let {
+                        val size = Base64.decode(it, Base64.NO_WRAP).size
+                        add("photo", res.getQuantityString(R.plurals.contacts_photo_bytes, size, size))
+                    }
             }
         }
         return newContactRecord(
@@ -193,9 +201,9 @@ class ContactsService(private val context: Context) {
 
     private fun eventLabel(type: Int, custom: String?): String =
         when (type) {
-            Kinds.Event.TYPE_ANNIVERSARY -> "Anniversary"
+            Kinds.Event.TYPE_ANNIVERSARY -> context.getString(R.string.contacts_event_anniversary)
             Kinds.Event.TYPE_CUSTOM -> custom.orEmpty()
-            else -> "Other"
+            else -> context.getString(R.string.contacts_event_other)
         }
 
     /** This package is explicitly a partial archive, not a complete address-book backup. */
@@ -221,3 +229,6 @@ class ContactsService(private val context: Context) {
                 (1..15).map { "data$it" }
     }
 }
+
+/** The container key of contacts stored on the phone without an account. */
+internal const val LOCAL_CONTAINER = "This phone"

@@ -103,6 +103,14 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
     val savedContactArchive = MutableStateFlow<SavedContactArchive?>(null)
     val systemRequest = MutableStateFlow<SystemRequest?>(null)
 
+    private val res
+        get() = getApplication<Application>().resources
+
+    private fun str(id: Int, vararg args: Any): String = res.getString(id, *args)
+
+    private fun plural(id: Int, count: Int, vararg args: Any): String =
+        res.getQuantityString(id, count, *args)
+
     private var job: Job? = null
     private var started = false
     private val cache = app.cacheDir
@@ -120,7 +128,7 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
                 savedContactArchive.value = readSavedArchive()
                 savedMeasurements.value = measurements.count()
             } catch (failure: Exception) {
-                showError(failure.cleanerMessage)
+                showError(failure.cleanerMessage(res))
             }
         }
     }
@@ -139,7 +147,7 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
         if (!ready.value || busy.value) return
         if (paid && !store.paidFeaturesAvailable) {
             error.value =
-                "Start the free trial or unlock to run new scans. Your saved review decisions and exports remain available."
+                str(R.string.model_paid_feature)
             errorOffersUnlock.value = true
             return
         }
@@ -151,13 +159,13 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
                 try {
                     operation()
                 } catch (_: CancellationException) {
-                    progress.value = "Cancelled"
+                    progress.value = str(R.string.model_cancelled)
                 } catch (failure: Exception) {
-                    showError(failure.cleanerMessage)
+                    showError(failure.cleanerMessage(res))
                 } finally {
                     withContext(NonCancellable) {
                         runCatching { savedMeasurements.value = measurements.count() }
-                            .onFailure { showError(it.cleanerMessage) }
+                            .onFailure { showError(it.cleanerMessage(res)) }
                     }
                     comparisonFraction.value = null
                     busy.value = false
@@ -171,11 +179,11 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
     fun cancel() {
         if (!canCancel.value) return
         job?.cancel()
-        progress.value = "Stopping after the current resource…"
+        progress.value = str(R.string.model_stopping)
     }
 
     fun scanPhotos() =
-        run("Reading accessible media…") {
+        run(str(R.string.model_reading_media)) {
             val inventory = photos.inventory()
             media.value = measurements.restore(inventory.items)
             savedMeasurements.value = media.value.count { scanHasMeasurement(it) }
@@ -185,7 +193,7 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
         }
 
     fun analyze() =
-        run("Reading original media bytes…") {
+        run(str(R.string.model_reading_originals)) {
             // Access and revisions may have changed while this screen was open.
             val inventory = photos.inventory()
             val current = measurements.restore(inventory.items)
@@ -198,19 +206,24 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
             comparisonFraction.value = 0f
             val result =
                 photos.analyze(current, checkpoint = measurements::checkpoint) { done, total ->
-                    progress.value = "Checked $done of $total · $resumed already measured"
+                    progress.value = str(R.string.model_progress_checked, done, total, resumed)
                     comparisonFraction.value = if (total == 0) 1f else done.toFloat() / total
                 }
             media.value = result.items
             groups.value = result.groups
             state.value =
                 repository.record(
-                    "Compared ${result.items.size} media items; ${result.unavailable} unavailable or changed. Byte counts describe library files, not local space freed."
+                    plural(
+                        R.plurals.model_compared,
+                        result.items.size,
+                        result.items.size,
+                        result.unavailable,
+                    )
                 )
         }
 
     fun clearScanProgress() =
-        run("Clearing saved measurements…", paid = false, cancellable = false) {
+        run(str(R.string.model_clearing_measurements), paid = false, cancellable = false) {
             measurements.clear()
             savedMeasurements.value = 0
             media.update { items -> items.map { it.copy(fingerprint = null, bytes = null) } }
@@ -219,7 +232,7 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
         }
 
     fun findSimilar() =
-        run("Comparing nearby photos…") {
+        run(str(R.string.model_comparing_similar)) {
             val result = photos.similar(media.value)
             groups.update { current -> current.filter { it.kind != MatchKind.SIMILAR } + result }
         }
@@ -232,7 +245,7 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
                     media.value.filter { it.id in ids }.associate { it.id to it.revision }
                 state.value = repository.decide(ids.associateWith { decision }, revisions)
             } catch (failure: Exception) {
-                showError(failure.cleanerMessage)
+                showError(failure.cleanerMessage(res))
             }
         }
     }
@@ -249,24 +262,24 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
      * trash. Only after the person confirms there, and the items are gone, is it recorded.
      */
     fun deleteReviewed(ids: Set<String>) =
-        run("Applying reviewed deletion…", cancellable = false) {
+        run(str(R.string.model_applying_deletion), cancellable = false) {
             // The core names each item that changed, became a favorite or is gone; only the
             // ready ones are offered to the system, and the rest are marked for review again.
             val check = photos.removalCheck(ids, state.value)
             replaceItems(ids, check.current)
             val ready = removalReadyIds(check.outcomes).toSet()
             val held = removalHeldMessage(check.outcomes)
-            if (ready.isEmpty()) throw blocked(held ?: "Nothing selected.")
+            if (ready.isEmpty()) throw blocked(held ?: str(R.string.model_nothing_selected))
             val intent = photos.trashRequest(ready, state.value)
             systemRequest.value =
                 SystemRequest(intent) { confirmed ->
                     if (confirmed)
-                        run("Applying reviewed deletion…", cancellable = false) {
+                        run(str(R.string.model_applying_deletion), cancellable = false) {
                             val gone = ready - photos.remaining(ready)
                             if (gone.isNotEmpty()) {
                                 state.value =
                                     repository.record(
-                                        "Requested deletion for ${gone.size} reviewed items. They wait in the trash for 30 days and keep using storage until then."
+                                        plural(R.plurals.model_deleted, gone.size, gone.size)
                                     )
                                 media.update { list -> list.filterNot { it.id in gone } }
                                 groups.value = emptyList()
@@ -311,26 +324,19 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
 
     /**
      * Adds the selected photos and videos to a folder album: moved there after the system's write
-     * confirmation (Android 11+), or copied there with the originals left in place (Android 10+).
+     * confirmation. Their bytes stay the same; only the folder changes.
      */
-    fun addToAlbum(ids: Set<String>, title: String, move: Boolean) =
-        run(
-            if (move) "Checking the selected items…" else "Copying into the album…",
-            cancellable = false,
-        ) {
+    fun addToAlbum(ids: Set<String>, title: String) =
+        run(str(R.string.model_checking_selection), cancellable = false) {
             val items = media.value.filter { it.id in ids }
             if (items.size != ids.size || items.isEmpty())
-                throw blocked("A selected item is no longer available. Read the library again.")
-            if (!move) {
-                finishAlbum(photos.copyToAlbum(items, title), ids, title, moved = false)
-                return@run
-            }
+                throw blocked(str(R.string.model_item_unavailable))
             val intent = photos.moveRequest(items, title)
             systemRequest.value =
                 SystemRequest(intent) { confirmed ->
                     if (confirmed)
-                        run("Moving into the album…", cancellable = false) {
-                            finishAlbum(photos.moveToAlbum(items, title), ids, title, moved = true)
+                        run(str(R.string.model_moving_album), cancellable = false) {
+                            finishAlbum(photos.moveToAlbum(items, title), ids, title)
                         }
                 }
         }
@@ -339,25 +345,20 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
         result: AlbumResult,
         ids: Set<String>,
         title: String,
-        moved: Boolean,
     ) {
         // A moved file has a new revision; decisions made before the move need review again.
         refreshItems(ids)
         val name = title.trim()
         state.value =
             repository.record(
-                if (moved) "Moved ${result.done.size} of ${ids.size} items into the album “$name”."
-                else
-                    "Copied ${result.done.size} of ${ids.size} items into the album “$name”. Originals stay where they were."
+                plural(R.plurals.model_album_moved, ids.size, result.done.size, ids.size, name)
             )
         if (result.failed.isNotEmpty())
-            showError(
-                "${result.failed.size} of ${ids.size} items could not be ${if (moved) "moved" else "copied"}. They stay where they were."
-            )
+            showError(plural(R.plurals.model_album_failed, ids.size, result.failed.size, ids.size))
     }
 
     fun setFavorite(item: CleanupItem) =
-        run("Updating favorite…", cancellable = false) {
+        run(str(R.string.model_updating_favorite), cancellable = false) {
             val intent = photos.favoriteRequest(item.id, !item.favorite)
             systemRequest.value =
                 SystemRequest(intent) { confirmed ->
@@ -366,7 +367,7 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
                             // A favorite change gives the item a new provider revision; take it,
                             // so later copies and decisions bind to what the library now has.
                             runCatching { refreshItems(setOf(item.id)) }
-                                .onFailure { showError(it.cleanerMessage) }
+                                .onFailure { showError(it.cleanerMessage(res)) }
                         }
                 }
         }
@@ -381,7 +382,7 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
         val directory = File(cache, "CleanerCandidate-" + UUID.randomUUID())
         try {
             val original = photos.originalStill(item, directory)
-            candidate.value = ImageCompression.makeCandidate(original, directory)
+            candidate.value = ImageCompression.makeCandidate(getApplication(), original, directory)
             candidateSource.value = item.id
             candidateItem.value = item
             createdCopyID.value = null
@@ -392,20 +393,20 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun compress(item: CleanupItem) =
-        run("Preparing an original and checking a compressed candidate…") {
+        run(str(R.string.model_preparing_candidate)) {
             if (compressionBatch.value != null || candidate.value != null)
-                throw blocked("Finish the current review first.")
+                throw blocked(str(R.string.model_finish_review))
             prepareCandidate(item)
         }
 
     fun openVideo(item: CleanupItem) =
-        run("Reading and checking the original video…") {
+        run(str(R.string.model_reading_video)) {
             if (
                 videoReview.value != null ||
                     candidate.value != null ||
                     compressionBatch.value != null
             )
-                throw blocked("Finish the current review first.")
+                throw blocked(str(R.string.model_finish_review))
             val persisted = repository.read()
             gg.seven.cleaner.core.checkVideoCopySource(
                 item,
@@ -416,7 +417,7 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
                 val source = photos.originalVideo(item, directory)
                 val inspection =
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        VideoCompression.inspect(source)
+                        VideoCompression.inspect(res, source)
                     }
                 gg.seven.cleaner.core.videoCopyPlan(
                     inspection.facts,
@@ -432,11 +433,11 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
         }
 
     fun prepareVideo() =
-        run("Preparing and checking the selected video range…") {
+        run(str(R.string.model_preparing_range)) {
             val review = videoReview.value ?: return@run
-            if (review.createdID != null) throw blocked("Finish verifying the existing copy first.")
+            if (review.createdID != null) throw blocked(str(R.string.model_finish_existing_copy))
             val plan =
-                review.plan() ?: throw blocked("Enter a valid start and end inside the video.")
+                review.plan() ?: throw blocked(str(R.string.model_invalid_range))
             error.value = null
             val next =
                 VideoCompression.makeCandidate(
@@ -458,11 +459,11 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun saveVideo() =
-        run("Verifying and recording the video copy…", cancellable = false) {
+        run(str(R.string.model_saving_video), cancellable = false) {
             val review = videoReview.value ?: return@run
             val preview = review.candidate ?: return@run
             if (review.plan() != preview.plan || preview.issues.isNotEmpty())
-                throw blocked("Prepare and inspect the current range before saving.")
+                throw blocked(str(R.string.model_prepare_range_first))
             error.value = null
             val saved =
                 review.createdID?.also { photos.verifySavedFile(preview.output, it) }
@@ -472,24 +473,28 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
                         sessionCopyKeys.add("output:$id")
                     }
             try {
-                state.value = repository.recordCopy(review.item, saved)
+                state.value =
+                    repository.recordCopy(
+                        review.item,
+                        saved,
+                        str(R.string.model_saved_copy, review.item.name),
+                    )
             } catch (failure: Exception) {
                 throw blocked(
-                    "The video copy exists, but its review record could not be saved. Retry verifies and records that same copy. " +
-                        failure.cleanerMessage
+                    str(R.string.model_video_record_failed, failure.cleanerMessage(res))
                 )
             }
             review.savedID = saved
         }
 
     fun startCompressionBatch(ids: Set<String>) =
-        run("Checking the selected photos…") {
+        run(str(R.string.model_checking_photos)) {
             if (candidate.value != null || compressionBatch.value != null)
-                throw blocked("Finish the current review first.")
+                throw blocked(str(R.string.model_finish_review))
             val persisted = repository.read()
             val order = media.value.filter { it.id in ids }.map { it.id }
             if (order.size != ids.size)
-                throw blocked("A selected photo is no longer available. Read the library again.")
+                throw blocked(str(R.string.model_photo_unavailable))
             val items =
                 compressionReviewPlan(
                     order,
@@ -501,8 +506,8 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
         }
 
     fun prepareBatchPhoto() =
-        run("Preparing the next photo…") {
-            if (candidate.value != null) throw blocked("Finish the current preview first.")
+        run(str(R.string.model_preparing_next)) {
+            if (candidate.value != null) throw blocked(str(R.string.model_finish_preview))
             val item = compressionBatch.value?.current ?: return@run
             error.value = null
             prepareCandidate(item)
@@ -548,15 +553,16 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
         quality: Double,
         size: ImageSizeProfile = candidate.value?.size ?: ImageSizeProfile.ORIGINAL,
     ) =
-        run("Updating and checking the preview…") {
+        run(str(R.string.model_updating_preview)) {
             if (createdCopyID.value != null)
                 throw blocked(
-                    "A copy already exists. Finish verifying it before changing this preview."
+                    str(R.string.model_copy_exists)
                 )
             val previous = candidate.value ?: return@run
             error.value = null
             val next =
                 ImageCompression.makeCandidate(
+                    getApplication(),
                     previous.source,
                     previous.output.parentFile!!,
                     quality,
@@ -569,11 +575,11 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
         }
 
     fun saveCandidate() =
-        run("Verifying and recording a copy; keeping the original…", cancellable = false) {
+        run(str(R.string.model_saving_copy), cancellable = false) {
             val candidate = candidate.value ?: return@run
             val item =
                 candidateItem.value
-                    ?: throw blocked("The source snapshot is unavailable. Prepare a new preview.")
+                    ?: throw blocked(str(R.string.model_snapshot_unavailable))
             error.value = null
             val existing = createdCopyID.value
             val saved =
@@ -587,13 +593,13 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
                         sessionCopyKeys.add("output:$id")
                     }
             try {
-                state.value = repository.recordCopy(item, saved)
+                state.value =
+                    repository.recordCopy(item, saved, str(R.string.model_saved_copy, item.name))
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
                 throw blocked(
-                    "The copy was verified, but its review record could not be saved. Retry checks and records that same copy. The original remains. " +
-                        failure.cleanerMessage
+                    str(R.string.model_copy_record_failed, failure.cleanerMessage(res))
                 )
             }
             val queue = compressionBatch.value
@@ -604,14 +610,14 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
         }
 
     fun scanContacts(region: String?) =
-        run("Reading contact records and verifying archives…") {
+        run(str(R.string.model_reading_contacts)) {
             val snapshot = contacts.scan(region)
             contactSnapshot.value = snapshot
             contactMatches.value = contactCandidates(snapshot.records)
         }
 
     fun exportContacts() =
-        run("Writing and checking the contact archive…", paid = false) {
+        run(str(R.string.model_writing_archive), paid = false) {
             val snapshot = contactSnapshot.value ?: return@run
             // The kept copy is written and read back first; the shareable file is a checked copy.
             contacts.export(snapshot, savedArchiveFile)
@@ -619,31 +625,31 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
             savedContactArchive.value = readSavedArchive()
             state.value =
                 repository.record(
-                    "Exported ${snapshot.records.size} accessible contact records and kept the latest archive on this phone. Notes and account relationships are not included; originals retained."
+                    plural(R.plurals.model_exported, snapshot.records.size, snapshot.records.size)
                 )
         }
 
     /** Prepares the kept archive for sharing; available after the trial and after a relaunch. */
     fun shareSavedContacts(onReady: (File) -> Unit) =
-        run("Checking the saved contact archive…", paid = false, cancellable = false) {
-            if (!savedArchiveFile.exists()) throw blocked("No contact archive is saved on this phone.")
+        run(str(R.string.model_checking_archive), paid = false, cancellable = false) {
+            if (!savedArchiveFile.exists()) throw blocked(str(R.string.model_no_archive))
             val file = shareableArchive()
             exportFile.value = file
             onReady(file)
         }
 
     fun deleteSavedContacts() =
-        run("Deleting the saved contact archive…", paid = false, cancellable = false) {
+        run(str(R.string.model_deleting_archive), paid = false, cancellable = false) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 if (savedArchiveFile.exists() && !savedArchiveFile.delete())
-                    throw blocked("The saved contact archive could not be deleted.")
+                    throw blocked(str(R.string.model_archive_not_deleted))
                 File(cache, "exports").deleteRecursively()
             }
             exportFile.value = null
             savedContactArchive.value = null
             state.value =
                 repository.record(
-                    "Deleted the saved contact archive from this phone. Contacts are unchanged."
+                    str(R.string.model_archive_deleted)
                 )
         }
 
@@ -657,7 +663,7 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
             file.writeBytes(bytes)
             if (!file.readBytes().contentEquals(bytes)) {
                 file.delete()
-                throw blocked("The archive copy could not be checked. Nothing was shared.")
+                throw blocked(str(R.string.model_archive_unchecked))
             }
             file
         }
@@ -674,7 +680,7 @@ class CleanerModel(app: Application) : AndroidViewModel(app) {
         }
 
     fun scanFolder(tree: Uri) =
-        run("Reading the selected folder…") { folderScan.value = files.scan(tree, hash = true) }
+        run(str(R.string.model_reading_folder)) { folderScan.value = files.scan(tree, hash = true) }
 
     /** For tests and the screen tour: sample data; no library, contacts or files are touched. */
     internal fun seed(

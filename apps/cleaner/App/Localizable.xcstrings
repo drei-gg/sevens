@@ -359,6 +359,30 @@
         }
       }
     },
+    "At least %@": {
+      "comment": "Cleaner interface copy. %@ is a byte size such as “10 MB”.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least %@"
+          }
+        }
+      }
+    },
+    "At least %@, largest first. Unknown sizes are never counted.": {
+      "comment": "Cleaner interface copy. %@ is a byte size such as “10 MB”.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least %@, largest first. Unknown sizes are never counted."
+          }
+        }
+      }
+    },
     "At least 1 GB": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
@@ -992,14 +1016,14 @@
         }
       }
     },
-    "Compression saves a separate copy. The current still-image profile excludes HDR, RAW, Live Photos, transparency and unverified formats.": {
+    "Compression saves a separate copy. HEIC copies keep depth, portrait and segmentation mattes and HDR gain maps; the still profiles exclude RAW, Live Photos, transparency and unverified formats.": {
       "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Compression saves a separate copy. The current still-image profile excludes HDR, RAW, Live Photos, transparency and unverified formats."
+            "value": "Compression saves a separate copy. HEIC copies keep depth, portrait and segmentation mattes and HDR gain maps; the still profiles exclude RAW, Live Photos, transparency and unverified formats."
           }
         }
       }
@@ -1750,6 +1774,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Large files and exact copies, in the places you choose."
+          }
+        }
+      }
+    },
+    "Large from": {
+      "comment": "Cleaner interface copy. Preserve the calm, specific tone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Large from"
+          }
+        }
+      }
+    },
+    "Large from %@": {
+      "comment": "Cleaner interface copy. %@ is a byte size such as “10 MB”.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Large from %@"
           }
         }
       }

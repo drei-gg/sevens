@@ -529,7 +529,7 @@ class CleanerUiTest {
         }
         bitmap.recycle()
         val originalBytes = source.readBytes()
-        val first = runBlocking { ImageCompression.makeCandidate(source, directory) }
+        val first = runBlocking { ImageCompression.makeCandidate(ui.activity, source, directory) }
         try {
             ui.runOnUiThread { model.candidate.value = first }
             ui.onNodeWithTag("compression-quality").performScrollTo().performSemanticsAction(
@@ -929,6 +929,31 @@ class CleanerUiTest {
     }
 
     @Test
+    fun largeListsLargestFirstFromAnAdjustableMinimum() {
+        ui.onNodeWithTag("nav-Photos").performClick()
+        ui.onNodeWithContentDescription("Sort and filter").performClick()
+        ui.onNode(hasText("Large items") and hasAnyAncestor(isPopup())).performClick()
+        // The fixture's photos are all under the 10 MB default; the unknown size never counts.
+        ui.onNodeWithTag("library-PHOTO").performScrollToNode(hasText("Nothing in this collection"))
+        ui.onNodeWithContentDescription("Sort and filter").performClick()
+        ui.onNodeWithTag("cleaner-measure-open").performClick()
+        ui.onNodeWithTag("media-large-minimum").performScrollTo().performClick()
+        val five = "At least " + android.text.format.Formatter.formatFileSize(ui.activity, 5_000_000)
+        ui.onNode(hasText(five) and hasAnyAncestor(isPopup())).performScrollTo().performClick()
+        ui.onNodeWithText("Apply").performClick()
+        ui.waitForIdle()
+        ui.onNodeWithTag("library-PHOTO")
+            .performScrollToNode(hasContentDescription("Clear filter: Large from", substring = true))
+        val names =
+            listOf("Coast at golden hour.heic", "Coast at golden hour copy.heic", "Weekend walk.heic")
+        ui.onNodeWithTag("library-PHOTO").performScrollToNode(hasText(names.last()))
+        val tops = names.map { ui.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertTrue("Largest first: $tops", tops[0] <= tops[1] && tops[1] < tops[2])
+        ui.onAllNodesWithText("Coffee receipt.png").assertCountEquals(0)
+        ui.onAllNodesWithText("Another view.heic").assertCountEquals(0)
+    }
+
+    @Test
     fun collectionsFilterTheLibrary() {
         ui.onNodeWithTag("nav-Photos").performClick()
         ui.onNodeWithText("Motion photos").performScrollTo().performClick()
@@ -952,8 +977,16 @@ class CleanerUiTest {
         ui.onAllNodesWithText("Merge", substring = false).assertCountEquals(0)
     }
 
+    /**
+     * The generic build is the unlocked source build (no trial, nothing for sale), so trial-expiry
+     * checks run on personal builds without the unlock and on store builds.
+     */
+    private val trialApplies: Boolean
+        get() = !BuildConfig.PERSONAL_UNLOCK && !model.store.purchase.value.sourceBuild
+
     @Test
     fun anExpiredTrialKeepsDecisionsButNotNewScans() {
+        org.junit.Assume.assumeTrue("The source build has no trial", trialApplies)
         ui.activity
             .getSharedPreferences("seven-trial", 0)
             .edit()

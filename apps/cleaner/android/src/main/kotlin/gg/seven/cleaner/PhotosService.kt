@@ -64,9 +64,8 @@ data class PhotoAnalysis(
 
 /**
  * The media library through MediaStore (iOS PhotosService over PhotoKit). Items are identified by
- * their content URI. Reads work on every supported Android; the changes Android only lets an app
- * make through a system confirmation (moving to the trash, favorites) need Android 11, and saving a
- * copy needs Android 10.
+ * their content URI. Changes Android only lets an app make through a system confirmation (moving
+ * to the trash, favorites, moving into an album) go through MediaStore's request intents.
  */
 class PhotosService(private val context: Context) {
     private val resolver = context.contentResolver
@@ -101,7 +100,7 @@ class PhotosService(private val context: Context) {
         withContext(Dispatchers.IO) {
             val access = access()
             if (access == Access.None)
-                throw blocked("Photos access was not granted. You can change it in Settings.")
+                throw blocked(context.getString(R.string.photos_access_denied))
             val items =
                 (query(images, null, null) + query(videos, null, null)).sortedByDescending {
                     it.date ?: Instant.MIN
@@ -140,13 +139,11 @@ class PhotosService(private val context: Context) {
             add(MediaStore.MediaColumns.MIME_TYPE)
             add(DATE_TAKEN)
             if (video) add(MediaStore.Video.VideoColumns.DURATION)
-            if (Build.VERSION.SDK_INT >= 29) add(MediaStore.MediaColumns.RELATIVE_PATH)
-            if (Build.VERSION.SDK_INT >= 30) {
-                add(MediaStore.MediaColumns.IS_FAVORITE)
-                add(MediaStore.MediaColumns.VOLUME_NAME)
-                add(MediaStore.MediaColumns.GENERATION_MODIFIED)
-            }
-            if (video && Build.VERSION.SDK_INT >= 30) add(MediaStore.MediaColumns.CAPTURE_FRAMERATE)
+            add(MediaStore.MediaColumns.RELATIVE_PATH)
+            add(MediaStore.MediaColumns.IS_FAVORITE)
+            add(MediaStore.MediaColumns.VOLUME_NAME)
+            add(MediaStore.MediaColumns.GENERATION_MODIFIED)
+            if (video) add(MediaStore.MediaColumns.CAPTURE_FRAMERATE)
         }
         val items = mutableListOf<CleanupItem>()
         val versions = mutableMapOf<String, String>()
@@ -167,7 +164,9 @@ class PhotosService(private val context: Context) {
         fun text(column: String) =
             c.getColumnIndex(column).takeIf { it >= 0 && !c.isNull(it) }?.let(c::getString)
         val id = ContentUris.withAppendedId(collection, long(MediaStore.MediaColumns._ID) ?: 0)
-        val name = text(MediaStore.MediaColumns.DISPLAY_NAME) ?: if (video) "Video" else "Photo"
+        val name =
+            text(MediaStore.MediaColumns.DISPLAY_NAME)
+                ?: context.getString(if (video) R.string.photos_untitled_video else R.string.photos_untitled_photo)
         val width = (long(MediaStore.MediaColumns.WIDTH) ?: 0).toInt()
         val height = (long(MediaStore.MediaColumns.HEIGHT) ?: 0).toInt()
         val modified = long(MediaStore.MediaColumns.DATE_MODIFIED)
@@ -182,7 +181,7 @@ class PhotosService(private val context: Context) {
         val volume = text("volume_name")
         val generation = long("generation_modified")
         val epoch =
-            if (Build.VERSION.SDK_INT >= 30 && volume != null && generation != null)
+            if (volume != null && generation != null)
                 versions.getOrPut(volume) { volume + ":" + MediaStore.getVersion(context, volume) }
             else ""
         return CleanupItem(
@@ -309,17 +308,7 @@ class PhotosService(private val context: Context) {
         val uri = id.toUri()
         val bitmap =
             runCatching {
-                    if (Build.VERSION.SDK_INT >= 29)
-                        resolver.loadThumbnail(uri, Size(pixels, pixels), null)
-                    else if (isVideo(uri))
-                        @Suppress("DEPRECATION")
-                        MediaStore.Video.Thumbnails.getThumbnail(
-                            resolver,
-                            ContentUris.parseId(uri),
-                            MediaStore.Video.Thumbnails.MINI_KIND,
-                            null,
-                        )
-                    else decodeSampled(uri, pixels)
+                    resolver.loadThumbnail(uri, Size(pixels, pixels), null)
                 }
                 .getOrNull() ?: return null
         thumbnails.put(key, bitmap)
@@ -343,27 +332,28 @@ class PhotosService(private val context: Context) {
             val now = current(item.id)
             if (now == null || now.kind != MediaKind.PHOTO || "Live Photos" in now.tags)
                 throw blocked(
-                    "Choose a still photo. Motion photo conversion needs a separate preservation profile."
+                    context.getString(R.string.photos_still_only)
                 )
             if (now.revision != item.revision)
                 throw blocked(
-                    "The source changed. Read the library again before preparing a preview."
+                    context.getString(R.string.photos_source_changed)
                 )
             directory.mkdirs()
             val extension =
                 when (mime(item.id)) {
                     "image/png" -> "png"
                     "image/jpeg" -> "jpg"
+                    "image/heic", "image/heif" -> "heic"
                     else -> "img"
                 }
             val file = File(directory, "${UUID.randomUUID()}.$extension")
             try {
                 resolver.openInputStream(item.id.toUri())?.use { input ->
                     file.outputStream().use { input.copyTo(it) }
-                } ?: throw blocked("Photo is no longer accessible.")
+                } ?: throw blocked(context.getString(R.string.photos_not_accessible))
                 coroutineContext.ensureActive()
                 if (current(item.id)?.revision != item.revision)
-                    throw blocked("The source changed while reading. Read the library again.")
+                    throw blocked(context.getString(R.string.photos_changed_while_reading))
                 file
             } catch (error: Throwable) {
                 file.delete()
@@ -380,7 +370,7 @@ class PhotosService(private val context: Context) {
                     current.revision != item.revision
             )
                 throw blocked(
-                    "The video changed or is no longer accessible. Read the library again."
+                    context.getString(R.string.photos_video_changed)
                 )
             if (
                 current.tags.any {
@@ -388,7 +378,7 @@ class PhotosService(private val context: Context) {
                         it.contains("High frame", ignoreCase = true)
                 }
             )
-                throw blocked("Slow-motion video needs a different preservation profile.")
+                throw blocked(context.getString(R.string.photos_slow_motion))
             directory.mkdirs()
             val file = File(directory, "original.mp4")
             try {
@@ -408,15 +398,15 @@ class PhotosService(private val context: Context) {
                                             32L * 1024 * 1024)
                             )
                                 throw blocked(
-                                    "This video exceeds the 512 MB profile or available temporary storage."
+                                    context.getString(R.string.photos_video_too_large)
                                 )
                             output.write(buffer, 0, count)
                         }
                     }
-                } ?: throw blocked("The video is no longer accessible.")
+                } ?: throw blocked(context.getString(R.string.photos_video_gone))
                 coroutineContext.ensureActive()
                 if (this@PhotosService.current(item.id)?.revision != item.revision)
-                    throw blocked("The video changed while reading. Read the library again.")
+                    throw blocked(context.getString(R.string.photos_video_changed_while_reading))
                 file
             } catch (error: Throwable) {
                 file.delete()
@@ -431,10 +421,6 @@ class PhotosService(private val context: Context) {
      */
     suspend fun trashRequest(ids: Set<String>, state: ReviewState): PendingIntent =
         withContext(Dispatchers.IO) {
-            if (Build.VERSION.SDK_INT < 30)
-                throw blocked(
-                    "Moving media to the trash needs Android 11 or later. Nothing was changed."
-                )
             val current = ids.mapNotNull(::current)
             validateRemoval(ids.sorted(), current, state)
             MediaStore.createTrashRequest(resolver, ids.map { it.toUri() }, true)
@@ -454,20 +440,16 @@ class PhotosService(private val context: Context) {
     suspend fun currentItems(ids: Collection<String>): List<CleanupItem> =
         withContext(Dispatchers.IO) {
             if (access() == Access.None)
-                throw blocked("Photos access was not granted. You can change it in Settings.")
+                throw blocked(context.getString(R.string.photos_access_denied))
             ids.mapNotNull(::current)
         }
 
     /**
-     * The system's confirmation to move [items] into a folder album (Android 11+). Each item must
+     * The system's confirmation to move [items] into a folder album. Each item must
      * still be at the revision the person selected; the album name must be a single safe folder.
      */
     suspend fun moveRequest(items: List<CleanupItem>, title: String): PendingIntent =
         withContext(Dispatchers.IO) {
-            if (Build.VERSION.SDK_INT < 30)
-                throw blocked(
-                    "Moving into an album needs Android 11 or later. Copy into the album instead."
-                )
             albumRelativePath(title)
             validateAlbumRequest(items.size.toUInt(), unchanged(items).toUInt(), title)
             MediaStore.createWriteRequest(resolver, items.map { it.id.toUri() })
@@ -480,10 +462,6 @@ class PhotosService(private val context: Context) {
      */
     suspend fun moveToAlbum(items: List<CleanupItem>, title: String): AlbumResult =
         withContext(Dispatchers.IO) {
-            if (Build.VERSION.SDK_INT < 30)
-                throw blocked(
-                    "Moving into an album needs Android 11 or later. Copy into the album instead."
-                )
             val path = albumRelativePath(title)
             val done = mutableListOf<String>()
             val failed = mutableListOf<String>()
@@ -506,86 +484,8 @@ class PhotosService(private val context: Context) {
             AlbumResult(done, failed)
         }
 
-    /**
-     * Copies each item into `Pictures/<album>/` (Android 10+), keeping the original where it is.
-     * Each copy is read back and compared byte for byte before it is published; a failed copy is
-     * removed and its original is untouched.
-     */
-    suspend fun copyToAlbum(items: List<CleanupItem>, title: String): AlbumResult =
-        withContext(Dispatchers.IO) {
-            if (Build.VERSION.SDK_INT < 29)
-                throw blocked("Albums need Android 10 or later. Nothing was changed.")
-            val path = albumRelativePath(title)
-            validateAlbumRequest(items.size.toUInt(), unchanged(items).toUInt(), title)
-            val known = items.mapNotNull { it.bytes }
-            if (
-                known.size == items.size &&
-                    VideoCompression.availableBytes(context, context.filesDir) <
-                        known.sum() + 32L * 1024 * 1024
-            )
-                throw blocked("There is not enough storage for these copies. Nothing was changed.")
-            val done = mutableListOf<String>()
-            val failed = mutableListOf<String>()
-            for (item in items) {
-                coroutineContext.ensureActive()
-                if (copyInto(item, path)) done += item.id else failed += item.id
-            }
-            AlbumResult(done, failed)
-        }
-
     private fun unchanged(items: List<CleanupItem>) =
         items.count { current(it.id)?.revision == it.revision }
-
-    private suspend fun copyInto(item: CleanupItem, path: String): Boolean {
-        if (Build.VERSION.SDK_INT < 29) return false
-        val now = current(item.id)
-        if (now == null || now.revision != item.revision) return false
-        val video = item.kind == MediaKind.VIDEO
-        val values =
-            ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, item.name)
-                mime(item.id)?.let { put(MediaStore.MediaColumns.MIME_TYPE, it) }
-                put(MediaStore.MediaColumns.RELATIVE_PATH, path)
-                put(MediaStore.MediaColumns.IS_PENDING, 1)
-            }
-        val uri = runCatching { resolver.insert(if (video) videos else images, values) }.getOrNull()
-            ?: return false
-        try {
-            val written =
-                resolver.openInputStream(item.id.toUri())?.use { input ->
-                    resolver.openOutputStream(uri)?.use { input.copyTo(it) }
-                }
-            if (written == null) throw blocked("Could not write the copy.")
-            val source = resolver.openInputStream(item.id.toUri())?.let { sha256(it).first }
-            val copy = resolver.openInputStream(uri)?.let { sha256(it).first }
-            if (source == null || source != copy) throw blocked("Copied bytes differ.")
-            resolver.update(
-                uri,
-                ContentValues().apply {
-                    put(MediaStore.MediaColumns.IS_PENDING, 0)
-                    if (Build.VERSION.SDK_INT >= 30 && now.favorite)
-                        put(MediaStore.MediaColumns.IS_FAVORITE, 1)
-                },
-                null,
-                null,
-            )
-            item.date?.let { date ->
-                resolver.update(
-                    uri,
-                    ContentValues().apply { put(DATE_TAKEN, date.toEpochMilli()) },
-                    null,
-                    null,
-                )
-            }
-            return true
-        } catch (cancelled: kotlinx.coroutines.CancellationException) {
-            runCatching { resolver.delete(uri, null, null) }
-            throw cancelled
-        } catch (_: Exception) {
-            runCatching { resolver.delete(uri, null, null) }
-            return false
-        }
-    }
 
     /** The ids of [ids] still in the library (trashed items are not). */
     suspend fun remaining(ids: Set<String>): Set<String> =
@@ -593,8 +493,7 @@ class PhotosService(private val context: Context) {
 
     suspend fun favoriteRequest(id: String, value: Boolean): PendingIntent =
         withContext(Dispatchers.IO) {
-            if (Build.VERSION.SDK_INT < 30) throw blocked("Favorites need Android 11 or later.")
-            current(id) ?: throw blocked("Photo is no longer accessible.")
+            current(id) ?: throw blocked(context.getString(R.string.photos_not_accessible))
             MediaStore.createFavoriteRequest(resolver, listOf(id.toUri()), value)
         }
 
@@ -612,7 +511,15 @@ class PhotosService(private val context: Context) {
         created: (String) -> Unit = {},
     ): String {
         checkCopyOffer(candidate.assessment)
-        return saveMediaCopy(candidate.output, source, false, " compressed.jpg", created)
+        val heic = candidate.output.extension == "heic"
+        return saveMediaCopy(
+            candidate.output,
+            source,
+            if (heic) "image/heic" else "image/jpeg",
+            context.getString(R.string.photos_copy_name_compressed, source.name.substringBeforeLast('.')) +
+                if (heic) ".heic" else ".jpg",
+            created,
+        )
     }
 
     suspend fun saveVideoCopy(
@@ -621,49 +528,50 @@ class PhotosService(private val context: Context) {
         created: (String) -> Unit = {},
     ): String {
         if (candidate.issues.isNotEmpty())
-            throw blocked("Inspect a verified video preview before saving.")
-        return saveMediaCopy(candidate.output, source, true, " edited.mp4", created)
+            throw blocked(context.getString(R.string.photos_verify_video_first))
+        return saveMediaCopy(
+            candidate.output,
+            source,
+            "video/mp4",
+            context.getString(R.string.photos_copy_name_edited, source.name.substringBeforeLast('.')) + ".mp4",
+            created,
+        )
     }
 
     private suspend fun saveMediaCopy(
         output: File,
         source: CleanupItem,
-        video: Boolean,
-        suffix: String,
+        mimeType: String,
+        displayName: String,
         created: (String) -> Unit,
     ): String =
         withContext(Dispatchers.IO) {
-            if (Build.VERSION.SDK_INT < 29)
-                throw blocked("Saving copies needs Android 10 or later. The original is unchanged.")
+            val video = mimeType.startsWith("video/")
             val now = current(source.id)
             if (now == null || now.revision != source.revision)
                 throw blocked(
-                    "The source changed or is no longer accessible. Prepare a new candidate."
+                    context.getString(R.string.photos_source_changed_copy)
                 )
             val folder = relativePath(source.id) ?: if (video) "Movies/" else "Pictures/"
             val values =
                 ContentValues().apply {
-                    put(
-                        MediaStore.MediaColumns.DISPLAY_NAME,
-                        source.name.substringBeforeLast('.') + suffix,
-                    )
-                    put(MediaStore.MediaColumns.MIME_TYPE, if (video) "video/mp4" else "image/jpeg")
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
                     put(MediaStore.MediaColumns.RELATIVE_PATH, folder)
                     put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }
             val uri =
                 resolver.insert(if (video) videos else images, values)
-                    ?: throw blocked("Could not create the copy. The original is unchanged.")
+                    ?: throw blocked(context.getString(R.string.photos_copy_not_created))
             try {
                 resolver.openOutputStream(uri)?.use { out ->
                     output.inputStream().use { it.copyTo(out) }
-                } ?: throw blocked("Could not write the copy.")
+                } ?: throw blocked(context.getString(R.string.photos_copy_not_written))
                 resolver.update(
                     uri,
                     ContentValues().apply {
                         put(MediaStore.MediaColumns.IS_PENDING, 0)
-                        if (Build.VERSION.SDK_INT >= 30 && now.favorite)
-                            put(MediaStore.MediaColumns.IS_FAVORITE, 1)
+                        if (now.favorite) put(MediaStore.MediaColumns.IS_FAVORITE, 1)
                     },
                     null,
                     null,
@@ -681,7 +589,7 @@ class PhotosService(private val context: Context) {
             } catch (error: Throwable) {
                 resolver.delete(uri, null, null)
                 throw if (error is gg.seven.cleaner.core.CleanerException) error
-                else blocked("The copy could not be saved. The original is unchanged.")
+                else blocked(context.getString(R.string.photos_copy_not_saved))
             }
             created(uri.toString())
             verifySavedFile(output, uri.toString())
@@ -700,30 +608,21 @@ class PhotosService(private val context: Context) {
                 if (saved != expected) throw blocked("Saved bytes differ.")
             } catch (_: Exception) {
                 throw blocked(
-                    "A copy exists, but its saved bytes could not be verified. Retry checks that same copy; it does not create another. The original remains."
+                    context.getString(R.string.photos_copy_unverified)
                 )
             }
         }
 
-    private fun relativePath(id: String): String? {
-        if (Build.VERSION.SDK_INT < 29) return null
-        return resolver
+    private fun relativePath(id: String): String? =
+        resolver
             .query(id.toUri(), arrayOf(MediaStore.MediaColumns.RELATIVE_PATH), null, null, null)
             ?.use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getString(0) else null }
-    }
 
     private companion object {
-        val images: Uri =
-            if (Build.VERSION.SDK_INT >= 29)
-                MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
-            else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        val videos: Uri =
-            if (Build.VERSION.SDK_INT >= 29)
-                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
-            else MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        val images: Uri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        val videos: Uri = MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
 
-        /** MediaColumns.DATE_TAKEN on 29+, the same column on the image and video tables before. */
-        const val DATE_TAKEN = "datetaken"
+        const val DATE_TAKEN = MediaStore.MediaColumns.DATE_TAKEN
     }
 }
 

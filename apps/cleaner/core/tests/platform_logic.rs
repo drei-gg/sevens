@@ -396,12 +396,101 @@ fn compression_profile_gates_in_swift_order() {
     assert!(check_compression_source(0.96, 1, "public.png".into(), 4001, 4000).is_err());
     assert!(check_compression_source(0.89, 1, "public.jpeg".into(), 10, 10).is_err());
     assert!(check_compression_source(0.96, 2, "public.jpeg".into(), 10, 10).is_err());
-    assert!(check_compression_source(0.96, 1, "public.heic".into(), 10, 10).is_err());
+    assert!(check_compression_source(0.96, 1, "public.tiff".into(), 10, 10).is_err());
     assert!(check_compression_source(0.96, 1, "public.jpeg".into(), 0, 10).is_err());
     check_compression_pixels(8, true, false).unwrap();
     assert!(check_compression_pixels(16, true, false).is_err());
     assert!(check_compression_pixels(8, false, false).is_err());
     assert!(check_compression_pixels(8, true, true).is_err());
+}
+
+#[test]
+fn heic_profile_gates() {
+    // HEIC reaches 50 MP: 24 MP and 48 MP iPhone photos qualify, JPEG and PNG stay at 16 MP.
+    check_compression_source(0.96, 1, "public.heic".into(), 5712, 4284).unwrap();
+    check_compression_source(0.96, 1, "public.heic".into(), 8064, 6048).unwrap();
+    assert!(check_compression_source(0.96, 1, "public.heic".into(), 10_000, 5_001).is_err());
+    assert!(check_compression_source(0.96, 1, "public.jpeg".into(), 5712, 4284).is_err());
+    assert!(check_compression_source(0.96, 2, "public.heic".into(), 10, 10).is_err());
+    assert!(check_compression_source(0.89, 1, "public.heic".into(), 10, 10).is_err());
+    assert_eq!(still_profile_pixel_limit("public.heic".into()), 50_000_000);
+    assert_eq!(still_profile_pixel_limit("public.png".into()), 16_000_000);
+    assert_eq!(still_profile_pixel_limit("public.heif".into()), 0);
+    assert_eq!(still_output_type("public.heic".into()), "public.heic");
+    assert_eq!(still_output_type("public.png".into()), "public.jpeg");
+    assert_eq!(still_output_type("public.jpeg".into()), "public.jpeg");
+    assert_eq!(
+        image_resize_plan(8064, 6048, ImageSizeProfile::Large)
+            .unwrap()
+            .width,
+        2400
+    );
+
+    check_heic_pixels(8, StillColorSpace::Srgb, false, false).unwrap();
+    check_heic_pixels(8, StillColorSpace::DisplayP3, false, true).unwrap();
+    let android_p3 = check_heic_pixels(8, StillColorSpace::DisplayP3, false, false).unwrap_err();
+    assert!(android_p3.to_string().contains("sRGB images"));
+    assert!(check_heic_pixels(10, StillColorSpace::DisplayP3, false, true).is_err());
+    assert!(check_heic_pixels(8, StillColorSpace::Other, false, true).is_err());
+    assert!(check_heic_pixels(8, StillColorSpace::Srgb, true, true).is_err());
+}
+
+#[test]
+fn auxiliary_images_are_carried_or_refused_never_dropped() {
+    use AuxiliaryImage::*;
+    let apple = vec![
+        Depth,
+        Disparity,
+        PortraitMatte,
+        SkinMatte,
+        HairMatte,
+        TeethMatte,
+        GlassesMatte,
+        SkyMatte,
+        HdrGainMap,
+        IsoGainMap,
+    ];
+    check_auxiliary_images(vec![], vec![]).unwrap();
+    check_auxiliary_images(vec![Disparity, PortraitMatte, HdrGainMap], apple.clone()).unwrap();
+    // Something seen but not named can never be carried, whatever the platform claims.
+    let mut everything = apple.clone();
+    everything.push(Unidentified);
+    assert!(check_auxiliary_images(vec![Unidentified], everything).is_err());
+    let refusal = check_auxiliary_images(vec![HdrGainMap, Depth, Depth, PortraitMatte], vec![])
+        .unwrap_err()
+        .to_string();
+    assert_eq!(
+        refusal,
+        "This photo has depth, portrait matte and HDR gain map that this copy can’t carry yet. Keep the original; nothing was changed."
+    );
+    assert_eq!(
+        check_auxiliary_images(vec![IsoGainMap], vec![HdrGainMap])
+            .unwrap_err()
+            .to_string(),
+        "This photo has ISO gain map that this copy can’t carry yet. Keep the original; nothing was changed."
+    );
+
+    assert!(auxiliary_image_issues(vec![Depth, HdrGainMap], vec![HdrGainMap, Depth]).is_empty());
+    assert_eq!(
+        auxiliary_image_issues(vec![SkyMatte, Depth, Depth], vec![Depth]),
+        vec!["Auxiliary image not kept: sky matte.".to_string()]
+    );
+    // A lost image fails the assessment, so no copy is offered.
+    let facts = new_image_facts(100, 100, 100_000);
+    let mut assessment = new_compression_assessment(
+        facts.clone(),
+        ImageFacts {
+            bytes: 10_000,
+            ..facts
+        },
+        45.0,
+        36.0,
+        false,
+    );
+    assessment
+        .issues
+        .extend(auxiliary_image_issues(vec![Depth], vec![]));
+    assert!(check_copy_offer(&assessment).is_err());
 }
 
 #[test]

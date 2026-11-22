@@ -2,6 +2,8 @@
 
 package gg.seven.cleaner
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -55,23 +57,23 @@ fun FilesScreen(model: CleanerModel, filters: FolderFilters) {
                 val unmeasured =
                     summary != null && summary.knownBytes == 0L && summary.unknownCount > 0
                 CleanerHero(
-                    "Your chosen folders",
+                    stringResource(R.string.files_hero_label),
                     when {
-                        summary == null -> "Find the big stuff."
-                        unmeasured -> "Not measured"
+                        summary == null -> stringResource(R.string.files_hero_empty)
+                        unmeasured -> stringResource(R.string.bytes_not_measured)
                         else -> byteText(summary.knownBytes)
                     },
-                    "Large files and exact copies, in the places you choose.",
+                    stringResource(R.string.files_hero_detail),
                     Icons.Outlined.Folder,
                     hue = Hues.warm,
                     big = summary != null && !unmeasured,
                 )
-                PrimaryButton("Choose a folder", enabled = !busy) { actions.chooseFolder() }
+                PrimaryButton(stringResource(R.string.files_choose_folder), enabled = !busy) { actions.chooseFolder() }
                 if (current != null) {
                     CleanerTiles(
                         { m ->
                             CleanerStat(
-                                "Files found",
+                                stringResource(R.string.files_found),
                                 "%,d".format(current.items.size),
                                 Icons.Outlined.Description,
                                 m,
@@ -80,13 +82,15 @@ fun FilesScreen(model: CleanerModel, filters: FolderFilters) {
                         },
                         { m ->
                             CleanerStat(
-                                "Duplicate groups",
+                                stringResource(R.string.files_duplicate_groups),
                                 "%,d".format(current.groups.size),
                                 Icons.Outlined.FileCopy,
                                 m,
                                 detail =
-                                    if (filters.duplicatesOnly) "Showing duplicates"
-                                    else "Tap to inspect",
+                                    stringResource(
+                                        if (filters.duplicatesOnly) R.string.files_showing_duplicates
+                                        else R.string.files_tap_to_inspect
+                                    ),
                                 hue = Hues.warm,
                                 selected = filters.duplicatesOnly,
                             ) {
@@ -96,7 +100,7 @@ fun FilesScreen(model: CleanerModel, filters: FolderFilters) {
                     )
                     FileSizeChart(current.items)
                     SearchInput(
-                        "Search files",
+                        stringResource(R.string.files_search),
                         state = search,
                         modifier = Modifier.testTag("files-search"),
                     )
@@ -106,10 +110,15 @@ fun FilesScreen(model: CleanerModel, filters: FolderFilters) {
                     ) {
                         Icon(Icons.Outlined.FilterList, null)
                         Spacer(Modifier.width(Space.s))
-                        Text("Filter files")
+                        Text(stringResource(R.string.files_filter))
                     }
                     Text(
-                        "${items.size} of ${current.items.size} files",
+                        pluralStringResource(
+                            R.plurals.files_visible,
+                            current.items.size,
+                            items.size,
+                            current.items.size,
+                        ),
                         modifier = Modifier.testTag("files-visible-count"),
                     )
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
@@ -119,7 +128,10 @@ fun FilesScreen(model: CleanerModel, filters: FolderFilters) {
                                 onClick = { filters.extension = null },
                                 label = { Text(extensionTitle(ext)) },
                                 trailingIcon = {
-                                    Icon(Icons.Outlined.Close, "Clear extension filter")
+                                    Icon(
+                                        Icons.Outlined.Close,
+                                        stringResource(R.string.files_clear_extension),
+                                    )
                                 },
                             )
                         }
@@ -128,14 +140,18 @@ fun FilesScreen(model: CleanerModel, filters: FolderFilters) {
                                 selected = true,
                                 onClick = { filters.size = FileSizeFilter.ANY },
                                 label = { Text(filters.size.title) },
-                                trailingIcon = { Icon(Icons.Outlined.Close, "Clear size filter") },
+                                trailingIcon = {
+                                    Icon(Icons.Outlined.Close, stringResource(R.string.files_clear_size))
+                                },
                             )
                         if (filters.dateMode != MediaDateFilter.ANY)
                             InputChip(
                                 selected = true,
                                 onClick = { filters.dateMode = MediaDateFilter.ANY },
                                 label = { Text(dateSummary(filters.dateMode, filters.date)) },
-                                trailingIcon = { Icon(Icons.Outlined.Close, "Clear date filter") },
+                                trailingIcon = {
+                                    Icon(Icons.Outlined.Close, stringResource(R.string.date_clear))
+                                },
                             )
                     }
                     if (filters.active)
@@ -143,23 +159,29 @@ fun FilesScreen(model: CleanerModel, filters: FolderFilters) {
                             onClick = { filters.clear() },
                             modifier = Modifier.testTag("files-clear"),
                         ) {
-                            Text("Clear filters")
+                            Text(stringResource(R.string.files_clear_filters))
                         }
                     FilterChip(
                         selected = filters.duplicatesOnly,
                         onClick = { filters.duplicatesOnly = !filters.duplicatesOnly },
-                        label = { Text("Exact duplicates only") },
+                        label = { Text(stringResource(R.string.files_filter_duplicates)) },
                     )
-                    SectionRule(if (filters.duplicatesOnly) "Exact copies" else "All files") {
+                    SectionRule(
+                        stringResource(
+                            if (filters.duplicatesOnly) R.string.files_exact_copies
+                            else R.string.files_all
+                        )
+                    ) {
                         if (filters.duplicatesOnly)
                             TextButton(onClick = { filters.duplicatesOnly = false }) {
-                                Text("Show all")
+                                Text(stringResource(R.string.files_show_all))
                             }
                     }
                     if (items.isEmpty())
                         EmptyState(
-                            if (query.isEmpty()) "No files here" else "No results for “$query”",
-                            "Clear a filter, change the search, or choose another folder.",
+                            if (query.isEmpty()) stringResource(R.string.files_empty)
+                            else stringResource(R.string.files_no_results, query),
+                            stringResource(R.string.files_empty_hint),
                             icon = Icons.Outlined.Search,
                         )
                 }
@@ -180,7 +202,7 @@ fun FilesScreen(model: CleanerModel, filters: FolderFilters) {
                                 )
                                 if (item.id in duplicates)
                                     Text(
-                                        "Exact duplicate candidate",
+                                        stringResource(R.string.files_duplicate_candidate),
                                         style = MaterialTheme.typography.bodySmall,
                                     )
                             }
@@ -204,17 +226,13 @@ fun FilesScreen(model: CleanerModel, filters: FolderFilters) {
                         if (current.skipped > 0)
                             CleanerNotice(count(R.plurals.unreadable, current.skipped))
                         if (current.unhashed)
-                            CleanerNotice(
-                                "This folder is on a cloud or app provider, so files were listed but not read. Exact copies are found only in this phone’s own storage."
-                            )
+                            CleanerNotice(stringResource(R.string.files_unhashed))
                     }
                     CleanerNotice(
-                        "Only folders you choose are scanned. Other apps’ private data and system files are outside Cleaner’s access.",
+                        stringResource(R.string.files_scope_note),
                         Icons.Outlined.FolderShared,
                     )
-                    CleanerNotice(
-                        "Cloud files are not downloaded for hashing. File providers may behave differently."
-                    )
+                    CleanerNotice(stringResource(R.string.files_cloud_note))
                 }
             }
         }

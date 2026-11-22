@@ -94,19 +94,20 @@ States: **implemented** = local source exists, with evidence recorded separately
 | Provisional nearby-still similarity | implemented | Threshold/category tuning and real-library perceptual quality: device-acceptance |
 | Recompressed-equivalent detection; burst/blur/exposure/content categories | ready | Incremental coverage and false positives must remain explicit. Keeper reasons and connected similar-shot groups are implemented (SPEC, 2026-11-22) |
 | Video similar/overlapping clips and recording collections | ready | No identity claims based solely on thumbnails/duration |
-| Album/type filters | ready | Size, dimension, video length and Large filters are implemented on both phones (SPEC, 2026-11-22); unknown values stay unknown, never zero |
+| Album/type filters | ready | Size, dimension, video length and Large filters are implemented on both phones (SPEC, 2026-11-22); Large lists largest first from an adjustable minimum (10 MB photos / 100 MB videos by default); unknown values stay unknown, never zero |
 | Full-frame zoom/native playback and durable keep/later/removal decisions | implemented | Real-library preservation and revocation: device-acceptance |
 | Select visible, clear/deselect and invert visible selection | implemented | Native source on both phones; hidden selection semantics remain explicit |
 | Swipe sessions, side-by-side review, protected groups/albums and richer keeper rules | ready | Existing batch selection does not complete these baseline review actions |
 | Previewed deletion with source/revision/favorite guards | implemented | Physical PhotoKit/MediaStore mutation and recovery: device-acceptance |
 | Bounded sRGB JPEG/PNG still recompression and explicit Original/2400/1600/800 resize | implemented | Separate verified copy; original removal not authorized by encoder success |
+| HEIC still recompression (HEIC→HEIC, up to 50 MP) | implemented | iPhone: sRGB/Display P3, copied metadata, every ImageIO auxiliary image (depth, disparity, mattes, HDR/ISO gain maps) read back; Android: HeifWriter, sRGB, capture tags and rotation, refuses P3/mirrored/auxiliary HEICs. Real iPhone/Samsung HEIC libraries and maker-note round trips: device-acceptance |
 | Selected-photo compression review queue (1–10) | implemented | Both phones: per-photo preparation/quality/size/inspection/save/skip/stop/results; same-copy verification/record retry; one temporary pair; originals retained |
 | Durable/background photo batches and stronger temporary-space budgeting | ready | Session queue does not resume after app termination; provider mutation and ledger are not one crash-atomic transaction; bounded source streaming, disk preflight and journal recovery remain |
 | Bounded native video trim/compression review and verified separate copy | implemented | Both phones: SDR H.264/AAC, constant <=30 fps, <=1080p/10 min/512 MiB input, <=720p output, exact range/preview/cancel/save/same-copy retry; originals retained. Physical codecs/providers and quality: device-acceptance |
 | Broader video/HDR/HEVC/auxiliary profiles, durable video batches and Live-to-still | ready | Profile-specific audio/color/metadata/timing proof and restartable mutation receipts; current bounded profile is not final scope |
-| Additional image formats/conversion/alpha/auxiliary/RAW profiles | ready | Profile-specific preservation; current bounded profile is not final scope |
+| Additional image formats/conversion/alpha/auxiliary/RAW profiles | ready | Profile-specific preservation; HEIC is implemented (row above). Format conversion, alpha, RAW, Live-to-still and Android auxiliary/P3 HEIC remain |
 | Source replacement after compression | decision-blocked | Restartable mutation journal, saved-output/metadata/feature proof; deletion never implicit |
-| Album creation/filing and favorites | implemented | iOS PhotoKit albums; Android folder albums (move on 11+, verified copy on 10+). Provider/account/limited-access acceptance |
+| Album creation/filing and favorites | implemented | iOS PhotoKit albums; Android folder albums (move after the system confirmation; Android 11 minimum). Provider/account/limited-access acceptance |
 | Day/month/year and On This Day sessions | implemented | Round seven: native phone filters with shared civil-date rules, explicit reference, preserved selection/decisions and unknown dates; persistent review sessions remain separate |
 | Search/sort filing and unfiled collections | ready | Availability differs by provider; do not invent absent dates/albums |
 | Review collections/tags | candidate | Feasibility/value review, retained in baseline |
@@ -125,6 +126,7 @@ States: **implemented** = local source exists, with evidence recorded separately
 | Incomplete-contact editing, field-by-field merge, bulk deletion and restore-to-store | decision-blocked | Inaccessible fields/notes entitlement/account and linked-record preservation; source proof required |
 | Adaptive tablet layouts, difficult-content quality and memory/storage pressure | device-acceptance | Emulator/build does not prove preservation/perceptual quality |
 | Email cleanup and protected collection | candidate | Separate value/feasibility evidence; no backend/custody assumption |
+| Android string resources (English) and community translations | implemented / candidate | Every Android string is in `res/values/strings.xml`; core-supplied reasons (profile gates, keeper and match reasons, merge blockers) stay English until the core returns codes; translations arrive by community PRs |
 | Treemap / photo enhancement | deferred / excluded | Explicit baseline decisions; not silently omitted |
 
 ## Vault — owner: apps/vault/SPEC.md

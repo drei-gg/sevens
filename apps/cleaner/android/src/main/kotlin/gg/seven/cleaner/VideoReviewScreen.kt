@@ -5,6 +5,7 @@
 
 package gg.seven.cleaner
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -70,23 +71,26 @@ fun VideoReviewScreen(model: CleanerModel, review: VideoReview) {
         }
     }
     FullScreenForm(
-        title = if (finished) "Video copy saved" else "Video review",
+        title =
+            stringResource(if (finished) R.string.video_saved_title else R.string.video_review_title),
         onClose = model::closeVideo,
         onSave = if (finished) model::closeVideo else model::saveVideo,
         busy = busy,
         saveLabel =
-            if (finished) "Done" else if (review.createdID != null) "Retry" else "Save copy",
+            stringResource(
+                if (finished) R.string.action_done
+                else if (review.createdID != null) R.string.action_retry
+                else R.string.compress_save_copy
+            ),
         saveEnabled =
             finished || (candidate != null && plan == candidate.plan && candidate.issues.isEmpty()),
         confirmDiscard = !finished && candidate != null && review.createdID == null,
     ) {
         Text(
-            if (finished) "The saved copy was read back and recorded. Your original remains."
-            else
-                "Choose a range, prepare the preview, then inspect it before saving a separate copy."
+            stringResource(if (finished) R.string.video_saved_note else R.string.video_review_note)
         )
         Text(
-            "SDR H.264 · up to 720p · original frame rate and AAC audio. No automatic removal.",
+            stringResource(R.string.video_profile_note),
             style = MaterialTheme.typography.bodySmall,
         )
         if (!finished) {
@@ -104,7 +108,7 @@ fun VideoReviewScreen(model: CleanerModel, review: VideoReview) {
             OutlinedTextField(
                 review.start,
                 { review.start = it },
-                label = { Text("Start, seconds") },
+                label = { Text(stringResource(R.string.video_start)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 enabled = !locked,
@@ -114,14 +118,17 @@ fun VideoReviewScreen(model: CleanerModel, review: VideoReview) {
             OutlinedTextField(
                 review.end,
                 { review.end = it },
-                label = { Text("End, seconds") },
+                label = { Text(stringResource(R.string.video_end)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 enabled = !locked,
                 isError = plan == null,
                 supportingText = {
                     Text(
-                        "At least 0.5 second, within ${VideoReview.seconds(review.inspection.facts.durationMs)} seconds."
+                        stringResource(
+                            R.string.video_range_hint,
+                            VideoReview.seconds(review.inspection.facts.durationMs),
+                        )
                     )
                 },
                 modifier = Modifier.fillMaxWidth().testTag("video.end"),
@@ -131,25 +138,41 @@ fun VideoReviewScreen(model: CleanerModel, review: VideoReview) {
                 enabled = !locked && plan != null && plan != candidate?.plan,
                 modifier = Modifier.testTag("video.prepare"),
             ) {
-                Text(if (candidate == null) "Prepare preview" else "Update preview")
+                Text(
+                    stringResource(
+                        if (candidate == null) R.string.batch_prepare
+                        else R.string.compress_update_preview
+                    )
+                )
             }
         }
         if (busy) {
             LinearWavyProgressIndicator(Modifier.fillMaxWidth())
             Text(progress)
-            if (canCancel) TextButton(onClick = model::cancel) { Text("Cancel preparation") }
+            if (canCancel) TextButton(onClick = model::cancel) {
+                Text(stringResource(R.string.compress_cancel_preparation))
+            }
         }
         if (review.createdID != null && !finished)
-            Text("A copy exists. Retry verifies that same copy. Closing leaves it unverified.")
+            Text(stringResource(R.string.video_copy_exists))
         if (candidate != null) {
             Text(
-                "Original: ${byteText(candidate.source.length())}. Preview: ${byteText(candidate.output.length())}.",
+                stringResource(
+                    R.string.video_sizes,
+                    byteText(candidate.source.length()),
+                    byteText(candidate.output.length()),
+                ),
                 style = MaterialTheme.typography.titleSmall,
             )
             if (candidate.output.length() >= candidate.source.length())
-                Text("This copy is not smaller. Saving it uses additional storage.")
+                Text(stringResource(R.string.video_not_smaller))
             Text(
-                "${candidate.after.facts.width} × ${candidate.after.facts.height} · ${VideoReview.seconds(candidate.after.facts.durationMs)} seconds",
+                stringResource(
+                    R.string.video_result,
+                    candidate.after.facts.width.toInt(),
+                    candidate.after.facts.height.toInt(),
+                    VideoReview.seconds(candidate.after.facts.durationMs),
+                ),
                 modifier = Modifier.testTag("video.result"),
             )
             key(candidate.output.path) {
@@ -163,17 +186,19 @@ fun VideoReviewScreen(model: CleanerModel, review: VideoReview) {
             candidate.issues.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
         }
         Text(
-            "Capture date and latitude/longitude are checked when present. Descriptive container tags and altitude are not included. Library date, favorite and folder are retained where the provider supports them. Drafts and unfinished verification last for this session only.",
+            stringResource(R.string.video_metadata_note),
             style = MaterialTheme.typography.bodySmall,
         )
     }
     error?.let { message ->
         AlertDialog(
             onDismissRequest = { model.error.value = null },
-            title = { Text("Video not saved") },
+            title = { Text(stringResource(R.string.video_not_saved)) },
             text = { Text(message) },
             confirmButton = {
-                TextButton(onClick = { model.error.value = null }) { Text("Keep editing") }
+                TextButton(onClick = { model.error.value = null }) {
+                    Text(stringResource(R.string.video_keep_editing))
+                }
             },
         )
     }

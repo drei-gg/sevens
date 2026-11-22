@@ -106,7 +106,7 @@ struct CleanerSettings: View {
             } header: { Text("Saved scan progress").textRole(.caption) }
               footer: { Text("Completed comparisons stay on this device. Scan library checks access and changes before continuing. Closing Cleaner pauses work; it does not scan in the background.").textRole(.caption) }
             Section { Text("No Cleaner account, analytics, ads or servers. Apple Photos and your chosen file provider may fetch cloud content when you permit it.").textRole(.body) } header: { Text("Privacy").textRole(.caption) }
-            Section { Text("Compression saves a separate copy. The current still-image profile excludes HDR, RAW, Live Photos, transparency and unverified formats.").textRole(.body); Text("Contact archives contain accessible fields. Notes require additional Apple permission, so archives are labelled partial and destructive merges are not enabled.").textRole(.body) } header: { Text("Preservation").textRole(.caption) }
+            Section { Text("Compression saves a separate copy. HEIC copies keep depth, portrait and segmentation mattes and HDR gain maps; the still profiles exclude RAW, Live Photos, transparency and unverified formats.").textRole(.body); Text("Contact archives contain accessible fields. Notes require additional Apple permission, so archives are labelled partial and destructive merges are not enabled.").textRole(.body) } header: { Text("Preservation").textRole(.caption) }
             Section {
                 Text("PhoneNumberKit 5.0.14 · MIT\nGoogle libphonenumber metadata · Apache-2.0").textRole(.secondary)
                 NavigationLink("PhoneNumberKit license") { LicenseScreen(name: "PhoneNumberKit-LICENSE") }
@@ -132,13 +132,19 @@ struct MediaLibrary: View {
     @State private var size: FileSizeFilter = .any
     @State private var resolution: MediaResolutionFilter = .any
     @State private var duration: MediaDurationFilter = .any
+    /// Large's minimum; nil is the core's default for this library (10 MB photos, 100 MB videos).
+    @State private var largeFrom: Int64? = nil
+    private var largeMinimum: Int64 { largeFrom ?? largeMinimumDefault(kind: kind) }
     private var library: [CleanupItem] { model.media.filter { $0.kind == kind } }
     private var libraryIDs: Set<String> { Set(library.map(\.id)) }
     /// Only this library's selection: a video selected in Videos is never acted on from Photos.
     private var selection: Set<String> { model.selected.intersection(libraryIDs) }
     private var measures: MediaFilters { MediaFilters(size: size, resolution: resolution, duration: kind == .video ? duration : .any) }
     private var visible: [CleanupItem] {
-        library.filter { item in matchesDate(item.date, mode: dateMode, reference: referenceDate) && mediaFiltersMatch(item: item, filters: measures) && (query.isEmpty || item.name.localizedCaseInsensitiveContains(query)) && (category == "All" || item.tags.contains(category) || (category == "Large" && mediaIsLarge(item: item)) || (category == "Keep" && model.state.decisions[item.id] == .keep) || (category == "Later" && model.state.decisions[item.id] == .later)) }.sorted {
+        let matched = library.filter { item in matchesDate(item.date, mode: dateMode, reference: referenceDate) && mediaFiltersMatch(item: item, filters: measures) && (query.isEmpty || item.name.localizedCaseInsensitiveContains(query)) && (category == "All" || category == "Large" || item.tags.contains(category) || (category == "Keep" && model.state.decisions[item.id] == .keep) || (category == "Later" && model.state.decisions[item.id] == .later)) }
+        // Large is the core's: known sizes from the chosen minimum, largest first. Others follow Sort.
+        if category == "Large" { return largeItems(items: matched, minimumBytes: largeMinimum) }
+        return matched.sorted {
             if order == "Largest" { return ($0.bytes ?? -1) > ($1.bytes ?? -1) }; return ($0.date ?? .distantPast) > ($1.date ?? .distantPast)
         }
     }
@@ -174,6 +180,7 @@ struct MediaLibrary: View {
                 if library.isEmpty { CleanerNotice(text: c("Choose which photos Cleaner can access when you scan. Originals stay in Photos."),symbol: "photo.badge.checkmark") }
                 else {
                     HStack { Text(category == "All" ? c("Browse your library") : c(category)).textRole(.section); Spacer(); Text(visible.count.formatted()).textRole(.caption).numeric().accessibilityIdentifier("cleaner-visible-count") }
+                    if category == "Large" { Text("At least \(byteText(largeMinimum)), largest first. Unknown sizes are never counted.").textRole(.caption).frame(maxWidth: .infinity, alignment: .leading) }
                     if dateMode != .any {
                         Button { dateMode = .any } label: { Label(dateSummary(dateMode, date: referenceDate), systemImage: "xmark.circle") }
                             .accessibilityLabel(c("Clear date filter:") + " " + dateSummary(dateMode, date: referenceDate)).accessibilityIdentifier("cleaner-date-active")
@@ -181,6 +188,7 @@ struct MediaLibrary: View {
                     if size != .any { clearChip(c(size.title)) { size = .any } }
                     if resolution != .any { clearChip(c(resolution.title)) { resolution = .any } }
                     if kind == .video && duration != .any { clearChip(c(duration.title)) { duration = .any } }
+                    if let largeFrom, largeFrom != largeMinimumDefault(kind: kind) { clearChip(String(localized: "Large from \(byteText(largeFrom))")) { self.largeFrom = nil } }
                     if visible.isEmpty { ContentUnavailableView.search(text: query) }
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(),spacing: Tokens.Space.ms,alignment: .top),count: textSize.isAccessibilitySize ? 1 : 2),spacing: Tokens.Space.ms) {
                         ForEach(visible) { item in MediaTile(item: item) }
@@ -191,6 +199,7 @@ struct MediaLibrary: View {
             .toolbar {
                 Menu {
                     Picker("Collection",selection: $category) { ForEach(kind == .photo ? ["All","Large","Screenshots","Live Photos","Bursts","HDR","Keep","Later"] : ["All","Large","Screen recordings","High frame rate","Keep","Later"],id: \.self) { Text(c($0)).tag($0) } }
+                    Picker("Large from",selection: Binding(get: { largeMinimum }, set: { minimum in largeFrom = minimum })) { ForEach(largeMinimumChoices(kind: kind),id: \.self) { bytes in Text("At least \(byteText(bytes))").tag(bytes) } }.accessibilityIdentifier("cleaner-large-minimum")
                     Button("Recorded date…") { dateEditor = true }.accessibilityIdentifier("cleaner-date-open")
                     Picker("Size",selection: $size) { ForEach(FileSizeFilter.choices,id: \.self) { choice in Text(c(choice.title)).tag(choice) } }.accessibilityIdentifier("cleaner-size")
                     Picker(kind == .video ? "Resolution" : "Dimensions",selection: $resolution) { ForEach(MediaResolutionFilter.choices,id: \.self) { choice in Text(c(choice.title)).tag(choice) } }.accessibilityIdentifier("cleaner-resolution")

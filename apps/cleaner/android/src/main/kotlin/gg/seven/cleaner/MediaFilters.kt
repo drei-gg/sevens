@@ -1,6 +1,5 @@
 package gg.seven.cleaner
 
-import android.os.Build
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -9,49 +8,69 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import gg.seven.cleaner.core.FileSizeFilter
 import gg.seven.cleaner.core.MediaDurationFilter
 import gg.seven.cleaner.core.MediaKind
 import gg.seven.cleaner.core.MediaResolutionFilter
+import gg.seven.cleaner.core.largeMinimumChoices
+import gg.seven.cleaner.core.largeMinimumDefault
 import gg.seven.kit.DropdownField
 import gg.seven.kit.FullScreenForm
 import gg.seven.kit.Space
 
 internal val MediaResolutionFilter.title: String
+    @Composable
+    @ReadOnlyComposable
     get() =
-        when (this) {
-            MediaResolutionFilter.ANY -> "Any dimensions"
-            MediaResolutionFilter.AT_LEAST2160 -> "4K or larger (2160 px short side)"
-            MediaResolutionFilter.AT_LEAST1080 -> "At least 1080 px short side"
-            MediaResolutionFilter.AT_LEAST720 -> "At least 720 px short side"
-            MediaResolutionFilter.BELOW720 -> "Under 720 px short side"
-            MediaResolutionFilter.UNKNOWN -> "Dimensions unknown"
-        }
+        stringResource(
+            when (this) {
+                MediaResolutionFilter.ANY -> R.string.resolution_any
+                MediaResolutionFilter.AT_LEAST2160 -> R.string.resolution_2160
+                MediaResolutionFilter.AT_LEAST1080 -> R.string.resolution_1080
+                MediaResolutionFilter.AT_LEAST720 -> R.string.resolution_720
+                MediaResolutionFilter.BELOW720 -> R.string.resolution_below_720
+                MediaResolutionFilter.UNKNOWN -> R.string.resolution_unknown
+            }
+        )
 
 internal val MediaDurationFilter.title: String
+    @Composable
+    @ReadOnlyComposable
     get() =
-        when (this) {
-            MediaDurationFilter.ANY -> "Any length"
-            MediaDurationFilter.UNDER1_MINUTE -> "Under 1 minute"
-            MediaDurationFilter.AT_LEAST1_MINUTE -> "At least 1 minute"
-            MediaDurationFilter.AT_LEAST5_MINUTES -> "At least 5 minutes"
-            MediaDurationFilter.AT_LEAST30_MINUTES -> "At least 30 minutes"
-            MediaDurationFilter.UNKNOWN -> "Length unknown"
-        }
+        stringResource(
+            when (this) {
+                MediaDurationFilter.ANY -> R.string.duration_any
+                MediaDurationFilter.UNDER1_MINUTE -> R.string.duration_under_1m
+                MediaDurationFilter.AT_LEAST1_MINUTE -> R.string.duration_1m
+                MediaDurationFilter.AT_LEAST5_MINUTES -> R.string.duration_5m
+                MediaDurationFilter.AT_LEAST30_MINUTES -> R.string.duration_30m
+                MediaDurationFilter.UNKNOWN -> R.string.duration_unknown
+            }
+        )
 
-/** The active size, dimension and length filters as removable chips (label, clear). */
-internal fun measureChips(
-    filters: LibraryFilters,
-    kind: MediaKind,
-): List<Pair<String, () -> Unit>> =
-    buildList {
+/** Large's minimum for [kind]: the chosen one, or the core's default. */
+internal fun LibraryFilters.largeFrom(kind: MediaKind): Long = largeMinimum ?: largeMinimumDefault(kind)
+
+/** The active size, dimension, length and Large-minimum filters as removable chips (label, clear). */
+@Composable
+internal fun measureChips(filters: LibraryFilters, kind: MediaKind): List<Pair<String, () -> Unit>> {
+    val sizeTitle = filters.size.title
+    val resolutionTitle = filters.resolution.title
+    val durationTitle = filters.duration.title
+    val large = filters.largeMinimum
+    val largeTitle = large?.let { stringResource(R.string.large_from_chip, byteText(it)) }
+    return buildList {
         if (filters.size != FileSizeFilter.ANY)
-            add(filters.size.title to { filters.size = FileSizeFilter.ANY })
+            add(sizeTitle to { filters.size = FileSizeFilter.ANY })
         if (filters.resolution != MediaResolutionFilter.ANY)
-            add(filters.resolution.title to { filters.resolution = MediaResolutionFilter.ANY })
+            add(resolutionTitle to { filters.resolution = MediaResolutionFilter.ANY })
         if (kind == MediaKind.VIDEO && filters.duration != MediaDurationFilter.ANY)
-            add(filters.duration.title to { filters.duration = MediaDurationFilter.ANY })
+            add(durationTitle to { filters.duration = MediaDurationFilter.ANY })
+        if (large != null && large != largeMinimumDefault(kind) && largeTitle != null)
+            add(largeTitle to { filters.largeMinimum = null })
     }
+}
 
 /** Size, dimensions and (for videos) length: a draft applied together, like the date filter. */
 @Composable
@@ -59,20 +78,22 @@ fun MediaMeasureEditor(filters: LibraryFilters, kind: MediaKind, onClose: () -> 
     var size by rememberSaveable { mutableStateOf(filters.size) }
     var resolution by rememberSaveable { mutableStateOf(filters.resolution) }
     var duration by rememberSaveable { mutableStateOf(filters.duration) }
+    var largeFrom by rememberSaveable { mutableLongStateOf(filters.largeFrom(kind)) }
     val video = kind == MediaKind.VIDEO
     FullScreenForm(
-        if (video) "Size, resolution and length" else "Size and dimensions",
+        stringResource(if (video) R.string.measure_title_video else R.string.measure_title_photo),
         onClose,
         onSave = {
             filters.size = size
             filters.resolution = resolution
             filters.duration = duration
+            filters.largeMinimum = largeFrom.takeIf { it != largeMinimumDefault(kind) }
             onClose()
         },
-        saveLabel = "Apply",
+        saveLabel = stringResource(R.string.action_apply),
     ) {
         DropdownField(
-            "Size",
+            stringResource(R.string.measure_size),
             size,
             FileSizeFilter.entries.map { it to it.title },
             Modifier.testTag("media-size"),
@@ -80,7 +101,7 @@ fun MediaMeasureEditor(filters: LibraryFilters, kind: MediaKind, onClose: () -> 
             size = it
         }
         DropdownField(
-            if (video) "Resolution" else "Dimensions",
+            stringResource(if (video) R.string.measure_resolution else R.string.measure_dimensions),
             resolution,
             MediaResolutionFilter.entries.map { it to it.title },
             Modifier.testTag("media-resolution"),
@@ -89,15 +110,27 @@ fun MediaMeasureEditor(filters: LibraryFilters, kind: MediaKind, onClose: () -> 
         }
         if (video)
             DropdownField(
-                "Length",
+                stringResource(R.string.measure_length),
                 duration,
                 MediaDurationFilter.entries.map { it to it.title },
                 Modifier.testTag("media-duration"),
             ) {
                 duration = it
             }
+        val largeChoices =
+            largeMinimumChoices(kind).map {
+                it to stringResource(R.string.large_at_least, byteText(it))
+            }
+        DropdownField(
+            stringResource(R.string.measure_large_from),
+            largeFrom,
+            largeChoices,
+            Modifier.testTag("media-large-minimum"),
+        ) {
+            largeFrom = it
+        }
         Text(
-            "Sizes come from the library or from Find duplicates. Items with an unknown size, dimension or length match only the matching Unknown choice, never a smaller size. 1 MB is 1,000,000 bytes.",
+            stringResource(R.string.measure_note),
             style = MaterialTheme.typography.bodySmall,
         )
         TextButton(
@@ -105,74 +138,48 @@ fun MediaMeasureEditor(filters: LibraryFilters, kind: MediaKind, onClose: () -> 
                 size = FileSizeFilter.ANY
                 resolution = MediaResolutionFilter.ANY
                 duration = MediaDurationFilter.ANY
+                largeFrom = largeMinimumDefault(kind)
             },
             modifier = Modifier.testTag("media-clear-draft"),
         ) {
-            Text("Clear these filters")
+            Text(stringResource(R.string.measure_clear))
         }
     }
 }
 
 /**
  * An Android album is a folder in Pictures. Moving changes where the files live and needs the
- * system's confirmation (Android 11+); copying leaves the originals in place and uses more storage.
+ * system's confirmation; the files themselves stay the same.
  */
 @Composable
-fun AlbumDialog(count: Int, onDismiss: () -> Unit, onConfirm: (String, Boolean) -> Unit) {
+fun AlbumDialog(count: Int, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     val name = rememberTextFieldState()
-    val canMove = Build.VERSION.SDK_INT >= 30
-    var move by rememberSaveable { mutableStateOf(canMove) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add to album") },
+        title = { Text(stringResource(R.string.album_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                 OutlinedTextField(
                     name,
-                    label = { Text("Album name") },
+                    label = { Text(stringResource(R.string.album_name)) },
                     lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier.fillMaxWidth().testTag("album-name"),
                 )
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Space.s),
-                ) {
-                    FilterChip(
-                        selected = move,
-                        onClick = { move = true },
-                        enabled = canMove,
-                        label = { Text("Move") },
-                        modifier = Modifier.testTag("album-move"),
-                    )
-                    FilterChip(
-                        selected = !move,
-                        onClick = { move = false },
-                        label = { Text("Copy") },
-                        modifier = Modifier.testTag("album-copy"),
-                    )
-                }
                 Text(
-                    when {
-                        !canMove ->
-                            "Moving needs Android 11 or later, so Cleaner copies them into Pictures/<album>. The originals stay where they are and the copies use more storage."
-                        move ->
-                            "Android albums are folders. Cleaner moves the selected items into Pictures/<album> after Android asks you to confirm. Their files stay the same; only the folder changes."
-                        else ->
-                            "Cleaner copies the selected items into Pictures/<album> and checks each copy. The originals stay where they are and the copies use more storage."
-                    },
+                    stringResource(R.string.album_note),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name.text.toString(), move && canMove) },
+                onClick = { onConfirm(name.text.toString()) },
                 enabled = name.text.isNotBlank() && count > 0,
                 modifier = Modifier.testTag("album-confirm"),
             ) {
-                Text(if (move && canMove) "Move" else "Copy")
+                Text(stringResource(R.string.album_move))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

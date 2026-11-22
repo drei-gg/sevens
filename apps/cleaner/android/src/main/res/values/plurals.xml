@@ -28,4 +28,34 @@
         <item quantity="one">%d item needs review again and won’t be deleted.</item>
         <item quantity="other">%d items need review again and won’t be deleted.</item>
     </plurals>
+    <!-- Model -->
+    <plurals name="model_compared">
+        <item quantity="one">Compared %1$d media item; %2$d unavailable or changed. Byte counts describe library files, not local space freed.</item>
+        <item quantity="other">Compared %1$d media items; %2$d unavailable or changed. Byte counts describe library files, not local space freed.</item>
+    </plurals>
+    <plurals name="model_deleted">
+        <item quantity="one">Requested deletion for %1$d reviewed item. It waits in the trash for 30 days and keeps using storage until then.</item>
+        <item quantity="other">Requested deletion for %1$d reviewed items. They wait in the trash for 30 days and keep using storage until then.</item>
+    </plurals>
+    <plurals name="model_album_moved">
+        <item quantity="one">Moved %1$d of %2$d item into the album “%3$s”.</item>
+        <item quantity="other">Moved %1$d of %2$d items into the album “%3$s”.</item>
+    </plurals>
+    <plurals name="model_album_failed">
+        <item quantity="one">%1$d of %2$d item could not be moved. It stays where it was.</item>
+        <item quantity="other">%1$d of %2$d items could not be moved. They stay where they were.</item>
+    </plurals>
+    <plurals name="model_exported">
+        <item quantity="one">Exported %1$d accessible contact record and kept the latest archive on this phone. Notes and account relationships are not included; originals retained.</item>
+        <item quantity="other">Exported %1$d accessible contact records and kept the latest archive on this phone. Notes and account relationships are not included; originals retained.</item>
+    </plurals>
+    <!-- Files -->
+    <plurals name="files_visible">
+        <item quantity="one">%1$d of %2$d file</item>
+        <item quantity="other">%1$d of %2$d files</item>
+    </plurals>
+    <plurals name="contacts_photo_bytes">
+        <item quantity="one">%d byte retained in archive</item>
+        <item quantity="other">%d bytes retained in archive</item>
+    </plurals>
 </resources>

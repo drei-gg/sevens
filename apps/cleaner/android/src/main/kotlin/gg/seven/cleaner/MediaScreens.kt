@@ -6,9 +6,10 @@
 
 package gg.seven.cleaner
 
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.res.stringResource
 import android.graphics.Bitmap
 import android.media.MediaPlayer
-import android.os.Build
 import android.widget.MediaController
 import android.widget.VideoView
 import androidx.activity.compose.BackHandler
@@ -52,7 +53,7 @@ import gg.seven.cleaner.core.RemovalStatus
 import gg.seven.cleaner.core.ReviewDecision
 import gg.seven.cleaner.core.keeperSuggestion
 import gg.seven.cleaner.core.mediaFiltersMatch
-import gg.seven.cleaner.core.mediaIsLarge
+import gg.seven.cleaner.core.largeItems
 import gg.seven.cleaner.core.removalOutcomes
 import gg.seven.cleaner.core.storageSummary
 import gg.seven.kit.ConnectedChoice
@@ -83,28 +84,38 @@ fun Dashboard(model: CleanerModel) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Readable(Modifier.padding(bottom = Space.l)) {
             CleanerHero(
-                label = if (media.isEmpty()) "Make room for more" else "Your accessible library",
+                label =
+                    stringResource(
+                        if (media.isEmpty()) R.string.media_hero_empty_label
+                        else R.string.media_hero_label
+                    ),
                 value =
-                    if (media.isEmpty()) "Room to breathe."
+                    if (media.isEmpty()) stringResource(R.string.media_hero_empty_value)
                     else if (summary.knownBytes > 0) byteText(summary.knownBytes)
                     else "%,d".format(media.size),
                 detail =
                     when {
-                        media.isEmpty() -> "Keep the memories. Find the clutter."
-                        summary.knownBytes > 0 -> "Measured media, ready for a closer look."
-                        else -> "Accessible items. Sizes are not measured yet."
+                        media.isEmpty() -> stringResource(R.string.media_hero_empty_detail)
+                        summary.knownBytes > 0 -> stringResource(R.string.media_hero_measured_detail)
+                        else -> stringResource(R.string.media_hero_unmeasured_detail)
                     },
                 icon = Icons.Outlined.Layers,
                 big = media.isNotEmpty(),
             )
             if (groups.isNotEmpty())
-                PrimaryButton("Review matches", Modifier.testTag("cleaner.review-groups")) {
+                PrimaryButton(
+                    stringResource(R.string.media_review_matches),
+                    Modifier.testTag("cleaner.review-groups"),
+                ) {
                     actions.open("groups")
                 }
             else
                 PrimaryButton(
-                    if (media.isEmpty()) "Scan library"
-                    else if (savedMeasurements > 0) "Continue comparison" else "Find duplicates",
+                    stringResource(
+                        if (media.isEmpty()) R.string.media_scan_library
+                        else if (savedMeasurements > 0) R.string.media_continue_comparison
+                        else R.string.media_find_duplicates
+                    ),
                     Modifier.testTag("cleaner.scan"),
                     enabled = !busy,
                 ) {
@@ -112,27 +123,27 @@ fun Dashboard(model: CleanerModel) {
                 }
             if (savedMeasurements > 0)
                 CleanerNotice(
-                    "Saved measurements: $savedMeasurements. Continue after a fresh library check."
+                    stringResource(R.string.media_saved_measurements_notice, savedMeasurements)
                 )
             CleanerTiles(
                 { m ->
                     CleanerStat(
-                        "Matching groups",
+                        stringResource(R.string.media_matching_groups),
                         "%,d".format(groups.size),
                         Icons.Outlined.FilterNone,
                         m.testTag("cleaner.groups"),
-                        detail = "Compare before choosing",
+                        detail = stringResource(R.string.media_matching_groups_detail),
                     ) {
                         actions.open("groups")
                     }
                 },
                 { m ->
                     CleanerStat(
-                        "Pending removal",
+                        stringResource(R.string.media_pending_removal),
                         "%,d".format(pending),
                         Icons.Outlined.Inbox,
                         m.testTag("cleaner.pending"),
-                        detail = "Nothing deleted yet",
+                        detail = stringResource(R.string.media_pending_removal_detail),
                         hue = Hues.warm,
                     ) {
                         actions.open("pending")
@@ -140,26 +151,26 @@ fun Dashboard(model: CleanerModel) {
                 },
             )
             if (media.isNotEmpty()) LibraryComposition(media)
-            SectionRule("A place for everything")
+            SectionRule(stringResource(R.string.media_section_places))
             CleanerTiles(
                 { m ->
                     CleanerStat(
-                        "Photos",
+                        stringResource(R.string.media_photos),
                         "%,d".format(media.count { it.kind == MediaKind.PHOTO }),
                         Icons.Outlined.PhotoLibrary,
                         m,
-                        detail = "Duplicates, screenshots, keeps",
+                        detail = stringResource(R.string.media_photos_detail),
                     ) {
                         actions.switchTo(Area.Photos)
                     }
                 },
                 { m ->
                     CleanerStat(
-                        "Videos",
+                        stringResource(R.string.media_videos),
                         "%,d".format(media.count { it.kind == MediaKind.VIDEO }),
                         Icons.Outlined.VideoLibrary,
                         m,
-                        detail = "Start with the largest",
+                        detail = stringResource(R.string.media_videos_detail),
                         hue = Hues.warm,
                     ) {
                         actions.switchTo(Area.Videos)
@@ -167,22 +178,26 @@ fun Dashboard(model: CleanerModel) {
                 },
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                QuickAction("Refresh", Icons.Outlined.Refresh, enabled = !busy) {
+                QuickAction(
+                    stringResource(R.string.media_refresh),
+                    Icons.Outlined.Refresh,
+                    enabled = !busy,
+                ) {
                     actions.scanPhotos()
                 }
-                QuickAction("Activity", Icons.Outlined.History) { actions.open("activity") }
+                QuickAction(stringResource(R.string.media_activity), Icons.Outlined.History) {
+                    actions.open("activity")
+                }
             }
             Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
                 if (limited)
                     CleanerNotice(
-                        "Only the photos you allowed are included.",
+                        stringResource(R.string.media_limited_notice),
                         Icons.Outlined.PhotoLibrary,
                     )
                 if (summary.unknownCount > 0)
                     CleanerNotice(count(R.plurals.unmeasured, summary.unknownCount))
-                CleanerNotice(
-                    "Media size is not space freed on this phone. The trash and cloud backups affect local storage."
-                )
+                CleanerNotice(stringResource(R.string.media_size_notice))
             }
         }
     }
@@ -213,13 +228,15 @@ private fun visible(
                 ) &&
                 (query.isEmpty() || item.name.contains(query, ignoreCase = true)) &&
                 (category == "All" ||
+                    category == "Large" ||
                     category in item.tags ||
-                    (category == "Large" && mediaIsLarge(item)) ||
                     (category == "Keep" && decisions[item.id] == ReviewDecision.KEEP) ||
                     (category == "Later" && decisions[item.id] == ReviewDecision.LATER))
         }
         .let { list ->
-            if (filters.order == "Largest") list.sortedByDescending { it.bytes ?: -1 }
+            // Large is the core's: known sizes from the chosen minimum, largest first.
+            if (category == "Large") largeItems(list, filters.largeFrom(kind))
+            else if (filters.order == "Largest") list.sortedByDescending { it.bytes ?: -1 }
             else list.sortedByDescending { it.date?.toEpochMilli() ?: Long.MIN_VALUE }
         }
 }
@@ -237,16 +254,18 @@ fun LibraryMenus(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
     var measureEditor by rememberSaveable { mutableStateOf(false) }
     if (measureEditor) MediaMeasureEditor(filters, kind) { measureEditor = false }
     var album by rememberSaveable { mutableStateOf(false) }
-    if (album) AlbumDialog(selected.size, onDismiss = { album = false }) { title, move ->
+    if (album) AlbumDialog(selected.size, onDismiss = { album = false }) { title ->
         album = false
-        model.addToAlbum(selected, title, move)
+        model.addToAlbum(selected, title)
     }
     var sort by remember { mutableStateOf(false) }
     var batch by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { sort = true }) { Icon(Icons.Outlined.FilterList, "Sort and filter") }
+        IconButton(onClick = { sort = true }) {
+            Icon(Icons.Outlined.FilterList, stringResource(R.string.media_sort_and_filter))
+        }
         DropdownMenu(sort, onDismissRequest = { sort = false }) {
-            MenuLabel("Collection")
+            MenuLabel(stringResource(R.string.media_menu_collection))
             (if (kind == MediaKind.PHOTO) photoCollections else videoCollections).forEach { option
                 ->
                 Checked(collectionLabel(option), filters.category == option) {
@@ -256,7 +275,7 @@ fun LibraryMenus(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
             }
             HorizontalDivider()
             DropdownMenuItem(
-                text = { Text("Recorded date…") },
+                text = { Text(stringResource(R.string.media_recorded_date)) },
                 onClick = {
                     sort = false
                     dateEditor = true
@@ -265,7 +284,12 @@ fun LibraryMenus(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
             )
             DropdownMenuItem(
                 text = {
-                    Text(if (kind == MediaKind.VIDEO) "Size, resolution and length…" else "Size and dimensions…")
+                    Text(
+                        stringResource(
+                            if (kind == MediaKind.VIDEO) R.string.media_measure_video
+                            else R.string.media_measure_photo
+                        )
+                    )
                 },
                 onClick = {
                     sort = false
@@ -273,16 +297,21 @@ fun LibraryMenus(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                 },
                 modifier = Modifier.testTag("cleaner-measure-open"),
             )
-            MenuLabel("Sort")
-            listOf("Newest", "Largest").forEach { option ->
-                Checked(option, filters.order == option) {
+            MenuLabel(stringResource(R.string.media_menu_sort))
+            // The order keys stay English; only their labels are translated.
+            listOf(
+                    "Newest" to R.string.media_sort_newest,
+                    "Largest" to R.string.media_sort_largest,
+                )
+                .forEach { (option, label) ->
+                Checked(stringResource(label), filters.order == option) {
                     filters.order = option
                     sort = false
                 }
             }
             HorizontalDivider()
             DropdownMenuItem(
-                text = { Text("Read media library") },
+                text = { Text(stringResource(R.string.media_read_library)) },
                 leadingIcon = { Icon(Icons.Outlined.Refresh, null) },
                 onClick = {
                     sort = false
@@ -292,12 +321,14 @@ fun LibraryMenus(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
         }
     }
     Box {
-        IconButton(onClick = { batch = true }) { Icon(Icons.Outlined.Checklist, "Batch actions") }
+        IconButton(onClick = { batch = true }) {
+            Icon(Icons.Outlined.Checklist, stringResource(R.string.media_batch_actions))
+        }
         DropdownMenu(batch, onDismissRequest = { batch = false }) {
             val shown = visible(media, state.decisions, kind, filters).map { it.id }.toSet()
             if (kind == MediaKind.PHOTO) {
                 DropdownMenuItem(
-                    text = { Text("Review selected photos") },
+                    text = { Text(stringResource(R.string.media_review_selected_photos)) },
                     enabled = selected.isNotEmpty(),
                     modifier = Modifier.testTag("compression-batch-open"),
                     onClick = {
@@ -308,38 +339,37 @@ fun LibraryMenus(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                 HorizontalDivider()
             }
 
+            @Composable
             fun item(label: String, enabled: Boolean = true, action: () -> Unit) =
-                @Composable {
-                    DropdownMenuItem(
-                        text = { Text(label) },
-                        enabled = enabled,
-                        onClick = {
-                            batch = false
-                            action()
-                        },
-                    )
-                }
-            item("Select visible") { model.selected.value = allSelected + shown }()
-            item("Clear selection in this library", selected.isNotEmpty()) {
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    enabled = enabled,
+                    onClick = {
+                        batch = false
+                        action()
+                    },
+                )
+            item(stringResource(R.string.media_select_visible)) { model.selected.value = allSelected + shown }
+            item(stringResource(R.string.media_clear_selection), selected.isNotEmpty()) {
                 model.selected.value = allSelected - selected
-            }()
-            item("Invert visible selection") {
+            }
+            item(stringResource(R.string.media_invert_selection)) {
                 model.selected.value = (allSelected - shown) + (shown - selected)
-            }()
+            }
             HorizontalDivider()
-            item("Keep selected", selected.isNotEmpty()) {
+            item(stringResource(R.string.media_keep_selected), selected.isNotEmpty()) {
                 model.decide(selected, ReviewDecision.KEEP)
-            }()
-            item("Decide later", selected.isNotEmpty()) {
+            }
+            item(stringResource(R.string.media_decide_later), selected.isNotEmpty()) {
                 model.decide(selected, ReviewDecision.LATER)
-            }()
-            item("Queue removal", selected.isNotEmpty()) {
+            }
+            item(stringResource(R.string.media_queue_removal), selected.isNotEmpty()) {
                 model.decide(selected, ReviewDecision.REMOVE)
-            }()
+            }
             HorizontalDivider()
-            item("Add selected to album…", selected.isNotEmpty() && Build.VERSION.SDK_INT >= 29) {
+            item(stringResource(R.string.media_add_to_album), selected.isNotEmpty()) {
                 album = true
-            }()
+            }
         }
     }
 }
@@ -356,6 +386,8 @@ private fun MenuLabel(text: String) {
 
 @Composable
 private fun Checked(label: String, checked: Boolean, onClick: () -> Unit) {
+    val state =
+        stringResource(if (checked) R.string.media_state_selected else R.string.media_state_not_selected)
     DropdownMenuItem(
         text = { Text(label) },
         onClick = onClick,
@@ -363,7 +395,7 @@ private fun Checked(label: String, checked: Boolean, onClick: () -> Unit) {
             if (checked) Icon(Icons.Outlined.Check, null) else Spacer(Modifier.size(24.dp))
         },
         modifier =
-            Modifier.semantics { stateDescription = if (checked) "Selected" else "Not selected" },
+            Modifier.semantics { stateDescription = state },
     )
 }
 
@@ -402,40 +434,54 @@ fun MediaLibrary(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                 Column(verticalArrangement = Arrangement.spacedBy(Space.l)) {
                     val known = storageSummary(library).knownBytes
                     CleanerHero(
-                        label = if (photo) "Your photo library" else "The bigger picture",
+                        label =
+                            stringResource(
+                                if (photo) R.string.media_photo_hero_label
+                                else R.string.media_video_hero_label
+                            ),
                         value =
                             if (!photo && known > 0) byteText(known)
                             else "%,d".format(library.size),
                         detail =
-                            if (photo) "A little less clutter. The moments stay yours."
-                            else "Review the clips taking up room.",
+                            stringResource(
+                                if (photo) R.string.media_photo_hero_detail
+                                else R.string.media_video_hero_detail
+                            ),
                         icon =
                             if (photo) Icons.Outlined.PhotoLibrary else Icons.Outlined.VideoLibrary,
                         hue = hue,
                     )
                     PrimaryButton(
-                        if (library.isEmpty()) "Scan library"
-                        else if (savedMeasurements > 0) "Continue comparison"
-                        else "Find duplicates",
+                        stringResource(
+                            if (library.isEmpty()) R.string.media_scan_library
+                            else if (savedMeasurements > 0) R.string.media_continue_comparison
+                            else R.string.media_find_duplicates
+                        ),
                         enabled = !busy,
                     ) {
                         if (library.isEmpty()) actions.scanPhotos() else model.analyze()
                     }
                     if (library.isNotEmpty()) {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                            QuickAction("Compare groups", Icons.Outlined.FilterNone) {
+                            QuickAction(
+                                stringResource(R.string.media_compare_groups),
+                                Icons.Outlined.FilterNone,
+                            ) {
                                 actions.open("groups")
                             }
                             if (photo)
                                 QuickAction(
-                                    "Similar shots",
+                                    stringResource(R.string.media_similar_shots),
                                     Icons.Outlined.ImageSearch,
                                     enabled = !busy,
                                 ) {
                                     model.findSimilar()
                                 }
                             else
-                                QuickAction("Largest first", Icons.Outlined.ArrowDownward) {
+                                QuickAction(
+                                    stringResource(R.string.media_largest_first),
+                                    Icons.Outlined.ArrowDownward,
+                                ) {
                                     filters.order = "Largest"
                                 }
                         }
@@ -461,7 +507,7 @@ fun MediaLibrary(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                                             m,
                                             detail =
                                                 if (filters.category == title)
-                                                    "Showing this collection"
+                                                    stringResource(R.string.media_showing_collection)
                                                 else null,
                                             hue = hue,
                                             selected = filters.category == title,
@@ -476,14 +522,19 @@ fun MediaLibrary(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                     }
                     if (library.isEmpty())
                         CleanerNotice(
-                            "Choose which photos and videos Cleaner can see when you scan. Originals stay in your library.",
+                            stringResource(R.string.media_library_empty_notice),
                             Icons.Outlined.PhotoLibrary,
                         )
                     else {
                         SearchInput(
-                            "Search ${if (photo) "photos" else "videos"}",
+                            stringResource(
+                                if (photo) R.string.media_search_photos else R.string.media_search_videos
+                            ),
                             state = filters.search,
                         )
+                        val clearDate = stringResource(R.string.media_clear_date_filter)
+                        val clearCollection = stringResource(R.string.media_clear_collection_filter)
+                        val resetSort = stringResource(R.string.media_reset_sort)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                             if (filters.dateMode != MediaDateFilter.ANY)
                                 FilterChip(
@@ -493,7 +544,7 @@ fun MediaLibrary(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                                     trailingIcon = { Icon(Icons.Outlined.Close, null) },
                                     modifier =
                                         Modifier.testTag("cleaner-date-active").semantics {
-                                            contentDescription = "Clear date filter"
+                                            contentDescription = clearDate
                                         },
                                 )
                             if (filters.category != "All")
@@ -504,33 +555,34 @@ fun MediaLibrary(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                                     trailingIcon = { Icon(Icons.Outlined.Close, null) },
                                     modifier =
                                         Modifier.semantics {
-                                            contentDescription = "Clear collection filter"
+                                            contentDescription = clearCollection
                                         },
                                 )
                             measureChips(filters, kind).forEach { (label, clear) ->
+                                val description = stringResource(R.string.media_clear_filter, label)
                                 FilterChip(
                                     selected = true,
                                     onClick = clear,
                                     label = { Text(label) },
                                     trailingIcon = { Icon(Icons.Outlined.Close, null) },
                                     modifier =
-                                        Modifier.semantics { contentDescription = "Clear filter: $label" },
+                                        Modifier.semantics { contentDescription = description },
                                 )
                             }
                             if (filters.order != "Newest")
                                 FilterChip(
                                     selected = true,
                                     onClick = { filters.order = "Newest" },
-                                    label = { Text("Largest first") },
+                                    label = { Text(stringResource(R.string.media_largest_first)) },
                                     trailingIcon = { Icon(Icons.Outlined.Close, null) },
                                     modifier =
                                         Modifier.semantics {
-                                            contentDescription = "Reset sort to newest"
+                                            contentDescription = resetSort
                                         },
                                 )
                         }
                         SectionRule(
-                            if (filters.category == "All") "Browse your library"
+                            if (filters.category == "All") stringResource(R.string.media_browse_library)
                             else collectionLabel(filters.category)
                         ) {
                             Text(
@@ -539,11 +591,17 @@ fun MediaLibrary(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                        if (filters.category == "Large")
+                            Text(
+                                stringResource(R.string.media_large_note, byteText(filters.largeFrom(kind))),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         if (shown.isEmpty())
                             EmptyState(
-                                if (filters.query.isEmpty()) "Nothing in this collection"
-                                else "No results for “${filters.query}”",
-                                "Try another collection or search.",
+                                if (filters.query.isEmpty()) stringResource(R.string.media_empty_collection)
+                                else stringResource(R.string.media_no_results, filters.query),
+                                stringResource(R.string.media_empty_hint),
                                 icon = Icons.Outlined.Search,
                             )
                     }
@@ -567,7 +625,7 @@ fun MediaLibrary(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { model.selected.value = allSelected - selected }) {
-                            Icon(Icons.Outlined.Close, "Clear selection")
+                            Icon(Icons.Outlined.Close, stringResource(R.string.media_clear_selection_short))
                         }
                         Text(
                             count(R.plurals.selected, selected.size),
@@ -581,7 +639,7 @@ fun MediaLibrary(model: CleanerModel, kind: MediaKind, filters: LibraryFilters) 
                                         shown.map { it.id }.toSet()
                             }
                         ) {
-                            Text("Select visible")
+                            Text(stringResource(R.string.media_select_visible))
                         }
                     }
                     DecisionButtons(enabled = !busy) { model.decide(selected, it) }
@@ -600,9 +658,9 @@ fun DecisionButtons(
     if (selected != null) {
         ConnectedChoice(
             listOf(
-                ReviewDecision.KEEP to "Keep",
-                ReviewDecision.LATER to "Later",
-                ReviewDecision.REMOVE to "Queue removal",
+                ReviewDecision.KEEP to stringResource(R.string.media_decision_keep),
+                ReviewDecision.LATER to stringResource(R.string.media_decision_later),
+                ReviewDecision.REMOVE to stringResource(R.string.media_queue_removal),
             ),
             selected,
             enabled = enabled,
@@ -615,10 +673,10 @@ fun DecisionButtons(
         verticalArrangement = Arrangement.spacedBy(Space.s),
     ) {
         OutlinedButton(onClick = { decide(ReviewDecision.KEEP) }, enabled = enabled) {
-            Text("Keep")
+            Text(stringResource(R.string.media_decision_keep))
         }
         OutlinedButton(onClick = { decide(ReviewDecision.LATER) }, enabled = enabled) {
-            Text("Later")
+            Text(stringResource(R.string.media_decision_later))
         }
         OutlinedButton(
             onClick = { decide(ReviewDecision.REMOVE) },
@@ -626,16 +684,18 @@ fun DecisionButtons(
             colors =
                 ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
         ) {
-            Text("Queue removal")
+            Text(stringResource(R.string.media_queue_removal))
         }
     }
 }
 
+@Composable
+@ReadOnlyComposable
 private fun decisionLabel(decision: ReviewDecision) =
     when (decision) {
-        ReviewDecision.KEEP -> "Keep"
-        ReviewDecision.LATER -> "Later"
-        ReviewDecision.REMOVE -> "Remove"
+        ReviewDecision.KEEP -> stringResource(R.string.media_decision_keep)
+        ReviewDecision.LATER -> stringResource(R.string.media_decision_later)
+        ReviewDecision.REMOVE -> stringResource(R.string.media_decision_remove)
         ReviewDecision.UNDECIDED -> ""
     }
 
@@ -659,8 +719,8 @@ fun MediaTile(
         Column(Modifier.padding(Space.ms), verticalArrangement = Arrangement.spacedBy(Space.s)) {
             Column(
                 Modifier.combinedClickable(
-                    onClickLabel = "Review",
-                    onLongClickLabel = "Select",
+                    onClickLabel = stringResource(R.string.media_review_label),
+                    onLongClickLabel = stringResource(R.string.media_select_label),
                     onLongClick = { model.toggle(item.id) },
                 ) {
                     if (
@@ -713,7 +773,7 @@ fun MediaTile(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            "Favorite",
+                            stringResource(R.string.media_favorite),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -725,10 +785,11 @@ fun MediaTile(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 Spacer(Modifier.weight(1f))
+                val selectItem = stringResource(R.string.media_select_item, item.name)
                 Checkbox(
                     checked = isSelected,
                     onCheckedChange = { model.toggle(item.id) },
-                    modifier = Modifier.semantics { contentDescription = "Select ${item.name}" },
+                    modifier = Modifier.semantics { contentDescription = selectItem },
                 )
             }
         }
@@ -754,7 +815,7 @@ fun MediaRow(
                 if (item.favorite)
                     Icon(
                         Icons.Outlined.Favorite,
-                        "Favorite; protected from batch removal",
+                        stringResource(R.string.media_favorite_protected),
                         Modifier.size(16.dp),
                     )
             }
@@ -807,12 +868,15 @@ fun GroupsScreen(model: CleanerModel) {
         item {
             Readable {
                 CleanerHero(
-                    "A closer look",
+                    stringResource(R.string.media_groups_hero_label),
                     "%,d".format(groups.size),
-                    "Matching groups. You choose what stays.",
+                    stringResource(R.string.media_groups_hero_detail),
                     Icons.Outlined.FilterNone,
                 )
-                PrimaryButton("Select suggested exact copies", enabled = groups.isNotEmpty()) {
+                PrimaryButton(
+                    stringResource(R.string.media_select_suggested),
+                    enabled = groups.isNotEmpty(),
+                ) {
                     model.smartSelect()
                 }
                 if (selected.isNotEmpty())
@@ -822,7 +886,9 @@ fun GroupsScreen(model: CleanerModel) {
                     ) {
                         Text(count(R.plurals.queue, selected.size))
                     }
-                TextButton(onClick = { actions.open("pending") }) { Text("Review pending removal") }
+                TextButton(onClick = { actions.open("pending") }) {
+                    Text(stringResource(R.string.media_review_pending))
+                }
             }
         }
         items(groups, key = { it.id }) { group ->
@@ -830,8 +896,10 @@ fun GroupsScreen(model: CleanerModel) {
             Readable(Modifier.padding(top = Space.l)) {
                 Column(verticalArrangement = Arrangement.spacedBy(Space.ms)) {
                     SectionRule(
-                        if (group.kind == MatchKind.IDENTICAL_RESOURCES) "Identical files"
-                        else "Similar moments"
+                        stringResource(
+                            if (group.kind == MatchKind.IDENTICAL_RESOURCES) R.string.media_identical_files
+                            else R.string.media_similar_moments
+                        )
                     )
                     val members =
                         group.members.mapNotNull { id -> media.firstOrNull { it.id == id } }
@@ -853,7 +921,7 @@ fun GroupsScreen(model: CleanerModel) {
                             .toTypedArray()
                     )
                     TextButton(onClick = { why = !why }) {
-                        Text("Why these match")
+                        Text(stringResource(R.string.media_why_match))
                         Icon(
                             if (why) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
                             null,
@@ -870,13 +938,11 @@ fun GroupsScreen(model: CleanerModel) {
         }
         item {
             Readable(Modifier.padding(top = Space.l)) {
-                CleanerNotice(
-                    "Similar photos can show different moments. Matching bytes can still have different dates or folders."
-                )
+                CleanerNotice(stringResource(R.string.media_groups_notice))
                 if (groups.isEmpty())
                     EmptyState(
-                        "No groups yet",
-                        "Run an exact or similar scan from Photos or Videos.",
+                        stringResource(R.string.media_no_groups),
+                        stringResource(R.string.media_no_groups_hint),
                         icon = Icons.Outlined.FilterNone,
                     )
             }
@@ -906,9 +972,9 @@ fun PendingScreen(model: CleanerModel) {
         item {
             Readable {
                 CleanerHero(
-                    "Nothing deleted yet",
+                    stringResource(R.string.media_pending_hero_label),
                     "%,d".format(items.size),
-                    "Items queued for your final review.",
+                    stringResource(R.string.media_pending_hero_detail),
                     Icons.Outlined.Inbox,
                     hue = Hues.warm,
                 )
@@ -921,9 +987,8 @@ fun PendingScreen(model: CleanerModel) {
                     item,
                     note =
                         when (status) {
-                            RemovalStatus.CHANGED ->
-                                "Changed since you queued it. Review it, then confirm again."
-                            RemovalStatus.FAVORITE -> "A favorite now, so it won’t be deleted."
+                            RemovalStatus.CHANGED -> stringResource(R.string.media_pending_changed)
+                            RemovalStatus.FAVORITE -> stringResource(R.string.media_pending_favorite)
                             else -> null
                         },
                     caution = status != RemovalStatus.READY,
@@ -936,12 +1001,17 @@ fun PendingScreen(model: CleanerModel) {
                                 enabled = !busy,
                                 modifier = Modifier.testTag("pending-confirm-${item.name}"),
                             ) {
-                                Text("Confirm")
+                                Text(stringResource(R.string.media_confirm))
                             }
                         TextButton(
                             onClick = { model.decide(setOf(item.id), ReviewDecision.UNDECIDED) }
                         ) {
-                            Text(if (status == RemovalStatus.READY) "Undo" else "Remove from queue")
+                            Text(
+                                stringResource(
+                                    if (status == RemovalStatus.READY) R.string.media_undo
+                                    else R.string.media_remove_from_queue
+                                )
+                            )
                         }
                     }
                 }
@@ -949,9 +1019,7 @@ fun PendingScreen(model: CleanerModel) {
         }
         item {
             Readable(Modifier.padding(top = Space.m)) {
-                CleanerNotice(
-                    "Deleted items go to the trash, where Android keeps them for 30 days and they keep using storage. A cloud backup may keep its own copy. Favorites are protected."
-                )
+                CleanerNotice(stringResource(R.string.media_trash_notice))
                 if (held > 0) CleanerNotice(count(R.plurals.held, held), caution = true)
                 OutlinedButton(
                     onClick = { approved = ready.map { it.id }.toSet() },
@@ -962,13 +1030,8 @@ fun PendingScreen(model: CleanerModel) {
                         ),
                     modifier = Modifier.fillMaxWidth().testTag("cleaner.delete"),
                 ) {
-                    Text("Delete reviewed items…")
+                    Text(stringResource(R.string.media_delete_reviewed))
                 }
-                if (Build.VERSION.SDK_INT < 30)
-                    CleanerNotice(
-                        "Moving media to the trash needs Android 11 or later.",
-                        caution = true,
-                    )
             }
         }
     }
@@ -977,9 +1040,7 @@ fun PendingScreen(model: CleanerModel) {
             onDismissRequest = { approved = null },
             title = { Text(count(R.plurals.delete, ids.size)) },
             text = {
-                Text(
-                    "Android asks you to confirm next. You can restore them from the trash for 30 days."
-                )
+                Text(stringResource(R.string.media_delete_confirm_body))
             },
             confirmButton = {
                 TextButton(
@@ -992,10 +1053,14 @@ fun PendingScreen(model: CleanerModel) {
                             contentColor = MaterialTheme.colorScheme.error
                         ),
                 ) {
-                    Text("Move to trash")
+                    Text(stringResource(R.string.media_move_to_trash))
                 }
             },
-            dismissButton = { TextButton(onClick = { approved = null }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { approved = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
         )
     }
 }
@@ -1007,8 +1072,8 @@ fun ActivityScreen(model: CleanerModel) {
         if (state.history.isEmpty())
             item {
                 EmptyState(
-                    "Your review history",
-                    "Completed scans and actions appear here.",
+                    stringResource(R.string.media_history_empty),
+                    stringResource(R.string.media_history_empty_hint),
                     icon = Icons.Outlined.History,
                 )
             }
@@ -1044,8 +1109,8 @@ fun MediaDetail(model: CleanerModel, id: String) {
     val item = media.firstOrNull { it.id == id }
     if (item == null) {
         EmptyState(
-            "Not in the library any more",
-            "This item was removed or changed since the scan.",
+            stringResource(R.string.media_missing),
+            stringResource(R.string.media_missing_hint),
             icon = Icons.Outlined.ImageNotSupported,
         )
         return
@@ -1062,18 +1127,27 @@ fun MediaDetail(model: CleanerModel, id: String) {
                     }
                 val image = bitmap
                 if (image != null)
-                    ZoomImage(image, "Photo ${item.name}", Modifier.fillMaxWidth().height(360.dp))
+                    ZoomImage(
+                        image,
+                        stringResource(R.string.media_photo_description, item.name),
+                        Modifier.fillMaxWidth().height(360.dp),
+                    )
                 else
                     EmptyState(
-                        "Preview unavailable",
-                        "The original can’t be read right now.",
+                        stringResource(R.string.media_preview_unavailable),
+                        stringResource(R.string.media_preview_unavailable_hint),
                         icon = Icons.Outlined.Image,
                     )
             }
             Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
                 Text(item.name, style = MaterialTheme.typography.titleLarge)
                 Text(
-                    "${"%,d".format(item.width)} × ${"%,d".format(item.height)} · ${byteText(item.bytes)}",
+                    stringResource(
+                        R.string.media_dimensions_size,
+                        "%,d".format(item.width),
+                        "%,d".format(item.height),
+                        byteText(item.bytes),
+                    ),
                     style = MaterialTheme.typography.bodySmall.numeric(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1100,26 +1174,32 @@ fun MediaDetail(model: CleanerModel, id: String) {
                 model.decide(setOf(item.id), it)
             }
             if (item.kind == MediaKind.PHOTO) {
-                PrimaryButton("Inspect compression", enabled = !busy) { model.compress(item) }
+                PrimaryButton(stringResource(R.string.media_inspect_compression), enabled = !busy) {
+                    model.compress(item)
+                }
                 Text(
-                    "Original retained. Inspect the actual output before saving a copy.",
+                    stringResource(R.string.media_original_retained),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             if (item.kind == MediaKind.VIDEO) {
-                PrimaryButton("Trim or compress", enabled = !busy) { model.openVideo(item) }
-            }
-            if (Build.VERSION.SDK_INT >= 30)
-                TextButton(onClick = { model.setFavorite(item) }, enabled = !busy) {
-                    Icon(
-                        if (item.favorite) Icons.Outlined.HeartBroken
-                        else Icons.Outlined.FavoriteBorder,
-                        null,
-                    )
-                    Spacer(Modifier.width(Space.s))
-                    Text(if (item.favorite) "Remove favorite" else "Mark favorite")
+                PrimaryButton(stringResource(R.string.media_trim_or_compress), enabled = !busy) {
+                    model.openVideo(item)
                 }
+            }
+            TextButton(onClick = { model.setFavorite(item) }, enabled = !busy) {
+                Icon(
+                    if (item.favorite) Icons.Outlined.HeartBroken else Icons.Outlined.FavoriteBorder,
+                    null,
+                )
+                Spacer(Modifier.width(Space.s))
+                Text(
+                    stringResource(
+                        if (item.favorite) R.string.media_remove_favorite else R.string.media_mark_favorite
+                    )
+                )
+            }
         }
     }
 }
@@ -1142,12 +1222,17 @@ internal fun VideoPreview(item: CleanupItem) {
     var view by remember { mutableStateOf<SpeedVideoView?>(null) }
     if (failed) {
         EmptyState(
-            "Preview unavailable",
-            "This video can’t be played here.",
+            stringResource(R.string.media_preview_unavailable),
+            stringResource(R.string.media_video_unavailable_hint),
             icon = Icons.Outlined.Videocam,
         )
         return
     }
+    val description = stringResource(R.string.media_video_description, item.name)
+    val speeds =
+        listOf(0.5f, 1f, 1.5f, 2f).map {
+            it to stringResource(R.string.media_speed, java.text.NumberFormat.getInstance().format(it))
+        }
     AndroidView(
         factory = { context ->
             SpeedVideoView(context).apply {
@@ -1163,7 +1248,7 @@ internal fun VideoPreview(item: CleanupItem) {
                     true
                 }
                 setVideoURI(item.id.toUri())
-                contentDescription = "Video ${item.name}"
+                contentDescription = description
                 view = this
             }
         },
@@ -1180,7 +1265,7 @@ internal fun VideoPreview(item: CleanupItem) {
                 .clip(MaterialTheme.shapes.medium),
         onRelease = { it.stopPlayback() },
     )
-    ConnectedChoice(listOf(0.5f to "0.5×", 1f to "1×", 1.5f to "1.5×", 2f to "2×"), rate) { value ->
+    ConnectedChoice(speeds, rate) { value ->
         rate = value
         view?.speed = value
     }

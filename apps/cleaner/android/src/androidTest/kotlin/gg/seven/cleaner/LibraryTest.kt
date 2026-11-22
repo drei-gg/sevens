@@ -254,7 +254,7 @@ class LibraryTest {
         )
         val directory = File(context.cacheDir, "candidate-test-${UUID.randomUUID()}")
         val candidate =
-            ImageCompression.makeCandidate(photos.originalStill(item, directory), directory)
+            ImageCompression.makeCandidate(context, photos.originalStill(item, directory), directory)
         assertEquals(1200, candidate.assessment.output.width)
         assertTrue(
             candidate.assessment.issues.toString(),
@@ -268,6 +268,7 @@ class LibraryTest {
         assertEquals(item.date, copy.date)
         val resized =
             ImageCompression.makeCandidate(
+                context,
                 candidate.source,
                 directory,
                 size = ImageSizeProfile.SMALL,

@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             SevenTheme {
                 val model: CleanerModel = viewModel()
-                SevenRoot(model.store, CleanerContent) { CleanerApp(model) }
+                SevenRoot(model.store, cleanerContent()) { CleanerApp(model) }
             }
         }
     }

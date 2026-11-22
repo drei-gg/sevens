@@ -170,6 +170,29 @@ fn keeper_suggestion_names_the_deciding_rule() {
 }
 
 #[test]
+fn large_lists_largest_first_from_its_minimum() {
+    let sized = |id: &str, bytes: Option<i64>| CleanupItem { bytes, ..item(id) };
+    let items = vec![
+        sized("small", Some(4_000_000)),
+        sized("tie-a", Some(12_000_000)),
+        sized("unknown", None),
+        sized("huge", Some(80_000_000)),
+        sized("tie-b", Some(12_000_000)),
+        sized("edge", Some(10_000_000)),
+    ];
+    let ids = |list: Vec<CleanupItem>| list.into_iter().map(|i| i.id).collect::<Vec<_>>();
+    assert_eq!(
+        ids(large_items(items.clone(), 10_000_000)),
+        ["huge", "tie-a", "tie-b", "edge"]
+    );
+    assert_eq!(
+        ids(large_items(items.clone(), 2_000_000)),
+        ["huge", "tie-a", "tie-b", "edge", "small"]
+    );
+    assert_eq!(ids(large_items(items, 100_000_000)), Vec::<String>::new());
+}
+
+#[test]
 fn media_filters_never_treat_unknown_as_zero() {
     let photo = |bytes: Option<i64>, w, h| CleanupItem {
         bytes,
@@ -186,6 +209,20 @@ fn media_filters_never_treat_unknown_as_zero() {
         ..item("v")
     };
     assert!(!media_is_large(&video), "videos need 100 MB");
+
+    // An adjustable minimum: still never counts an unknown size, and a known empty file is not
+    // large even at the smallest minimum.
+    assert!(media_is_large_from(&video, 50_000_000));
+    assert!(!media_is_large_from(&photo(None, 0, 0), 0));
+    assert!(!media_is_large_from(&photo(Some(0), 0, 0), 0));
+    assert!(media_is_large_from(&photo(Some(1), 0, 0), -5));
+    assert_eq!(large_minimum_default(MediaKind::Photo), 10_000_000);
+    assert_eq!(large_minimum_default(MediaKind::Video), 100_000_000);
+    for kind in [MediaKind::Photo, MediaKind::Video] {
+        let choices = large_minimum_choices(kind);
+        assert!(choices.contains(&large_minimum_default(kind)));
+        assert!(choices.windows(2).all(|w| w[0] < w[1]));
+    }
 
     assert!(media_resolution_matches(
         2160,

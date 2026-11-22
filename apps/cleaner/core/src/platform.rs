@@ -283,11 +283,34 @@ pub fn psnr_scores(tiles: &[TileError]) -> PsnrScores {
     }
 }
 
-const PROFILE_SOURCE: &str = "This profile accepts JPEG or PNG stills up to 16 megapixels. Other profiles still need validation.";
+const PROFILE_SOURCE: &str = "This profile accepts JPEG or PNG stills up to 16 megapixels and HEIC stills up to 50 megapixels. Other formats still need validation.";
 const PROFILE_PIXELS: &str = "This profile preserves 8-bit sRGB images without transparency. This image needs a different profile.";
 
-/// The initial profile's source gate, in Swift's order: quality 0.9...1, one frame, JPEG or PNG,
-/// positive dimensions, at most 16 MP.
+/// The most pixels a still profile accepts, by type identifier; zero for a type it refuses.
+/// HEIC reaches 50 MP so a 24 or 48 MP iPhone photo qualifies; JPEG and PNG keep the first
+/// profile's 16 MP.
+#[uniffi::export]
+pub fn still_profile_pixel_limit(type_identifier: String) -> i64 {
+    match type_identifier.as_str() {
+        "public.jpeg" | "public.png" => 16_000_000,
+        "public.heic" => 50_000_000,
+        _ => 0,
+    }
+}
+
+/// The candidate's format: HEIC stays HEIC (its auxiliary images and wide colour need it), JPEG
+/// and PNG become JPEG as before.
+#[uniffi::export]
+pub fn still_output_type(type_identifier: String) -> String {
+    if type_identifier == "public.heic" {
+        "public.heic".into()
+    } else {
+        "public.jpeg".into()
+    }
+}
+
+/// The still profiles' source gate, in Swift's order: quality 0.9...1, one frame, JPEG, PNG or
+/// HEIC, positive dimensions, within the type's pixel limit.
 #[uniffi::export]
 pub fn check_compression_source(
     quality: f64,
@@ -296,12 +319,13 @@ pub fn check_compression_source(
     width: i64,
     height: i64,
 ) -> Result<(), CleanerError> {
+    let limit = still_profile_pixel_limit(type_identifier);
     let accepted = (0.9..=1.0).contains(&quality)
         && frame_count == 1
-        && (type_identifier == "public.jpeg" || type_identifier == "public.png")
+        && limit > 0
         && width > 0
         && height > 0
-        && width <= 16_000_000 / height;
+        && width <= limit / height;
     if accepted {
         Ok(())
     } else {
@@ -321,6 +345,125 @@ pub fn check_compression_pixels(
     } else {
         Err(blocked(PROFILE_PIXELS))
     }
+}
+
+/// A still's colour space as the platform decoded it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum StillColorSpace {
+    Srgb,
+    DisplayP3,
+    Other,
+}
+
+/// The HEIC profile's pixel gate: 8 bits per component, no alpha, sRGB, or Display P3 where the
+/// platform's encoder keeps it (iPhone photos are Display P3; Android's HEIC encoder writes sRGB).
+#[uniffi::export]
+pub fn check_heic_pixels(
+    bits_per_component: i32,
+    color_space: StillColorSpace,
+    has_alpha: bool,
+    keeps_display_p3: bool,
+) -> Result<(), CleanerError> {
+    let colour = match color_space {
+        StillColorSpace::Srgb => true,
+        StillColorSpace::DisplayP3 => keeps_display_p3,
+        StillColorSpace::Other => false,
+    };
+    if bits_per_component == 8 && colour && !has_alpha {
+        Ok(())
+    } else if keeps_display_p3 {
+        Err(blocked(
+            "This HEIC profile preserves 8-bit sRGB or Display P3 images without transparency. This image needs a different profile.",
+        ))
+    } else {
+        Err(blocked(
+            "This phone’s HEIC copies preserve 8-bit sRGB images without transparency. This image needs a different profile.",
+        ))
+    }
+}
+
+/// An image stored beside a HEIC's primary image. `Unidentified` is one the platform can see but
+/// not name (Android's file check), so it can never be carried.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, uniffi::Enum)]
+pub enum AuxiliaryImage {
+    Depth,
+    Disparity,
+    PortraitMatte,
+    SkinMatte,
+    HairMatte,
+    TeethMatte,
+    GlassesMatte,
+    SkyMatte,
+    HdrGainMap,
+    IsoGainMap,
+    Unidentified,
+}
+
+fn auxiliary_name(kind: AuxiliaryImage) -> &'static str {
+    match kind {
+        AuxiliaryImage::Depth => "depth",
+        AuxiliaryImage::Disparity => "disparity",
+        AuxiliaryImage::PortraitMatte => "portrait matte",
+        AuxiliaryImage::SkinMatte => "skin matte",
+        AuxiliaryImage::HairMatte => "hair matte",
+        AuxiliaryImage::TeethMatte => "teeth matte",
+        AuxiliaryImage::GlassesMatte => "glasses matte",
+        AuxiliaryImage::SkyMatte => "sky matte",
+        AuxiliaryImage::HdrGainMap => "HDR gain map",
+        AuxiliaryImage::IsoGainMap => "ISO gain map",
+        AuxiliaryImage::Unidentified => "auxiliary image",
+    }
+}
+
+fn auxiliary_list(kinds: &[AuxiliaryImage]) -> String {
+    let names: Vec<&str> = kinds.iter().map(|k| auxiliary_name(*k)).collect();
+    match names.split_last() {
+        None => String::new(),
+        Some((last, [])) => (*last).to_string(),
+        Some((last, rest)) => format!("{} and {}", rest.join(", "), last),
+    }
+}
+
+fn sorted_kinds(kinds: Vec<AuxiliaryImage>) -> Vec<AuxiliaryImage> {
+    let mut kinds = kinds;
+    kinds.sort();
+    kinds.dedup();
+    kinds
+}
+
+/// Refuses before encoding when the source has an auxiliary image the platform cannot carry into
+/// the copy. Nothing is dropped silently: the original stays and the reason names what's there.
+#[uniffi::export]
+pub fn check_auxiliary_images(
+    present: Vec<AuxiliaryImage>,
+    carried: Vec<AuxiliaryImage>,
+) -> Result<(), CleanerError> {
+    let missing: Vec<AuxiliaryImage> = sorted_kinds(present)
+        .into_iter()
+        .filter(|kind| *kind == AuxiliaryImage::Unidentified || !carried.contains(kind))
+        .collect();
+    if missing.is_empty() {
+        Ok(())
+    } else {
+        Err(blocked(&format!(
+            "This photo has {} that this copy can’t carry yet. Keep the original; nothing was changed.",
+            auxiliary_list(&missing)
+        )))
+    }
+}
+
+/// Assessment issues for auxiliary images the saved copy lost: each kind in the source that the
+/// platform did not find intact in the read-back output.
+#[uniffi::export]
+pub fn auxiliary_image_issues(
+    source: Vec<AuxiliaryImage>,
+    kept: Vec<AuxiliaryImage>,
+) -> Vec<String> {
+    sorted_kinds(source)
+        .into_iter()
+        .filter(|kind| !kept.contains(kind))
+        .map(|kind| format!("Auxiliary image not kept: {}.", auxiliary_name(kind)))
+        .collect()
 }
 
 /// The refusal when an image carries depth, matte or HDR gain-map data.

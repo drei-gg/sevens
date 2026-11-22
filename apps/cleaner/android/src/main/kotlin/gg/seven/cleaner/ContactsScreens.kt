@@ -1,5 +1,6 @@
 package gg.seven.cleaner
 
+import androidx.compose.ui.res.stringResource
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.*
@@ -54,8 +55,9 @@ fun ContactsScreen(model: CleanerModel) {
             (!incomplete || contactIsIncomplete(it)) &&
                 (query.isEmpty() || it.name.contains(query, ignoreCase = true))
         }
-    val countries = remember {
-        listOf("" to "Not specified") +
+    val notSpecified = stringResource(R.string.contacts_country_not_specified)
+    val countries = remember(notSpecified) {
+        listOf("" to notSpecified) +
             Locale.getISOCountries()
                 .map { it to Locale("", it).displayCountry }
                 .sortedBy { it.second }
@@ -64,22 +66,24 @@ fun ContactsScreen(model: CleanerModel) {
         item {
             Readable {
                 CleanerHero(
-                    if (records.isEmpty()) "People, neatly kept" else "Possible matches",
-                    if (records.isEmpty()) "Familiar faces." else "%,d".format(matches.size),
-                    "Compare the details. Keep every person distinct.",
+                    if (records.isEmpty()) stringResource(R.string.contacts_hero_empty_label)
+                    else stringResource(R.string.contacts_possible_matches),
+                    if (records.isEmpty()) stringResource(R.string.contacts_hero_empty_value)
+                    else "%,d".format(matches.size),
+                    stringResource(R.string.contacts_hero_detail),
                     Icons.Outlined.Contacts,
                     big = records.isNotEmpty(),
                 )
                 if (records.isEmpty())
-                    PrimaryButton("Scan contacts", enabled = !busy) {
+                    PrimaryButton(stringResource(R.string.contacts_scan), enabled = !busy) {
                         actions.scanContacts(region.ifEmpty { null })
                     }
                 else {
-                    PrimaryButton("Compare contacts") { actions.open("contactGroups") }
+                    PrimaryButton(stringResource(R.string.contacts_compare)) { actions.open("contactGroups") }
                     CleanerTiles(
                         { m ->
                             CleanerStat(
-                                "Contact records",
+                                stringResource(R.string.contacts_records),
                                 "%,d".format(records.size),
                                 Icons.Outlined.Badge,
                                 m,
@@ -87,13 +91,13 @@ fun ContactsScreen(model: CleanerModel) {
                         },
                         { m ->
                             CleanerStat(
-                                "Missing details",
+                                stringResource(R.string.contacts_missing_details),
                                 "%,d".format(records.count(::contactIsIncomplete)),
                                 Icons.Outlined.PersonSearch,
                                 m,
                                 detail =
-                                    if (incomplete) "Showing incomplete entries"
-                                    else "Worth a closer look",
+                                    if (incomplete) stringResource(R.string.contacts_showing_incomplete)
+                                    else stringResource(R.string.contacts_worth_a_look),
                                 selected = incomplete,
                             ) {
                                 incomplete = !incomplete
@@ -101,10 +105,18 @@ fun ContactsScreen(model: CleanerModel) {
                         },
                     )
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                        QuickAction("Scan contacts", Icons.Outlined.Refresh, enabled = !busy) {
+                        QuickAction(
+                            stringResource(R.string.contacts_scan),
+                            Icons.Outlined.Refresh,
+                            enabled = !busy,
+                        ) {
                             actions.scanContacts(region.ifEmpty { null })
                         }
-                        QuickAction("Export fields", Icons.Outlined.Share, enabled = !busy) {
+                        QuickAction(
+                            stringResource(R.string.contacts_export_fields),
+                            Icons.Outlined.Share,
+                            enabled = !busy,
+                        ) {
                             model.exportContacts()
                         }
                     }
@@ -113,7 +125,7 @@ fun ContactsScreen(model: CleanerModel) {
                     OutlinedButton(onClick = { share(context, file) }, Modifier.fillMaxWidth()) {
                         Icon(Icons.Outlined.Share, null)
                         Spacer(Modifier.width(Space.s))
-                        Text("Share partial contact archive")
+                        Text(stringResource(R.string.contacts_share_partial))
                     }
                 }
                 savedArchive?.let { archive ->
@@ -127,7 +139,7 @@ fun ContactsScreen(model: CleanerModel) {
                 Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                     CountryField(region, countries) { region = it }
                     Text(
-                        "Choose a country to compare local numbers. Without one, international numbers and email addresses are compared.",
+                        stringResource(R.string.contacts_country_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -135,29 +147,32 @@ fun ContactsScreen(model: CleanerModel) {
                 val current = snapshot
                 if (current == null)
                     CleanerNotice(
-                        "Permission is requested when you scan. Contact comparison happens on this phone.",
+                        stringResource(R.string.contacts_permission_note),
                         Icons.Outlined.PanTool,
                     )
                 else {
                     if (current.limited)
                         CleanerNotice(
-                            "Only the contacts you allowed are included.",
+                            stringResource(R.string.contacts_limited),
                             Icons.Outlined.HowToReg,
                         )
                     if (contactCrowdedIdentifierCount(current.records) > 0)
                         CleanerNotice(
-                            "Some identifiers are shared by over 100 records. Those groups are not expanded into pairs in this build."
+                            stringResource(R.string.contacts_crowded)
                         )
-                    SearchInput("Search contacts", state = search)
+                    SearchInput(stringResource(R.string.contacts_search), state = search)
                     FilterChip(
                         selected = incomplete,
                         onClick = { incomplete = !incomplete },
-                        label = { Text("Missing details only") },
+                        label = { Text(stringResource(R.string.contacts_missing_only)) },
                     )
-                    SectionRule(if (incomplete) "Missing details" else "Your contacts") {
+                    SectionRule(
+                        if (incomplete) stringResource(R.string.contacts_missing_details)
+                        else stringResource(R.string.contacts_yours)
+                    ) {
                         if (incomplete)
                             TextButton(onClick = { incomplete = false }) {
-                                Text("Show all contacts")
+                                Text(stringResource(R.string.contacts_show_all))
                             }
                     }
                 }
@@ -166,12 +181,14 @@ fun ContactsScreen(model: CleanerModel) {
         items(shown, key = { it.id }) { contact ->
             Readable(Modifier.padding(top = Space.s)) {
                 ListItem(
-                    content = { Text(contact.name.ifEmpty { "Unnamed contact" }) },
+                    content = {
+                        Text(contact.name.ifEmpty { stringResource(R.string.contacts_unnamed) })
+                    },
                     supportingContent = {
                         Text(
                             contact.fields
                                 .firstOrNull { it.key == "email" || it.key == "phone" }
-                                ?.value ?: "Review missing details"
+                                ?.value ?: stringResource(R.string.contacts_review_missing)
                         )
                     },
                     leadingContent = { Icon(Icons.Outlined.AccountCircle, null, tint = Hues.cool) },
@@ -190,7 +207,7 @@ fun ContactsScreen(model: CleanerModel) {
             item {
                 Readable(Modifier.padding(top = Space.l)) {
                     CleanerNotice(
-                        "Archives contain accessible fields. Notes and account relationships are not included. Original contacts are retained.",
+                        stringResource(R.string.contacts_archive_note),
                         Icons.Outlined.Inventory2,
                     )
                 }
@@ -199,11 +216,9 @@ fun ContactsScreen(model: CleanerModel) {
     if (confirmDelete)
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete the saved contact archive?") },
+            title = { Text(stringResource(R.string.contacts_delete_archive_title)) },
             text = {
-                Text(
-                    "This removes Cleaner’s kept copy from this phone. Your contacts and any copies you shared are not changed."
-                )
+                Text(stringResource(R.string.contacts_delete_archive_text))
             },
             confirmButton = {
                 TextButton(
@@ -216,10 +231,14 @@ fun ContactsScreen(model: CleanerModel) {
                             contentColor = MaterialTheme.colorScheme.error
                         ),
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.contacts_delete))
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
         )
 }
 
@@ -237,10 +256,10 @@ private fun SavedArchiveCard(
             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-            Text("Saved contact archive", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.contacts_saved_archive), style = MaterialTheme.typography.titleMedium)
             Text(
                 archive.records?.let { count(R.plurals.archived, it.size) }
-                    ?: "This saved archive cannot be read. You can delete it.",
+                    ?: stringResource(R.string.contacts_saved_unreadable),
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
@@ -251,7 +270,7 @@ private fun SavedArchiveCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "Cleaner keeps your latest export on this phone, outside backups, so you can share it again later, even after the trial. It holds the accessible fields of each contact.",
+                stringResource(R.string.contacts_saved_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -259,7 +278,7 @@ private fun SavedArchiveCard(
                 OutlinedButton(onClick = share, enabled = enabled && archive.records != null) {
                     Icon(Icons.Outlined.Share, null)
                     Spacer(Modifier.width(Space.s))
-                    Text("Share")
+                    Text(stringResource(R.string.contacts_share))
                 }
                 TextButton(
                     onClick = delete,
@@ -269,7 +288,7 @@ private fun SavedArchiveCard(
                             contentColor = MaterialTheme.colorScheme.error
                         ),
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.contacts_delete))
                 }
             }
         }
@@ -282,9 +301,11 @@ private fun share(context: Context, file: File) {
         Intent(Intent.ACTION_SEND)
             .setType("application/json")
             .putExtra(Intent.EXTRA_STREAM, uri)
-            .putExtra(Intent.EXTRA_TITLE, "Partial contact archive")
+            .putExtra(Intent.EXTRA_TITLE, context.getString(R.string.contacts_partial_archive_title))
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    context.startActivity(Intent.createChooser(send, "Share partial contact archive"))
+    context.startActivity(
+        Intent.createChooser(send, context.getString(R.string.contacts_share_partial))
+    )
 }
 
 @Composable
@@ -297,9 +318,9 @@ fun ContactGroupsScreen(model: CleanerModel) {
         item {
             Readable {
                 CleanerHero(
-                    "Possible matches",
+                    stringResource(R.string.contacts_possible_matches),
                     "%,d".format(matches.size),
-                    "A shared number is a clue, not proof.",
+                    stringResource(R.string.contacts_clue_not_proof),
                     Icons.Outlined.People,
                 )
             }
@@ -312,14 +333,14 @@ fun ContactGroupsScreen(model: CleanerModel) {
                     ListItem(
                         content = {
                             Text(
-                                a.name.ifEmpty { "Unnamed contact" },
+                                a.name.ifEmpty { stringResource(R.string.contacts_unnamed) },
                                 style = MaterialTheme.typography.titleMedium,
                             )
                         },
                         supportingContent = {
                             Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
                                 Text(
-                                    b.name.ifEmpty { "Unnamed contact" },
+                                    b.name.ifEmpty { stringResource(R.string.contacts_unnamed) },
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                                 Text(
@@ -340,8 +361,8 @@ fun ContactGroupsScreen(model: CleanerModel) {
         if (matches.isEmpty())
             item {
                 EmptyState(
-                    "No matches yet",
-                    "Scan contacts to compare possible duplicates.",
+                    stringResource(R.string.contacts_no_matches),
+                    stringResource(R.string.contacts_no_matches_detail),
                     icon = Icons.Outlined.People,
                 )
             }
@@ -358,8 +379,8 @@ fun ContactComparisonScreen(model: CleanerModel, matchId: String) {
     val b = records.firstOrNull { it.id == match?.right }
     if (match == null || a == null || b == null) {
         EmptyState(
-            "No longer a candidate",
-            "Scan contacts again to compare.",
+            stringResource(R.string.contacts_no_longer_candidate),
+            stringResource(R.string.contacts_scan_again_compare),
             icon = Icons.Outlined.People,
         )
         return
@@ -374,7 +395,7 @@ fun ContactComparisonScreen(model: CleanerModel, matchId: String) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Readable(Modifier.padding(vertical = Space.l)) {
             Text(
-                "Compare the details",
+                stringResource(R.string.contacts_compare_details),
                 Modifier.semantics { heading() },
                 style = MaterialTheme.typography.headlineMedium,
             )
@@ -398,16 +419,18 @@ fun ContactComparisonScreen(model: CleanerModel, matchId: String) {
                         ContactFieldList(b)
                     }
             }
-            SectionRule("Preservation check")
+            SectionRule(stringResource(R.string.contacts_preservation_check))
             plan.blockers.forEach { CleanerNotice(it, Icons.Outlined.Warning, caution = true) }
             if (plan.conflicts.isNotEmpty())
                 Text(
-                    "Conflicting fields: " +
-                        plan.conflicts.joinToString(", ", transform = ::fieldTitle),
+                    stringResource(
+                        R.string.contacts_conflicting_fields,
+                        plan.conflicts.map { fieldTitle(it) }.joinToString(", "),
+                    ),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             CleanerNotice(
-                "Merging and restoration are still under validation. No source contact is removed by this build.",
+                stringResource(R.string.contacts_merge_not_enabled),
                 Icons.Outlined.HowToReg,
             )
         }
@@ -420,8 +443,8 @@ fun ContactFieldsScreen(model: CleanerModel, id: String) {
     val record = snapshot?.records?.firstOrNull { it.id == id }
     if (record == null) {
         EmptyState(
-            "Contact not found",
-            "Scan contacts again to review it.",
+            stringResource(R.string.contacts_not_found),
+            stringResource(R.string.contacts_scan_again_review),
             icon = Icons.Outlined.AccountCircle,
         )
         return
@@ -431,34 +454,39 @@ fun ContactFieldsScreen(model: CleanerModel, id: String) {
     }
 }
 
-internal fun fieldTitle(key: String): String =
+/** A field key's name on screen; the keys themselves are the archive's and stay as they are. */
+private val fieldTitles =
     mapOf(
-        "givenName" to "First name",
-        "familyName" to "Last name",
-        "middleName" to "Middle name",
-        "previousFamilyName" to "Previous last name",
-        "prefix" to "Prefix",
-        "suffix" to "Suffix",
-        "nickname" to "Nickname",
-        "phoneticGiven" to "Phonetic first name",
-        "phoneticMiddle" to "Phonetic middle name",
-        "phoneticFamily" to "Phonetic last name",
-        "phoneticOrganization" to "Phonetic organization",
-        "phone" to "Phone",
-        "email" to "Email",
-        "organization" to "Organization",
-        "department" to "Department",
-        "birthday" to "Birthday",
-        "date" to "Date",
-        "address" to "Address",
-        "url" to "Website",
-        "relation" to "Relationship",
-        "social" to "Social profile",
-        "instantMessage" to "Messaging",
-        "jobTitle" to "Job title",
-        "contactType" to "Record type",
-        "photo" to "Contact photo",
-    )[key] ?: key
+        "givenName" to R.string.contacts_field_given_name,
+        "familyName" to R.string.contacts_field_family_name,
+        "middleName" to R.string.contacts_field_middle_name,
+        "previousFamilyName" to R.string.contacts_field_previous_family_name,
+        "prefix" to R.string.contacts_field_prefix,
+        "suffix" to R.string.contacts_field_suffix,
+        "nickname" to R.string.contacts_field_nickname,
+        "phoneticGiven" to R.string.contacts_field_phonetic_given,
+        "phoneticMiddle" to R.string.contacts_field_phonetic_middle,
+        "phoneticFamily" to R.string.contacts_field_phonetic_family,
+        "phoneticOrganization" to R.string.contacts_field_phonetic_organization,
+        "phone" to R.string.contacts_field_phone,
+        "email" to R.string.contacts_field_email,
+        "organization" to R.string.contacts_field_organization,
+        "department" to R.string.contacts_field_department,
+        "birthday" to R.string.contacts_field_birthday,
+        "date" to R.string.contacts_field_date,
+        "address" to R.string.contacts_field_address,
+        "url" to R.string.contacts_field_url,
+        "relation" to R.string.contacts_field_relation,
+        "social" to R.string.contacts_field_social,
+        "instantMessage" to R.string.contacts_field_instant_message,
+        "jobTitle" to R.string.contacts_field_job_title,
+        "contactType" to R.string.contacts_field_contact_type,
+        "photo" to R.string.contacts_field_photo,
+    )
+
+@Composable
+@ReadOnlyComposable
+internal fun fieldTitle(key: String): String = fieldTitles[key]?.let { stringResource(it) } ?: key
 
 /** One record's fields in a card (iOS ContactFieldList); values can be selected and copied. */
 @Composable
@@ -471,11 +499,12 @@ fun ContactFieldList(record: ContactRecord, modifier: Modifier = Modifier) {
         Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.m)) {
             Icon(Icons.Outlined.AccountCircle, null, Modifier.size(48.dp), tint = Hues.cool)
             Text(
-                record.name.ifEmpty { "Unnamed contact" },
+                record.name.ifEmpty { stringResource(R.string.contacts_unnamed) },
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(
-                record.container,
+                if (record.container == LOCAL_CONTAINER) stringResource(R.string.contacts_this_phone)
+                else record.container,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -486,7 +515,12 @@ fun ContactFieldList(record: ContactRecord, modifier: Modifier = Modifier) {
                 ) {
                     Text(
                         if (field.label.isEmpty()) fieldTitle(field.key)
-                        else fieldTitle(field.key) + " · " + field.label,
+                        else
+                            stringResource(
+                                R.string.contacts_field_with_label,
+                                fieldTitle(field.key),
+                                field.label,
+                            ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -495,7 +529,10 @@ fun ContactFieldList(record: ContactRecord, modifier: Modifier = Modifier) {
                     }
                 }
             }
-            CleanerNotice("Notes are not read in this build.", Icons.Outlined.StickyNote2)
+            CleanerNotice(
+                stringResource(R.string.contacts_notes_not_read),
+                Icons.Outlined.StickyNote2,
+            )
         }
     }
 }
@@ -524,8 +561,8 @@ private fun CountryField(
                 text = it
                 expanded = true
             },
-            label = { Text("Phone number country") },
-            placeholder = { Text("Not specified") },
+            label = { Text(stringResource(R.string.contacts_country_label)) },
+            placeholder = { Text(stringResource(R.string.contacts_country_not_specified)) },
             singleLine = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier =

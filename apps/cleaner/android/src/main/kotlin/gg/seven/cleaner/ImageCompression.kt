@@ -1,26 +1,37 @@
 package gg.seven.cleaner
 
+import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapRegionDecoder
 import android.graphics.ColorSpace
 import android.graphics.Rect
+import android.media.MediaMetadataRetriever
 import android.os.Build
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import androidx.exifinterface.media.ExifInterface
+import androidx.heifwriter.HeifWriter
+import gg.seven.cleaner.core.AuxiliaryImage
 import gg.seven.cleaner.core.CompressionAssessment
 import gg.seven.cleaner.core.ImageFacts
 import gg.seven.cleaner.core.ImageSizeProfile
+import gg.seven.cleaner.core.StillColorSpace
 import gg.seven.cleaner.core.TileError
 import gg.seven.cleaner.core.auxiliaryDataRefusal
+import gg.seven.cleaner.core.checkAuxiliaryImages
 import gg.seven.cleaner.core.checkCompressionPixels
 import gg.seven.cleaner.core.checkCompressionSource
+import gg.seven.cleaner.core.checkHeicPixels
 import gg.seven.cleaner.core.checkStillCopySpace
 import gg.seven.cleaner.core.imageResizePlan
 import gg.seven.cleaner.core.newCompressionAssessment
 import gg.seven.cleaner.core.psnrScores
+import gg.seven.cleaner.core.stillOutputType
 import gg.seven.cleaner.core.tileError
 import java.io.File
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.util.UUID
 import kotlin.coroutines.coroutineContext
@@ -37,9 +48,11 @@ data class CompressionCandidate(
 )
 
 /**
- * The initial measured profile (iOS ImageCompression): ordinary 8-bit sRGB stills, re-encoded as
- * JPEG at the same dimensions, never replacing the source. The platform reads the facts; the core's
- * profile gates decide, and its assessment scores the saved output, not the encoder's intent.
+ * The measured still profiles (iOS ImageCompression): ordinary 8-bit sRGB JPEG/PNG re-encoded as
+ * JPEG, and 8-bit sRGB HEIC re-encoded as HEIC (HeifWriter), never replacing the source. The
+ * platform reads the facts; the core's profile gates decide, and its assessment scores the saved
+ * output, not the encoder's intent. Android's HEIC encoder writes sRGB pixels and no auxiliary
+ * images, so Display P3, gain-map, depth and matte HEICs are refused rather than flattened.
  */
 object ImageCompression {
     /** Capture metadata the copy claims to keep, compared value for value after saving. */
@@ -103,6 +116,7 @@ object ImageCompression {
         listOf("GContainer", "GDepth:", "hdrgm:", "GCamera:MotionPhoto", "MicroVideo")
 
     suspend fun makeCandidate(
+        context: Context,
         source: File,
         directory: File,
         quality: Double = 0.96,
@@ -111,7 +125,7 @@ object ImageCompression {
         var generated: CompressionCandidate? = null
         try {
             withContext(Dispatchers.Default) {
-                generated = makeCandidateOnWorker(source, directory, quality, size)
+                generated = makeCandidateOnWorker(context.resources, source, directory, quality, size)
             }
             return requireNotNull(generated)
         } catch (failure: Throwable) {
@@ -122,6 +136,7 @@ object ImageCompression {
     }
 
     private suspend fun makeCandidateOnWorker(
+        res: Resources,
         source: File,
         directory: File,
         quality: Double,
@@ -131,16 +146,29 @@ object ImageCompression {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(source.path, bounds)
         val uti = typeIdentifier(bounds.outMimeType)
+        val heic = stillOutputType(uti) == "public.heic"
+        val heif = if (heic) heifFacts(source) else null
         checkCompressionSource(
             quality,
-            frameCount(source, uti),
+            heif?.images ?: frameCount(source, uti),
             uti,
             bounds.outWidth.toLong(),
             bounds.outHeight.toLong(),
         )
         val exif = runCatching { ExifInterface(source) }.getOrNull()
         val xmp = exif?.getAttribute(ExifInterface.TAG_XMP).orEmpty()
-        if (auxiliaryXmp.any { it in xmp }) throw auxiliaryDataRefusal()
+        val xmpAuxiliary = auxiliaryXmp.any { it in xmp }
+        if (heic) {
+            // Nothing auxiliary can be carried: name what is there and keep the original.
+            val present =
+                heifAuxiliary(source) + if (xmpAuxiliary) listOf(AuxiliaryImage.UNIDENTIFIED) else emptyList()
+            checkAuxiliaryImages(present, carried = emptyList())
+            val orientation = exif?.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1) ?: 1
+            if (orientation in mirrored)
+                throw blocked(
+                    res.getString(R.string.compress_mirrored)
+                )
+        } else if (xmpAuxiliary) throw auxiliaryDataRefusal()
         val options =
             BitmapFactory.Options().apply {
                 inPreferredConfig = Bitmap.Config.ARGB_8888
@@ -149,16 +177,26 @@ object ImageCompression {
         val original =
             BitmapFactory.decodeFile(source.path, options)
                 ?: throw gg.seven.cleaner.core.CleanerException.Unreadable()
-        val output = File(directory, "${UUID.randomUUID()}.jpg")
+        val output = File(directory, "${UUID.randomUUID()}.${if (heic) "heic" else "jpg"}")
         var committed = false
         var reference: Bitmap = original
         try {
-            if (Build.VERSION.SDK_INT >= 34 && original.hasGainmap()) throw auxiliaryDataRefusal()
-            checkCompressionPixels(
-                bitsPerComponent = bits(original),
-                isSrgb = original.colorSpace == ColorSpace.get(ColorSpace.Named.SRGB),
-                hasAlpha = original.hasAlpha(),
-            )
+            if (Build.VERSION.SDK_INT >= 34 && original.hasGainmap())
+                if (heic) checkAuxiliaryImages(listOf(AuxiliaryImage.ISO_GAIN_MAP), emptyList())
+                else throw auxiliaryDataRefusal()
+            if (heic)
+                checkHeicPixels(
+                    bitsPerComponent = bits(original),
+                    colorSpace = stillColorSpace(original.colorSpace),
+                    hasAlpha = original.hasAlpha(),
+                    keepsDisplayP3 = false,
+                )
+            else
+                checkCompressionPixels(
+                    bitsPerComponent = bits(original),
+                    isSrgb = original.colorSpace == ColorSpace.get(ColorSpace.Named.SRGB),
+                    hasAlpha = original.hasAlpha(),
+                )
             val plan = imageResizePlan(original.width.toUInt(), original.height.toUInt(), size)
             directory.mkdirs()
             // Room for the candidate and its saved read-back before encoding (video does the same).
@@ -171,18 +209,27 @@ object ImageCompression {
                     .toULong(),
             )
             if (plan.resized) reference = original.scale(plan.width.toInt(), plan.height.toInt())
-            val encoded =
-                output.outputStream().use {
-                    reference.compress(
-                        Bitmap.CompressFormat.JPEG,
-                        kotlin.math.round(quality * 100).toInt(),
-                        it,
-                    )
-                }
-            if (!encoded) throw blocked("The encoder could not finish. The original is unchanged.")
+            if (heic) {
+                // HeifWriter takes the EXIF block whole; ExifInterface can't write HEIF, so the
+                // capture tags are written into a JPEG carrier and its block is moved across.
+                val block = exif?.let { exifBlock(it, directory) }
+                encodeHeic(res, reference, output, quality, heif?.rotation ?: 0, block)
+            } else {
+                val encoded =
+                    output.outputStream().use {
+                        reference.compress(
+                            Bitmap.CompressFormat.JPEG,
+                            kotlin.math.round(quality * 100).toInt(),
+                            it,
+                        )
+                    }
+                if (!encoded)
+                    throw blocked(res.getString(R.string.compress_encoder_failed))
+            }
             coroutineContext.ensureActive()
-            // The encoder writes pixels only; the capture metadata is copied across, then checked.
-            if (exif != null) {
+            // The JPEG encoder writes pixels only; the capture metadata is copied across, then
+            // checked. HEIC copies already carry it.
+            if (exif != null && !heic) {
                 val copy = ExifInterface(output)
                 captureTags.forEach { tag ->
                     exif.getAttribute(tag)?.let { copy.setAttribute(tag, it) }
@@ -191,7 +238,7 @@ object ImageCompression {
             }
             val saved =
                 BitmapFactory.decodeFile(output.path, options)
-                    ?: throw blocked("The saved candidate could not be reopened.")
+                    ?: throw blocked(res.getString(R.string.compress_reopen_failed))
             val savedExif = ExifInterface(output)
             val before = facts(original, exif, source)
             val after =
@@ -201,8 +248,8 @@ object ImageCompression {
                     saved.recycle()
                 }
             if (reference.width != after.width || reference.height != after.height)
-                throw blocked("The output dimensions changed.")
-            val scores = compare(reference, output)
+                throw blocked(res.getString(R.string.compress_dimensions_changed))
+            val scores = compare(res, reference, output)
             val assessment =
                 newCompressionAssessment(
                     before,
@@ -215,8 +262,17 @@ object ImageCompression {
                 for (tag in captureTags) {
                     val expected = exif.getAttribute(tag) ?: continue
                     if (savedExif.getAttribute(tag) != expected)
-                        assessment.issues = assessment.issues + "Capture metadata changed: $tag."
+                        assessment.issues =
+                            assessment.issues + res.getString(R.string.compress_metadata_changed, tag)
                 }
+            if (heic) {
+                // The HEIF rotation (irot) must match too, and nothing auxiliary may appear.
+                val saved = heifFacts(output)
+                if (saved.rotation != heif?.rotation)
+                    assessment.issues = assessment.issues + res.getString(R.string.compress_orientation_changed)
+                if (heifAuxiliary(output).isNotEmpty())
+                    assessment.issues = assessment.issues + res.getString(R.string.compress_unexpected_auxiliary)
+            }
             committed = true
             return CompressionCandidate(source, output, assessment, quality, size)
         } finally {
@@ -225,6 +281,178 @@ object ImageCompression {
             if (!committed) output.delete()
         }
     }
+
+    /** EXIF orientations that flip the image; HeifWriter records rotation only. */
+    private val mirrored = setOf(2, 4, 5, 7)
+
+    internal data class HeifFacts(val images: UInt, val rotation: Int)
+
+    /** Image count and HEIF rotation (`irot`) as the platform's HEIF reader reports them. */
+    internal fun heifFacts(file: File): HeifFacts {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(file.path)
+            HeifFacts(
+                images =
+                    retriever
+                        .extractMetadata(MediaMetadataRetriever.METADATA_KEY_IMAGE_COUNT)
+                        ?.toUIntOrNull() ?: 0u,
+                rotation =
+                    retriever
+                        .extractMetadata(MediaMetadataRetriever.METADATA_KEY_IMAGE_ROTATION)
+                        ?.toIntOrNull() ?: 0,
+            )
+        } catch (_: Exception) {
+            HeifFacts(0u, 0)
+        } finally {
+            retriever.release()
+        }
+    }
+
+    /** Auxiliary-image names (`auxC` type URNs) and the ISO gain map item type, by kind. */
+    private val auxiliaryNames =
+        listOf(
+            "hdrgainmap" to AuxiliaryImage.HDR_GAIN_MAP,
+            "portraiteffectsmatte" to AuxiliaryImage.PORTRAIT_MATTE,
+            "skinmatte" to AuxiliaryImage.SKIN_MATTE,
+            "hairmatte" to AuxiliaryImage.HAIR_MATTE,
+            "teethmatte" to AuxiliaryImage.TEETH_MATTE,
+            "glassesmatte" to AuxiliaryImage.GLASSES_MATTE,
+            "skymatte" to AuxiliaryImage.SKY_MATTE,
+            "disparity" to AuxiliaryImage.DISPARITY,
+            "depth" to AuxiliaryImage.DEPTH,
+            "auxid:2" to AuxiliaryImage.DEPTH,
+        )
+
+    /**
+     * The auxiliary images a HEIF declares: its top-level `meta` box is read (bounded) and checked
+     * for auxiliary-type properties (`auxC`), auxiliary references (`auxl`) and ISO gain-map items
+     * (`tmap`). Android has no reader for these, and this only detects; a false match refuses, it
+     * never drops data. A file without a readable `meta` box counts as unidentified.
+     */
+    internal fun heifAuxiliary(file: File): List<AuxiliaryImage> {
+        val meta = runCatching { metaBox(file) }.getOrNull() ?: return listOf(AuxiliaryImage.UNIDENTIFIED)
+        val text = String(meta, Charsets.ISO_8859_1)
+        val found = mutableListOf<AuxiliaryImage>()
+        if ("tmap" in text) found += AuxiliaryImage.ISO_GAIN_MAP
+        if ("auxC" in text || "auxl" in text) {
+            val lower = text.lowercase()
+            val named = auxiliaryNames.filter { it.first in lower }.map { it.second }
+            found += named.ifEmpty { listOf(AuxiliaryImage.UNIDENTIFIED) }
+        }
+        return found.distinct()
+    }
+
+    private fun metaBox(file: File): ByteArray? =
+        RandomAccessFile(file, "r").use { input ->
+            val length = input.length()
+            var offset = 0L
+            while (offset + 8 <= length) {
+                input.seek(offset)
+                var size = input.readInt().toLong() and 0xFFFFFFFFL
+                val type = ByteArray(4).also { input.readFully(it) }.toString(Charsets.US_ASCII)
+                var header = 8L
+                if (size == 1L) {
+                    size = input.readLong()
+                    header = 16
+                } else if (size == 0L) size = length - offset
+                if (size < header || offset + size > length) return null
+                if (type == "meta") {
+                    if (size - header > MAX_META) return null
+                    return ByteArray((size - header).toInt()).also { input.readFully(it) }
+                }
+                offset += size
+            }
+            null
+        }
+
+    /**
+     * The source's capture tags as an EXIF block ("Exif\0\0" and the TIFF structure) for
+     * HeifWriter: ExifInterface writes them into a one-pixel JPEG carrier, whose APP1 segment is
+     * the block. The same tags the JPEG path copies, compared the same way after saving.
+     */
+    internal fun exifBlock(exif: ExifInterface, directory: File): ByteArray? {
+        val carrier = File(directory, "${UUID.randomUUID()}.exif.jpg")
+        try {
+            val pixel = createBitmap(1, 1)
+            try {
+                carrier.outputStream().use { pixel.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+            } finally {
+                pixel.recycle()
+            }
+            val copy = ExifInterface(carrier)
+            captureTags.forEach { tag -> exif.getAttribute(tag)?.let { copy.setAttribute(tag, it) } }
+            copy.saveAttributes()
+            return app1Exif(carrier.readBytes())
+        } finally {
+            carrier.delete()
+        }
+    }
+
+    /** The APP1 EXIF payload of a JPEG, from "Exif\0\0", or null when it has none. */
+    internal fun app1Exif(jpeg: ByteArray): ByteArray? {
+        val identifier = byteArrayOf(0x45, 0x78, 0x69, 0x66, 0, 0)
+        var i = 2
+        while (i + 4 <= jpeg.size && jpeg[i] == 0xFF.toByte()) {
+            val marker = jpeg[i + 1].toInt() and 0xFF
+            if (marker == 0xDA || marker == 0xD9) break
+            val length = ((jpeg[i + 2].toInt() and 0xFF) shl 8) or (jpeg[i + 3].toInt() and 0xFF)
+            val start = i + 4
+            val end = i + 2 + length
+            if (length < 2 || end > jpeg.size) break
+            if (
+                marker == 0xE1 &&
+                    end - start >= identifier.size &&
+                    jpeg.copyOfRange(start, start + identifier.size).contentEquals(identifier)
+            )
+                return jpeg.copyOfRange(start, end)
+            i = end
+        }
+        return null
+    }
+
+    internal fun encodeHeic(
+        res: Resources,
+        bitmap: Bitmap,
+        output: File,
+        quality: Double,
+        rotation: Int,
+        exif: ByteArray?,
+    ) {
+        val writer =
+            try {
+                HeifWriter.Builder(
+                        output.path,
+                        bitmap.width,
+                        bitmap.height,
+                        HeifWriter.INPUT_MODE_BITMAP,
+                    )
+                    .setQuality(kotlin.math.round(quality * 100).toInt())
+                    .setRotation(rotation)
+                    .setMaxImages(1)
+                    .build()
+            } catch (_: Exception) {
+                throw blocked(res.getString(R.string.compress_no_heic_encoder))
+            }
+        // Closed through AutoCloseable: the writer releases its codec, muxer and thread.
+        writer.use {
+            try {
+                it.start()
+                it.addBitmap(bitmap)
+                exif?.let { block -> it.addExifData(0, block, 0, block.size) }
+                it.stop(HEIC_TIMEOUT_MS)
+            } catch (_: Exception) {
+                throw blocked(res.getString(R.string.compress_encoder_failed))
+            }
+        }
+    }
+
+    private fun stillColorSpace(space: ColorSpace?): StillColorSpace =
+        when (space) {
+            ColorSpace.get(ColorSpace.Named.SRGB) -> StillColorSpace.SRGB
+            ColorSpace.get(ColorSpace.Named.DISPLAY_P3) -> StillColorSpace.DISPLAY_P3
+            else -> StillColorSpace.OTHER
+        }
 
     private fun bits(bitmap: Bitmap): Int =
         when {
@@ -271,12 +499,16 @@ object ImageCompression {
      * memory), each 128-pixel tile turned into RGBX and scored by the core. The worst tile catches
      * localized damage a global average hides. A diagnostic, not perceptual approval.
      */
-    private suspend fun compare(original: Bitmap, output: File): gg.seven.cleaner.core.PsnrScores {
+    private suspend fun compare(
+        res: Resources,
+        original: Bitmap,
+        output: File,
+    ): gg.seven.cleaner.core.PsnrScores {
         @Suppress("DEPRECATION")
         val decoder =
             (if (Build.VERSION.SDK_INT >= 31) BitmapRegionDecoder.newInstance(output.path)
             else BitmapRegionDecoder.newInstance(output.path, false))
-                ?: throw blocked("Could not compare full-resolution detail.")
+                ?: throw blocked(res.getString(R.string.compress_compare_failed))
         val tiles = mutableListOf<TileError>()
         val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
         try {
@@ -285,10 +517,10 @@ object ImageCompression {
                 val h = minOf(TILE, original.height - y)
                 val strip =
                     decoder.decodeRegion(Rect(0, y, original.width, y + h), options)
-                        ?: throw blocked("Could not compare full-resolution detail.")
+                        ?: throw blocked(res.getString(R.string.compress_compare_failed))
                 try {
                     if (strip.width != original.width || strip.height != h)
-                        throw blocked("Could not compare full-resolution detail.")
+                        throw blocked(res.getString(R.string.compress_compare_failed))
                     for (x in 0 until original.width step TILE) {
                         val w = minOf(TILE, original.width - x)
                         tiles += tileError(rgbx(original, x, y, w, h), rgbx(strip, x, 0, w, h))
@@ -318,4 +550,6 @@ object ImageCompression {
     }
 
     private const val TILE = 128
+    private const val MAX_META = 16L * 1024 * 1024
+    private const val HEIC_TIMEOUT_MS = 120_000L
 }

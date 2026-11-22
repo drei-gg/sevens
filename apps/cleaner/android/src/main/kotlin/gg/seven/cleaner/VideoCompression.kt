@@ -2,6 +2,7 @@
 
 package gg.seven.cleaner
 
+import android.content.res.Resources
 import android.content.Context
 import android.media.MediaExtractor
 import android.media.MediaFormat
@@ -43,7 +44,7 @@ data class VideoCandidate(
 
 /** Native codecs and Media3 own decoding, clipping, orientation, scaling and muxing. */
 object VideoCompression {
-    fun inspect(file: File): VideoInspection {
+    fun inspect(res: Resources, file: File): VideoInspection {
         val extractor = MediaExtractor()
         val reader = MediaMetadataRetriever()
         try {
@@ -56,31 +57,31 @@ object VideoCompression {
                 tracks.filter { it.getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true }
             if (video.size != 1 || audio.size > 1 || tracks.size != video.size + audio.size)
                 throw blocked(
-                    "Multiple video/audio or auxiliary tracks need a different preservation profile."
+                    res.getString(R.string.video_tracks)
                 )
             val v = video.single()
             if (v.getString(MediaFormat.KEY_MIME) != MimeTypes.VIDEO_H264)
                 throw blocked(
-                    "This profile accepts SDR H.264 video only. HEVC and other codecs are not converted."
+                    res.getString(R.string.video_codec)
                 )
             val csd =
                 v.getByteBuffer("csd-0")?.let { b ->
                     ByteArray(b.remaining()).also { b.duplicate().get(it) }
-                } ?: throw blocked("The video color and bit depth could not be verified.")
+                } ?: throw blocked(res.getString(R.string.video_color_unverified))
             val start = NalUnitUtil.findNalUnit(csd, 0, csd.size, BooleanArray(3)) + 3
             if (start >= csd.size || csd[start].toInt() and 31 != 7)
-                throw blocked("The video color and bit depth could not be verified.")
+                throw blocked(res.getString(R.string.video_color_unverified))
             val sps = NalUnitUtil.parseSpsNalUnit(csd, start, csd.size)
             if (sps.colorTransfer != C.COLOR_TRANSFER_SDR || sps.colorSpace != C.COLOR_SPACE_BT709)
                 throw blocked(
-                    "This profile requires identified SDR BT.709 color. HDR and unidentified color are not converted."
+                    res.getString(R.string.video_color_profile)
                 )
             val rotation =
                 reader
                     .extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
                     ?.toIntOrNull() ?: 0
             if (rotation !in listOf(0, 90, 180, 270))
-                throw blocked("The video orientation is not supported by this profile.")
+                throw blocked(res.getString(R.string.video_orientation))
             val w = v.getInteger(MediaFormat.KEY_WIDTH)
             val h = v.getInteger(MediaFormat.KEY_HEIGHT)
             val duration = v.getLong(MediaFormat.KEY_DURATION) / 1000
@@ -98,9 +99,9 @@ object VideoCompression {
                     ?: reader
                         .extractMetadata(MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE)
                         ?.toDoubleOrNull()
-                    ?: throw blocked("The frame rate could not be verified. The original stays.")
+                    ?: throw blocked(res.getString(R.string.video_frame_rate))
             if (!regularTiming(extractor, tracks.indexOf(v), frameRate))
-                throw blocked("Variable-frame-rate or offset video needs a different timing profile. The original stays.")
+                throw blocked(res.getString(R.string.video_timing))
             val facts =
                 VideoFacts(
                     (if (rotation % 180 == 0) w else h).toUInt(),
@@ -134,7 +135,7 @@ object VideoCompression {
                                 }
                                 .getOrElse {
                                     throw blocked(
-                                        "The video’s capture timestamp could not be preserved."
+                                        res.getString(R.string.video_timestamp)
                                     )
                                 }
                         }
@@ -144,7 +145,7 @@ object VideoCompression {
                 locationText?.let {
                     val m =
                         Regex("^([+-][0-9.]+)([+-][0-9.]+)(?:[+-][0-9.]+)?/?$").matchEntire(it)
-                            ?: throw blocked("The video’s location could not be preserved.")
+                            ?: throw blocked(res.getString(R.string.video_location))
                     m.groupValues[1].toFloat() to m.groupValues[2].toFloat()
                 }
             return VideoInspection(facts, date, location)
@@ -161,12 +162,13 @@ object VideoCompression {
         start: ULong,
         end: ULong,
     ): VideoCandidate {
-        val before = withContext(Dispatchers.IO) { inspect(source) }
+        val res = context.resources
+        val before = withContext(Dispatchers.IO) { inspect(res, source) }
         val plan = videoCopyPlan(before.facts, start, end)
         directory.mkdirs()
         if (availableBytes(context, directory).toULong() < plan.requiredFreeBytes)
             throw blocked(
-                "There is not enough temporary storage for the original, candidate and verification copy."
+                res.getString(R.string.video_storage)
             )
         val output = File(directory, "${UUID.randomUUID()}.mp4")
         try {
@@ -174,13 +176,13 @@ object VideoCompression {
             val result =
                 withContext(Dispatchers.IO) {
                     ensureActive()
-                    val after = inspect(output)
+                    val after = inspect(res, output)
                     val issues = videoCopyIssues(before.facts, after.facts, plan).toMutableList()
                     if (before.captureDate != after.captureDate)
-                        issues += "The capture timestamp was not preserved."
+                        issues += res.getString(R.string.video_timestamp_not_kept)
                     if (!sameLocation(before.location, after.location))
-                        issues += "The capture location was not preserved."
-                    checkFrames(output, after.facts.durationMs.toLong())
+                        issues += res.getString(R.string.video_location_not_kept)
+                    checkFrames(res, output, after.facts.durationMs.toLong())
                     VideoCandidate(source, output, before, after, plan, issues)
                 }
             return result
@@ -266,7 +268,10 @@ object VideoCompression {
                                         if (continuation.isActive)
                                             continuation.resumeWithException(
                                                 blocked(
-                                                    "Video export could not finish on this device. The original stays. ${exportException.errorCodeName}"
+                                                    context.getString(
+                                                        R.string.video_export_failed,
+                                                        exportException.errorCodeName,
+                                                    )
                                                 )
                                             )
                                     }
@@ -285,14 +290,14 @@ object VideoCompression {
             }
         }
 
-    internal fun checkFrames(file: File, duration: Long) {
+    internal fun checkFrames(res: Resources, file: File, duration: Long) {
         val reader = MediaMetadataRetriever()
         try {
             reader.setDataSource(file.path)
             for (ms in listOf(0L, duration / 2, (duration - 100).coerceAtLeast(0))) {
                 val frame =
                     reader.getFrameAtTime(ms * 1000, MediaMetadataRetriever.OPTION_CLOSEST)
-                        ?: throw blocked("A preview frame could not be decoded. Nothing was saved.")
+                        ?: throw blocked(res.getString(R.string.video_frame_decode))
                 frame.recycle()
             }
         } finally {

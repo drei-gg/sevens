@@ -366,8 +366,9 @@ pub fn image_resize_plan(
     height: u32,
     profile: ImageSizeProfile,
 ) -> Result<ImageResizePlan, crate::CleanerError> {
-    if width == 0 || height == 0 || width as u64 * height as u64 > 16_000_000 {
-        return Err(crate::blocked("Choose a still image up to 16 megapixels."));
+    // The largest still profile (HEIC, 50 MP); each type's own limit is checked at the source gate.
+    if width == 0 || height == 0 || width as u64 * height as u64 > 50_000_000 {
+        return Err(crate::blocked("Choose a still image up to 50 megapixels."));
     }
     let limit = match profile {
         ImageSizeProfile::Original => width.max(height),

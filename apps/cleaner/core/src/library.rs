@@ -282,14 +282,54 @@ pub fn keeper_suggestion(
     })
 }
 
+/// The Large collection's default minimum: 10 MB for a photo, 100 MB for a video (decimal MB).
+#[uniffi::export]
+pub fn large_minimum_default(kind: MediaKind) -> i64 {
+    match kind {
+        MediaKind::Video => 100_000_000,
+        _ => 10_000_000,
+    }
+}
+
+/// The minimums the filter editor offers for Large, smallest first; the default is among them.
+#[uniffi::export]
+pub fn large_minimum_choices(kind: MediaKind) -> Vec<i64> {
+    match kind {
+        MediaKind::Video => vec![
+            50_000_000,
+            100_000_000,
+            250_000_000,
+            500_000_000,
+            1_000_000_000,
+        ],
+        _ => vec![2_000_000, 5_000_000, 10_000_000, 20_000_000, 50_000_000],
+    }
+}
+
+/// At least `minimum_bytes` by a known size. Unknown is never large; a minimum below one byte
+/// counts as one, so a known empty file is not large either.
+#[uniffi::export]
+pub fn media_is_large_from(item: &CleanupItem, minimum_bytes: i64) -> bool {
+    item.bytes
+        .is_some_and(|bytes| bytes >= minimum_bytes.max(1))
+}
+
 /// A photo of at least 10 MB or a video of at least 100 MB, by a known size. Unknown is never large.
 #[uniffi::export]
 pub fn media_is_large(item: &CleanupItem) -> bool {
-    let threshold = match item.kind {
-        MediaKind::Video => crate::FileSizeFilter::AtLeast100Mb,
-        _ => crate::FileSizeFilter::AtLeast10Mb,
-    };
-    crate::file_size_matches(item.bytes, threshold)
+    media_is_large_from(item, large_minimum_default(item.kind))
+}
+
+/// The Large collection: items of at least `minimum_bytes`, largest first. Equal sizes keep the
+/// order given; unknown sizes are never included.
+#[uniffi::export]
+pub fn large_items(items: Vec<CleanupItem>, minimum_bytes: i64) -> Vec<CleanupItem> {
+    let mut large: Vec<CleanupItem> = items
+        .into_iter()
+        .filter(|item| media_is_large_from(item, minimum_bytes))
+        .collect();
+    large.sort_by(|a, b| b.bytes.cmp(&a.bytes));
+    large
 }
 
 /// Dimensions by the shorter side, so portrait and landscape compare alike. Zero is unknown.

@@ -5,6 +5,9 @@
 
 package gg.seven.cleaner
 
+import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.annotation.StringRes
 import android.Manifest
 import android.app.Activity
 import android.os.Build
@@ -36,13 +39,17 @@ import gg.seven.kit.Space
 import kotlinx.coroutines.launch
 
 /** The five peer areas, as on iOS. */
-enum class Area(val title: String, val icon: ImageVector) {
-    Overview("Overview", Icons.Outlined.GridView),
-    Photos("Photos", Icons.Outlined.PhotoLibrary),
-    Videos("Videos", Icons.Outlined.VideoLibrary),
-    Files("Files", Icons.Outlined.Folder),
-    Contacts("Contacts", Icons.Outlined.Contacts),
+enum class Area(@param:StringRes val titleRes: Int, val icon: ImageVector) {
+    Overview(R.string.area_overview, Icons.Outlined.GridView),
+    Photos(R.string.area_photos, Icons.Outlined.PhotoLibrary),
+    Videos(R.string.area_videos, Icons.Outlined.VideoLibrary),
+    Files(R.string.area_files, Icons.Outlined.Folder),
+    Contacts(R.string.area_contacts, Icons.Outlined.Contacts),
 }
+
+/** The area's name on screen; test tags use the stable enum name instead. */
+private val Area.title: String
+    @Composable @ReadOnlyComposable get() = stringResource(titleRes)
 
 /** What screens can ask of the root: navigation and the actions that need the activity. */
 class CleanerActions(
@@ -63,6 +70,8 @@ class LibraryFilters(category: String = "All", order: String = "Newest", query: 
     var size by mutableStateOf(gg.seven.cleaner.core.FileSizeFilter.ANY)
     var resolution by mutableStateOf(gg.seven.cleaner.core.MediaResolutionFilter.ANY)
     var duration by mutableStateOf(gg.seven.cleaner.core.MediaDurationFilter.ANY)
+    /** Large's minimum in bytes; null is the core's default for the library (10 MB / 100 MB). */
+    var largeMinimum by mutableStateOf<Long?>(null)
     var category by mutableStateOf(category)
     var order by mutableStateOf(order)
     val search = androidx.compose.foundation.text.input.TextFieldState(query)
@@ -86,6 +95,7 @@ private fun rememberFilters(key: String) =
                         it.size.name,
                         it.resolution.name,
                         it.duration.name,
+                        it.largeMinimum?.toString().orEmpty(),
                     )
                 },
                 restore = { values ->
@@ -117,6 +127,7 @@ private fun rememberFilters(key: String) =
                                     )
                                 }
                                 .getOrDefault(gg.seven.cleaner.core.MediaDurationFilter.ANY)
+                        largeMinimum = values.getOrNull(8)?.toLongOrNull()
                     }
                 },
             ),
@@ -228,7 +239,7 @@ fun CleanerApp(model: CleanerModel) {
                                 )
                             ) {
                                 Text(
-                                    "Cleaner",
+                                    stringResource(R.string.app_title),
                                     Modifier.padding(Space.l),
                                     style = MaterialTheme.typography.titleLarge,
                                 )
@@ -243,7 +254,7 @@ fun CleanerApp(model: CleanerModel) {
                                         },
                                         modifier =
                                             Modifier.padding(horizontal = Space.s)
-                                                .testTag("nav-${area.title}"),
+                                                .testTag("nav-${area.name}"),
                                     )
                                 }
                             }
@@ -270,7 +281,7 @@ fun CleanerApp(model: CleanerModel) {
                                     },
                                     icon = { Icon(area.icon, null) },
                                     label = { Text(area.title) },
-                                    modifier = Modifier.testTag("nav-${area.title}"),
+                                    modifier = Modifier.testTag("nav-${area.name}"),
                                 )
                             }
                         }
@@ -283,7 +294,10 @@ fun CleanerApp(model: CleanerModel) {
                                 when {
                                     route == null && tab == Area.Overview ->
                                         IconButton(onClick = { actions.open("settings") }) {
-                                            Icon(Icons.Outlined.Settings, "Settings")
+                                            Icon(
+                                                Icons.Outlined.Settings,
+                                                stringResource(R.string.nav_settings),
+                                            )
                                         }
                                     route == null && tab == Area.Photos ->
                                         LibraryMenus(model, MediaKind.PHOTO, photoFilters)
@@ -296,7 +310,7 @@ fun CleanerApp(model: CleanerModel) {
                                     title = { Text(title(tab, route)) },
                                     navigationIcon = {
                                         IconButton(onClick = { scope.launch { drawer.open() } }) {
-                                            Icon(Icons.Outlined.Menu, "Navigation menu")
+                                            Icon(Icons.Outlined.Menu, stringResource(R.string.nav_menu))
                                         }
                                     },
                                     actions = menuActions,
@@ -333,7 +347,7 @@ fun CleanerApp(model: CleanerModel) {
                                                         style = MaterialTheme.typography.labelMedium,
                                                     )
                                                 },
-                                                modifier = Modifier.testTag("nav-${area.title}"),
+                                                modifier = Modifier.testTag("nav-${area.name}"),
                                             )
                                         }
                                     }
@@ -366,10 +380,10 @@ fun CleanerApp(model: CleanerModel) {
             ?.let { message ->
                 AlertDialog(
                     onDismissRequest = { model.error.value = null },
-                    title = { Text("Could not complete") },
+                    title = { Text(stringResource(R.string.error_title)) },
                     text = { Text(message) },
                     confirmButton = {
-                        TextButton(onClick = { model.error.value = null }) { Text("OK") }
+                        TextButton(onClick = { model.error.value = null }) { Text(stringResource(R.string.action_ok)) }
                     },
                     dismissButton =
                         if (offersUnlock) {
@@ -380,7 +394,7 @@ fun CleanerApp(model: CleanerModel) {
                                         gate.offer()
                                     }
                                 ) {
-                                    Text("See the unlock")
+                                    Text(stringResource(R.string.error_see_unlock))
                                 }
                             }
                         } else null,
@@ -389,17 +403,20 @@ fun CleanerApp(model: CleanerModel) {
     }
 }
 
+@Composable
+@ReadOnlyComposable
 private fun title(tab: Area, route: String?): String =
     when {
-        route == null -> if (tab == Area.Overview) "Cleaner" else tab.title
-        route == "groups" -> "Compare groups"
-        route == "pending" -> "Pending removal"
-        route == "activity" -> "Activity"
-        route == "settings" -> "Settings"
-        route.startsWith("detail:") -> "Review"
-        route == "contactGroups" -> "Contact candidates"
-        route.startsWith("comparison:") -> "Compare contacts"
-        route.startsWith("fields:") -> "Contact fields"
+        route == null ->
+            if (tab == Area.Overview) stringResource(R.string.app_title) else tab.title
+        route == "groups" -> stringResource(R.string.route_groups)
+        route == "pending" -> stringResource(R.string.route_pending)
+        route == "activity" -> stringResource(R.string.route_activity)
+        route == "settings" -> stringResource(R.string.nav_settings)
+        route.startsWith("detail:") -> stringResource(R.string.route_review)
+        route == "contactGroups" -> stringResource(R.string.route_contact_candidates)
+        route.startsWith("comparison:") -> stringResource(R.string.route_compare_contacts)
+        route.startsWith("fields:") -> stringResource(R.string.route_contact_fields)
         else -> tab.title
     }
 
@@ -453,7 +470,7 @@ private fun BusyBar(progress: String, fraction: Float?, canCancel: Boolean, canc
                 horizontalArrangement = Arrangement.spacedBy(Space.s),
             ) {
                 Text(progress, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = cancel, enabled = canCancel) { Text("Cancel") }
+                TextButton(onClick = cancel, enabled = canCancel) { Text(stringResource(R.string.action_cancel)) }
             }
         }
     }

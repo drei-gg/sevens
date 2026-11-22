@@ -1,5 +1,9 @@
 package gg.seven.cleaner
 
+import android.content.res.Resources
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.res.stringResource
 import gg.seven.cleaner.core.CleanerException
 import gg.seven.cleaner.core.PhotoTraits
 import java.io.InputStream
@@ -17,14 +21,16 @@ import kotlinx.coroutines.ensureActive
 /** `CleanerError.blocked(reason)`. */
 internal fun blocked(reason: String) = CleanerException.Blocked(reason)
 
-/** The sentence to show for an error (iOS `cleanerMessage`). */
-internal val Throwable.cleanerMessage: String
-    get() =
-        when (this) {
-            is CleanerException.Blocked -> reason
-            is CleanerException.Unreadable -> "This file cannot be read."
-            else -> localizedMessage ?: "Something went wrong."
-        }
+/**
+ * The sentence to show for an error (iOS `cleanerMessage`). A blocked reason is shown as given:
+ * the core's reasons are English until it supplies codes.
+ */
+internal fun Throwable.cleanerMessage(res: Resources): String =
+    when (this) {
+        is CleanerException.Blocked -> reason
+        is CleanerException.Unreadable -> res.getString(R.string.error_unreadable_file)
+        else -> localizedMessage ?: res.getString(R.string.error_generic)
+    }
 
 /** The core reads `&[u8]` without copying, which needs a direct buffer. */
 internal fun ByteArray.direct(): ByteBuffer =
@@ -78,14 +84,28 @@ internal fun typeIdentifier(mime: String?): String =
     when (mime?.lowercase()) {
         "image/jpeg", "image/jpg" -> "public.jpeg"
         "image/png" -> "public.png"
+        "image/heic", "image/heif" -> "public.heic"
         null -> ""
         else -> mime
     }
 
-/** The collection names on screen: the core's tags, with Android's word for a Live Photo. */
+/**
+ * The collection names on screen: the core's tags (and the review collections), with Android's
+ * word for a Live Photo. The tags stay English keys; only their names are translated.
+ */
+@Composable
+@ReadOnlyComposable
 internal fun collectionLabel(tag: String): String =
     when (tag) {
-        "Live Photos" -> "Motion photos"
-        "Large" -> "Large items"
+        "All" -> stringResource(R.string.collection_all)
+        "Live Photos" -> stringResource(R.string.collection_motion_photos)
+        "Large" -> stringResource(R.string.collection_large)
+        "Screenshots" -> stringResource(R.string.collection_screenshots)
+        "Bursts" -> stringResource(R.string.collection_bursts)
+        "Keep" -> stringResource(R.string.collection_keep)
+        "Later" -> stringResource(R.string.collection_later)
+        "Screen recordings" -> stringResource(R.string.collection_screen_recordings)
+        "High frame rate" -> stringResource(R.string.collection_high_frame_rate)
+        "HDR" -> stringResource(R.string.collection_hdr)
         else -> tag
     }

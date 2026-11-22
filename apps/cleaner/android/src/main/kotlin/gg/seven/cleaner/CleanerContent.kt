@@ -1,5 +1,7 @@
 package gg.seven.cleaner
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import gg.seven.kit.BeforeYouBuyContent
 import gg.seven.kit.SevenContent
 import gg.seven.kit.TrialEndedContent
@@ -9,47 +11,40 @@ import gg.seven.kit.UnlockContent
  * Cleaner's words for the brand moments, from the iOS gate copy. "Before you buy" names what
  * Android already does built in (never another third-party app), so it differs from iOS.
  */
-internal val CleanerContent =
+@Composable
+internal fun cleanerContent(): SevenContent =
     SevenContent(
         beforeYouBuy =
             BeforeYouBuyContent(
-                title = "Your phone already has cleanup tools.",
+                title = stringResource(R.string.gate_before_title),
                 paragraphs =
                     listOf(
+                        BeforeYouBuyContent.Paragraph(stringResource(R.string.gate_before_alternatives)),
                         BeforeYouBuyContent.Paragraph(
-                            "Settings shows what uses storage, Google Photos can free up space, and Contacts can merge duplicates. If those cover your needs, keep your money.",
+                            stringResource(R.string.gate_before_offer),
+                            withoutPrice = stringResource(R.string.gate_before_offer_without_price),
                         ),
-                        BeforeYouBuyContent.Paragraph(
-                            "Cleaner brings media review, selected folders and contact comparison together. Try it for 7 days, then {price}, once. Nothing renews.",
-                            withoutPrice =
-                                "Cleaner brings media review, selected folders and contact comparison together. Try it for 7 days, then a one-time purchase. Nothing renews.",
-                        ),
-                        BeforeYouBuyContent.Paragraph(
-                            "Processing stays on this device. Compressed copies keep their originals.",
-                        ),
+                        BeforeYouBuyContent.Paragraph(stringResource(R.string.gate_before_on_device)),
                     ),
-                lookAroundLabel = "Look around first",
+                lookAroundLabel = stringResource(R.string.gate_look_around),
             ),
         unlock =
             UnlockContent(
-                appName = "Cleaner",
+                appName = stringResource(R.string.gate_app_name),
                 features =
                     listOf(
-                        "Review photos, videos and selected folders",
-                        "Compare duplicate contact candidates",
-                        "Make and inspect compressed copies",
+                        stringResource(R.string.gate_feature_review),
+                        stringResource(R.string.gate_feature_contacts),
+                        stringResource(R.string.gate_feature_copies),
                     ),
             ),
         trialEnded =
             TrialEndedContent(
                 stillFree =
                     listOf(
-                        "Read saved decisions and history",
-                        "Share your saved contact archive",
+                        stringResource(R.string.gate_free_history),
+                        stringResource(R.string.gate_free_archive),
                     ),
-                unlockKeeps =
-                    listOf(
-                        "Run new scans and cleanup actions",
-                    ),
+                unlockKeeps = listOf(stringResource(R.string.gate_unlock_scans)),
             ),
     )

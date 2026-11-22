@@ -2,6 +2,7 @@
 
 package gg.seven.cleaner
 
+import androidx.compose.ui.res.stringResource
 import android.content.Context
 import android.graphics.Bitmap
 import android.text.format.Formatter
@@ -63,7 +64,8 @@ object Hues {
 }
 
 fun byteText(context: Context, bytes: Long?): String =
-    bytes?.let { Formatter.formatFileSize(context, it) } ?: "Not measured"
+    bytes?.let { Formatter.formatFileSize(context, it) }
+        ?: context.getString(R.string.bytes_not_measured)
 
 @Composable fun byteText(bytes: Long?): String = byteText(LocalContext.current, bytes)
 
@@ -275,7 +277,7 @@ fun LibraryComposition(items: List<CleanupItem>) {
             Modifier.fillMaxWidth().padding(Space.m).semantics(mergeDescendants = true) {},
             verticalArrangement = Arrangement.spacedBy(Space.ms),
         ) {
-            Text("Measured media", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.chart_measured_media), style = MaterialTheme.typography.titleMedium)
             if (photos + videos > 0) {
                 Canvas(
                     Modifier.fillMaxWidth()
@@ -292,14 +294,26 @@ fun LibraryComposition(items: List<CleanupItem>) {
                     )
                 }
                 CleanerTiles(
-                    { m -> Legend("Photos · ${byteText(photos)}", Icons.Outlined.Image, cool, m) },
                     { m ->
-                        Legend("Videos · ${byteText(videos)}", Icons.Outlined.Videocam, warm, m)
+                        Legend(
+                            stringResource(R.string.chart_photos, byteText(photos)),
+                            Icons.Outlined.Image,
+                            cool,
+                            m,
+                        )
+                    },
+                    { m ->
+                        Legend(
+                            stringResource(R.string.chart_videos, byteText(videos)),
+                            Icons.Outlined.Videocam,
+                            warm,
+                            m,
+                        )
                     },
                 )
             } else
                 Text(
-                    "Measure your library to see the photo and video breakdown.",
+                    stringResource(R.string.chart_measure_prompt),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -334,7 +348,7 @@ fun FileSizeChart(items: List<CleanupItem>) {
             Modifier.fillMaxWidth().padding(Space.m),
             verticalArrangement = Arrangement.spacedBy(Space.ms),
         ) {
-            Text("Largest files", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.chart_largest_files), style = MaterialTheme.typography.titleMedium)
             measured.take(3).forEach { item ->
                 Column(
                     Modifier.semantics(mergeDescendants = true) {},

@@ -5,6 +5,7 @@
 
 package gg.seven.cleaner
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,8 +26,8 @@ import gg.seven.kit.Space
 @Composable
 internal fun CompressionBatchProgress(queue: CompressionBatch) {
     Text(
-        if (queue.complete) "Review complete"
-        else "Photo ${queue.index + 1} of ${queue.items.size}",
+        if (queue.complete) stringResource(R.string.batch_complete)
+        else stringResource(R.string.batch_position, queue.index + 1, queue.items.size),
         style = MaterialTheme.typography.titleLarge,
         modifier = Modifier.testTag("compression-batch-position"),
     )
@@ -35,7 +36,12 @@ internal fun CompressionBatchProgress(queue: CompressionBatch) {
         modifier = Modifier.fillMaxWidth(),
     )
     Text(
-        "${queue.saved.size} saved · ${queue.skipped.size} skipped · ${queue.unverified.size} unverified",
+        stringResource(
+            R.string.batch_summary,
+            queue.saved.size,
+            queue.skipped.size,
+            queue.unverified.size,
+        ),
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.testTag("compression-batch-summary"),
     )
@@ -58,7 +64,7 @@ fun CompressionBatchScreen(model: CleanerModel, queue: CompressionBatch) {
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
-                    title = { Text("Photo review") },
+                    title = { Text(stringResource(R.string.batch_title)) },
                     colors =
                         TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.background
@@ -71,7 +77,10 @@ fun CompressionBatchScreen(model: CleanerModel, queue: CompressionBatch) {
                         ) {
                             Icon(
                                 Icons.Outlined.Close,
-                                if (queue.complete) "Close review" else "Stop review",
+                                stringResource(
+                                    if (queue.complete) R.string.compress_close_review
+                                    else R.string.compress_stop_review
+                                ),
                             )
                         }
                     },
@@ -80,12 +89,15 @@ fun CompressionBatchScreen(model: CleanerModel, queue: CompressionBatch) {
             bottomBar = {
                 CompressionActions {
                     if (queue.complete)
-                        PrimaryButton("Done", Modifier.testTag("compression-batch-done")) {
+                        PrimaryButton(stringResource(R.string.action_done), Modifier.testTag("compression-batch-done")) {
                             model.stopCompressionBatch()
                         }
                     else {
                         PrimaryButton(
-                            if (error != null) "Retry preparation" else "Prepare preview",
+                            stringResource(
+                                if (error != null) R.string.batch_retry_preparation
+                                else R.string.batch_prepare
+                            ),
                             Modifier.testTag("compression-batch-prepare"),
                             enabled = !busy,
                         ) {
@@ -96,7 +108,7 @@ fun CompressionBatchScreen(model: CleanerModel, queue: CompressionBatch) {
                                 onClick = model::cancel,
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text("Cancel preparation")
+                                Text(stringResource(R.string.compress_cancel_preparation))
                             }
                         else
                             TextButton(
@@ -104,7 +116,7 @@ fun CompressionBatchScreen(model: CleanerModel, queue: CompressionBatch) {
                                 enabled = !busy,
                                 modifier = Modifier.fillMaxWidth().testTag("compression-skip"),
                             ) {
-                                Text("Skip this photo")
+                                Text(stringResource(R.string.compress_skip_photo))
                             }
                     }
                 }
@@ -119,36 +131,36 @@ fun CompressionBatchScreen(model: CleanerModel, queue: CompressionBatch) {
                         Text(progress)
                     }
                     Text(
-                        if (queue.complete)
-                            "Your originals and review decisions are unchanged. Saved copies remain in Photos."
-                        else
-                            "Inspect each photo, then save a copy or skip. Only one preview is prepared at a time. Originals stay in Photos."
+                        stringResource(
+                            if (queue.complete) R.string.batch_done_note else R.string.batch_note
+                        )
                     )
                     if (!queue.complete)
                         Text(
-                            "Stopping keeps saved copies and clears the current preview. This queue does not resume after the app closes.",
+                            stringResource(R.string.batch_stop_note),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     if (queue.unverified.isNotEmpty())
                         CleanerNotice(
-                            "Unverified copies may exist in Photos. Check them before starting another queue; they were not counted as saved.",
+                            stringResource(R.string.batch_unverified_note),
                             Icons.Outlined.Warning,
                             caution = true,
                         )
                     if (queue.index > 0) {
                         HorizontalDivider()
-                        Text("Results", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.batch_results), style = MaterialTheme.typography.titleMedium)
                         queue.items.take(queue.index).forEach { item ->
                             ListItem(
                                 headlineContent = { Text(item.name) },
                                 supportingContent = {
                                     Text(
-                                        when (item.id) {
-                                            in queue.saved -> "Copy saved and verified"
-                                            in queue.unverified ->
-                                                "Copy created; verification unfinished"
-                                            else -> "Skipped; original retained"
-                                        }
+                                        stringResource(
+                                            when (item.id) {
+                                                in queue.saved -> R.string.batch_result_saved
+                                                in queue.unverified -> R.string.batch_result_unverified
+                                                else -> R.string.batch_result_skipped
+                                            }
+                                        )
                                     )
                                 },
                             )

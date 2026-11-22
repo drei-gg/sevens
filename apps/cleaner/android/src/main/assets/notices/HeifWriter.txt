@@ -1,0 +1,4 @@
+AndroidX HeifWriter 1.2.0
+Copyright The Android Open Source Project
+https://android.googlesource.com/platform/frameworks/support
+Licensed under Apache License 2.0. The full license is included as Apache-2.0.txt.

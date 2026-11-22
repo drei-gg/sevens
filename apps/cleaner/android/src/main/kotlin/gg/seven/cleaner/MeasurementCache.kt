@@ -20,6 +20,7 @@ class MeasurementCache(
     context: Context,
     private val file: File = File(context.noBackupFilesDir, "Cleaner/measurements.sqlite"),
 ) {
+    private val res = context.resources
     private val lock = Mutex()
     private val helper =
         object : SQLiteOpenHelper(context, file.absolutePath, null, 1) {
@@ -31,7 +32,7 @@ class MeasurementCache(
 
                 override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
                     throw android.database.sqlite.SQLiteException(
-                        "Saved scan progress needs a newer app. Clear scan progress to compare again."
+                        res.getString(R.string.measurements_newer_app)
                     )
                 }
 
@@ -102,7 +103,7 @@ class MeasurementCache(
                             },
                             SQLiteDatabase.CONFLICT_REPLACE,
                         )
-                        .also { check(it != -1L) { "Scan progress could not be saved." } }
+                        .also { check(it != -1L) { res.getString(R.string.measurements_not_saved) } }
                 Unit
             }
         }
@@ -112,7 +113,7 @@ class MeasurementCache(
             withContext(Dispatchers.IO) {
                 helper.close()
                 if (file.exists() && !SQLiteDatabase.deleteDatabase(file))
-                    error("Scan progress could not be cleared.")
+                    error(res.getString(R.string.measurements_not_cleared))
             }
         }
 

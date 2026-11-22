@@ -91,6 +91,7 @@ Cleaner for Android is on the shared base (the kit and AndroidX pieces above). I
 | --- | --- | --- | --- |
 | libphonenumber | 9.0.43 | Apache-2.0, https://github.com/google/libphonenumber | Contact phone candidate normalization (PhoneNumberKit's counterpart); bundled metadata, no network client |
 | AndroidX ExifInterface | 1.4.2 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | Reading, copying and checking capture metadata on compressed copies |
+| AndroidX HeifWriter | 1.2.0 | Apache-2.0, https://android.googlesource.com/platform/frameworks/support | HEIC still copies through the platform's HEVC/HEIC encoder (Image I/O's role on iOS) |
 | Telephoto zoomable | 0.18.0 | Apache-2.0, https://github.com/saket/telephoto | Pinch and double-tap zoom for full-resolution inspection |
 | AndroidX Media3 Transformer / Effect | 1.11.1 | Apache-2.0, https://github.com/androidx/media | Native video clipping, encoding, scaling and MP4 metadata; no remote media input |
 

@@ -1,5 +1,7 @@
 package gg.seven.cleaner
 
+import gg.seven.cleaner.core.AuxiliaryImage
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.ByteArrayInputStream
 import kotlinx.coroutines.runBlocking
@@ -56,10 +58,10 @@ class PlatformTest {
     fun typeIdentifiersForTheCompressionGate() {
         assertEquals("public.jpeg", typeIdentifier("image/jpeg"))
         assertEquals("public.png", typeIdentifier("image/png"))
-        assertEquals("image/heic", typeIdentifier("image/heic"))
+        assertEquals("public.heic", typeIdentifier("image/heic"))
+        assertEquals("public.heic", typeIdentifier("image/heif"))
+        assertEquals("image/avif", typeIdentifier("image/avif"))
         assertEquals("", typeIdentifier(null))
-        assertEquals("Motion photos", collectionLabel("Live Photos"))
-        assertEquals("Screenshots", collectionLabel("Screenshots"))
     }
 
     @Test
@@ -89,19 +91,57 @@ class PlatformTest {
         assertEquals(0u, ImageCompression.frameCount(png(), ""))
     }
 
+    /** A HEIF-shaped file: `ftyp`, a `meta` box holding [meta], then `mdat`. */
+    private fun heif(meta: String, largeMdat: Boolean = false): File {
+        fun box(type: String, body: ByteArray): ByteArray {
+            val out = ByteArrayOutputStream()
+            val size = body.size + 8
+            out.write(byteArrayOf((size ushr 24).toByte(), (size ushr 16).toByte(), (size ushr 8).toByte(), size.toByte()))
+            out.write(type.toByteArray(Charsets.US_ASCII))
+            out.write(body)
+            return out.toByteArray()
+        }
+        val file = File.createTempFile("aux", ".heic")
+        file.outputStream().use { out ->
+            out.write(box("ftyp", "heic\u0000\u0000\u0000\u0000mif1heic".toByteArray(Charsets.US_ASCII)))
+            out.write(box("meta", meta.toByteArray(Charsets.ISO_8859_1)))
+            if (largeMdat) {
+                // A 64-bit box size, as large media data uses.
+                out.write(byteArrayOf(0, 0, 0, 1) + "mdat".toByteArray() + byteArrayOf(0, 0, 0, 0, 0, 0, 0, 20, 1, 2, 3, 4))
+            } else out.write(box("mdat", ByteArray(16)))
+        }
+        return file
+    }
+
     @Test
-    fun exifOrientationsMapToRotationThenMirror() {
-        assertEquals(ExifTransform(0, false), exifTransform(1))
-        assertEquals(ExifTransform(0, true), exifTransform(2))
-        assertEquals(ExifTransform(180, false), exifTransform(3))
-        assertEquals(ExifTransform(180, true), exifTransform(4))
-        assertEquals(ExifTransform(90, true), exifTransform(5))
-        assertEquals(ExifTransform(90, false), exifTransform(6))
-        assertEquals(ExifTransform(270, true), exifTransform(7))
-        assertEquals(ExifTransform(270, false), exifTransform(8))
-        // Undefined (0) and out-of-range values are shown as stored.
-        assertEquals(ExifTransform(0, false), exifTransform(0))
-        assertEquals(ExifTransform(0, false), exifTransform(9))
+    fun heifAuxiliaryImagesAreNamedOrUnidentified() {
+        assertEquals(emptyList<AuxiliaryImage>(), ImageCompression.heifAuxiliary(heif("hdlrpictpitmiinfinfehvc1iprpipcohvcCispecolr")))
+        assertEquals(
+            listOf(AuxiliaryImage.HDR_GAIN_MAP, AuxiliaryImage.PORTRAIT_MATTE),
+            ImageCompression.heifAuxiliary(
+                heif("iinfirefauxlipcoauxCurn:com:apple:photo:2020:aux:hdrgainmap\u0000auxCurn:com:apple:photo:2018:aux:portraiteffectsmatte\u0000", largeMdat = true)
+            ),
+        )
+        assertEquals(listOf(AuxiliaryImage.DEPTH), ImageCompression.heifAuxiliary(heif("auxCurn:mpeg:hevc:2015:auxid:2")))
+        assertEquals(listOf(AuxiliaryImage.ISO_GAIN_MAP), ImageCompression.heifAuxiliary(heif("iinfinfetmap")))
+        // An alpha plane or anything else unnamed is still auxiliary.
+        assertEquals(listOf(AuxiliaryImage.UNIDENTIFIED), ImageCompression.heifAuxiliary(heif("auxCurn:mpeg:hevc:2015:auxid:1")))
+        // No readable meta box: unidentified, so it is refused rather than guessed.
+        val truncated = File.createTempFile("aux", ".heic").apply { writeBytes(byteArrayOf(0, 0, 0, 64) + "ftyp".toByteArray()) }
+        assertEquals(listOf(AuxiliaryImage.UNIDENTIFIED), ImageCompression.heifAuxiliary(truncated))
+    }
+
+    @Test
+    fun exifBlockIsTheJpegApp1Payload() {
+        val exif = "Exif\u0000\u0000MM\u0000*".toByteArray(Charsets.ISO_8859_1)
+        fun segment(marker: Int, body: ByteArray) =
+            byteArrayOf(0xFF.toByte(), marker.toByte(), ((body.size + 2) ushr 8).toByte(), (body.size + 2).toByte()) + body
+        val jpeg =
+            byteArrayOf(0xFF.toByte(), 0xD8.toByte()) + segment(0xE0, "JFIF\u0000".toByteArray()) +
+                segment(0xE1, "http://ns.adobe.com/xap/1.0/\u0000".toByteArray()) + segment(0xE1, exif) +
+                byteArrayOf(0xFF.toByte(), 0xDA.toByte())
+        org.junit.Assert.assertArrayEquals(exif, ImageCompression.app1Exif(jpeg))
+        assertNull(ImageCompression.app1Exif(byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xDA.toByte())))
     }
 
     @Test

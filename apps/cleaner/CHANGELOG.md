@@ -6,7 +6,10 @@
 - The latest contact export is kept on the phone (file protection, no backups), stays shareable after the trial or a relaunch and can be deleted. Merge review uses that archive as the real backup state.
 - Photos selections stay in their library on iPhone. Compare groups show the suggested keeper and why. Similar shots form one group per burst instead of overlapping pairs.
 - Added size, dimension and video length filters and a Large collection on both phones; unknown values stay unknown. Still compression checks free space first.
-- Android: folder albums (move on Android 11+, verified copy on 10+), EXIF-upright previews and typographic apostrophes. iPhone: VoiceOver labels for zoomable images, the trial check before the folder picker, and progress, errors and history routed through the string catalog.
+- HEIC photos can be compressed on both phones and stay HEIC. iPhone keeps sRGB or Display P3, the source's metadata, and every auxiliary image ImageIO names (depth, disparity, portrait and segmentation mattes, HDR and ISO gain maps), each read back from the saved copy; HEIC reaches 50 MP, so 24 and 48 MP photos qualify. Android (AndroidX HeifWriter 1.2.0) keeps sRGB, the capture tags and the rotation, and refuses Display P3, mirrored, gain-map, depth, matte or other auxiliary HEICs with the reason instead of dropping anything.
+- Large lists items largest first from a minimum chosen in the filter editor (photos 10 MB, videos 100 MB by default). Unknown sizes never count.
+- Android needs Android 11: album move, trash and favorites are always there, the album copy option and the old-version notices are gone. Every Android string now lives in `res/values/strings.xml` (English), ready for translations.
+- Android: folder albums, EXIF-upright previews and typographic apostrophes. iPhone: VoiceOver labels for zoomable images, the trial check before the folder picker, and progress, errors and history routed through the string catalog.
 
 ## 18 November 2026 — feature continuation, not released
 

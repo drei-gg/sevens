@@ -5,6 +5,7 @@
 
 package gg.seven.cleaner
 
+import androidx.compose.ui.res.stringResource
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -70,7 +71,7 @@ fun CompressionScreen(model: CleanerModel, candidate: CompressionCandidate) {
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
-                    title = { Text("Review", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    title = { Text(stringResource(R.string.compress_review), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     navigationIcon = {
                         IconButton(
                             onClick = close,
@@ -79,7 +80,10 @@ fun CompressionScreen(model: CleanerModel, candidate: CompressionCandidate) {
                         ) {
                             Icon(
                                 Icons.Outlined.Close,
-                                if (queue != null) "Stop review" else "Close review",
+                                stringResource(
+                                    if (queue != null) R.string.compress_stop_review
+                                    else R.string.compress_close_review
+                                ),
                             )
                         }
                     },
@@ -93,7 +97,10 @@ fun CompressionScreen(model: CleanerModel, candidate: CompressionCandidate) {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     CompressionActions {
                         PrimaryButton(
-                            if (receipt != null) "Retry verification" else "Save copy",
+                            stringResource(
+                                if (receipt != null) R.string.compress_retry_verification
+                                else R.string.compress_save_copy
+                            ),
                             Modifier.testTag("compression-save"),
                             enabled =
                                 !busy &&
@@ -109,12 +116,14 @@ fun CompressionScreen(model: CleanerModel, candidate: CompressionCandidate) {
                                 modifier = Modifier.fillMaxWidth().testTag("compression-skip"),
                             ) {
                                 Text(
-                                    if (receipt != null) "Leave copy unverified and continue"
-                                    else "Skip this photo"
+                                    stringResource(
+                                        if (receipt != null) R.string.compress_leave_unverified
+                                        else R.string.compress_skip_photo
+                                    )
                                 )
                             }
                         Text(
-                            "Your original stays. The copy needs extra storage.",
+                            stringResource(R.string.compress_original_stays),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -128,26 +137,28 @@ fun CompressionScreen(model: CleanerModel, candidate: CompressionCandidate) {
                     error?.let { CleanerNotice(it, Icons.Outlined.Warning, caution = true) }
                     if (receipt != null)
                         Text(
-                            "A copy exists. Retry checks and records that same copy. Closing keeps it, but leaves it unverified.",
+                            stringResource(R.string.compress_copy_exists),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     CleanerHero(
-                        "Inspect the actual files",
-                        if (savings > 0) byteText(savings) else "No reduction",
-                        "Candidate reduction. The original stays.",
+                        stringResource(R.string.compress_inspect),
+                        if (savings > 0) byteText(savings)
+                        else stringResource(R.string.compress_no_reduction),
+                        stringResource(R.string.compress_reduction_detail),
                         Icons.Outlined.Compress,
                         hue = Hues.warm,
                         big = savings > 0,
                     )
                     Text(
-                        "Checks cannot judge every detail. Zoom in before saving.",
+                        stringResource(R.string.compress_zoom_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        "Quality: ${quality.toInt()}%",
+                        stringResource(R.string.compress_quality_value, quality.toInt()),
                         style = MaterialTheme.typography.titleMedium,
                     )
+                    val qualityLabel = stringResource(R.string.compress_quality)
                     Slider(
                         value = quality,
                         onValueChange = { quality = kotlin.math.round(it) },
@@ -156,51 +167,60 @@ fun CompressionScreen(model: CleanerModel, candidate: CompressionCandidate) {
                         enabled = !busy && receipt == null,
                         modifier =
                             Modifier.testTag("compression-quality").semantics {
-                                contentDescription = "Quality"
+                                contentDescription = qualityLabel
                             },
                     )
                     Text(
-                        "Update the preview after changing quality or size.",
+                        stringResource(R.string.compress_update_hint),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     gg.seven.kit.DropdownField(
-                        "Image size",
+                        stringResource(R.string.compress_image_size),
                         size,
                         listOf(
-                            ImageSizeProfile.ORIGINAL to "Original size",
-                            ImageSizeProfile.LARGE to "2400 px max",
-                            ImageSizeProfile.MEDIUM to "1600 px max",
-                            ImageSizeProfile.SMALL to "800 px max",
+                            ImageSizeProfile.ORIGINAL to stringResource(R.string.compress_size_original),
+                            ImageSizeProfile.LARGE to stringResource(R.string.compress_size_2400),
+                            ImageSizeProfile.MEDIUM to stringResource(R.string.compress_size_1600),
+                            ImageSizeProfile.SMALL to stringResource(R.string.compress_size_800),
                         ),
                         modifier = Modifier.testTag("compression-size"),
                         enabled = !busy && receipt == null,
                         onSelect = { size = it },
                     )
                     if (size != ImageSizeProfile.ORIGINAL)
-                        Text("Resizing removes fine detail and never enlarges your image.")
+                        Text(stringResource(R.string.compress_resize_note))
                     OutlinedButton(
                         onClick = { model.updateCandidateQuality(quality.toDouble() / 100, size) },
                         enabled = needsPreview && !busy && receipt == null,
                         modifier = Modifier.fillMaxWidth().testTag("compression-update"),
                     ) {
-                        Text("Update preview")
+                        Text(stringResource(R.string.compress_update_preview))
                     }
                     if (busy) {
                         LinearWavyProgressIndicator(Modifier.fillMaxWidth())
                         Text(progress, style = MaterialTheme.typography.bodyMedium)
                         if (canCancel)
-                            TextButton(onClick = model::cancel) { Text("Cancel preparation") }
+                            TextButton(onClick = model::cancel) {
+                                Text(stringResource(R.string.compress_cancel_preparation))
+                            }
                     }
                     Text(
-                        "Original: ${assessment.source.width} × ${assessment.source.height}. Output: ${assessment.output.width} × ${assessment.output.height}. Quality setting: ${"%.2f".format(candidate.quality)}",
+                        stringResource(
+                            R.string.compress_dimensions,
+                            assessment.source.width,
+                            assessment.source.height,
+                            assessment.output.width,
+                            assessment.output.height,
+                            "%.2f".format(candidate.quality),
+                        ),
                         style = MaterialTheme.typography.bodyMedium.numeric(),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     val pair: @Composable (Modifier) -> Unit = { m ->
-                        Comparison("Original", candidate.source, assessment.source.bytes, m)
+                        Comparison(stringResource(R.string.compress_original), candidate.source, assessment.source.bytes, m)
                     }
                     val next: @Composable (Modifier) -> Unit = { m ->
-                        Comparison("Candidate", candidate.output, assessment.output.bytes, m)
+                        Comparison(stringResource(R.string.compress_candidate), candidate.output, assessment.output.bytes, m)
                     }
                     BoxWithConstraints {
                         if (maxWidth >= 560.dp && !largeText())
@@ -217,7 +237,7 @@ fun CompressionScreen(model: CleanerModel, candidate: CompressionCandidate) {
 
                     if (assessment.issues.isEmpty())
                         Text(
-                            "The current profile checks passed. Original retained when saving.",
+                            stringResource(R.string.compress_checks_passed),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     else
@@ -226,12 +246,12 @@ fun CompressionScreen(model: CleanerModel, candidate: CompressionCandidate) {
                         }
                     if (candidate.size != ImageSizeProfile.ORIGINAL)
                         Text(
-                            "Detail scores compare the encoded copy with a resized reference. They do not measure the detail discarded by resizing.",
+                            stringResource(R.string.compress_resized_scores),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     Column {
                         TextButton(onClick = { detail = !detail }) {
-                            Text("Detail comparison")
+                            Text(stringResource(R.string.compress_detail_comparison))
                             Icon(
                                 if (detail) Icons.Outlined.ExpandLess
                                 else Icons.Outlined.ExpandMore,
@@ -240,7 +260,11 @@ fun CompressionScreen(model: CleanerModel, candidate: CompressionCandidate) {
                         }
                         if (detail)
                             Text(
-                                "Full-resolution PSNR: ${"%.1f".format(assessment.fullResolutionPsnr)} dB\nWorst detail tile: ${"%.1f".format(assessment.worstTilePsnr)} dB\nThese are diagnostic thresholds, not a perceptual quality certificate.",
+                                stringResource(
+                                    R.string.compress_psnr,
+                                    "%.1f".format(assessment.fullResolutionPsnr),
+                                    "%.1f".format(assessment.worstTilePsnr),
+                                ),
                                 style = MaterialTheme.typography.bodySmall.numeric(),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -253,10 +277,14 @@ fun CompressionScreen(model: CleanerModel, candidate: CompressionCandidate) {
         AlertDialog(
             onDismissRequest = { showFailure = false },
             title = {
-                Text(if (receipt != null) "Could not finish saving" else "Could not complete")
+                Text(
+                    stringResource(
+                        if (receipt != null) R.string.compress_save_failed else R.string.error_title
+                    )
+                )
             },
             text = { Text(error.orEmpty(), Modifier.verticalScroll(rememberScrollState())) },
-            confirmButton = { TextButton(onClick = { showFailure = false }) { Text("OK") } },
+            confirmButton = { TextButton(onClick = { showFailure = false }) { Text(stringResource(R.string.action_ok)) } },
         )
 }
 
@@ -269,7 +297,7 @@ private fun Comparison(title: String, file: File, bytes: Long, modifier: Modifie
         }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(Space.s)) {
         Text(title, style = MaterialTheme.typography.titleLarge)
-        bitmap?.let { ZoomImage(it, "$title image", Modifier.fillMaxWidth().height(280.dp)) }
+        bitmap?.let { ZoomImage(it, stringResource(R.string.compress_image_description, title), Modifier.fillMaxWidth().height(280.dp)) }
         Text(byteText(bytes), style = MaterialTheme.typography.titleLarge.numeric())
     }
 }

@@ -48,7 +48,7 @@ class FilesService(private val context: Context) {
                 val cursor =
                     runCatching { resolver.query(children, COLUMNS, null, null, null) }.getOrNull()
                 if (cursor == null) {
-                    if (parent == root) throw blocked("This folder cannot be read.")
+                    if (parent == root) throw blocked(context.getString(R.string.files_folder_unreadable))
                     skipped += 1
                     continue
                 }
@@ -101,7 +101,7 @@ class FilesService(private val context: Context) {
                     }
                 }
             }
-            if (!readable) throw blocked("This folder cannot be read.")
+            if (!readable) throw blocked(context.getString(R.string.files_folder_unreadable))
             val sorted = sortLargestFirst(items)
             FolderScan(sorted, matchingExact(sorted), skipped, unhashed = hash && !local)
         }

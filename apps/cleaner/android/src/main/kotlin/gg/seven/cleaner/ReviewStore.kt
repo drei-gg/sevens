@@ -38,14 +38,11 @@ class ReviewStore(file: File) {
         reviewStateRecord(it, newHistoryEntry(message), processedSource)
     }
 
-    suspend fun recordCopy(source: CleanupItem, outputID: String): ReviewState = change {
-        reviewStateRecordCopy(
-            it,
-            source,
-            outputID,
-            newHistoryEntry("Saved a compressed copy of ${source.name}. Original retained."),
-        )
-    }
+    /** Records a verified copy with its history [message] (the platform's words for it). */
+    suspend fun recordCopy(source: CleanupItem, outputID: String, message: String): ReviewState =
+        change {
+            reviewStateRecordCopy(it, source, outputID, newHistoryEntry(message))
+        }
 
     private suspend fun change(update: (ReviewState) -> ReviewState): ReviewState =
         lock.withLock {
