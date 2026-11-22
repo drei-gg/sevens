@@ -1,154 +1,139 @@
 package gg.seven.fast
 
-import android.Manifest
-import android.app.*
-import android.content.*
-import android.content.pm.PackageManager
-import android.os.Build
+import android.annotation.SuppressLint
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.edit
+import androidx.work.WorkerParameters
 import gg.seven.fast.core.*
-import java.time.ZoneId
-import kotlinx.coroutines.*
+import gg.seven.kit.schedule.DueReminder
+import gg.seven.kit.schedule.Precision
+import gg.seven.kit.schedule.ReminderChannel
+import gg.seven.kit.schedule.ReminderConfig
+import gg.seven.kit.schedule.ReminderPlan
+import gg.seven.kit.schedule.ReminderRecovery
+import gg.seven.kit.schedule.ReminderRecoveryWorker
+import gg.seven.kit.schedule.ReminderScheduler
+import gg.seven.kit.schedule.WakeId
+import gg.seven.kit.schedule.finishAsync
+import gg.seven.kit.schedule.restoreReason
+import java.time.Instant
 
-object ReminderScheduler {
-    private const val channel = "chosen-reminders"
+/**
+ * Fast's reminders on SevenKit's rolling scheduler (gg.seven.kit.schedule). Which reminders exist
+ * and when each is due come from the core (reminder_schedule, reminders_due); this file supplies
+ * only the words. Delivery is approximate by design: Fast never asks for exact-alarm access.
+ */
+object FastReminders {
+    private const val PREFERENCES = "fast-reminders"
 
-    private fun alarm(context: Context) =
-        PendingIntent.getBroadcast(
-            context,
-            1,
-            Intent(context, ReminderReceiver::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    /** Before 2026-11-22: `reminders/next`, epoch milliseconds, and no delivery ledger. */
+    private const val LEGACY_PREFERENCES = "reminders"
+
+    fun config() =
+        ReminderConfig(
+            // The wake Fast first shipped: ReminderReceiver, no action, request code 1.
+            wake = WakeId(ReminderReceiver::class.java, requestCode = 1),
+            preferences = PREFERENCES,
+            channel = ReminderChannel("chosen-reminders", "Your chosen reminders"),
+            tagPrefix = "fast.",
+            precision = Precision.Inexact,
+            recovery =
+                ReminderRecovery(
+                    periodicName = "fast-reminder-recovery",
+                    restoreName = "fast-reminder-restore",
+                    worker = FastReminderWorker::class.java,
+                ),
         )
 
-    fun reconcile(context: Context, archive: FastArchive) {
-        TimerSurfaces.update(context, archive)
-        val manager = context.getSystemService(AlarmManager::class.java)
-        val pending = alarm(context)
-        manager.cancel(pending)
-        val next =
-            ReminderPlan.events(archive, nowMillis(), ZoneId.systemDefault()).minOfOrNull { it.at }
-        context.getSharedPreferences("reminders", Context.MODE_PRIVATE).edit {
-            putLong("next", next?.toLong() ?: 0)
-        }
-        if (next != null)
-            manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next.toLong(), pending)
+    fun scheduler(context: Context): ReminderScheduler =
+        (context.applicationContext as FastApplication).reminderScheduler
+
+    fun create(context: Context): ReminderScheduler {
+        val app = context.applicationContext as FastApplication
+        val scheduler = ReminderScheduler(app, config()) { Plan(app, load(app)) }
+        migrate(app, scheduler)
+        return scheduler
     }
 
-    fun deliver(context: Context, archive: FastArchive) {
-        val due =
-            context
-                .getSharedPreferences("reminders", Context.MODE_PRIVATE)
-                .getLong("next", 0)
-                .toDouble()
-        val now = nowMillis()
-        val zone = ZoneId.systemDefault()
-        if (due <= 0 || due > now) return
-        val manager = context.getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(
-            NotificationChannel(
-                channel,
-                "Your chosen reminders",
-                NotificationManager.IMPORTANCE_DEFAULT,
-            )
-        )
-        if (
-            Build.VERSION.SDK_INT >= 33 &&
-                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
-                    PackageManager.PERMISSION_GRANTED
-        )
-            return
-        ReminderPlan.events(archive, due - 1, zone)
-            .filter { it.at <= now }
-            .forEach { event ->
-                // Inexact Android alarms may be delayed. Never deliver a late water prompt outside
-                // its chosen window.
-                if (
-                    event.kind == ReminderKind.WATER &&
-                        (now - event.at > 30 * 60_000 ||
-                            now.instant().atZone(zone).hour !in
-                                archive.settings.water.startHour until
-                                    archive.settings.water.endHour)
+    /** Carries the old watermark over once, so the first wake after the upgrade still delivers. */
+    @SuppressLint("ApplySharedPref", "UseKtx")
+    private fun migrate(context: Context, scheduler: ReminderScheduler) {
+        val legacy = context.getSharedPreferences(LEGACY_PREFERENCES, Context.MODE_PRIVATE)
+        if (!legacy.contains("next")) return
+        val millis = legacy.getLong("next", 0)
+        if (scheduler.ledger().next == 0L && millis > 0) scheduler.seed(millis / 1000)
+        legacy.edit().remove("next").commit()
+    }
+
+    private suspend fun load(app: FastApplication): FastArchive {
+        app.repository.load()
+        return app.repository.state.value ?: error("Fast's records could not be read.")
+    }
+
+    /** Refreshes the timer surfaces and reminders from the saved archive. */
+    suspend fun reconcile(context: Context, deliver: Boolean = false) {
+        val app = context.applicationContext as FastApplication
+        TimerSurfaces.update(app, load(app))
+        scheduler(app).reconcile(deliver)
+    }
+
+    private class Plan(private val context: Context, private val archive: FastArchive) :
+        ReminderPlan {
+        private val calendar = calendarSpec()
+
+        override fun due(after: Long, now: Long): List<DueReminder> =
+            remindersDue(archive, Instant.ofEpochSecond(after), Instant.ofEpochSecond(now), calendar)
+                .map { DueReminder(it.id, it.at.epochSecond, it.postUntil.epochSecond, it.kind) }
+
+        override fun next(now: Long): Long? =
+            reminderSchedule(archive, Instant.ofEpochSecond(now), calendar)
+                .minOfOrNull { it.at }
+                ?.epochSecond
+
+        override fun build(reminder: DueReminder, builder: NotificationCompat.Builder) {
+            val text =
+                when (reminder.payload as ReminderKind) {
+                    ReminderKind.GOAL ->
+                        "Your chosen fasting time has elapsed. Finish whenever you choose."
+                    ReminderKind.EATING -> "Your chosen eating window has elapsed."
+                    ReminderKind.WATER -> "Your optional water reminder."
+                    else -> "Your planned fasting time is here. Nothing starts automatically."
+                }
+            val open =
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    Intent(context, MainActivity::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
-                    return@forEach
-                if (now - event.at > 86_400_000) return@forEach
-                val text =
-                    when (event.kind) {
-                        ReminderKind.GOAL ->
-                            "Your chosen fasting time has elapsed. Finish whenever you choose."
-                        ReminderKind.EATING -> "Your chosen eating window has elapsed."
-                        ReminderKind.WATER -> "Your optional water reminder."
-                        else -> "Your planned fasting time is here. Nothing starts automatically."
-                    }
-                val intent =
-                    PendingIntent.getActivity(
-                        context,
-                        0,
-                        Intent(context, MainActivity::class.java),
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                    )
-                NotificationManagerCompat.from(context)
-                    .notify(
-                        event.id.hashCode(),
-                        NotificationCompat.Builder(context, channel)
-                            .setSmallIcon(R.drawable.generic_icon)
-                            .setContentTitle(context.getString(R.string.app_name))
-                            .setContentText(text)
-                            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-                            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-                            .setAutoCancel(true)
-                            .setContentIntent(intent)
-                            .build(),
-                    )
-            }
+            builder
+                .setSmallIcon(R.drawable.generic_icon)
+                .setContentTitle(context.getString(R.string.app_name))
+                .setContentText(text)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+                .setContentIntent(open)
+        }
     }
 }
 
+/** The rolling wake: post what came due, then arm the next. */
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        perform(context, true)
-    }
-
-    private fun perform(context: Context, deliver: Boolean) {
-        val pending = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val repo = (context.applicationContext as FastApplication).repository
-                repo.load()
-                repo.state.value?.let {
-                    if (deliver) ReminderScheduler.deliver(context, it)
-                    ReminderScheduler.reconcile(context, it)
-                }
-            } finally {
-                pending.finish()
-            }
-        }
+        finishAsync { runCatching { FastReminders.reconcile(context, deliver = true) } }
     }
 }
 
+/** Puts reminders back after a reboot, an update, or a clock or time-zone change. */
 class RestoreRemindersReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (
-            intent.action !in
-                setOf(
-                    Intent.ACTION_BOOT_COMPLETED,
-                    Intent.ACTION_TIME_CHANGED,
-                    Intent.ACTION_TIMEZONE_CHANGED,
-                    Intent.ACTION_MY_PACKAGE_REPLACED,
-                )
-        )
-            return
-        val pending = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val repo = (context.applicationContext as FastApplication).repository
-                repo.load()
-                repo.state.value?.let { ReminderScheduler.reconcile(context, it) }
-            } finally {
-                pending.finish()
-            }
-        }
+        restoreReason(intent.action) ?: return
+        finishAsync { runCatching { FastReminders.reconcile(context) } }
     }
 }
+
+/** The periodic safety net (SevenKit's recovery worker). */
+class FastReminderWorker(context: Context, parameters: WorkerParameters) :
+    ReminderRecoveryWorker(context, parameters)

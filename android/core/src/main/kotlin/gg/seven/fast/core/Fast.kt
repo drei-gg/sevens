@@ -174,26 +174,6 @@ object DayArcs {
         dayArcs(day.start(zone), archive, calendarSpec(zone), now.instant())
 }
 
-/** A reminder resolved to the next moment it fires. */
-data class ScheduledReminder(val id: String, val kind: ReminderKind, val at: Double)
-
-object ReminderPlan {
-    // Calendar recurrences are resolved each time, so DST and time-zone changes never become
-    // fixed 24-hour intervals.
-    fun events(a: FastArchive, now: Double, zone: ZoneId): List<ScheduledReminder> {
-        val today = now.instant().atZone(zone).toLocalDate()
-        fun next(hour: Int, minute: Int, weekday: Int?): Double =
-            (0..7)
-                .map { today.plusDays(it.toLong()).atTime(hour, minute).atZone(zone) }
-                .first { it.toInstant().millis() > now && (weekday == null || it.dayOfWeek.foundation() == weekday) }
-                .toInstant()
-                .millis()
-        return reminderEvents(a, now.instant()).map { e ->
-            ScheduledReminder(e.id, e.kind, e.date?.millis() ?: next(e.hour ?: 0, e.minute ?: 0, e.weekday))
-        }
-    }
-}
-
 /** The sentence the app shows for a core error. */
 val Throwable.explanation: String
     get() =

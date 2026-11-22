@@ -8,14 +8,22 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import gg.seven.fast.core.*
 import gg.seven.kit.AccessStore
+import gg.seven.kit.schedule.ReminderHost
 import java.io.File
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class FastApplication : Application() {
+class FastApplication : Application(), ReminderHost {
     val repository by lazy { ArchiveRepository(this) }
+    override val reminderScheduler by lazy { FastReminders.create(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        reminderScheduler.maintain()
+    }
+
     val access by lazy { AccessStore(this, BuildConfig.PERSONAL_UNLOCK) }
     val purchaseSource by lazy { purchases(this) }
 }
@@ -117,12 +125,15 @@ class FastModel(application: Application) : AndroidViewModel(application) {
         archive.value?.let(::updateSurfaces)
     }
 
-    private fun updateSurfaces(a: FastArchive) {
-        runCatching { ReminderScheduler.reconcile(app, a) }
-            .onFailure {
-                message.value =
-                    "Your records are saved. Android could not update reminders or the timer surface; reopen the app to retry."
-            }
+    private fun updateSurfaces(@Suppress("UNUSED_PARAMETER") a: FastArchive) {
+        // Reads the saved archive, which `a` already is: the model persists before it publishes.
+        viewModelScope.launch {
+            runCatching { FastReminders.reconcile(app) }
+                .onFailure {
+                    message.value =
+                        "Your records are saved. Android could not update reminders or the timer surface; reopen the app to retry."
+                }
+        }
     }
 
     val canCreate
