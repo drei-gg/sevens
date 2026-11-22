@@ -329,7 +329,7 @@ private fun RoutineCard(model: AlarmModel, routine: Routine, now: Instant, onDel
             title = { Text("Save a routine template?") },
             text = {
                 Text(
-                    "Includes this routine's name, reason, times and mission phrase or scanned code. History, delivery status and app defaults are excluded. Import from Settings; the new copy starts turned off. Imported audio files are not included.",
+                    "Includes this routine’s name, reason, times and mission phrase or scanned code. History, delivery status and app defaults are excluded. Import from Settings; the new copy starts turned off. Imported audio files are not included.",
                     modifier =
                         Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()),
                 )

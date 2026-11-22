@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — audit fixes, 22 November 2026
+
+- Android: Open on a locked phone keeps the alarm ringing until the phone unlocks; a cancelled unlock leaves it ringing with Stop and Open, instead of silent with nothing recorded.
+- Android: alarms that go off together each keep their own notification, Stop and Open, and dismissal record; the first rings, the rest wait in order.
+- Android: notification and ringing-screen times follow the 24-hour setting after the app was closed.
+- Android: imported sounds stay out of the OS backup, which they could push past its 25 MB quota and fail entirely.
+- Both phones: the Settings test alarm plays the selected default tone and never writes History, stats or a wake-up check.
+- iOS: the editor's time picker shows the right time on days the clocks change; an emergency-stop failure shows inside the mission; Show one day respects Reduce Motion; screens, the Saved schedule widget and the alarm’s Open button read from String Catalogs (refreshed by `scripts/alarm-strings`), with plural forms (also on Android for counts).
+
 ## 18 November 2026 — imported sounds, not released
 
 - Per-alarm PCM WAV imports on both phones: native picker, owned validated copy, preview, replacement/removal and visible built-in fallback. Shared format/duration/size bounds, cancellation safety, draft-aware cleanup and explicit JSON backup/template audio exclusions. Android also releases failed players and falls back when imported/system audio cannot be prepared.

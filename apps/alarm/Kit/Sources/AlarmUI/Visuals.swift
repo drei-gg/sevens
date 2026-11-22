@@ -108,18 +108,18 @@ enum ClockFormat {
     /// "in 14 hr, 46 min", rounded down to the minute.
     static func countdown(to date: Date, from now: Date) -> String {
         let seconds = date.timeIntervalSince(now)
-        guard seconds >= 60 else { return String(localized: "in less than a minute") }
+        guard seconds >= 60 else { return f("in less than a minute") }
         let minutes = Int(seconds / 60)
         let text = Duration.seconds(minutes * 60).formatted(.units(allowed: [.days, .hours, .minutes], width: .abbreviated, maximumUnitCount: 2))
-        return String(localized: "in \(text)")
+        return String(localized: "in \(text)", bundle: .module)
     }
 
     /// "Today", "Tomorrow" or the weekday, for the day an alarm rings.
     static func day(_ date: Date, from now: Date) -> String {
         let calendar = Calendar.autoupdatingCurrent
-        if calendar.isDate(date, inSameDayAs: now) { return String(localized: "Today") }
+        if calendar.isDate(date, inSameDayAs: now) { return f("Today") }
         if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(date, inSameDayAs: tomorrow) {
-            return String(localized: "Tomorrow")
+            return f("Tomorrow")
         }
         if date.timeIntervalSince(now) < 6 * 86_400 { return date.formatted(.dateTime.weekday(.wide)) }
         return date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
@@ -155,9 +155,9 @@ enum WeekOrder {
     }
     static func spoken(_ days: [Int]) -> String {
         let set = Set(days)
-        if set.count == 7 { return String(localized: "Every day") }
-        if set == [2, 3, 4, 5, 6] { return String(localized: "Weekdays") }
-        if set == [1, 7] { return String(localized: "Weekends") }
+        if set.count == 7 { return f("Every day") }
+        if set == [2, 3, 4, 5, 6] { return f("Weekdays") }
+        if set == [1, 7] { return f("Weekends") }
         let names = Calendar.autoupdatingCurrent.weekdaySymbols
         return WeekOrder.days.filter(set.contains).map { names[$0 - 1] }.formatted(.list(type: .and))
     }
@@ -255,15 +255,15 @@ struct DialArc: Shape {
 extension MissionKind {
     var title: String {
         switch self {
-        case .none: String(localized: "None")
-        case .arithmetic: String(localized: "Arithmetic")
-        case .typing: String(localized: "Type a phrase")
-        case .code: String(localized: "Scan a code")
-        case .memory: String(localized: "Memory tiles")
-        case .shake: String(localized: "Shake")
-        case .walk: String(localized: "Walk")
-        case .numberOrder: String(localized: "Number order")
-        case .colorWord: String(localized: "Color clash")
+        case .none: f("None")
+        case .arithmetic: f("Arithmetic")
+        case .typing: f("Type a phrase")
+        case .code: f("Scan a code")
+        case .memory: f("Memory tiles")
+        case .shake: f("Shake")
+        case .walk: f("Walk")
+        case .numberOrder: f("Number order")
+        case .colorWord: f("Color clash")
         }
     }
     var symbol: String {

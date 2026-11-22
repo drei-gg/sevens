@@ -141,6 +141,28 @@ class EngineTest {
         assertTrue(engine.archive.value.installed.none { it.purpose == "followUp" })
     }
 
+    /** Settings' test alarm uses the default tone and never writes History or a follow-up. */
+    @Test
+    fun testAlarmUsesTheDefaultToneAndRecordsNothing() = runBlocking {
+        val (engine, driver) = engine()
+        engine.saveDefaults(
+            defaultAlarmDefaults().copy(tone = AlarmTone.PULSE, followUpMinutes = 5)
+        )
+        engine.testAlarm()
+        val stopped = engine.archive.value.installed.single { it.purpose == "test" }
+        assertEquals(AlarmTone.PULSE, stopped.routine.tone)
+        assertEquals(0, stopped.routine.followUpMinutes)
+        engine.dismissNative(stopped.id)
+        engine.testAlarm()
+        val opened = engine.archive.value.installed.last { it.purpose == "test" }
+        engine.openNative(opened.id)
+        assertTrue(engine.finish(engine.mission.value!!, EventKind.COMPLETED))
+        assertTrue(engine.archive.value.events.isEmpty())
+        assertTrue(engine.archive.value.installed.none { it.purpose == "followUp" })
+        assertTrue(driver.rows.values.none { it.purpose == "followUp" })
+        assertNull(engine.archive.value.pending)
+    }
+
     @Test
     fun emergencyStopCancelsTheRoutinesExtras() = runBlocking {
         val (engine, driver) = engine()
@@ -306,20 +328,31 @@ class EngineTest {
 
     @Test
     fun clockPartsFollowTheTwelveHourSetting() {
-        ClockFormat.h24 = true
-        assertEquals(
-            "07:05" to null,
-            ClockFormat.parts(425).let {
-                it.first.filter { c -> c.isDigit() || c == ':' } to it.second
-            },
-        )
-        ClockFormat.h24 = false
-        val (time, period) = ClockFormat.parts(13 * 60 + 5)
-        assertTrue(time.contains("1:05"))
-        assertNotNull(period)
-        assertEquals(
-            "in less than a minute",
-            ClockFormat.countdown(Instant.now().plusSeconds(30), Instant.now()),
-        )
+        try {
+            ClockFormat.h24Override = true
+            assertEquals(
+                "07:05" to null,
+                ClockFormat.parts(425).let {
+                    it.first.filter { c -> c.isDigit() || c == ':' } to it.second
+                },
+            )
+            ClockFormat.h24Override = false
+            val (time, period) = ClockFormat.parts(13 * 60 + 5)
+            assertTrue(time.contains("1:05"))
+            assertNotNull(period)
+            assertEquals(
+                "in less than a minute",
+                ClockFormat.countdown(Instant.now().plusSeconds(30), Instant.now()),
+            )
+        } finally {
+            ClockFormat.h24Override = null
+        }
+    }
+
+    /** No activity has to run first: the application installs the system setting at start. */
+    @Test
+    fun clockFormatReadsTheSystemSettingWithoutAnActivity() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        assertEquals(android.text.format.DateFormat.is24HourFormat(context), ClockFormat.h24)
     }
 }

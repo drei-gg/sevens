@@ -25,7 +25,7 @@ struct ImportedSounds: Sendable {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let existing = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.fileSizeKey])
         let bytes = try existing.reduce(0) { try $0 + ($1.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0) }
-        guard bytes + prepared.wav.count <= 128 * 1024 * 1024 else { throw LoopFailure.invalid("Sound storage is full. Close the editor to clear unused imports, then try again.") }
+        guard bytes + prepared.wav.count <= 128 * 1024 * 1024 else { throw LoopFailure.invalid(f("Sound storage is full. Close the editor to clear unused imports, then try again.")) }
         try prepared.wav.write(to: file(sound), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         return sound
     }

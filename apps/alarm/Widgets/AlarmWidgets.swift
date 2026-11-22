@@ -44,7 +44,7 @@ struct AlarmWidgetView: View {
                         if family != .systemMedium { Text(item.name).font(.subheadline).lineLimit(1) }
                         HStack {
                             Text(item.date, format: .dateTime.month(.abbreviated).day()).font(.caption)
-                            Text(item.purpose == "snooze" ? "Snooze" : item.purpose == "followUp" ? "Wake-up check" : item.delivery == .alarm ? "Alarm" : "Quiet reminder").font(.caption)
+                            Text(item.purpose == "snooze" ? LocalizedStringKey("Snooze") : item.purpose == "followUp" ? LocalizedStringKey("Wake-up check") : item.delivery == .alarm ? LocalizedStringKey("Alarm") : LocalizedStringKey("Quiet reminder")).font(.caption)
                         }.foregroundStyle(.secondary)
                     }
                 }

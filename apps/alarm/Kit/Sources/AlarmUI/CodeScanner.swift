@@ -10,10 +10,10 @@ struct CodeScanner: View {
     var body: some View {
         NavigationStack {
             Group {
-                if let failure { ContentUnavailableView("Could not start camera",systemImage:"camera",description:Text(failure)) }
+                if let failure { ContentUnavailableView(f("Could not start camera"),systemImage:"camera",description:Text(failure)) }
                 else if authorized && DataScannerViewController.isSupported && DataScannerViewController.isAvailable { ScannerRepresentable(onCode:onCode,onFailure:{failure = $0}).ignoresSafeArea(edges:.bottom) }
-                else { ContentUnavailableView("Camera unavailable",systemImage:"camera",description:Text("Allow camera access in Settings, or try on a supported iPhone. You can always stop a mission without scanning.")) }
-            }.task { if AVCaptureDevice.authorizationStatus(for:.video) == .notDetermined { authorized = await AVCaptureDevice.requestAccess(for:.video) } }.navigationTitle("Scan your code").toolbar { Button("Cancel") { dismiss() } }
+                else { ContentUnavailableView(f("Camera unavailable"),systemImage:"camera",description:Text(f("Allow camera access in Settings, or try on a supported iPhone. You can always stop a mission without scanning."))) }
+            }.task { if AVCaptureDevice.authorizationStatus(for:.video) == .notDetermined { authorized = await AVCaptureDevice.requestAccess(for:.video) } }.navigationTitle(f("Scan your code")).toolbar { Button(f("Cancel")) { dismiss() } }
         }
     }
 }

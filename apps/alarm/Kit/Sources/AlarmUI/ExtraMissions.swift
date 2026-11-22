@@ -12,7 +12,7 @@ struct MemoryMission: View {
     @State private var showing = true
     @State private var completed = false
     @State private var replay = 0
-    @State private var message = "Watch the tiles, then repeat the order."
+    @State private var message = f("Watch the tiles, then repeat the order.")
     var body: some View {
         VStack(spacing:Tokens.Space.m) {
             Text(message).textRole(.body).multilineTextAlignment(.center)
@@ -22,12 +22,12 @@ struct MemoryMission: View {
                         if sequence.tap(tile) {
                             if sequence.complete() { completed = true; onComplete() }
                             else { message = "\(sequence.progress()) of \(sequence.sequence().count)" }
-                        } else { message = "Try that sequence again."; replay += 1 }
+                        } else { message = f("Try that sequence again."); replay += 1 }
                     } label: { MissionTile(text:"\(tile + 1)",lit:highlighted == tile) }
                         .buttonStyle(.plain).disabled(showing || completed).accessibilityLabel("Tile \(tile + 1)").accessibilityIdentifier("memory-tile-\(tile)")
                 }
             }
-            Button("Show sequence again",systemImage:"arrow.counterclockwise") { replay += 1 }.disabled(showing || completed)
+            Button(f("Show sequence again"),systemImage:"arrow.counterclockwise") { replay += 1 }.disabled(showing || completed)
         }.task(id:replay) {
             showing = true
             // The core object holds the progress; a replay starts a fresh one on the same tiles.
@@ -41,7 +41,7 @@ struct MemoryMission: View {
                     try await Task.sleep(for:.milliseconds(850)); highlighted = nil
                     try await Task.sleep(for:.milliseconds(250))
                 }
-                showing = false; message = "Your turn. Repeat the order."
+                showing = false; message = f("Your turn. Repeat the order.")
             } catch { highlighted = nil }
         }
     }
@@ -51,7 +51,7 @@ struct NumberOrderMission: View {
     let onComplete: () -> Void
     @State private var tiles: [Int] = []
     @State private var next = 1
-    @State private var message = "Tap the numbers from smallest to largest."
+    @State private var message = f("Tap the numbers from smallest to largest.")
     var body: some View {
         VStack(spacing:Tokens.Space.m) {
             Text(message).textRole(.body).multilineTextAlignment(.center)
@@ -89,7 +89,7 @@ struct ColorWordMission: View {
     @State private var word = ColorWord.red
     @State private var ink = ColorWord.blue
     @State private var solved = 0
-    @State private var message = "Choose the ink color, not the word."
+    @State private var message = f("Choose the ink color, not the word.")
     var body: some View {
         VStack(spacing:Tokens.Space.m) {
             Text("\(solved) of \(level + 2)").textRole(.caption,emphasized:true).numeric()
@@ -98,12 +98,12 @@ struct ColorWordMission: View {
             LazyVGrid(columns:[GridItem(.flexible(),spacing:Tokens.Space.s),GridItem(.flexible(),spacing:Tokens.Space.s)],spacing:Tokens.Space.s) {
                 ForEach(ColorWord.allCases,id:\.self) { answer in
                     Button(answer.label) {
-                        if ColorWord.accepts(answer,ink:ink) { solved += 1; if solved >= level + 2 { onComplete() } else { randomize(); message = "Choose the ink color." } }
-                        else { message = "Look at the ink, not the word." }
+                        if ColorWord.accepts(answer,ink:ink) { solved += 1; if solved >= level + 2 { onComplete() } else { randomize(); message = f("Choose the ink color.") } }
+                        else { message = f("Look at the ink, not the word.") }
                     }.quickAddChip().frame(minHeight:48).disabled(solved >= level + 2)
                 }
             }
-            Text("Color vision makes this one difficult? Choose a different mission in your alarm settings.").textRole(.caption).multilineTextAlignment(.center)
+            Text(f("Color vision makes this one difficult? Choose a different mission in your alarm settings.")).textRole(.caption).multilineTextAlignment(.center)
         }.onAppear { randomize() }
     }
     func randomize() { ink = ColorWord.allCases.randomElement()!; word = ColorWord.allCases.filter {$0 != ink}.randomElement()! }
@@ -120,7 +120,7 @@ struct ColorWordMission: View {
         stop(); counter = ShakeCounter(); count = 0; message = ""; running = true
         let token = generation
         if mode == .walk {
-            guard CMPedometer.isStepCountingAvailable() else { running = false; message = "Step counting is unavailable on this device."; return }
+            guard CMPedometer.isStepCountingAvailable() else { running = false; message = f("Step counting is unavailable on this device."); return }
             pedometer.startUpdates(from:Date()) { [weak self] data,error in
                 let steps = data?.numberOfSteps.intValue
                 let failure = error?.localizedDescription
@@ -130,7 +130,7 @@ struct ColorWordMission: View {
                 }
             }
         } else {
-            guard motion.isDeviceMotionAvailable else { running = false; message = "Motion sensing is unavailable on this device."; return }
+            guard motion.isDeviceMotionAvailable else { running = false; message = f("Motion sensing is unavailable on this device."); return }
             motion.deviceMotionUpdateInterval = 0.05
             motion.startDeviceMotionUpdates(to:.main) { [weak self] data,error in
                 let failure = error?.localizedDescription
@@ -164,10 +164,10 @@ struct MovementMission: View {
             Capsule().fill(Tokens.rule).frame(height:Tokens.Space.s)
                 .overlay(alignment:.leading) { GeometryReader { g in Capsule().fill(Tokens.dataWarm).frame(width:g.size.width * min(1,Double(tracker.count) / Double(max(1,target)))) } }
                 .accessibilityHidden(true)
-            Text(mode == .walk ? "Take a short walk with your phone. Only steps after you start count." : "Hold your phone securely and shake it back and forth.").textRole(.body).multilineTextAlignment(.center)
+            Text(mode == .walk ? f("Take a short walk with your phone. Only steps after you start count.") : f("Hold your phone securely and shake it back and forth.")).textRole(.body).multilineTextAlignment(.center)
             if !tracker.message.isEmpty { Text(tracker.message).textRole(.secondary) }
-            if !tracker.running && !finished { PrimaryButton(title:"Start challenge",systemImage:"play.fill") { tracker.start(mode:mode) } }
-            Text("Motion stays on this phone and stops when you leave this challenge.").textRole(.caption).multilineTextAlignment(.center)
+            if !tracker.running && !finished { PrimaryButton(title:f("Start challenge"),systemImage:"play.fill") { tracker.start(mode:mode) } }
+            Text(f("Motion stays on this phone and stops when you leave this challenge.")).textRole(.caption).multilineTextAlignment(.center)
         }.onChange(of:tracker.count) { _, count in if count >= target && !finished { finished = true; tracker.stop(); onComplete() } }
             .onChange(of:phase) { _, value in if value != .active { tracker.stop() } }
             .onDisappear { tracker.stop() }

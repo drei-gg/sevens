@@ -319,6 +319,15 @@ class AlarmEngine(
         reload()
         var row = archive.value.installed.firstOrNull { it.id == id } ?: return
         archive.value.pending?.takeIf { it.id == row.id }?.let { row = it }
+        if (row.purpose == TEST) {
+            // The Settings test is not a routine: no record, no wake-up check.
+            val rowId = row.id
+            mutateOrThrow("Could not stop the test alarm.") { a ->
+                a.copy(pending = a.pending.takeUnless { it?.id == rowId })
+            }
+            if (mission.value?.id == rowId) mission.value = null
+            return
+        }
         if (row.occurrenceId == null) row = row.copy(occurrenceId = UUID.randomUUID())
         val event =
             newLoopEvent(
@@ -354,12 +363,15 @@ class AlarmEngine(
     suspend fun finish(row: Registration, kind: EventKind): Boolean =
         exclusive {
             try {
+                // The Settings test alarm never writes History or schedules a follow-up.
+                val record = row.purpose != TEST
                 if (kind == EventKind.SNOOZED) {
                     if (row.snoozes >= row.routine.snoozeLimit)
                         throw LoopFailure("Snooze limit reached.")
                     extra(row, row.routine.snoozeMinutes, "snooze")
                 } else if (
-                    kind == EventKind.COMPLETED &&
+                    record &&
+                        kind == EventKind.COMPLETED &&
                         row.purpose != "followUp" &&
                         row.routine.followUpMinutes > 0
                 )
@@ -380,7 +392,11 @@ class AlarmEngine(
                 }
                 driver.stop(row)
                 val event = newLoopEvent(row.routine, kind, Instant.now(), "")
-                if (!mutate { a -> a.copy(events = a.events + event, pending = null) })
+                if (
+                    !mutate { a ->
+                        a.copy(events = if (record) a.events + event else a.events, pending = null)
+                    }
+                )
                     return@exclusive false
                 mission.value = null
                 publishVerifiedWidget()
@@ -396,6 +412,10 @@ class AlarmEngine(
         mutate { it.copy(events = it.events + event) }
     }
 
+    /**
+     * Settings' ten-second test: the selected default tone, and nothing else from the defaults. It
+     * has no snooze or wake-up check, and Stop or Open never writes History.
+     */
     suspend fun testAlarm() {
         try {
             val routine =
@@ -404,10 +424,12 @@ class AlarmEngine(
                         name = "Test alarm",
                         timing = Timing.ONCE,
                         once = Instant.now().plusSeconds(10),
+                        snoozeLimit = 0,
+                        followUpMinutes = 0,
                     )
             val row =
                 newRegistration(UUID.randomUUID(), routine)
-                    .copy(date = routine.once, purpose = "test")
+                    .copy(date = routine.once, purpose = TEST)
             if (!mutate { it.copy(installed = it.installed + row) }) return
             driver.schedule(row)
             scheduling.value = "Test alarm scheduled for 10 seconds from now."
@@ -423,6 +445,9 @@ class AlarmEngine(
     }
 
     companion object {
+        /** The purpose of Settings' test alarm's registration (the core keeps its receipt). */
+        const val TEST = "test"
+
         fun timesRegistered(count: Int) =
             if (count == 1) "1 alarm time registered." else "$count alarm times registered."
     }

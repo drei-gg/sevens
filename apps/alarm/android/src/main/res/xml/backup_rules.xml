@@ -1,2 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<full-backup-content><include domain="sharedpref" path="seven-trial.xml"/><include domain="device_file" path="AlarmLoops/"/></full-backup-content>
+<!-- Imported sounds (AlarmLoops/Sounds, up to 128 MiB) stay out: they would exceed Auto Backup's
+     25 MB quota and fail the whole backup. Saved selections fall back to their built-in tone. -->
+<full-backup-content><include domain="sharedpref" path="seven-trial.xml"/><include domain="device_file" path="AlarmLoops/"/><exclude domain="device_file" path="AlarmLoops/Sounds/"/></full-backup-content>

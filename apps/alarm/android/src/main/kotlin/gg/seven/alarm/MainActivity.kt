@@ -16,7 +16,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        ClockFormat.h24 = android.text.format.DateFormat.is24HourFormat(this)
         if (savedInstanceState == null) handle(intent)
         setContent { SevenTheme { SevenRoot(model.store, AlarmContent) { AlarmApp(model) } } }
     }
@@ -30,13 +29,12 @@ class MainActivity : ComponentActivity() {
     private fun handle(intent: Intent?) {
         val id = intent?.getStringExtra(Ringing.EXTRA_OPEN)?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: return
         intent.removeExtra(Ringing.EXTRA_OPEN)
-        RingingService.silence(this)
+        RingingService.silence(id)
         model.open(id)
     }
 
     override fun onResume() {
         super.onResume()
-        ClockFormat.h24 = android.text.format.DateFormat.is24HourFormat(this)
         model.resume()
     }
 }

@@ -12,7 +12,7 @@ One-off dates and interval windows are also supported. An overnight window belon
 
 AlarmKit supplies real system alarms, fixed dates and weekly repetition. Quiet loops use local calendar notifications, split into weekday registrations. Permission denial and schedule errors are visible. Desired schedules and native receipts are separate; receipts are stored before native installation, changes retry on foreground, and failed additions preserve old registrations. There is no background finite-queue replenishment dependency for weekly schedules. The app limits quiet reminder registrations to 60 and each interval routine to 96 unique clock times, refusing silent truncation. AlarmKit may impose its own lower capacity, surfaced as a scheduling error.
 
-Alarms offer the system default plus three original bundled tones: Soft chime, Pulse and Bright bells. Media-volume preview is distinct from system alarm volume. Settings includes a ten-second alarm test. No claim of guaranteed wake-up, sound playback, unbypassable dismissal or force-quit prevention.
+Alarms offer the system default plus three original bundled tones: Soft chime, Pulse and Bright bells. Media-volume preview is distinct from system alarm volume. Settings includes a ten-second alarm test with the default tone; it has no snooze or wake-up check and writes no History. No claim of guaranteed wake-up, sound playback, unbypassable dismissal or force-quit prevention.
 
 ## Missions and snooze
 

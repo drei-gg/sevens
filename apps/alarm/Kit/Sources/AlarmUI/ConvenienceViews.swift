@@ -18,22 +18,22 @@ struct CustomNapSheet: View {
             ScrollView {
                 VStack(spacing: Tokens.Space.l) {
                     HStack(spacing: Tokens.Space.s) {
-                        wheel(String(localized: "Hours"), unit: String(localized: "hr"), selection: $hours, range: 0...12)
-                        wheel(String(localized: "Minutes"), unit: String(localized: "min"), selection: $minutes, range: 0...59)
+                        wheel(f("Hours"), unit: f("hr"), selection: $hours, range: 0...12)
+                        wheel(f("Minutes"), unit: f("min"), selection: $minutes, range: 0...59)
                     }
                     .padding(Tokens.Space.s).sevenCard()
                     TimelineView(.periodic(from: .now, by: 30)) { context in
                         VStack(spacing: Tokens.Space.xs) {
                             if valid {
-                                Text("Rings at").textRole(.caption, emphasized: true).textCase(.uppercase)
+                                Text(f("Rings at")).textRole(.caption, emphasized: true).textCase(.uppercase)
                                 ClockText(parts: ClockFormat.parts(context.date.addingTimeInterval(Double(duration) * 60)), role: .hero)
                             } else {
-                                Text("Choose between 1 minute and 12 hours.").textRole(.secondary)
+                                Text(f("Choose between 1 minute and 12 hours.")).textRole(.secondary)
                             }
                         }
                         .accessibilityElement(children: .combine)
                     }
-                    PrimaryButton(title: "Start nap", systemImage: "moon.zzz") {
+                    PrimaryButton(title: f("Start nap"), systemImage: "moon.zzz") {
                         saving = true
                         Task {
                             if await model.nap(minutes: duration) { dismiss() }
@@ -43,13 +43,13 @@ struct CustomNapSheet: View {
                     }
                     .disabled(!valid || saving).accessibilityIdentifier("start-custom-nap")
                     if let saveError { Text(saveError).foregroundStyle(Tokens.danger).textRole(.secondary) }
-                    Text("Uses your default sound, snooze and wake-up check. You can edit the nap after starting it.").textRole(.caption).multilineTextAlignment(.center)
+                    Text(f("Uses your default sound, snooze and wake-up check. You can edit the nap after starting it.")).textRole(.caption).multilineTextAlignment(.center)
                 }
                 .padding(Tokens.Space.m).frame(maxWidth: 520).frame(maxWidth: .infinity)
             }
             .sevenScreenBackground()
-            .navigationTitle("Custom nap").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .navigationTitle(f("Custom nap")).navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(f("Cancel")) { dismiss() } } }
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
@@ -76,27 +76,27 @@ struct AlarmDefaultsEditor: View {
             Section {
                 AlarmTonePicker(tone: $defaults.tone)
                 Stepper("Snooze: \(ClockFormat.minutes(defaults.snoozeMinutes))", value: $defaults.snoozeMinutes, in: 1...30)
-                Stepper(defaults.snoozeLimit == 0 ? "No snoozes" : "Snooze limit: \(defaults.snoozeLimit)", value: $defaults.snoozeLimit, in: 0...10)
-                Stepper(defaults.followUpMinutes == 0 ? "Wake-up check: off" : "Check again after \(ClockFormat.minutes(defaults.followUpMinutes))", value: $defaults.followUpMinutes, in: 0...30)
+                Stepper(defaults.snoozeLimit == 0 ? f("No snoozes") : "Snooze limit: \(defaults.snoozeLimit)", value: $defaults.snoozeLimit, in: 0...10)
+                Stepper(defaults.followUpMinutes == 0 ? f("Wake-up check: off") : "Check again after \(ClockFormat.minutes(defaults.followUpMinutes))", value: $defaults.followUpMinutes, in: 0...30)
             } footer: {
-                Text("Applies to new alarms and naps. Existing routines and quiet reminders keep their settings. Duplicates keep the original’s settings.").textRole(.caption)
+                Text(f("Applies to new alarms and naps. Existing routines and quiet reminders keep their settings. Duplicates keep the original’s settings.")).textRole(.caption)
             }
-            Section { Button("Reset defaults", systemImage: "arrow.uturn.backward") { defaults = AlarmDefaults() } }
+            Section { Button(f("Reset defaults"), systemImage: "arrow.uturn.backward") { defaults = AlarmDefaults() } }
         }
         .sevenScreenBackground()
-        .navigationTitle("New alarm defaults").navigationBarTitleDisplayMode(.inline)
-        .toolbar { Button("Save") { saving = true; Task { if await model.saveDefaults(defaults) { dismiss() }; saving = false } }.disabled(saving).accessibilityIdentifier("save-alarm-defaults") }
+        .navigationTitle(f("New alarm defaults")).navigationBarTitleDisplayMode(.inline)
+        .toolbar { Button(f("Save")) { saving = true; Task { if await model.saveDefaults(defaults) { dismiss() }; saving = false } }.disabled(saving).accessibilityIdentifier("save-alarm-defaults") }
     }
 }
 
 struct AlarmTonePicker: View {
     @Binding var tone: AlarmTone
     var body: some View {
-        Picker("Tone", selection: $tone) {
-            Text("System default").tag(AlarmTone.system)
-            Text("Soft chime").tag(AlarmTone.chime)
-            Text("Pulse").tag(AlarmTone.pulse)
-            Text("Bright bells").tag(AlarmTone.bright)
+        Picker(f("Tone"), selection: $tone) {
+            Text(f("System default")).tag(AlarmTone.system)
+            Text(f("Soft chime")).tag(AlarmTone.chime)
+            Text(f("Pulse")).tag(AlarmTone.pulse)
+            Text(f("Bright bells")).tag(AlarmTone.bright)
         }
     }
 }
@@ -107,10 +107,10 @@ struct NextOccurrenceLabel: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { context in
             Group {
-                if !routine.enabled { Text("Off") }
+                if !routine.enabled { Text(f("Off")) }
                 else if let next = routine.next(after: context.date) {
                     Text("\(ClockFormat.day(next, from: context.date)), \(ClockFormat.countdown(to: next, from: context.date))")
-                } else if routine.timing == .once { Text("Time has passed") }
+                } else if routine.timing == .once { Text(f("Time has passed")) }
             }
             .textRole(.caption).numeric()
         }

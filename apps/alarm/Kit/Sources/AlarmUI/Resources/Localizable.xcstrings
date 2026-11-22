@@ -1,1 +1,2722 @@
-{"sourceLanguage":"en","strings":{},"version":"1.0"}
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%lld alarm times registered.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld alarm time registered."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld alarm times registered."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld questions": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld question"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld questions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "16-bit PCM WAV, mono or stereo, 8–48 kHz, up to 29 seconds and 6 MB. JSON backups and templates do not include audio. Missing audio uses the fallback tone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "16-bit PCM WAV, mono or stereo, 8–48 kHz, up to 29 seconds and 6 MB. JSON backups and templates do not include audio. Missing audio uses the fallback tone."
+          }
+        }
+      }
+    },
+    "A local report with app and OS versions, alarm permission, registration counts and error flags. Leaves out names, schedules, scanned codes, phrases and history. Nothing is sent automatically. Registration counts don’t prove an alarm rang.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A local report with app and OS versions, alarm permission, registration counts and error flags. Leaves out names, schedules, scanned codes, phrases and history. Nothing is sent automatically. Registration counts don’t prove an alarm rang."
+          }
+        }
+      }
+    },
+    "About": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
+    "Add Saved schedule from the Home Screen widget gallery.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Saved schedule from the Home Screen widget gallery."
+          }
+        }
+      }
+    },
+    "Add a wake-up time and an optional mission.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a wake-up time and an optional mission."
+          }
+        }
+      }
+    },
+    "Add alarm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add alarm"
+          }
+        }
+      }
+    },
+    "Add another time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add another time"
+          }
+        }
+      }
+    },
+    "Add loop": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add loop"
+          }
+        }
+      }
+    },
+    "Alarm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm"
+          }
+        }
+      }
+    },
+    "Alarm delivery": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm delivery"
+          }
+        }
+      }
+    },
+    "Alarm permission not requested": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm permission not requested"
+          }
+        }
+      }
+    },
+    "Alarm permission unknown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm permission unknown"
+          }
+        }
+      }
+    },
+    "Alarm scheduled, but its receipt could not be updated. Retry before relying on it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm scheduled, but its receipt could not be updated. Retry before relying on it."
+          }
+        }
+      }
+    },
+    "Alarms": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarms"
+          }
+        }
+      }
+    },
+    "Alarms allowed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarms allowed"
+          }
+        }
+      }
+    },
+    "Alarms blocked in Settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarms blocked in Settings"
+          }
+        }
+      }
+    },
+    "All alarms off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All alarms off"
+          }
+        }
+      }
+    },
+    "All loops off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All loops off"
+          }
+        }
+      }
+    },
+    "Allow alarms and reminders": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow alarms and reminders"
+          }
+        }
+      }
+    },
+    "Allow alarms in Settings before relying on this schedule.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow alarms in Settings before relying on this schedule."
+          }
+        }
+      }
+    },
+    "Allow camera access in Settings, or try on a supported iPhone. You can always stop a mission without scanning.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow camera access in Settings, or try on a supported iPhone. You can always stop a mission without scanning."
+          }
+        }
+      }
+    },
+    "Allow notifications in Settings to deliver quiet reminders.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow notifications in Settings to deliver quiet reminders."
+          }
+        }
+      }
+    },
+    "Answer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer"
+          }
+        }
+      }
+    },
+    "Applies to new alarms and naps. Existing routines and quiet reminders keep their settings. Duplicates keep the original’s settings.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies to new alarms and naps. Existing routines and quiet reminders keep their settings. Duplicates keep the original’s settings."
+          }
+        }
+      }
+    },
+    "Arithmetic": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arithmetic"
+          }
+        }
+      }
+    },
+    "Bright bells": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bright bells"
+          }
+        }
+      }
+    },
+    "Built-in fallback": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in fallback"
+          }
+        }
+      }
+    },
+    "Camera unavailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera unavailable"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Check answer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check answer"
+          }
+        }
+      }
+    },
+    "Check phrase": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check phrase"
+          }
+        }
+      }
+    },
+    "Checking alarm registrations…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking alarm registrations…"
+          }
+        }
+      }
+    },
+    "Choose between 1 minute and 12 hours.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose between 1 minute and 12 hours."
+          }
+        }
+      }
+    },
+    "Choose days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose days"
+          }
+        }
+      }
+    },
+    "Choose the ink color, not the word.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the ink color, not the word."
+          }
+        }
+      }
+    },
+    "Choose the ink color.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the ink color."
+          }
+        }
+      }
+    },
+    "Clock already wakes you up and times things. If that is enough, keep your money.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clock already wakes you up and times things. If that is enough, keep your money."
+          }
+        }
+      }
+    },
+    "Clock times follow your current timezone. When the clocks change, the preview uses the next valid time and the first of a repeated time.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clock times follow your current timezone. When the clocks change, the preview uses the next valid time and the first of a repeated time."
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "Code saved on this phone": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code saved on this phone"
+          }
+        }
+      }
+    },
+    "Color clash": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color clash"
+          }
+        }
+      }
+    },
+    "Color vision makes this one difficult? Choose a different mission in your alarm settings.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Color vision makes this one difficult? Choose a different mission in your alarm settings."
+          }
+        }
+      }
+    },
+    "Completed missions, snoozes and check-ins appear here.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completed missions, snoozes and check-ins appear here."
+          }
+        }
+      }
+    },
+    "Corrections are marked as manually recorded.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corrections are marked as manually recorded."
+          }
+        }
+      }
+    },
+    "Could not record dismissal.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not record dismissal."
+          }
+        }
+      }
+    },
+    "Could not save alarm receipt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save alarm receipt."
+          }
+        }
+      }
+    },
+    "Could not save follow-up alarm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save follow-up alarm."
+          }
+        }
+      }
+    },
+    "Could not save the active mission.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save the active mission."
+          }
+        }
+      }
+    },
+    "Could not start camera": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not start camera"
+          }
+        }
+      }
+    },
+    "Could not stop the test alarm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not stop the test alarm."
+          }
+        }
+      }
+    },
+    "Couldn’t complete.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t complete."
+          }
+        }
+      }
+    },
+    "Couldn’t open your records": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t open your records"
+          }
+        }
+      }
+    },
+    "Couldn’t save": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t save"
+          }
+        }
+      }
+    },
+    "Couldn’t snooze.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t snooze."
+          }
+        }
+      }
+    },
+    "Couldn’t stop the alarm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t stop the alarm."
+          }
+        }
+      }
+    },
+    "Custom nap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom nap"
+          }
+        }
+      }
+    },
+    "Custom nap…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom nap…"
+          }
+        }
+      }
+    },
+    "Date and time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date and time"
+          }
+        }
+      }
+    },
+    "Day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "Delete routine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete routine"
+          }
+        }
+      }
+    },
+    "Delete this routine? History will stay.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this routine? History will stay."
+          }
+        }
+      }
+    },
+    "Delivery": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delivery"
+          }
+        }
+      }
+    },
+    "Difficulty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Difficulty"
+          }
+        }
+      }
+    },
+    "Done.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done."
+          }
+        }
+      }
+    },
+    "Duplicate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicate"
+          }
+        }
+      }
+    },
+    "Each time rings on its own days. Turn Wednesday off for 7:00 without changing noon or 2:00.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each time rings on its own days. Turn Wednesday off for 7:00 without changing noon or 2:00."
+          }
+        }
+      }
+    },
+    "Easy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Easy"
+          }
+        }
+      }
+    },
+    "Edit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        }
+      }
+    },
+    "Edit record": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit record"
+          }
+        }
+      }
+    },
+    "Edit routine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit routine"
+          }
+        }
+      }
+    },
+    "Edits this record": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edits this record"
+          }
+        }
+      }
+    },
+    "Edits this routine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edits this routine"
+          }
+        }
+      }
+    },
+    "Emergency stop": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emergency stop"
+          }
+        }
+      }
+    },
+    "End": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End"
+          }
+        }
+      }
+    },
+    "Every day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every day"
+          }
+        }
+      }
+    },
+    "Existing enabled alarms keep running after the trial. You can always stop alarms and read, export or delete your history.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Existing enabled alarms keep running after the trial. You can always stop alarms and read, export or delete your history."
+          }
+        }
+      }
+    },
+    "Export JSON backup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export JSON backup"
+          }
+        }
+      }
+    },
+    "Export diagnostics": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export diagnostics"
+          }
+        }
+      }
+    },
+    "Export history CSV": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export history CSV"
+          }
+        }
+      }
+    },
+    "Find a routine or group": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find a routine or group"
+          }
+        }
+      }
+    },
+    "Find a routine or note": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find a routine or note"
+          }
+        }
+      }
+    },
+    "Free trial not started. Existing alarms and history remain available.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free trial not started. Existing alarms and history remain available."
+          }
+        }
+      }
+    },
+    "Go to your saved code and scan it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go to your saved code and scan it."
+          }
+        }
+      }
+    },
+    "Group (optional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Group (optional)"
+          }
+        }
+      }
+    },
+    "Groups": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groups"
+          }
+        }
+      }
+    },
+    "Hard": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hard"
+          }
+        }
+      }
+    },
+    "History": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        }
+      }
+    },
+    "Hold your phone securely and shake it back and forth.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold your phone securely and shake it back and forth."
+          }
+        }
+      }
+    },
+    "Home Screen widget": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home Screen widget"
+          }
+        }
+      }
+    },
+    "Hound 3.5.1, Apache-2.0.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hound 3.5.1, Apache-2.0."
+          }
+        }
+      }
+    },
+    "Hours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hours"
+          }
+        }
+      }
+    },
+    "Import %lld routines and %lld history records? Existing routine IDs are kept; new routines start turned off.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import %#@routines@ and %#@records@? Existing routine IDs are kept; new routines start turned off."
+          },
+          "substitutions": {
+            "routines": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg routine"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg routines"
+                    }
+                  }
+                }
+              }
+            },
+            "records": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg history record"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg history records"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Import WAV sound": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import WAV sound"
+          }
+        }
+      }
+    },
+    "Import backup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import backup"
+          }
+        }
+      }
+    },
+    "Import routines turned off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import routines turned off"
+          }
+        }
+      }
+    },
+    "Importing sound…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importing sound…"
+          }
+        }
+      }
+    },
+    "Interval loops and complete local history": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interval loops and complete local history"
+          }
+        }
+      }
+    },
+    "Interval window": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interval window"
+          }
+        }
+      }
+    },
+    "I’m awake. Cancel wake-up checks": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I’m awake. Cancel wake-up checks"
+          }
+        }
+      }
+    },
+    "I’m up": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I’m up"
+          }
+        }
+      }
+    },
+    "JSON backups retain sound selections but not audio files. Re-import missing sounds or use their built-in fallback.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON backups retain sound selections but not audio files. Re-import missing sounds or use their built-in fallback."
+          }
+        }
+      }
+    },
+    "Last 7 days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 7 days"
+          }
+        }
+      }
+    },
+    "Less setup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Less setup"
+          }
+        }
+      }
+    },
+    "Log done": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log done"
+          }
+        }
+      }
+    },
+    "Look around first": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look around first"
+          }
+        }
+      }
+    },
+    "Look at the ink, not the word.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look at the ink, not the word."
+          }
+        }
+      }
+    },
+    "Loops": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loops"
+          }
+        }
+      }
+    },
+    "Manual check-in": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manual check-in"
+          }
+        }
+      }
+    },
+    "Medium": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medium"
+          }
+        }
+      }
+    },
+    "Memory tiles": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory tiles"
+          }
+        }
+      }
+    },
+    "Minutes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minutes"
+          }
+        }
+      }
+    },
+    "Mission": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mission"
+          }
+        }
+      }
+    },
+    "Mission completed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mission completed"
+          }
+        }
+      }
+    },
+    "Mission preview. No alarm will ring.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mission preview. No alarm will ring."
+          }
+        }
+      }
+    },
+    "Missions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missions"
+          }
+        }
+      }
+    },
+    "Motion sensing is unavailable on this device.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motion sensing is unavailable on this device."
+          }
+        }
+      }
+    },
+    "Motion stays on this phone and stops when you leave this challenge.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motion stays on this phone and stops when you leave this challenge."
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "Nap for %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nap for %@"
+          }
+        }
+      }
+    },
+    "Needs attention": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs attention"
+          }
+        }
+      }
+    },
+    "New alarm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New alarm"
+          }
+        }
+      }
+    },
+    "New alarm defaults": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New alarm defaults"
+          }
+        }
+      }
+    },
+    "New loop": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New loop"
+          }
+        }
+      }
+    },
+    "Next alarm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next alarm"
+          }
+        }
+      }
+    },
+    "Next loop": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next loop"
+          }
+        }
+      }
+    },
+    "Next seven days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next seven days"
+          }
+        }
+      }
+    },
+    "No alarms yet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No alarms yet"
+          }
+        }
+      }
+    },
+    "No loops yet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No loops yet"
+          }
+        }
+      }
+    },
+    "No recorded actions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No recorded actions"
+          }
+        }
+      }
+    },
+    "No snoozes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No snoozes"
+          }
+        }
+      }
+    },
+    "No such alarm.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No such alarm."
+          }
+        }
+      }
+    },
+    "No upcoming times. Check the schedule.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No upcoming times. Check the schedule."
+          }
+        }
+      }
+    },
+    "None": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None"
+          }
+        }
+      }
+    },
+    "Note": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        }
+      }
+    },
+    "Number order": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Number order"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "Once": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once"
+          }
+        }
+      }
+    },
+    "Only Apple handles purchase and restore requests. Scanned mission codes stay on this phone and are never opened as links.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only Apple handles purchase and restore requests. Scanned mission codes stay on this phone and are never opened as links."
+          }
+        }
+      }
+    },
+    "Only recorded actions appear here. An alarm being scheduled doesn’t prove you heard it or did the activity.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only recorded actions appear here. An alarm being scheduled doesn’t prove you heard it or did the activity."
+          }
+        }
+      }
+    },
+    "Open system settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open system settings"
+          }
+        }
+      }
+    },
+    "Open the alarm to use its mission or snooze. A wake-up check rings once after completion or a system dismissal.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the alarm to use its mission or snooze. A wake-up check rings once after completion or a system dismissal."
+          }
+        }
+      }
+    },
+    "Opening alarms…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opening alarms…"
+          }
+        }
+      }
+    },
+    "Overnight windows belong to the day they start. The end is included only when an interval lands on it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overnight windows belong to the day they start. The end is included only when an interval lands on it."
+          }
+        }
+      }
+    },
+    "Phrase": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phrase"
+          }
+        }
+      }
+    },
+    "Portable backups and exports": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portable backups and exports"
+          }
+        }
+      }
+    },
+    "Preview imported sound": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview imported sound"
+          }
+        }
+      }
+    },
+    "Preview mission": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview mission"
+          }
+        }
+      }
+    },
+    "Preview mode: no alarms are scheduled": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview mode: no alarms are scheduled"
+          }
+        }
+      }
+    },
+    "Preview tone": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview tone"
+          }
+        }
+      }
+    },
+    "Preview uses media volume. The ringing alarm uses the system alarm volume; this app doesn’t override it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview uses media volume. The ringing alarm uses the system alarm volume; this app doesn’t override it."
+          }
+        }
+      }
+    },
+    "Pulse": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pulse"
+          }
+        }
+      }
+    },
+    "Quick nap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick nap"
+          }
+        }
+      }
+    },
+    "Quiet reminder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quiet reminder"
+          }
+        }
+      }
+    },
+    "Recorded actions per day, last seven days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded actions per day, last seven days"
+          }
+        }
+      }
+    },
+    "Recorded as": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded as"
+          }
+        }
+      }
+    },
+    "Recorded each day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded each day"
+          }
+        }
+      }
+    },
+    "Recorded time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded time"
+          }
+        }
+      }
+    },
+    "Remove time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove time"
+          }
+        }
+      }
+    },
+    "Replace saved code": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace saved code"
+          }
+        }
+      }
+    },
+    "Replace sound": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace sound"
+          }
+        }
+      }
+    },
+    "Request permissions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request permissions"
+          }
+        }
+      }
+    },
+    "Reset defaults": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset defaults"
+          }
+        }
+      }
+    },
+    "Retry schedule registration": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry schedule registration"
+          }
+        }
+      }
+    },
+    "Ring a test alarm in 10 seconds": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ring a test alarm in 10 seconds"
+          }
+        }
+      }
+    },
+    "Rings at": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rings at"
+          }
+        }
+      }
+    },
+    "Rings once": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rings once"
+          }
+        }
+      }
+    },
+    "Routine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routine"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "Save a routine template? Includes its name, reason, times and mission phrase or scanned code. No history, delivery status or app defaults. Import from Settings; the new copy starts turned off. Imported audio files are not included.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save a routine template? Includes its name, reason, times and mission phrase or scanned code. No history, delivery status or app defaults. Import from Settings; the new copy starts turned off. Imported audio files are not included."
+          }
+        }
+      }
+    },
+    "Save routine template": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save routine template"
+          }
+        }
+      }
+    },
+    "Save template": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save template"
+          }
+        }
+      }
+    },
+    "Scan a code": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan a code"
+          }
+        }
+      }
+    },
+    "Scan code": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan code"
+          }
+        }
+      }
+    },
+    "Scan your code": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan your code"
+          }
+        }
+      }
+    },
+    "Sets a one-off alarm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sets a one-off alarm"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "Several times. Different weekdays. One routine.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Several times. Different weekdays. One routine."
+          }
+        }
+      }
+    },
+    "Shake": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shake"
+          }
+        }
+      }
+    },
+    "Shared times with different weekdays": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared times with different weekdays"
+          }
+        }
+      }
+    },
+    "Show one day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show one day"
+          }
+        }
+      }
+    },
+    "Show sequence again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show sequence again"
+          }
+        }
+      }
+    },
+    "Shows upcoming saved alarms and loops, including routine names. Refreshes after changes and expires after a day without an app check. A schedule is not proof of delivery.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows upcoming saved alarms and loops, including routine names. Refreshes after changes and expires after a day without an app check. A schedule is not proof of delivery."
+          }
+        }
+      }
+    },
+    "Snooze and wake-up check": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snooze and wake-up check"
+          }
+        }
+      }
+    },
+    "Snooze limit reached.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snooze limit reached."
+          }
+        }
+      }
+    },
+    "Snoozed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snoozed"
+          }
+        }
+      }
+    },
+    "Soft chime": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soft chime"
+          }
+        }
+      }
+    },
+    "Sound": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound"
+          }
+        }
+      }
+    },
+    "Sound storage is full. Close the editor to clear unused imports, then try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound storage is full. Close the editor to clear unused imports, then try again."
+          }
+        }
+      }
+    },
+    "Start": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        }
+      }
+    },
+    "Start challenge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start challenge"
+          }
+        }
+      }
+    },
+    "Start nap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start nap"
+          }
+        }
+      }
+    },
+    "Start the trial or unlock in Settings to create or edit schedules. Existing enabled alarms keep running.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start the trial or unlock in Settings to create or edit schedules. Existing enabled alarms keep running."
+          }
+        }
+      }
+    },
+    "Step counting is unavailable on this device.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step counting is unavailable on this device."
+          }
+        }
+      }
+    },
+    "Stop alarm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop alarm"
+          }
+        }
+      }
+    },
+    "Stop preview": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop preview"
+          }
+        }
+      }
+    },
+    "Stop without completing the mission?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop without completing the mission?"
+          }
+        }
+      }
+    },
+    "Stored on this iPhone. No accounts, ads or analytics. Your device backup may include these records. Imports add new routines turned off; they never arm alarms on their own.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stored on this iPhone. No accounts, ads or analytics. Your device backup may include these records. Imports add new routines turned off; they never arm alarms on their own."
+          }
+        }
+      }
+    },
+    "System default": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System default"
+          }
+        }
+      }
+    },
+    "System dismissal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System dismissal"
+          }
+        }
+      }
+    },
+    "Take a short walk with your phone. Only steps after you start count.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Take a short walk with your phone. Only steps after you start count."
+          }
+        }
+      }
+    },
+    "Tap the numbers from smallest to largest.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the numbers from smallest to largest."
+          }
+        }
+      }
+    },
+    "Test alarm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test alarm"
+          }
+        }
+      }
+    },
+    "Test alarm scheduled for 10 seconds from now.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test alarm scheduled for 10 seconds from now."
+          }
+        }
+      }
+    },
+    "That’s a different code.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That’s a different code."
+          }
+        }
+      }
+    },
+    "The Home Screen widget could not refresh. Open the app for the latest schedule.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Home Screen widget could not refresh. Open the app for the latest schedule."
+          }
+        }
+      }
+    },
+    "The alarm is no longer in your saved schedule.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The alarm is no longer in your saved schedule."
+          }
+        }
+      }
+    },
+    "The phrase doesn’t match yet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The phrase doesn’t match yet."
+          }
+        }
+      }
+    },
+    "The widget shared container is unavailable.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The widget shared container is unavailable."
+          }
+        }
+      }
+    },
+    "This adds wake-up missions, flexible time loops and a history you can keep. Try everything for 7 days, then a one-time purchase.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This adds wake-up missions, flexible time loops and a history you can keep. Try everything for 7 days, then a one-time purchase."
+          }
+        }
+      }
+    },
+    "This adds wake-up missions, flexible time loops and a history you can keep. Try everything for 7 days, then {price}, once. Nothing renews.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This adds wake-up missions, flexible time loops and a history you can keep. Try everything for 7 days, then {price}, once. Nothing renews."
+          }
+        }
+      }
+    },
+    "This audio file is missing. The fallback tone will play; import it again to restore your sound.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This audio file is missing. The fallback tone will play; import it again to restore your sound."
+          }
+        }
+      }
+    },
+    "This backup is larger than 32 MB.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This backup is larger than 32 MB."
+          }
+        }
+      }
+    },
+    "This sound could not be previewed. Choose another sound.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This sound could not be previewed. Choose another sound."
+          }
+        }
+      }
+    },
+    "This tone isn’t in this build.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This tone isn’t in this build."
+          }
+        }
+      }
+    },
+    "Time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time"
+          }
+        }
+      }
+    },
+    "Time for your routine.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time for your routine."
+          }
+        }
+      }
+    },
+    "Time has passed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time has passed"
+          }
+        }
+      }
+    },
+    "Time loops": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time loops"
+          }
+        }
+      }
+    },
+    "Time window": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time window"
+          }
+        }
+      }
+    },
+    "Timing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timing"
+          }
+        }
+      }
+    },
+    "Today": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        }
+      }
+    },
+    "Tomorrow": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow"
+          }
+        }
+      }
+    },
+    "Tone": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tone"
+          }
+        }
+      }
+    },
+    "Troubleshooting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Troubleshooting"
+          }
+        }
+      }
+    },
+    "Try again": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
+    "Try another name or note.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try another name or note."
+          }
+        }
+      }
+    },
+    "Try mission": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try mission"
+          }
+        }
+      }
+    },
+    "Try mission: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try mission: %@"
+          }
+        }
+      }
+    },
+    "Try that one again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try that one again."
+          }
+        }
+      }
+    },
+    "Try that sequence again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try that sequence again."
+          }
+        }
+      }
+    },
+    "Turn one on below, or add another.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn one on below, or add another."
+          }
+        }
+      }
+    },
+    "Type a phrase": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type a phrase"
+          }
+        }
+      }
+    },
+    "Type the phrase": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type the phrase"
+          }
+        }
+      }
+    },
+    "Unlock to re-enable routines.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock to re-enable routines."
+          }
+        }
+      }
+    },
+    "Unlock to re-enable this routine. Existing enabled alarms keep running.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock to re-enable this routine. Existing enabled alarms keep running."
+          }
+        }
+      }
+    },
+    "Use built-in tone": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use built-in tone"
+          }
+        }
+      }
+    },
+    "Uses your default sound, snooze and wake-up check. You can edit the nap after starting it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses your default sound, snooze and wake-up check. You can edit the nap after starting it."
+          }
+        }
+      }
+    },
+    "Uses your selected tone and the system alarm volume. Test on your phone before relying on an alarm. iOS provides its own Stop control.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses your selected tone and the system alarm volume. Test on your phone before relying on an alarm. iOS provides its own Stop control."
+          }
+        }
+      }
+    },
+    "Wake up": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake up"
+          }
+        }
+      }
+    },
+    "Wake-up check scheduled": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake-up check scheduled"
+          }
+        }
+      }
+    },
+    "Wake-up check: off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake-up check: off"
+          }
+        }
+      }
+    },
+    "Wake-up mission": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake-up mission"
+          }
+        }
+      }
+    },
+    "Wake-up missions and follow-up checks": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake-up missions and follow-up checks"
+          }
+        }
+      }
+    },
+    "Walk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walk"
+          }
+        }
+      }
+    },
+    "Watch the tiles, then repeat the order.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Watch the tiles, then repeat the order."
+          }
+        }
+      }
+    },
+    "Weekdays": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekdays"
+          }
+        }
+      }
+    },
+    "Weekends": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekends"
+          }
+        }
+      }
+    },
+    "Weekly times": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly times"
+          }
+        }
+      }
+    },
+    "Why get up? (optional)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Why get up? (optional)"
+          }
+        }
+      }
+    },
+    "Yesterday": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday"
+          }
+        }
+      }
+    },
+    "Your data": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data"
+          }
+        }
+      }
+    },
+    "Your iPhone already has alarms.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your iPhone already has alarms."
+          }
+        }
+      }
+    },
+    "Your turn. Repeat the order.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your turn. Repeat the order."
+          }
+        }
+      }
+    },
+    "completed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "completed"
+          }
+        }
+      }
+    },
+    "hr": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hr"
+          }
+        }
+      }
+    },
+    "iOS keeps its own Stop control. A mission records completion; it can’t prevent shutdown or system dismissal.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS keeps its own Stop control. A mission records completion; it can’t prevent shutdown or system dismissal."
+          }
+        }
+      }
+    },
+    "in %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %@"
+          }
+        }
+      }
+    },
+    "in less than a minute": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in less than a minute"
+          }
+        }
+      }
+    },
+    "min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "min"
+          }
+        }
+      }
+    },
+    "recorded actions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "recorded actions"
+          }
+        }
+      }
+    },
+    "…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "…"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

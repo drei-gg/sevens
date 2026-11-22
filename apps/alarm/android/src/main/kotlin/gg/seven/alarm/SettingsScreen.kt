@@ -17,6 +17,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gg.seven.alarm.core.AlarmDefaults
@@ -124,7 +125,7 @@ fun SettingsScreen(model: AlarmModel) {
         Section(
             title = "Your data",
             footer =
-                "Stored on this phone. No accounts, ads or analytics. Your phone’s backup may include these records. Imports add new routines turned off; they never arm alarms on their own. JSON backups retain sound selections but not audio files; re-import missing sounds or use their built-in fallback.",
+                "Stored on this phone. No accounts, ads or analytics. Your phone’s backup may include these records. Imports add new routines turned off; they never arm alarms on their own. JSON backups and your phone’s backup retain sound selections but not imported audio files; re-import missing sounds or use their built-in fallback.",
         ) {
             action("Export JSON backup", Icons.Outlined.Share) {
                 exportJson.launch("alarm-loops-backup.json")
@@ -157,8 +158,19 @@ fun SettingsScreen(model: AlarmModel) {
         AlertDialog(
             onDismissRequest = { model.importPreview.value = null },
             title = {
+                val records =
+                    pluralStringResource(
+                        R.plurals.history_records,
+                        incoming.events.size,
+                        incoming.events.size,
+                    )
                 Text(
-                    "Import ${incoming.routines.size} routines and ${incoming.events.size} history records?"
+                    pluralStringResource(
+                        R.plurals.import_routines,
+                        incoming.routines.size,
+                        incoming.routines.size,
+                        records,
+                    )
                 )
             },
             text = { Text("Existing routine IDs are kept; new routines start turned off.") },

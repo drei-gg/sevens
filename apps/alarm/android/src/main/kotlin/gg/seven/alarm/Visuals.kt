@@ -44,11 +44,24 @@ import kotlin.math.sin
 
 /**
  * Times the way the phone's clock writes them, split so the hours and minutes can be big and the
- * AM/PM small, as clock apps do (iOS ClockFormat). [h24] follows the system setting; the activity
- * and service refresh it.
+ * AM/PM small, as clock apps do (iOS ClockFormat). [h24] reads the system setting each time, through
+ * the application context [AlarmApplication] installs before any activity, receiver or service
+ * runs, so a notification or ringing screen after process death follows it too.
  */
 object ClockFormat {
-    @Volatile var h24 = false
+    /** Reads the system setting through the application context (which lives as the process). */
+    @Volatile private var system: (() -> Boolean)? = null
+
+    /** Tests pin the clock style; null follows the system setting. */
+    @Volatile var h24Override: Boolean? = null
+
+    fun install(context: android.content.Context) {
+        val app = context.applicationContext
+        system = { android.text.format.DateFormat.is24HourFormat(app) }
+    }
+
+    val h24: Boolean
+        get() = h24Override ?: system?.invoke() ?: false
 
     private val locale
         get() = Locale.getDefault()

@@ -54,6 +54,7 @@ class AlarmApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        ClockFormat.install(this)
         Ringing.createChannels(this)
         scope.launch {
             widgetRefresh.collectLatest {
@@ -130,7 +131,7 @@ class RestoreReceiver : BroadcastReceiver() {
 class StopReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val id = NativeAlarmDriver.fireId(intent) ?: return
-        RingingService.silence(context)
+        RingingService.silence(id)
         work(context) { engine -> runCatching { engine.dismissNative(id) } }
     }
 }

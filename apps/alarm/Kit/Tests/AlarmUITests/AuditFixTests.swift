@@ -97,4 +97,40 @@ import AlarmCore
         #expect(m.error == nil)
         #expect(m.archive.events.last?.kind == .emergencyStop)
     }
+    /// Settings' test alarm uses the selected default tone and never writes History or a follow-up.
+    @Test func testAlarmUsesTheDefaultToneAndRecordsNothing() async throws {
+        let (m,d) = model(); await m.start()
+        var defaults = AlarmDefaults(); defaults.tone = .pulse; defaults.followUpMinutes = 5
+        #expect(await m.saveDefaults(defaults))
+        await m.testAlarm()
+        let stopped = try #require(m.archive.installed.first { $0.purpose == "test" })
+        #expect(stopped.routine.tone == .pulse); #expect(stopped.routine.followUpMinutes == 0)
+        #expect(ImportedSounds.live.soundName(stopped.routine) == "alarm-pulse.wav")
+        try await m.dismissNative(stopped.id.uuidString)
+        await m.testAlarm()
+        let opened = try #require(m.archive.installed.last { $0.purpose == "test" && $0.id != stopped.id })
+        try await m.openNative(opened.id.uuidString)
+        #expect(await m.finish(try #require(m.mission),kind:.completed))
+        #expect(m.archive.events.isEmpty)
+        #expect(!m.archive.installed.contains { $0.purpose == "followUp" })
+        #expect(!d.rows.values.contains { $0.purpose == "followUp" })
+        #expect(m.archive.pending == nil)
+    }
+    /// The time picker builds its date from the hour and minute: on the days the clocks change every
+    /// stored time round-trips, including one inside the spring-forward gap.
+    @Test func minutePickerSurvivesDaylightSavingDays() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try #require(TimeZone(identifier: "America/New_York"))
+        for (y, mo, d) in [(2026, 3, 8), (2026, 11, 1)] {
+            let day = try #require(calendar.date(from: DateComponents(year: y, month: mo, day: d, hour: 12)))
+            for minute in Int32(0)..<1440 {
+                let date = ClockMinute.date(for: minute, near: day, calendar: calendar)
+                #expect(ClockMinute.minute(of: date, calendar: calendar) == minute)
+            }
+        }
+        // 10:00 on the spring-forward day is 10:00, not 11:00 as start-of-day plus an offset gave.
+        let spring = try #require(calendar.date(from: DateComponents(year: 2026, month: 3, day: 8, hour: 12)))
+        let ten = ClockMinute.date(for: 600, near: spring, calendar: calendar)
+        #expect(calendar.isDate(ten, inSameDayAs: spring)); #expect(calendar.component(.hour, from: ten) == 10)
+    }
 }

@@ -216,7 +216,14 @@ fun MissionScreen(model: AlarmModel, routine: Routine, row: Registration?, onClo
                     TextButton(
                         onClick = {
                             emergency = false
-                            if (row != null) model.run { finish(row, EventKind.EMERGENCY_STOP) }
+                            // The app's snackbar sits under this dialog, so a failure shows here.
+                            if (row != null)
+                                model.run {
+                                    if (!finish(row, EventKind.EMERGENCY_STOP)) {
+                                        feedback = error.value ?: "Couldn’t stop the alarm."
+                                        error.value = null
+                                    }
+                                }
                         },
                         colors =
                             ButtonDefaults.textButtonColors(

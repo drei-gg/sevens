@@ -7,6 +7,7 @@ import AlarmCore
 /// Only recorded actions count; a scheduled time passing is never shown as done (SPEC).
 struct HistoryScreen: View {
     @Environment(AlarmModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var search = ""
     @State private var filter = false
     @State private var date = Date()
@@ -28,16 +29,16 @@ struct HistoryScreen: View {
                 Section { summary.bareListRow() }
             }
             Section {
-                Toggle("Show one day", isOn: $filter.animation())
-                if filter { DatePicker("Day", selection: $date, in: ...Date(), displayedComponents: .date) }
+                Toggle(f("Show one day"), isOn: reduceMotion ? $filter : $filter.animation())
+                if filter { DatePicker(f("Day"), selection: $date, in: ...Date(), displayedComponents: .date) }
             } footer: {
-                Text("Only recorded actions appear here. An alarm being scheduled doesn’t prove you heard it or did the activity.").textRole(.caption)
+                Text(f("Only recorded actions appear here. An alarm being scheduled doesn’t prove you heard it or did the activity.")).textRole(.caption)
             }
             if events.isEmpty {
                 ContentUnavailableView {
-                    Label(search.isEmpty ? "No recorded actions" : "No results for “\(search)”", systemImage: "calendar")
+                    Label(search.isEmpty ? f("No recorded actions") : "No results for “\(search)”", systemImage: "calendar")
                 } description: {
-                    Text(search.isEmpty ? "Completed missions, snoozes and check-ins appear here." : "Try another name or note.")
+                    Text(search.isEmpty ? f("Completed missions, snoozes and check-ins appear here.") : f("Try another name or note."))
                 }
                 .bareListRow()
             }
@@ -46,7 +47,7 @@ struct HistoryScreen: View {
                     ForEach(group.events) { event in
                         Button { editing = event } label: { EventRow(event: event) }
                             .buttonStyle(.plain)
-                            .swipeActions { Button("Delete", role: .destructive) { Task { _ = await model.mutate { $0.events.removeAll { $0.id == event.id } } } } }
+                            .swipeActions { Button(f("Delete"), role: .destructive) { Task { _ = await model.mutate { $0.events.removeAll { $0.id == event.id } } } } }
                     }
                 } header: {
                     Text(dayTitle(group.day)).foregroundStyle(Tokens.muted)
@@ -55,8 +56,8 @@ struct HistoryScreen: View {
         }
         .listSectionSpacing(.compact)
         .sevenScreenBackground()
-        .navigationTitle("History")
-        .searchable(text: $search, prompt: "Find a routine or note")
+        .navigationTitle(f("History"))
+        .searchable(text: $search, prompt: f("Find a routine or note"))
         .sheet(item: $editing) { EventEditor(event: $0) }
     }
 
@@ -73,11 +74,11 @@ struct HistoryScreen: View {
         let counts = week.map { day in DayCount(day: day, count: recent.filter { calendar.isDate($0.date, inSameDayAs: day) }.count) }
         return VStack(spacing: Tokens.Space.ms) {
             StatGrid {
-                StatTile(title: String(localized: "Last 7 days"), value: recent.count.formatted(), detail: String(localized: "recorded actions"))
-                StatTile(title: String(localized: "Missions"), value: missions.formatted(), detail: String(localized: "completed"))
+                StatTile(title: f("Last 7 days"), value: recent.count.formatted(), detail: f("recorded actions"))
+                StatTile(title: f("Missions"), value: missions.formatted(), detail: f("completed"))
             }
             VStack(alignment: .leading, spacing: Tokens.Space.s) {
-                Text("Recorded each day").textRole(.caption, emphasized: true).textCase(.uppercase)
+                Text(f("Recorded each day")).textRole(.caption, emphasized: true).textCase(.uppercase)
                 Chart(counts) { item in
                     BarMark(x: .value("Day", item.day, unit: .day), y: .value("Records", item.count), width: .ratio(0.55))
                         .foregroundStyle(Tokens.dataWarm)
@@ -95,7 +96,7 @@ struct HistoryScreen: View {
                     }
                 }
                 .frame(minHeight: 140)
-                .accessibilityLabel("Recorded actions per day, last seven days")
+                .accessibilityLabel(f("Recorded actions per day, last seven days"))
             }
             .padding(Tokens.Space.m).sevenCard()
         }
@@ -104,8 +105,8 @@ struct HistoryScreen: View {
 
     private func dayTitle(_ day: Date) -> String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(day) { return String(localized: "Today") }
-        if calendar.isDateInYesterday(day) { return String(localized: "Yesterday") }
+        if calendar.isDateInToday(day) { return f("Today") }
+        if calendar.isDateInYesterday(day) { return f("Yesterday") }
         return day.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
     }
 }
@@ -138,18 +139,18 @@ struct EventRow: View {
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityHint("Edits this record")
+        .accessibilityHint(f("Edits this record"))
     }
 }
 
 func eventName(_ kind: EventKind) -> String {
     switch kind {
-    case .completed: String(localized: "Mission completed")
-    case .dismissed: String(localized: "System dismissal")
-    case .snoozed: String(localized: "Snoozed")
-    case .emergencyStop: String(localized: "Emergency stop")
-    case .manual: String(localized: "Manual check-in")
-    case .followUpScheduled: String(localized: "Wake-up check scheduled")
+    case .completed: f("Mission completed")
+    case .dismissed: f("System dismissal")
+    case .snoozed: f("Snoozed")
+    case .emergencyStop: f("Emergency stop")
+    case .manual: f("Manual check-in")
+    case .followUpScheduled: f("Wake-up check scheduled")
     }
 }
 func eventSymbol(_ kind: EventKind) -> String {
@@ -171,22 +172,22 @@ struct EventEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    LabeledContent("Routine", value: event.name)
-                    LabeledContent("Recorded as", value: eventName(event.kind))
+                    LabeledContent(f("Routine"), value: event.name)
+                    LabeledContent(f("Recorded as"), value: eventName(event.kind))
                 }
                 Section {
-                    DatePicker("Recorded time", selection: $event.date, in: ...Date())
-                    TextField("Note", text: $event.note, axis: .vertical)
+                    DatePicker(f("Recorded time"), selection: $event.date, in: ...Date())
+                    TextField(f("Note"), text: $event.note, axis: .vertical)
                 } footer: {
-                    Text("Corrections are marked as manually recorded.").textRole(.caption)
+                    Text(f("Corrections are marked as manually recorded.")).textRole(.caption)
                 }
             }
             .sevenScreenBackground()
-            .navigationTitle("Edit record").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(f("Edit record")).navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(f("Cancel")) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { var copy = event; copy.kind = .manual; let saved = copy; Task { if await model.mutate({ a in if let i = a.events.firstIndex(where: { item in item.id == saved.id }) { a.events[i] = saved } }) { dismiss() } } }
+                    Button(f("Save")) { var copy = event; copy.kind = .manual; let saved = copy; Task { if await model.mutate({ a in if let i = a.events.firstIndex(where: { item in item.id == saved.id }) { a.events[i] = saved } }) { dismiss() } } }
                 }
             }
         }

@@ -1,0 +1,116 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Alarm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alarm"
+          }
+        }
+      }
+    },
+    "Check your saved schedule in the app.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your saved schedule in the app."
+          }
+        }
+      }
+    },
+    "Checked %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked %@"
+          }
+        }
+      }
+    },
+    "No upcoming times": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No upcoming times"
+          }
+        }
+      }
+    },
+    "Open to check scheduling": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open to check scheduling"
+          }
+        }
+      }
+    },
+    "Open to refresh": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open to refresh"
+          }
+        }
+      }
+    },
+    "Quiet reminder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quiet reminder"
+          }
+        }
+      }
+    },
+    "Saved schedule": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved schedule"
+          }
+        }
+      }
+    },
+    "Snooze": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snooze"
+          }
+        }
+      }
+    },
+    "Upcoming alarms and loops, including routine names. Open the app to check scheduling. This does not confirm delivery.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upcoming alarms and loops, including routine names. Open the app to check scheduling. This does not confirm delivery."
+          }
+        }
+      }
+    },
+    "Wake-up check": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake-up check"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

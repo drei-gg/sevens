@@ -9,7 +9,7 @@ import AlarmCore
     func play(_ url: URL) throws {
         stop()
         let next = try AVAudioPlayer(contentsOf: url); next.delegate = self
-        guard next.play() else { throw LoopFailure.invalid("This sound could not be previewed. Choose another sound.") }
+        guard next.play() else { throw LoopFailure.invalid(f("This sound could not be previewed. Choose another sound.")) }
         player = next; playing = true
     }
     func stop() { player?.stop(); player = nil; playing = false }

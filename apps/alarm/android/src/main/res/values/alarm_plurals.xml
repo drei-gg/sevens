@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="alarms_waiting">
+        <item quantity="one">%d more alarm is waiting</item>
+        <item quantity="other">%d more alarms are waiting</item>
+    </plurals>
+    <plurals name="import_routines">
+        <item quantity="one">Import %1$d routine and %2$s?</item>
+        <item quantity="other">Import %1$d routines and %2$s?</item>
+    </plurals>
+    <plurals name="history_records">
+        <item quantity="one">%d history record</item>
+        <item quantity="other">%d history records</item>
+    </plurals>
+</resources>

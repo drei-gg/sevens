@@ -138,8 +138,7 @@ class NativeAlarmDriver(private val context: Context) : AlarmDriver {
     }
 
     override fun stop(row: Registration) {
-        if (row.routine.delivery == Delivery.ALARM && Ringing.current.value?.id == row.id)
-            RingingService.silence(context)
+        if (row.routine.delivery == Delivery.ALARM) RingingService.silence(row.id)
     }
 
     companion object {

@@ -42,7 +42,7 @@ struct RoutinesScreen: View {
             if kind == .alarm { napSection }
             if model.archive.installed.contains(where: { $0.purpose == "followUp" }) {
                 Section {
-                    Button("I’m awake. Cancel wake-up checks", systemImage: "checkmark.circle") { Task { await model.clearWakeUpChecks() } }
+                    Button(f("I’m awake. Cancel wake-up checks"), systemImage: "checkmark.circle") { Task { await model.clearWakeUpChecks() } }
                 }
             }
             if !groups.isEmpty {
@@ -51,7 +51,7 @@ struct RoutinesScreen: View {
                         Toggle(group, isOn: Binding(get: { model.archive.routines.filter { $0.group?.trimmingCharacters(in: .whitespacesAndNewlines) == group }.allSatisfy(\.enabled) },
                                                     set: { value in Task { await model.toggleGroup(group, enabled: value) } }))
                     }
-                } header: { Text("Groups").foregroundStyle(Tokens.muted) }
+                } header: { Text(f("Groups")).foregroundStyle(Tokens.muted) }
             }
             if !search.isEmpty && routines.isEmpty {
                 ContentUnavailableView.search(text: search)
@@ -62,35 +62,35 @@ struct RoutinesScreen: View {
                                onTry: { model.previewMission = routine },
                                onLog: { Task { await model.manual(routine, date: Date()) } })
                         .swipeActions {
-                            Button("Delete", role: .destructive) { deleting = routine }
-                            Button("Duplicate") { Task { await model.duplicate(routine) } }
+                            Button(f("Delete"), role: .destructive) { deleting = routine }
+                            Button(f("Duplicate")) { Task { await model.duplicate(routine) } }
                         }
                         .contextMenu {
-                            Button("Edit", systemImage: "pencil") { editing = routine }
-                            Button("Duplicate", systemImage: "plus.square.on.square") { Task { await model.duplicate(routine) } }
-                            Button("Save routine template", systemImage: "square.and.arrow.up") { template = routine }
-                            if routine.mission != .none { Button("Try mission", systemImage: routine.mission.symbol) { model.previewMission = routine } }
-                            Button("Log done", systemImage: "checkmark") { Task { await model.manual(routine, date: Date()) } }
+                            Button(f("Edit"), systemImage: "pencil") { editing = routine }
+                            Button(f("Duplicate"), systemImage: "plus.square.on.square") { Task { await model.duplicate(routine) } }
+                            Button(f("Save routine template"), systemImage: "square.and.arrow.up") { template = routine }
+                            if routine.mission != .none { Button(f("Try mission"), systemImage: routine.mission.symbol) { model.previewMission = routine } }
+                            Button(f("Log done"), systemImage: "checkmark") { Task { await model.manual(routine, date: Date()) } }
                             Divider()
-                            Button("Delete", systemImage: "trash", role: .destructive) { deleting = routine }
+                            Button(f("Delete"), systemImage: "trash", role: .destructive) { deleting = routine }
                         }
                 }
             }
             Section {
                 Label { Text(model.scheduling).textRole(.caption) } icon: { Image(systemName: "bell.badge").foregroundStyle(Tokens.muted) }
                     .accessibilityIdentifier("scheduling-status")
-                if !model.isPreview { Button("Allow alarms and reminders") { Task { await model.authorize() } } }
+                if !model.isPreview { Button(f("Allow alarms and reminders")) { Task { await model.authorize() } } }
             }
         }
         .listSectionSpacing(.compact)
         .sevenScreenBackground()
-        .navigationTitle(kind == .alarm ? "Alarms" : "Time loops")
+        .navigationTitle(kind == .alarm ? f("Alarms") : f("Time loops"))
         .modifier(SearchWhenMany(count: all.count, text: $search))
         .sensoryFeedback(.success, trigger: napsStarted)
         .sheet(item: $editing, onDismiss: { ImportedSounds.live.prune(model.archive) }) { RoutineEditor(routine: $0) }
         .sheet(isPresented: $customNap) { CustomNapSheet() }
-        .confirmationDialog("Save a routine template? Includes its name, reason, times and mission phrase or scanned code. No history, delivery status or app defaults. Import from Settings; the new copy starts turned off. Imported audio files are not included.", isPresented: Binding(get: { template != nil }, set: { if !$0 { template = nil } }), titleVisibility: .visible) {
-            Button("Save template") {
+        .confirmationDialog(f("Save a routine template? Includes its name, reason, times and mission phrase or scanned code. No history, delivery status or app defaults. Import from Settings; the new copy starts turned off. Imported audio files are not included."), isPresented: Binding(get: { template != nil }, set: { if !$0 { template = nil } }), titleVisibility: .visible) {
+            Button(f("Save template")) {
                 guard let routine = template else { return }
                 do {
                     templateDocument = BackupDocument(data: Data(try LoopFailure.sentence { try routineTemplate(routine: routine) }))
@@ -102,8 +102,8 @@ struct RoutinesScreen: View {
         .fileExporter(isPresented: $exportingTemplate, document: templateDocument, contentType: .json, defaultFilename: "routine-template") {
             if case let .failure(error) = $0 { model.error = error.localizedDescription }
         }
-        .confirmationDialog("Delete this routine? History will stay.", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
-            Button("Delete routine", role: .destructive) { if let r = deleting { Task { await model.delete(r) } }; deleting = nil }
+        .confirmationDialog(f("Delete this routine? History will stay."), isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
+            Button(f("Delete routine"), role: .destructive) { if let r = deleting { Task { await model.delete(r) } }; deleting = nil }
         }
     }
 
@@ -116,17 +116,17 @@ struct RoutinesScreen: View {
         let center = VStack(spacing: Tokens.Space.xs) {
             if let upcoming {
                 let routine = upcoming.0, date = upcoming.1
-                Text(kind == .alarm ? "Next alarm" : "Next loop").textRole(.caption, emphasized: true).textCase(.uppercase)
+                Text(kind == .alarm ? f("Next alarm") : f("Next loop")).textRole(.caption, emphasized: true).textCase(.uppercase)
                 ClockText(parts: ClockFormat.parts(date), role: .display, periodRole: .body)
                     .accessibilityIdentifier("next-time")
                 Text(routine.name).textRole(.rowTitle, emphasized: true).lineLimit(2)
                 Text("\(ClockFormat.day(date, from: now)), \(ClockFormat.countdown(to: date, from: now))").textRole(.caption).numeric()
             } else {
                 Image(systemName: kind == .alarm ? "alarm" : "repeat").glyph()
-                Text(all.isEmpty ? (kind == .alarm ? "No alarms yet" : "No loops yet") : (kind == .alarm ? "All alarms off" : "All loops off"))
+                Text(all.isEmpty ? (kind == .alarm ? f("No alarms yet") : f("No loops yet")) : (kind == .alarm ? f("All alarms off") : f("All loops off")))
                     .textRole(.section)
-                Text(all.isEmpty ? (kind == .alarm ? "Add a wake-up time and an optional mission." : "Several times. Different weekdays. One routine.")
-                     : "Turn one on below, or add another.")
+                Text(all.isEmpty ? (kind == .alarm ? f("Add a wake-up time and an optional mission.") : f("Several times. Different weekdays. One routine."))
+                     : f("Turn one on below, or add another."))
                     .textRole(.caption)
             }
         }
@@ -149,7 +149,7 @@ struct RoutinesScreen: View {
     /// One large way to add: the screen's only filled button.
     private var addButton: some View {
         Button { editing = model.newRoutine(kind: kind) } label: {
-            Label(kind == .alarm ? "Add alarm" : "Add loop", systemImage: "plus")
+            Label(kind == .alarm ? f("Add alarm") : f("Add loop"), systemImage: "plus")
                 .textRole(.rowTitle, emphasized: true).frame(maxWidth: .infinity)
         }
         .sevenProminentButton().controlSize(.extraLarge).buttonBorderShape(.capsule)
@@ -166,21 +166,21 @@ struct RoutinesScreen: View {
                           spacing: Tokens.Space.s) {
                     ForEach([15, 20, 30, 60], id: \.self) { minutes in
                         Button { Task { if await model.nap(minutes: minutes) { napsStarted += 1 } } } label: {
-                            ChipLabel(value: minutes.formatted(), unit: String(localized: "min"))
+                            ChipLabel(value: minutes.formatted(), unit: f("min"))
                         }
                         .quickAddChip()
-                        .accessibilityLabel(String(localized: "Nap for \(ClockFormat.minutes(minutes))"))
-                        .accessibilityHint("Sets a one-off alarm")
+                        .accessibilityLabel(String(localized: "Nap for \(ClockFormat.minutes(minutes))", bundle: .module))
+                        .accessibilityHint(f("Sets a one-off alarm"))
                         .accessibilityIdentifier("nap-\(minutes)")
                     }
                 }
-                Button("Custom nap…", systemImage: "timer") { customNap = true }
+                Button(f("Custom nap…"), systemImage: "timer") { customNap = true }
                     .textRole(.body).accessibilityIdentifier("custom-nap")
             }
             .padding(.horizontal, Tokens.Space.m)
             .bareListRow()
         } header: {
-            Text("Quick nap").foregroundStyle(Tokens.muted)
+            Text(f("Quick nap")).foregroundStyle(Tokens.muted)
         }
     }
 }
@@ -190,7 +190,7 @@ private struct SearchWhenMany: ViewModifier {
     let count: Int
     @Binding var text: String
     @ViewBuilder func body(content: Content) -> some View {
-        if count >= 8 { content.searchable(text: $text, prompt: "Find a routine or group") } else { content }
+        if count >= 8 { content.searchable(text: $text, prompt: f("Find a routine or group")) } else { content }
     }
 }
 
@@ -211,7 +211,7 @@ struct RoutineRow: View {
                 Button(action: onEdit) { summary.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()) }
                     .buttonStyle(.plain)
                     .accessibilityElement(children: .combine)
-                    .accessibilityHint("Edits this routine")
+                    .accessibilityHint(f("Edits this routine"))
                     .accessibilityIdentifier("edit-\(routine.name)")
                 Toggle(routine.name, isOn: Binding(get: { routine.enabled }, set: { value in Task { await model.toggle(routine, enabled: value) } }))
                     .labelsHidden()
@@ -222,11 +222,11 @@ struct RoutineRow: View {
                 if routine.mission != .none {
                     Button(action: onTry) { Label(routine.mission.title, systemImage: routine.mission.symbol) }
                         .rowChip()
-                        .accessibilityLabel(String(localized: "Try mission: \(routine.mission.title)"))
+                        .accessibilityLabel(String(localized: "Try mission: \(routine.mission.title)", bundle: .module))
                         .accessibilityIdentifier("try-mission")
                 }
                 if routine.kind == .loop {
-                    Button(action: onLog) { Label("Log done", systemImage: "checkmark") }
+                    Button(action: onLog) { Label(f("Log done"), systemImage: "checkmark") }
                         .rowChip().accessibilityIdentifier("log-done")
                 }
             }
