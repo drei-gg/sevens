@@ -84,8 +84,13 @@ noclone="-parallel-testing-enabled NO"
 
 sync_tree() {
   ssh tahoe "mkdir -p $remote"
+  # Host-only build outputs never reach the guest (Xcode reads only Kit/Generated): Rust targets and
+  # Gradle build folders would otherwise copy gigabytes into the one source folder per app.
   rsync -a --delete --exclude .git --exclude .build --exclude DerivedData \
-    --exclude 'xcuserdata/' "$root/" "tahoe:$remote/"
+    --exclude 'xcuserdata/' --exclude '/apps/*/core/target/' --exclude '/crates/*/target/' \
+    --exclude '/apps/*/core/generated/jniLibs/' --exclude '/android/build/' --exclude '/android/*/build/' \
+    --exclude '/android/.gradle/' --exclude '/apps/*/android/build/' --exclude '/apps/*/android/*/build/' \
+    --exclude '/apps/*/wear/build/' --exclude '/apps/*/wear/*/build/' "$root/" "tahoe:$remote/"
 }
 
 strictw="SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES"
