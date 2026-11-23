@@ -1,6 +1,6 @@
 # Publishes the scam lists the QR app can fetch when someone taps "Check for newer lists"
-# (SPEC §4.3). Manual only until the LISTS_SIGNING_KEY secret exists (none yet, 2026-11-22); then
-# restore the weekly schedule and the push trigger below. Runs only from main.
+# (SPEC §4.3). Weekly, whenever the list data on main changes, and by hand. The LISTS_SIGNING_KEY
+# secret exists since 2026-11-22; a run publishes only when the lists actually changed.
 # No third-party actions beyond GitHub's own checkout.
 #
 # One-time setup, on a private machine (never in this repository or on a shared one):
@@ -11,13 +11,12 @@
 name: lists
 on:
   workflow_dispatch:
-  # Once the key exists:
-  # schedule:
-  #   - cron: "17 5 * * 1"
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - "apps/qr/Kit/Sources/QRCore/Data/**"
+  schedule:
+    - cron: "17 5 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "apps/qr/Kit/Sources/QRCore/Data/**"
 permissions:
   contents: write
 concurrency:
